@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleSubscribeCompletable
         implements CompletableOperator {
 
-    private final Completable original;
+    protected final Completable original;
 
     AbstractAsynchronousCompletableOperator(Completable original, Executor executor) {
         super(executor);
@@ -38,7 +38,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
     }
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                                AsyncContextProvider contextProvider) {
         // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
         // asynchronously processes signals. This is because the thread that processes the signals may have different

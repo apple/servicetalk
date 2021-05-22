@@ -35,6 +35,7 @@ import java.util.function.Function;
  * The {@link Subscriber} that is returned by this {@link Function} is the one that should be used to subscribe to the
  * {@link Completable} on which this operator is applied.
  */
+@FunctionalInterface
 public interface CompletableOperator extends Function<Subscriber, Subscriber> {
 
     /**

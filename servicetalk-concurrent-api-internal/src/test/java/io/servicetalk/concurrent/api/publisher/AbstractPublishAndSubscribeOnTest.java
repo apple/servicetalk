@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.api.PublisherWithExecutor;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
@@ -95,5 +97,30 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         verifyCapturedThreads(capturedThreads);
 
         return capturedThreads;
+    }
+
+    public TypeSafeMatcher<Thread> sameThreadFactory(Thread matchThread) {
+        return new TypeSafeMatcher<Thread>() {
+            final String matchPrefix = getNamePrefix(matchThread.getName());
+
+            @Override
+            public void describeTo(final Description description) {
+                description.appendText("non-matching name prefix");
+            }
+
+            @Override
+            protected boolean matchesSafely(final Thread item) {
+                String prefix = getNamePrefix(item.getName());
+
+                return matchPrefix.equals(prefix);
+            }
+        };
+    }
+
+    private static String getNamePrefix(String name) {
+        int lastDash = name.lastIndexOf('-');
+        return -1 == lastDash ?
+                name :
+                name.substring(0, lastDash);
     }
 }

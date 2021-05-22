@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -132,30 +130,5 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads.get(ORIGINAL_SUBSCRIPTION_THREAD),
                 sameThreadFactory(capturedThreads.get(OFFLOADED_SUBSCRIPTION_THREAD)));
-    }
-
-    TypeSafeMatcher<Thread> sameThreadFactory(Thread matchThread) {
-        return new TypeSafeMatcher<Thread>() {
-            final String matchPrefix = getNamePrefix(matchThread.getName());
-
-            @Override
-            public void describeTo(final Description description) {
-                description.appendText("non-matching name prefix");
-            }
-
-            @Override
-            protected boolean matchesSafely(final Thread item) {
-                String prefix = getNamePrefix(item.getName());
-
-                return matchPrefix.equals(prefix);
-            }
-        };
-    }
-
-    private static String getNamePrefix(String name) {
-        int lastDash = name.lastIndexOf('-');
-        return -1 == lastDash ?
-                name :
-                name.substring(0, lastDash);
     }
 }

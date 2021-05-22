@@ -46,7 +46,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
 import static java.util.Arrays.spliterator;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -97,7 +96,8 @@ public abstract class Completable {
      * result in sharing {@link AsyncContext} between sources.
      */
     Completable(Executor executor, boolean shareContextOnSubscribe) {
-        this.executor = requireNonNull(executor);
+        // assert executor == immediate() : "Unexpected Executor";
+        this.executor = executor;
         this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
@@ -478,87 +478,6 @@ public abstract class Completable {
      */
     public final Completable whenCancel(Runnable onCancel) {
         return beforeCancel(onCancel);
-    }
-
-    /**
-     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * The timer starts when the returned {@link Completable} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(long, TimeUnit)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
-     * @param unit The units for {@code duration}.
-     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
-     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Completable idleTimeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
-    }
-
-    /**
-     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * The timer starts when the returned {@link Completable} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
-     * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
-     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Completable idleTimeout(long duration, TimeUnit unit,
-                                         io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
-    }
-
-    /**
-     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * The timer starts when the returned {@link Completable} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
-     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
-     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Completable idleTimeout(Duration duration) {
-        return timeout(duration, executor);
-    }
-
-    /**
-     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * The timer starts when the returned {@link Completable} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
-     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Completable idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
 
     /**
@@ -1519,7 +1438,7 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Completable} that will use the provided {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
@@ -2123,93 +2042,26 @@ public abstract class Completable {
         handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
-    protected Subscriber wrapSubscriber(Subscriber subscriber,
-                                        AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        return immediate() == executor ?
-                wrapped :
-                new OffloadedCancellableCompletableSubscriber(wrapped, executor);
-    }
-
-    private static final class OffloadedCancellableCompletableSubscriber implements CompletableSource.Subscriber {
-        private final CompletableSource.Subscriber subscriber;
-        private final Executor executor;
-
-        OffloadedCancellableCompletableSubscriber(final CompletableSource.Subscriber subscriber,
-                                                  final Executor executor) {
-            this.subscriber = requireNonNull(subscriber);
-            this.executor = executor;
-        }
-
-        @Override
-        public void onSubscribe(final Cancellable cancellable) {
-            subscriber.onSubscribe(new OffloadedCancellable(cancellable, executor));
-        }
-
-        @Override
-        public void onComplete() {
-            subscriber.onComplete();
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            subscriber.onError(t);
-        }
-    }
-
-    private static final class OffloadedCancellable implements Cancellable {
-        private final Cancellable cancellable;
-        private final Executor executor;
-
-        OffloadedCancellable(final Cancellable cancellable, final Executor executor) {
-            this.cancellable = requireNonNull(cancellable);
-            this.executor = executor;
-        }
-
-        @Override
-        public void cancel() {
-            try {
-                executor.execute(() -> safeCancel(cancellable));
-            } catch (Throwable t) {
-                LOGGER.error("Failed to execute task on the executor {}. " +
-                                "Invoking Cancellable (cancel()) in the caller thread. Cancellable {}. ",
-                        executor, cancellable, t);
-                // As a policy, we call the target in the calling thread when the executor is inadequately
-                // provisioned. In the future we could make this configurable.
-                cancellable.cancel();
-                // We swallow the error here as we are forwarding the actual call and throwing from here will
-                // interrupt the control flow.
-            }
-        }
-    }
-
     private void subscribeWithContext(Subscriber subscriber,
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
-        final Subscriber offloadedSubscriber;
+        final Subscriber wrappedSubscriber;
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
             // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber = wrapSubscriber(subscriber, contextProvider, contextMap);
+            signalOffloader = newOffloaderFor(executor());
+            // Since this is a user-driven subscribe (end of the execution chain) we want to make sure the AsyncContext
+            // is saved/restored for all interactions with the Subscription.
+            wrappedSubscriber = contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
         } catch (Throwable t) {
             deliverErrorFromSource(subscriber, t);
             return;
         }
 
-        // signalOffloader.offloadSubscribe(offloadedSubscriber, contextProvider.wrapConsumer(
-        //         s -> handleSubscribe(s, signalOffloader, contextMap, contextProvider), contextMap));
-
-        try {
-            executor.execute(contextProvider.wrapRunnable(() ->
-                    handleSubscribe(offloadedSubscriber, signalOffloader, contextMap, contextProvider), contextMap));
-        } catch (Throwable throwable) {
-            // We assume that if executor accepted task, it was run and no exception will be thrown by handleSubscribe.
-            deliverErrorFromSource(offloadedSubscriber, throwable);
-        }
+        contextProvider.wrapRunnable(() ->
+                    handleSubscribe(wrappedSubscriber, signalOffloader, contextMap, contextProvider), contextMap)
+                .run();
     }
 
     /**
@@ -2230,8 +2082,7 @@ public abstract class Completable {
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            Subscriber offloaded = signalOffloader.offloadSubscriber(
-                    contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
+            Subscriber offloaded = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
             handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);

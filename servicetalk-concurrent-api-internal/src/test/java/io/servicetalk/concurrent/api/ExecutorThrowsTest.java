@@ -37,8 +37,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
+
 public class ExecutorThrowsTest {
 
     @Rule
@@ -159,6 +158,8 @@ public class ExecutorThrowsTest {
 
     private void verifyError() throws Throwable {
         Throwable err = errors.take();
-        assertThat("Expected DELIBERATE_EXCEPTION", err, sameInstance(DELIBERATE_EXCEPTION));
+        if (err != DELIBERATE_EXCEPTION) {
+            throw err;
+        }
     }
 }
