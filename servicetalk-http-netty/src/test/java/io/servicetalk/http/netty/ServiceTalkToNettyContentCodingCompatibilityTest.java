@@ -101,10 +101,10 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
                            final Codings clientCodings, final Compression compression,
                            final boolean valid) throws Throwable {
         setUp(protocol, serverCodings, clientCodings, compression, valid);
-        start();
         assumeFalse(scenario.protocol.version.equals(HTTP_2_0), "Only testing H1 scenarios yet.");
         assumeTrue(scenario.valid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
+        start();
 
         if (scenario.valid) {
             assertSuccessful(scenario.requestEncoding);

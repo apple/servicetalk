@@ -231,7 +231,6 @@ public class ServerEffectiveStrategyTest {
     @MethodSource("params")
     void blockingStreaming(final ParamsSupplier paramSupplier) throws Exception {
         params = paramSupplier.newParams();
-        assert params != null;
         assumeFalse(params.isNoOffloadsStrategy(), "Ignoring no-offloads strategy for blocking-streaming.");
         BlockingHttpClient client = params.startBlockingStreaming();
         client.request(client.get("/")
