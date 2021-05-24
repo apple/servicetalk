@@ -48,7 +48,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
-import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
+import static io.servicetalk.grpc.api.GrpcUtils.newTrailersOnlyErrorResponse;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
@@ -414,7 +414,8 @@ public abstract class GrpcServerBuilder {
         private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return newErrorResponse(responseFactory, null, cause, ctx.executionContext().bufferAllocator());
+            return newTrailersOnlyErrorResponse(responseFactory, null, cause,
+                    ctx.executionContext().bufferAllocator());
         }
     }
 }
