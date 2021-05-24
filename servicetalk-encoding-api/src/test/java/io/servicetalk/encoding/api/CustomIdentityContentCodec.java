@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package io.servicetalk.encoding.api.internal;
-
-import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.Identity;
+package io.servicetalk.encoding.api;
 
 import java.util.Objects;
 
@@ -26,9 +23,9 @@ import java.util.Objects;
  * based on {@link #name()}.
  * This class can be used as is or can be extended to create a {@link ContentCodec} with custom behaviour.
  */
-public class CustomIdentityContentCodec extends NoopContentCodec {
+class CustomIdentityContentCodec extends NoopContentCodec {
 
-    public CustomIdentityContentCodec() {
+    CustomIdentityContentCodec() {
         super(Identity.identity().name());
     }
 

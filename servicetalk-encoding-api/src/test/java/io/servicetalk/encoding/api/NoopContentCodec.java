@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package io.servicetalk.encoding.api.internal;
+package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.encoding.api.ContentCodec;
 
 /**
  * Implementation of {@link ContentCodec} that doesn't modify the source {@link Buffer}.
  */
-public class NoopContentCodec implements ContentCodec {
+class NoopContentCodec implements ContentCodec {
 
     private final CharSequence name;
 
-    public NoopContentCodec(CharSequence name) {
+    NoopContentCodec(CharSequence name) {
         this.name = name;
     }
 
