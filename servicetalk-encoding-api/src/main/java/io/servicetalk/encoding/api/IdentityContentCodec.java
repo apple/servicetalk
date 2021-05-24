@@ -75,6 +75,6 @@ final class IdentityContentCodec implements ContentCodec {
 
     @Override
     public int hashCode() {
-        return name().hashCode();
+        return caseInsensitiveHashCode(name());
     }
 }
