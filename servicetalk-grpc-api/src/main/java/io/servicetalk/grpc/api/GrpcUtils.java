@@ -54,7 +54,6 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
-import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
@@ -405,7 +404,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
         StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
-            if (isIdentity(codec)) {
+            if (identity().equals(codec)) {
                 continue;
             }
             builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);

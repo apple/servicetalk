@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.Identity.identity;
-import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
@@ -133,7 +132,7 @@ public final class ContentCodingHttpRequesterFilter
     private static void encodePayloadContentIfAvailable(final StreamingHttpRequest request,
                                                         final BufferAllocator allocator) {
         ContentCodec coding = request.encoding();
-        if (coding != null && !isIdentity(coding)) {
+        if (coding != null && !identity().equals(coding)) {
             setContentEncoding(request.headers(), coding.name());
             request.transformPayloadBody(pub -> coding.encode(pub, allocator));
         }

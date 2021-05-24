@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.encoding.api.Identity.isIdentity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -275,7 +275,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final ContentCodec codec) {
             this.codec = codec;
-            this.encode = !isIdentity(codec);
+            this.encode = !identity().equals(codec);
         }
 
         @Override
