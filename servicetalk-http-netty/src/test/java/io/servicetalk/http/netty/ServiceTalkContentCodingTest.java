@@ -106,9 +106,9 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
                         if (!identity().equals(reqEncoding)) {
                             assertTrue(
-                                    contentEquals(reqEncoding.name(),
+                                contentEquals(reqEncoding.name(),
                                             request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")),
-                                    "Request encoding should be present in the request headers");
+                                "Request encoding should be present in the request headers");
                         }
 
                         if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
