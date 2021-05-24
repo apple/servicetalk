@@ -59,13 +59,6 @@ class IdentityContentCodecTest {
         );
     }
 
-    private static Stream<Arguments> hasSameHashCodeParams() {
-        return Stream.of(
-                Arguments.of(IDENTITY_CODEC, new IdentityContentCodec()),
-                Arguments.of(IDENTITY_CODEC, new CustomIdentityContentCodec())
-        );
-    }
-
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("equalsParams")
     void equals(IdentityContentCodec identity, Object other) {
@@ -76,11 +69,5 @@ class IdentityContentCodecTest {
     @MethodSource("notEqualsParams")
     void notEquals(IdentityContentCodec identity, Object other) {
         assertThat(identity, is(not(equalTo(other))));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @MethodSource("hasSameHashCodeParams")
-    void hasSameHashCode(IdentityContentCodec identity, Object other) {
-        assertThat(identity.hashCode(), is(equalTo(other.hashCode())));
     }
 }

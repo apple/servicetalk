@@ -28,18 +28,4 @@ class CustomIdentityContentCodec extends NoopContentCodec {
     CustomIdentityContentCodec() {
         super(Identity.identity().name());
     }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other instanceof ContentCodec) {
-            return Objects.equals(name(), ((ContentCodec) other).name());
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return name().hashCode();
-    }
 }
