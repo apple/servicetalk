@@ -29,6 +29,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 final class IdentityContentCodec implements ContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");
+    private static final int HASH_CODE = caseInsensitiveHashCode(NAME);
 
     @Override
     public CharSequence name() {
@@ -66,17 +67,21 @@ final class IdentityContentCodec implements ContentCodec {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other instanceof ContentCodec) {
-            ContentCodec contentCodec = (ContentCodec) other;
-            return contentEqualsIgnoreCase(name(), contentCodec.name());
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
         }
 
-        return false;
+        if (!(o instanceof ContentCodec)) {
+            return false;
+        }
+
+        final ContentCodec that = (ContentCodec) o;
+        return contentEqualsIgnoreCase(name(), that.name());
     }
 
     @Override
     public int hashCode() {
-        return caseInsensitiveHashCode(name());
+        return HASH_CODE;
     }
 }
