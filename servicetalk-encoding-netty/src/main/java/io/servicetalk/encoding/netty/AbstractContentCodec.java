@@ -17,8 +17,7 @@ package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
-import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.buffer.api.CharSequences.contentEquals;
+import static io.servicetalk.buffer.api.CharSequences.*;
 
 abstract class AbstractContentCodec implements ContentCodec {
 
@@ -47,7 +46,7 @@ abstract class AbstractContentCodec implements ContentCodec {
         }
 
         final AbstractContentCodec that = (AbstractContentCodec) o;
-        return contentEquals(name, that.name);
+        return contentEqualsIgnoreCase(name, that.name);
     }
 
     @Override

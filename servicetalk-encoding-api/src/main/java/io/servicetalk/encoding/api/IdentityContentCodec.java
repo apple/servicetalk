@@ -19,8 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.buffer.api.CharSequences.contentEquals;
-import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.*;
 
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.
@@ -68,7 +67,7 @@ final class IdentityContentCodec implements ContentCodec {
     public boolean equals(Object other) {
         if (other instanceof ContentCodec) {
             ContentCodec contentCodec = (ContentCodec) other;
-            return contentEquals(name(), contentCodec.name());
+            return contentEqualsIgnoreCase(name(), contentCodec.name());
         }
 
         return false;

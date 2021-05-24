@@ -49,7 +49,8 @@ class IdentityContentCodecTest {
                     public boolean equals(Object other) {
                         return super.equals(other);
                     }
-                })
+                }),
+                Arguments.of(IDENTITY_CODEC, new NoopContentCodec(IDENTITY_CODEC.name().toString().toUpperCase()))
         );
     }
 
