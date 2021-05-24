@@ -16,8 +16,6 @@
 
 package io.servicetalk.encoding.api;
 
-import java.util.Objects;
-
 /**
  * Extension of {@link NoopContentCodec} with custom implementations for {@link #equals(Object)} and {@link #hashCode()}
  * based on {@link #name()}.

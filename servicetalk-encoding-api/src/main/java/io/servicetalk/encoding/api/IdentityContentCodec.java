@@ -19,7 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.buffer.api.CharSequences.*;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.

@@ -15,7 +15,8 @@
  */
 package io.servicetalk.encoding.api;
 
-import static io.servicetalk.buffer.api.CharSequences.*;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 
 @Deprecated
 abstract class AbstractContentCodec implements ContentCodec {

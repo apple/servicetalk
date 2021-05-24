@@ -15,8 +15,6 @@
  */
 package io.servicetalk.encoding.api;
 
-import javax.annotation.Nullable;
-
 /**
  * Utility class that constructs and provides the default, always supported NOOP 'identity' {@link ContentCodec}.
  */
