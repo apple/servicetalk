@@ -37,7 +37,7 @@ public final class FilterFactoryUtils {
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ client
      * </pre>
      *
      * @param first the factory for the first filter in execution chain
@@ -48,7 +48,7 @@ public final class FilterFactoryUtils {
             StreamingHttpClientFilterFactory first, StreamingHttpClientFilterFactory second) {
         requireNonNull(first);
         requireNonNull(second);
-        return connection -> first.create(second.create(connection));
+        return client -> first.create(second.create(client));
     }
 
     /**
@@ -62,7 +62,7 @@ public final class FilterFactoryUtils {
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; connection
+     *     filter1 ⇒ filter2 ⇒ connection
      * </pre>
      *
      * @param first the factory for the first filter in execution chain
@@ -84,10 +84,10 @@ public final class FilterFactoryUtils {
      * <pre>
      *     StreamingHttpServiceFilterFactory result = appendServiceFilterFactory(filter1, filter2);
      * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ service
      * </pre>
      *
      * @param first the factory for the first filter in execution chain
@@ -98,6 +98,6 @@ public final class FilterFactoryUtils {
             StreamingHttpServiceFilterFactory first, StreamingHttpServiceFilterFactory second) {
         requireNonNull(first);
         requireNonNull(second);
-        return connection -> first.create(second.create(connection));
+        return service -> first.create(second.create(service));
     }
 }
