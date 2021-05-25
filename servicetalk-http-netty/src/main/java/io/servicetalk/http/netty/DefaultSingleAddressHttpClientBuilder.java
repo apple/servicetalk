@@ -460,10 +460,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         requireNonNull(factory);
-        connectionFilterFactory = connectionFilterFactory == null ? factory :
-                connection -> connectionFilterFactory.create(factory.create(connection));
+        connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    // Use another method to keep final references and avoid StackOverflowError
+    private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
+            @Nullable final StreamingHttpConnectionFilterFactory current,
+            final StreamingHttpConnectionFilterFactory next) {
+        return current == null ? next : connection -> current.create(next.create(connection));
     }
 
     @Override
@@ -476,9 +482,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
-        return connection -> first.create(second.create(connection));
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> current,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> next) {
+        return connection -> current.create(next.create(connection));
     }
 
     @Override

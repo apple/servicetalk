@@ -100,10 +100,11 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * @return {@code this}
      */
     public GrpcServiceFactory<Filter, Service, FilterFactory> appendServiceFilter(FilterFactory before) {
+        requireNonNull(before);
         if (filterFactory == null) {
-            filterFactory = requireNonNull(before);
+            filterFactory = before;
         } else {
-            this.filterFactory = appendServiceFilterFactory(filterFactory, requireNonNull(before));
+            this.filterFactory = appendServiceFilterFactory(filterFactory, before);
         }
         return this;
     }

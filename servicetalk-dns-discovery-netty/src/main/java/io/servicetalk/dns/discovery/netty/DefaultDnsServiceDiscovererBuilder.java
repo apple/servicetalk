@@ -253,8 +253,14 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
         requireNonNull(factory);
-        filterFactory = filterFactory == null ? factory : dnsClient -> filterFactory.create(factory.create(dnsClient));
+        filterFactory = appendFilter(filterFactory, factory);
         return this;
+    }
+
+    // Use another method to keep final references and avoid StackOverflowError
+    private static DnsClientFilterFactory appendFilter(@Nullable final DnsClientFilterFactory current,
+                                                       final DnsClientFilterFactory next) {
+        return current == null ? next : dnsClient -> current.create(next.create(dnsClient));
     }
 
     /**
