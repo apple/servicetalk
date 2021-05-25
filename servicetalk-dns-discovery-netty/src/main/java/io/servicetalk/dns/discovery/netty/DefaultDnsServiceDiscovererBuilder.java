@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -252,7 +252,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}
      */
     DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
-        filterFactory = filterFactory == null ? requireNonNull(factory) : filterFactory.append(factory);
+        requireNonNull(factory);
+        filterFactory = filterFactory == null ? factory : dnsClient -> filterFactory.create(factory.create(dnsClient));
         return this;
     }
 

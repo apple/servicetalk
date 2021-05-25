@@ -42,6 +42,8 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -332,12 +334,13 @@ public abstract class AbstractHttpRequesterFilterTest {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
+                return rwch.request(REQ_RES_FACTORY, connectionContext(), request);
             }
         };
 
-        return TestStreamingHttpConnection.from(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, mockExecutionContext,
-                mockConnectionContext, filterFactory == null ? handlerFilter : filterFactory.append(handlerFilter));
+        return TestStreamingHttpConnection.from(REQ_RES_FACTORY, mockExecutionContext,
+                mockConnectionContext, filterFactory == null ? handlerFilter :
+                        appendConnectionFilterFactory(filterFactory, handlerFilter));
     }
 
     private <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory> StreamingHttpClient
@@ -348,7 +351,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
-                        return rh.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, request);
+                        return rh.request(REQ_RES_FACTORY, request);
                     }
 
                     @Override
@@ -368,6 +371,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                     }
                 };
 
-        return TestStreamingHttpClient.from(REQ_RES_FACTORY, mockExecutionContext, filterFactory.append(handlerFilter));
+        return TestStreamingHttpClient.from(REQ_RES_FACTORY, mockExecutionContext,
+                appendClientFilterFactory(filterFactory, handlerFilter));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,13 @@ public interface StreamingHttpConnectionFilterFactory {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
+     *
+     * @deprecated Use {@link HttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)}
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
+    @Deprecated
     default StreamingHttpConnectionFilterFactory append(StreamingHttpConnectionFilterFactory before) {
         requireNonNull(before);
         return connection -> create(before.create(connection));

@@ -273,8 +273,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
-                connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
-                        roConfig.connectAddress()).append(connectionFactoryFilter);
+                connectionFactoryFilter = appendConnectionFactoryFilter(
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress()), connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
@@ -375,7 +375,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         if (currClientFilterFactory == null) {
             return appendClientFilterFactory;
         } else {
-            return currClientFilterFactory.append(appendClientFilterFactory);
+            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
         }
     }
 
@@ -459,8 +459,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        connectionFilterFactory = connectionFilterFactory == null ?
-                requireNonNull(factory) : connectionFilterFactory.append(factory);
+        requireNonNull(factory);
+        connectionFilterFactory = connectionFilterFactory == null ? factory :
+                connection -> connectionFilterFactory.create(factory.create(connection));
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -468,9 +469,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = connectionFactoryFilter.append(factory);
+        requireNonNull(factory);
+        connectionFactoryFilter = appendConnectionFactoryFilter(connectionFactoryFilter, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
+        return connection -> first.create(second.create(connection));
     }
 
     @Override
@@ -503,8 +511,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
-        clientFilterFactory = clientFilterFactory == null ? requireNonNull(factory) :
-                clientFilterFactory.append(factory);
+        requireNonNull(factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
     }
