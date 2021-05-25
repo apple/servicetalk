@@ -82,7 +82,6 @@ import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1285,7 +1284,7 @@ class H2PriorKnowledgeFeatureParityTest {
     void clientRespectsSettingsFrame(HttpTestExecutionStrategy strategy,
                                      boolean h2PriorKnowledge) throws Exception {
         setUp(strategy, h2PriorKnowledge);
-        Assumptions.assumeTrue(h2PriorKnowledge, "Only HTTP/2 supports SETTINGS frames");
+        assumeTrue(h2PriorKnowledge, "Only HTTP/2 supports SETTINGS frames");
 
         int expectedMaxConcurrent = 1;
         BlockingQueue<FilterableStreamingHttpConnection> connectionQueue = new LinkedBlockingQueue<>();

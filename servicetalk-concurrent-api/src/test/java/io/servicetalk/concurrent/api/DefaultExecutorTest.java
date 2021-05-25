@@ -274,7 +274,7 @@ public final class DefaultExecutorTest {
         timerCancel(executor.timer(ofNanos(1)));
     }
 
-    private void timerCancel(Completable timer) throws InterruptedException {
+    private static void timerCancel(Completable timer) throws InterruptedException {
         AtomicReference<Throwable> refCause = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         toSource(timer.afterCancel(latch::countDown))

@@ -171,7 +171,7 @@ public class InvalidMetadataValuesTest {
         assertThrows(IllegalArgumentException.class, () -> metaData.addSetCookie("foo", null));
     }
 
-    private HttpRequestMetaData assumeRequestMeta(final HttpMetaData metaData) {
+    private static HttpRequestMetaData assumeRequestMeta(final HttpMetaData metaData) {
         assumeTrue(metaData instanceof HttpRequestMetaData, "Test not applicable for response.");
         return (HttpRequestMetaData) metaData;
     }

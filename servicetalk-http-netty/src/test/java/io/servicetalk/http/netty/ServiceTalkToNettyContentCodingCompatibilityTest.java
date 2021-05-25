@@ -67,11 +67,18 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
     }
 
+    @Override
     @AfterEach
     void finish() throws Exception {
-        serverAcceptorChannel.close().syncUninterruptibly();
-        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
-        client.close();
+        if (serverAcceptorChannel != null) {
+            serverAcceptorChannel.close().syncUninterruptibly();
+        }
+        if (serverEventLoopGroup != null) {
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+        }
+        if (client != null) {
+            client.close();
+        }
     }
 
     private Channel newNettyServer() {
@@ -101,10 +108,10 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
                            final Codings clientCodings, final Compression compression,
                            final boolean valid) throws Throwable {
         setUp(protocol, serverCodings, clientCodings, compression, valid);
-        start();
         assumeFalse(scenario.protocol.version.equals(HTTP_2_0), "Only testing H1 scenarios yet.");
         assumeTrue(scenario.valid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
+        start();
 
         if (scenario.valid) {
             assertSuccessful(scenario.requestEncoding);
