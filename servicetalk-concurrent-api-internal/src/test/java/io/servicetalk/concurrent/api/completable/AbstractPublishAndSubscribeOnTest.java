@@ -120,18 +120,30 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
+        CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
+            recordThread(capturedThreads, SOURCE_THREAD);
+            try {
+                allDone.await();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+            }
+        }, sourceExecutorService);
+
         app.executor().execute(() -> {
             recordThread(capturedThreads, APP_THREAD);
-            recordThread(capturedThreads, SOURCE_THREAD);
-            Completable original = Completable.never();
+            Completable original = Completable.fromStage(task)
+                    .afterOnSubscribe(cancellable -> {
+                        recordThread(capturedThreads, SUBSCRIBE_THREAD);
+                        subscribed.countDown();
+                    })
+                    .afterCancel(() -> {
+                        recordThread(capturedThreads, TERMINAL_THREAD);
+                        allDone.countDown();
+                    });
 
             Completable offloaded = offloadingFunction.apply(original);
 
-            Cancellable cancel = offloaded.afterCancel(allDone::countDown)
-                    .afterOnSubscribe(cancellable -> recordThread(capturedThreads, SUBSCRIBE_THREAD))
-                    .afterOnSubscribe(cancellable -> subscribed.countDown())
-                    .afterCancel(() -> recordThread(capturedThreads, TERMINAL_THREAD))
-                    .subscribe();
+            Cancellable cancel = offloaded.subscribe();
             subscribed.countDown();
             try {
                 subscribed.await();
@@ -170,10 +182,15 @@ public abstract class AbstractPublishAndSubscribeOnTest {
             assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
         }
 
+        assertThat("Unexpected executor for app", capturedThreads.get(APP_THREAD),
+                matchPrefix(APP_EXECUTOR_PREFIX));
+        assertThat("Unexpected executor for source", capturedThreads.get(SOURCE_THREAD),
+                matchPrefix(SOURCE_EXECUTOR_PREFIX));
+
         return capturedThreads;
     }
 
-    public TypeSafeMatcher<Thread> matchPrefix(String prefix) {
+    public static TypeSafeMatcher<Thread> matchPrefix(String prefix) {
         return new TypeSafeMatcher<Thread>() {
             final String matchPrefix = prefix;
 

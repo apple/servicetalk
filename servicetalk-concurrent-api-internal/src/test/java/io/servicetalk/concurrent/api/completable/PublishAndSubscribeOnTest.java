@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
 
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
@@ -39,44 +38,45 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     public void testPublishOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishOn(offloader.executor()));
-        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), not(appExecutor));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
     public void testSubscribeOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.subscribeOn(offloader.executor()));
-        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), not(appExecutor));
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), not(appExecutor));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
     public void testPublishAndSubscribeOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishAndSubscribeOn(offloader.executor()));
-        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), not(appExecutor));
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), not(appExecutor));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
     public void testSubscribeOnWithCancel() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.subscribeOn(offloader.executor()));
-        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), not(appExecutor));
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
     public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.publishAndSubscribeOn(offloader.executor()));
-        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), not(appExecutor));
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), not(appExecutor));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 }

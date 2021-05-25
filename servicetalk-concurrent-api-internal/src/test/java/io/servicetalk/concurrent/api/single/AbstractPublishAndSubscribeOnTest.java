@@ -28,8 +28,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -79,6 +80,15 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         allDone.await();
 
         verifyCapturedThreads(capturedThreads);
+        return capturedThreads;
+    }
+
+    public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
+        for (int i = 0; i < capturedThreads.length(); i++) {
+            final Thread capturedThread = capturedThreads.get(i);
+            assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
+        }
+
         return capturedThreads;
     }
 }

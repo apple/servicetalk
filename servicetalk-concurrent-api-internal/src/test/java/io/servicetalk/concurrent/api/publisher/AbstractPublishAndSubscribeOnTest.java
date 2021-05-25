@@ -36,10 +36,11 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -99,7 +100,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         return capturedThreads;
     }
 
-    public TypeSafeMatcher<Thread> sameThreadFactory(Thread matchThread) {
+    public static TypeSafeMatcher<Thread> sameThreadFactory(Thread matchThread) {
         return new TypeSafeMatcher<Thread>() {
             final String matchPrefix = getNamePrefix(matchThread.getName());
 
@@ -122,5 +123,14 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         return -1 == lastDash ?
                 name :
                 name.substring(0, lastDash);
+    }
+
+    public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
+        for (int i = 0; i < capturedThreads.length(); i++) {
+            final Thread capturedThread = capturedThreads.get(i);
+            assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
+        }
+
+        return capturedThreads;
     }
 }

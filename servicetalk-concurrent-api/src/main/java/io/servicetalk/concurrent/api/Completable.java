@@ -44,7 +44,6 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSu
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Arrays.spliterator;
 import static java.util.Objects.requireNonNull;
@@ -1382,8 +1381,8 @@ public abstract class Completable {
      *        .afterFinally(..) // B
      * }</pre>
      *
-     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
-     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
+     * The {@code original -> modified} "operator" <strong>MAY</strong> be "asynchronous" in that it may interact with
+     * the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
      * specifically:
      * <ul>
      *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
@@ -2050,7 +2049,7 @@ public abstract class Completable {
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
             // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor());
+            signalOffloader = NoopOffloader.NOOP_OFFLOADER;
             // Since this is a user-driven subscribe (end of the execution chain) we want to make sure the AsyncContext
             // is saved/restored for all interactions with the Subscription.
             wrappedSubscriber = contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
