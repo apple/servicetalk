@@ -182,7 +182,7 @@ final class GrpcUtils {
     static StreamingHttpResponse newErrorResponse(
             final StreamingHttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
             @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
-        assert status != null || cause != null;
+        assert (status != null && cause == null) || (status == null && cause != null);
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response, context);
         if (status != null) {
