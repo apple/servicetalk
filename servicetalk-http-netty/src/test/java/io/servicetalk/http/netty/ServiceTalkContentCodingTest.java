@@ -176,8 +176,12 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     @AfterEach
     void finish() throws Exception {
-        client.close();
-        serverContext.close();
+        if (client != null) {
+            client.close();
+        }
+        if (serverContext != null) {
+            serverContext.close();
+        }
     }
 
     BlockingHttpClient client() {

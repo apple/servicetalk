@@ -67,11 +67,18 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
     }
 
+    @Override
     @AfterEach
     void finish() throws Exception {
-        serverAcceptorChannel.close().syncUninterruptibly();
-        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
-        client.close();
+        if (serverAcceptorChannel != null) {
+            serverAcceptorChannel.close().syncUninterruptibly();
+        }
+        if (serverEventLoopGroup != null) {
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+        }
+        if (client != null) {
+            client.close();
+        }
     }
 
     private Channel newNettyServer() {
