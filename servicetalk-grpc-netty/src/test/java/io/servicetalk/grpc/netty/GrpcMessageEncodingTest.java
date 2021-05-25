@@ -200,7 +200,7 @@ public class GrpcMessageEncodingTest {
                                     assertEquals(GZIP_MAGIC, actualHeader);
                                 }
 
-                                if (reqEncoding != identity()) {
+                                if (!identity().equals(reqEncoding)) {
                                     assertTrue("Compressed content length should be less than the " +
                                                     "original payload size", buffer.readableBytes() < PAYLOAD_SIZE);
                                 } else {
@@ -208,7 +208,7 @@ public class GrpcMessageEncodingTest {
                                                     "original payload size", buffer.readableBytes() > PAYLOAD_SIZE);
                                 }
 
-                                assertEquals(reqEncoding != identity() ? 1 : 0, compressedFlag);
+                                assertEquals(!identity().equals(reqEncoding) ? 1 : 0, compressedFlag);
                             } catch (Throwable t) {
                                 errors.add(t);
                                 throw t;
@@ -217,7 +217,7 @@ public class GrpcMessageEncodingTest {
                         })));
 
                         assertValidCodingHeader(clientSupportedEncodings, request.headers());
-                        if (reqEncoding == identity()) {
+                        if (identity().equals(reqEncoding)) {
                             assertThat("Message-Encoding should NOT be present in the headers if identity",
                                     request.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
@@ -260,7 +260,7 @@ public class GrpcMessageEncodingTest {
                             }
                         }
 
-                        if (expected == identity()) {
+                        if (identity().equals(expected)) {
                             assertThat("Response shouldn't contain Message-Encoding header if identity",
                                     response.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
@@ -494,7 +494,7 @@ public class GrpcMessageEncodingTest {
     @Nonnull
     private static List<String> encodingsAsStrings(final List<ContentCodec> supportedEncodings) {
         return supportedEncodings.stream()
-                .filter(enc -> enc != identity())
+                .filter(enc -> !identity().equals(enc))
                 .map(ContentCodec::name)
                 .map(CharSequence::toString)
                 .collect(toList());

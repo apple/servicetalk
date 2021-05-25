@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -275,7 +275,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final ContentCodec codec) {
             this.codec = codec;
-            this.encode = codec != identity();
+            this.encode = !identity().equals(codec);
         }
 
         @Override
