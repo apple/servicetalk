@@ -414,7 +414,7 @@ public abstract class GrpcServerBuilder {
         private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return newErrorResponse(responseFactory, null, cause, ctx.executionContext().bufferAllocator());
+            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
         }
     }
 }

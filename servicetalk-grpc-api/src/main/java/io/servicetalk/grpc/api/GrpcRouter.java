@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,8 +97,8 @@ final class GrpcRouter {
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
-        final StreamingHttpResponse response = newResponse(responseFactory, null, STATUS_UNIMPLEMENTED,
-                ctx.executionContext().bufferAllocator());
+        final StreamingHttpResponse response = newErrorResponse(responseFactory, null, STATUS_UNIMPLEMENTED,
+                null, ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);
     };
@@ -264,10 +264,10 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .onErrorReturn(cause -> newErrorResponse(responseFactory,
-                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator()));
+                                        .onErrorReturn(cause -> newErrorResponse(responseFactory, finalServiceContext,
+                                                null, cause, ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
-                                return succeeded(newErrorResponse(responseFactory, serviceContext, t,
+                                return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator()));
                             }
                         }
@@ -320,7 +320,7 @@ final class GrpcRouter {
                                     serializationProvider.serializerFor(responseEncoding, responseClass),
                                     ctx.executionContext().bufferAllocator()));
                         } catch (Throwable t) {
-                            return succeeded(newErrorResponse(responseFactory, serviceContext, t,
+                            return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                     ctx.executionContext().bufferAllocator()));
                         }
                     }
@@ -465,7 +465,7 @@ final class GrpcRouter {
                                         ctx.executionContext().bufferAllocator()).payloadBody(response,
                                                 serializationProvider.serializerFor(responseEncoding, responseClass));
                             } catch (Throwable t) {
-                                return newErrorResponse(responseFactory, serviceContext, t,
+                                return newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator());
                             }
                         }
