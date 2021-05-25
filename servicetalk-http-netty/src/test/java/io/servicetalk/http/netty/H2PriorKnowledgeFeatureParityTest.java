@@ -87,12 +87,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -142,6 +139,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -1119,7 +1117,7 @@ class H2PriorKnowledgeFeatureParityTest {
             HttpResponse response = client.request(client.post("/0")
                     .payloadBody(responseBody, textSerializer()));
             assertEquals(responseBody, response.payloadBody(textDeserializer()));
-            assertEmpty(errorQueue);
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
@@ -1145,7 +1143,7 @@ class H2PriorKnowledgeFeatureParityTest {
             final String responseBody = "foo";
             HttpResponse response = client.request(client.post("/0").payloadBody(responseBody, textSerializer()));
             assertEquals(responseBody, response.payloadBody(textDeserializer()));
-            assertEmpty(errorQueue);
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
@@ -1671,23 +1669,6 @@ class H2PriorKnowledgeFeatureParityTest {
                 });
             });
         });
-    }
-
-    private static void assertEmpty(Queue<Throwable> errorQueue) {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (PrintStream ps = new PrintStream(baos, true, UTF_8.name())) {
-            Throwable t;
-            while ((t = errorQueue.poll()) != null) {
-                t.printStackTrace(ps);
-                ps.println(' ');
-            }
-            String data = new String(baos.toByteArray(), UTF_8);
-            if (!data.isEmpty()) {
-                throw new AssertionError(data);
-            }
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static <T> void assertAsyncContext(AsyncContextMap.Key<T> key, T expectedValue,

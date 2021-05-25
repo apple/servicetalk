@@ -18,8 +18,13 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.grpc.netty.TesterProto.TestRequest;
+import io.servicetalk.grpc.netty.TesterProto.Tester;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -35,12 +40,10 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.grpc.examples.helloworld.Greeter;
+import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -54,9 +57,9 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -73,74 +76,81 @@ public class TrailersOnlyErrorTest {
     @Test
     public void testRouteThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
-        final ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait(new TesterProto.Tester.ServiceFactory(mockTesterService()));
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .listenAndAwait(new Tester.ServiceFactory(mockTesterService()))) {
 
-        final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+            final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                    GrpcClients.forAddress(serverHostAndPort(serverContext))
+                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
 
-        Greeter.GreeterClient client = clientBuilder.build(new Greeter.ClientFactory());
-        assertNoErrors(asyncErrors);
-        verifyException(client.sayHello(HelloRequest.newBuilder().build()).toFuture(), UNIMPLEMENTED);
+            // The server only binds on Tester service, but the client sends a HelloRequest (Greeter service),
+            // thus no route is found and it should result in UNIMPLEMENTED.
+            try (GreeterClient client = clientBuilder.build(new Greeter.ClientFactory())) {
+                verifyException(client.sayHello(HelloRequest.newBuilder().build()).toFuture(), UNIMPLEMENTED);
+                assertNoAsyncErrors(asyncErrors);
+            }
+        }
     }
 
     @Test
     public void testServiceThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
-        final TesterProto.Tester.TesterService service = mockTesterService();
+        final TesterService service = mockTesterService();
         setupServiceThrows(service);
 
-        final ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait(new TesterProto.Tester.ServiceFactory(service));
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .listenAndAwait(new Tester.ServiceFactory(service))) {
 
-        final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(serverContext))
-                        .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+            final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                    GrpcClients.forAddress(serverHostAndPort(serverContext))
+                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
 
-        TesterProto.Tester.TesterClient client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
-        verifyException(client.test(TesterProto.TestRequest.newBuilder()
-                .build()).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+            try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
+                verifyException(client.test(TestRequest.newBuilder()
+                        .build()).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testRequestStream(Publisher.from(TesterProto.TestRequest.newBuilder()
-                .build())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+                verifyException(client.testRequestStream(Publisher.from(TestRequest.newBuilder()
+                        .build())).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testBiDiStream(from(TesterProto.TestRequest.newBuilder()
-                .build()).concat(never())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+                verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
+                        .build()).concat(never())).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testBiDiStream(from(TesterProto.TestRequest.newBuilder()
-                .build())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+                verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
+                        .build())).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+            }
+        }
     }
 
     @Test
     public void testServiceSingleThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
-        final TesterProto.Tester.TesterService service = mockTesterService();
+        final TesterService service = mockTesterService();
         setupServiceSingleThrows(service);
 
-        final ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait(new TesterProto.Tester.ServiceFactory(service));
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .listenAndAwait(new Tester.ServiceFactory(service))) {
 
-        final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(serverContext))
-                        .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+            final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                    GrpcClients.forAddress(serverHostAndPort(serverContext))
+                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
 
-        TesterProto.Tester.TesterClient client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
-        verifyException(client.test(TesterProto.TestRequest.newBuilder()
-                .build()).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+            try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
+                verifyException(client.test(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+            }
+        }
     }
 
     @Test
     public void testServiceFilterThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
-        final TesterProto.Tester.TesterService service = mockTesterService();
+        final TesterService service = mockTesterService();
 
-        final ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+        final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
                 .appendHttpServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
@@ -148,48 +158,34 @@ public class TrailersOnlyErrorTest {
                             final StreamingHttpResponseFactory responseFactory) {
                         throw DELIBERATE_EXCEPTION;
                     }
-                })
-                .listenAndAwait(new TesterProto.Tester.ServiceFactory(service));
+                });
 
-        final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(serverContext))
-                        .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+        try (ServerContext serverContext = serverBuilder.listenAndAwait(new Tester.ServiceFactory(service))) {
 
-        TesterProto.Tester.TesterClient client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
-        verifyException(client.test(TesterProto.TestRequest.newBuilder()
-                .build()).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+            final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                    GrpcClients.forAddress(serverHostAndPort(serverContext))
+                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
 
-        verifyException(client.testRequestStream(Publisher.from(TesterProto.TestRequest.newBuilder()
-                .build())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+            try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
+                verifyException(client.test(TestRequest.newBuilder()
+                        .build()).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testResponseStream(TesterProto.TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+                verifyException(client.testRequestStream(Publisher.from(TestRequest.newBuilder().build())).toFuture(),
+                        UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testBiDiStream(from(TesterProto.TestRequest.newBuilder()
-                .build()).concat(never())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
+                verifyException(client.testResponseStream(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-        verifyException(client.testBiDiStream(from(TesterProto.TestRequest.newBuilder()
-                .build())).toFuture(), UNKNOWN);
-        assertNoErrors(asyncErrors);
-    }
+                verifyException(client.testBiDiStream(from(TestRequest.newBuilder().build())
+                        .concat(never())).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
 
-    private static void assertNoErrors(final BlockingQueue<Throwable> errors) {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (PrintStream ps = new PrintStream(baos, true, UTF_8.name())) {
-            Throwable t;
-            while ((t = errors.poll()) != null) {
-                t.printStackTrace(ps);
-                ps.println();
+                verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
+                        .build())).toFuture(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
             }
-            String data = new String(baos.toByteArray(), 0, baos.size(), UTF_8);
-            if (!data.isEmpty()) {
-                throw new AssertionError(data);
-            }
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -204,21 +200,21 @@ public class TrailersOnlyErrorTest {
         }).status().code(), equalTo(expectedCode));
     }
 
-    private static TesterProto.Tester.TesterService mockTesterService() {
-        TesterProto.Tester.TesterService filter = mock(TesterProto.Tester.TesterService.class);
+    private static TesterService mockTesterService() {
+        TesterService filter = mock(TesterService.class);
         when(filter.closeAsync()).thenReturn(completed());
         when(filter.closeAsyncGracefully()).thenReturn(completed());
         return filter;
     }
 
-    private static void setupServiceThrows(final TesterProto.Tester.TesterService service) {
+    private static void setupServiceThrows(final TesterService service) {
         when(service.test(any(), any())).thenThrow(DELIBERATE_EXCEPTION);
         when(service.testBiDiStream(any(), any())).thenThrow(DELIBERATE_EXCEPTION);
         when(service.testRequestStream(any(), any())).thenThrow(DELIBERATE_EXCEPTION);
         when(service.testResponseStream(any(), any())).thenThrow(DELIBERATE_EXCEPTION);
     }
 
-    private static void setupServiceSingleThrows(final TesterProto.Tester.TesterService service) {
+    private static void setupServiceSingleThrows(final TesterService service) {
         when(service.test(any(), any())).thenReturn(Single.failed(DELIBERATE_EXCEPTION));
     }
 

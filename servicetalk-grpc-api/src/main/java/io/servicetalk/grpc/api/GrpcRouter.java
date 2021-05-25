@@ -74,8 +74,8 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.negotiateAcceptedEncoding;
+import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
-import static io.servicetalk.grpc.api.GrpcUtils.newTrailersOnlyErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
@@ -97,8 +97,8 @@ final class GrpcRouter {
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
-        final StreamingHttpResponse response = newTrailersOnlyErrorResponse(responseFactory, STATUS_UNIMPLEMENTED,
-                ctx.executionContext().bufferAllocator());
+        final StreamingHttpResponse response = newErrorResponse(responseFactory, null, STATUS_UNIMPLEMENTED,
+                null, ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);
     };
@@ -264,11 +264,10 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .onErrorReturn(cause ->
-                                                newTrailersOnlyErrorResponse(responseFactory,
-                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator()));
+                                        .onErrorReturn(cause -> newErrorResponse(responseFactory, finalServiceContext,
+                                                null, cause, ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
-                                return succeeded(newTrailersOnlyErrorResponse(responseFactory, serviceContext, t,
+                                return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator()));
                             }
                         }
@@ -321,7 +320,7 @@ final class GrpcRouter {
                                     serializationProvider.serializerFor(responseEncoding, responseClass),
                                     ctx.executionContext().bufferAllocator()));
                         } catch (Throwable t) {
-                            return succeeded(newTrailersOnlyErrorResponse(responseFactory, serviceContext, t,
+                            return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                     ctx.executionContext().bufferAllocator()));
                         }
                     }
@@ -466,7 +465,7 @@ final class GrpcRouter {
                                         ctx.executionContext().bufferAllocator()).payloadBody(response,
                                                 serializationProvider.serializerFor(responseEncoding, responseClass));
                             } catch (Throwable t) {
-                                return newTrailersOnlyErrorResponse(responseFactory, serviceContext, t,
+                                return newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator());
                             }
                         }

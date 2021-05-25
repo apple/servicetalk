@@ -165,30 +165,31 @@ final class GrpcUtils {
         return response;
     }
 
-    static StreamingHttpResponse newTrailersOnlyErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                     final GrpcStatus status,
-                                                     final BufferAllocator allocator) {
-        final StreamingHttpResponse response = responseFactory.ok();
-        initResponse(response, null);
-        setStatus(response.headers(), status, null, allocator);
-        return response;
-    }
-
-    static HttpResponse newTrailersOnlyErrorResponse(final HttpResponseFactory responseFactory,
-                                                     @Nullable final GrpcServiceContext context,
-                                                     final Throwable cause, final BufferAllocator allocator) {
+    static HttpResponse newErrorResponse(
+            final HttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert status != null || cause != null;
         final HttpResponse response = responseFactory.ok();
         initResponse(response, context);
-        setStatus(response.headers(), cause, allocator);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
         return response;
     }
 
-    static StreamingHttpResponse newTrailersOnlyErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                  @Nullable final GrpcServiceContext context, final Throwable cause,
-                                                  final BufferAllocator allocator) {
+    static StreamingHttpResponse newErrorResponse(
+            final StreamingHttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert status != null || cause != null;
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response, context);
-        setStatus(response.headers(), cause, allocator);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
         return response;
     }
 
