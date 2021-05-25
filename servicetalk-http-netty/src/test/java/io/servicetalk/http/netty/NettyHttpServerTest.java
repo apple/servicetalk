@@ -541,14 +541,13 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
     @MethodSource("clientExecutors")
     void testErrorBeforeRead(ExecutorSupplier clientExecutorSupplier,
-                             ExecutorSupplier serverExecutorSupplier)
-        throws Exception {
+                             ExecutorSupplier serverExecutorSupplier) throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
+        // Flaky test: https://github.com/apple/servicetalk/issues/245
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
         ignoreTestWhen(IMMEDIATE, CACHED);
         ignoreTestWhen(CACHED, IMMEDIATE);
         ignoreTestWhen(CACHED, CACHED);
-
-        setUp(clientExecutorSupplier, serverExecutorSupplier);
 
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_BEFORE_READ).payloadBody(
             getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
@@ -577,10 +576,9 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
     @MethodSource("clientExecutors")
     void testErrorDuringRead(ExecutorSupplier clientExecutorSupplier,
-                             ExecutorSupplier serverExecutorSupplier)
-        throws Exception {
-        ignoreTestWhen(CACHED, IMMEDIATE);
+                             ExecutorSupplier serverExecutorSupplier) throws Exception {
         setUp(clientExecutorSupplier, serverExecutorSupplier);
+        ignoreTestWhen(CACHED, IMMEDIATE);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_DURING_READ).payloadBody(
             getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
         final StreamingHttpResponse response = makeRequest(request);
