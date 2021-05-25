@@ -41,7 +41,6 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     private int peerPort = -1;
     @Nullable
     private String sniHostname;
-    private boolean isPeerHostSet;
 
     /**
      * Create a new instance using this JVM's {@link TrustManagerFactory#getDefaultAlgorithm()} and default
@@ -87,30 +86,13 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     }
 
     /**
-     * Disable host name verification.
-     * @deprecated Disabling hostname verification may leave you vulnerable to man-in-the-middle attacks. See
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> on the risks of disabling.
-     * If the expected value isn't automatically inferred use {@link #peerHost(String)} to set the expected value.
-     * @return {@code this}.
-     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
-     */
-    @Deprecated
-    public ClientSslConfigBuilder disableHostnameVerification() {
-        hostnameVerificationAlgorithm = null;
-        return this;
-    }
-
-    /**
-     * Set the non-authoritative name of the peer. When set, the value won't be inferred from the connection address.
-     * If it's set to {@code null}, it's worth considering disabling hostname verification in case SNI is also disabled.
+     * Set the non-authoritative name of the peer.
      * @param peerHost the non-authoritative name of the peer.
-     *   {@code null} disables value inference from connection address.
      * @return {@code this}.
      * @see SSLEngine#getPeerHost()
      */
     public ClientSslConfigBuilder peerHost(@Nullable String peerHost) {
         this.peerHost = peerHost;
-        this.isPeerHostSet = true;
         return this;
     }
 
@@ -148,7 +130,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @return a new {@link ClientSslConfig}.
      */
     public ClientSslConfig build() {
-        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname, isPeerHostSet,
+        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
                 keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), sessionCacheSize(), sessionTimeout(),
                 provider());
@@ -167,13 +149,11 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         private final int peerPort;
         @Nullable
         private final String sniHostname;
-        private final boolean isPeerHostSet;
 
         DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm,
                                @Nullable final String peerHost,
                                final int peerPort,
                                @Nullable final String sniHostname,
-                               final boolean isPeerHostSet,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
                                @Nullable final KeyManagerFactory keyManagerFactory,
@@ -188,7 +168,6 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
             this.peerHost = peerHost;
             this.peerPort = peerPort;
             this.sniHostname = sniHostname;
-            this.isPeerHostSet = isPeerHostSet;
         }
 
         @Nullable
@@ -212,11 +191,6 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         @Override
         public String sniHostname() {
             return sniHostname;
-        }
-
-        @Override
-        public boolean isPeerHostSet() {
-            return isPeerHostSet;
         }
     }
 }

@@ -144,4 +144,26 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}.
      */
     public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
+
+    /**
+     * Disables inference of value to use instead of {@link ClientSslConfig#peerHost()}
+     * from client's address when peer host is not specified.
+     * @return {@code this}
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> disablePeerHostInference();
+
+    /**
+     * Disables inference of value to use instead of {@link ClientSslConfig#peerPort()}
+     * from client's address when peer port is not specified (equals {@code -1}).
+     * @return {@code this}
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> disablePeerPortInference();
+
+    /**
+     * Effectively disables <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">SNI</a>
+     * and possible SNI hostname inference from client's address if not explicitly specified
+     * via {@link #sslConfig(ClientSslConfig)}.
+     * @return {@code this}
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> disableSni();
 }

@@ -19,12 +19,14 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetAddress;
 import java.util.function.Function;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -37,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SniTest {
     private static final String SNI_HOSTNAME = "servicetalk.io";
+
     @Test
     void sniSuccess() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
@@ -97,7 +100,28 @@ class SniTest {
         sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
+                .disableSni()
                 .buildBlocking());
+    }
+
+    @Test
+    void noSniClientDefaultServerFallbackFailExpected() throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .sslConfig(
+                        untrustedServerConfig(),
+                        singletonMap(InetAddress.getLoopbackAddress().getHostName(), trustedServerConfig())
+                )
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+             BlockingHttpClient client = HttpClients.forSingleAddress(
+                     HostAndPort.of(
+                             InetAddress.getLoopbackAddress().getHostName(),
+                             serverHostAndPort(serverContext).port())
+             )
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                     .disableSni()
+                     .buildBlocking()) {
+            assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
+        }
     }
 
     private static BlockingHttpClient newClient(ServerContext serverContext) {

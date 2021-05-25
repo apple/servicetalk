@@ -34,6 +34,9 @@ final class HttpClientConfig {
     @Nullable
     private String fallbackPeerHost;
     private int fallbackPeerPort = -1;
+    private boolean disablePeerHostInference;
+    private boolean disablePeerPortInference;
+    private boolean disableSni;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -46,6 +49,9 @@ final class HttpClientConfig {
         connectAddress = from.connectAddress;
         fallbackPeerHost = from.fallbackPeerHost;
         fallbackPeerPort = from.fallbackPeerPort;
+        disablePeerHostInference = from.disablePeerHostInference;
+        disablePeerPortInference = from.disablePeerPortInference;
+        disableSni = from.disableSni;
     }
 
     TcpClientConfig tcpConfig() {
@@ -73,6 +79,18 @@ final class HttpClientConfig {
         this.fallbackPeerPort = fallbackPeerPort;
     }
 
+    void disablePeerHostInference() {
+        this.disablePeerHostInference = true;
+    }
+
+    void disablePeerPortInference() {
+        this.disablePeerPortInference = true;
+    }
+
+    void disableSni() {
+        this.disableSni = true;
+    }
+
     ReadOnlyHttpClientConfig asReadOnly() {
         applySslConfigOverrides();
         final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this);
@@ -94,10 +112,10 @@ final class HttpClientConfig {
                 @Nullable
                 private final List<String> alpnProtocols = httpAlpnProtocols(configAlpn, httpAlpnProtocols);
                 @Nullable
-                private final String peerHost = configPeerHost == null ? fallbackPeerHost : configPeerHost;
-                private final int peerPort = configPeerPort < 0 ? fallbackPeerPort : configPeerPort;
+                private final String peerHost = evaluatePeerHost();
+                private final int peerPort = evaluatePeerPort();
                 @Nullable
-                private final String sniHostname = configSni == null ? filterSniName(fallbackPeerHost) : configSni;
+                private final String sniHostname = evaluateSniHostname();
 
                 @Override
                 public List<String> alpnProtocols() {
@@ -118,6 +136,23 @@ final class HttpClientConfig {
                 @Override
                 public String sniHostname() {
                     return sniHostname;
+                }
+
+                @Nullable
+                private String evaluatePeerHost() {
+                    return (configPeerHost == null && !disablePeerHostInference) ? fallbackPeerHost : configPeerHost;
+                }
+
+                private int evaluatePeerPort() {
+                    return (configPeerPort < 0 && !disablePeerPortInference) ? fallbackPeerPort : configPeerPort;
+                }
+
+                @Nullable
+                private String evaluateSniHostname() {
+                    if (disableSni) {
+                        return null;
+                    }
+                    return configSni == null ? filterSniName(fallbackPeerHost) : configSni;
                 }
             });
         }

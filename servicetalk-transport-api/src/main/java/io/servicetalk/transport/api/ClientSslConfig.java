@@ -48,15 +48,6 @@ public interface ClientSslConfig extends SslConfig {
     String peerHost();
 
     /**
-     * Determine if the user explicitly set the {@link #peerHost()}.
-     *
-     * @return {@code true} the user explicitly set {@link #peerHost()} to some value (including {@code null}).
-     */
-    default boolean isPeerHostSet() {
-        return false;
-    }
-
-    /**
      * Get the non-authoritative port of the peer.
      * @return the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).

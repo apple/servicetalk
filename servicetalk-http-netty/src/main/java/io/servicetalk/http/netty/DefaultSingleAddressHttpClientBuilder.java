@@ -559,10 +559,26 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
         assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
-        if (!sslConfig.isPeerHostSet()) {
-            setFallbackHostAndPort(config, address);
-        }
+        setFallbackHostAndPort(config, address);
         config.tcpConfig().sslConfig(sslConfig);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> disablePeerHostInference() {
+        config.disablePeerHostInference();
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> disablePeerPortInference() {
+        config.disablePeerPortInference();
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> disableSni() {
+        config.disableSni();
         return this;
     }
 

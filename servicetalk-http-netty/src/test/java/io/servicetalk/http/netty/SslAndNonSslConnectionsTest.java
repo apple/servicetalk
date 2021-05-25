@@ -181,10 +181,10 @@ class SslAndNonSslConnectionsTest {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                        .peerHost(null)
                         // if verification is not disabled, identity check fails against the undefined address
                         .hostnameVerificationAlgorithm("")
                         .build())
+                .disablePeerHostInference()
                 .buildBlocking()) {
             testRequestResponse(client, "/", true);
         }
