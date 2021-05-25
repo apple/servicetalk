@@ -27,6 +27,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
  * {@link Completable}.
+ *
+ * <p>This implementation uses <i>task based</i> offloading. Signals are delivered on a thread owned by the provided
+ * {@link Executor} invoked via the {@link Executor#execute(Runnable)} method independently for each signal.
+ * No assumption should be made by applications that a consistent thread will be used for subsequent signals.
  */
 final class PublishAndSubscribeOnCompletables {
 
@@ -63,9 +67,9 @@ final class PublishAndSubscribeOnCompletables {
     /**
      * An asynchronous operator that coordinates the offloading to an executor for asynchronous execution.
      */
-    private abstract static class AbstractOffloadingCompletable extends AbstractAsynchronousCompletableOperator {
+    private abstract static class TaskBasedOffloadingCompletableOperator extends TaskBasedAsyncCompletableOperator {
 
-        AbstractOffloadingCompletable(final Completable original, final Executor executor) {
+        TaskBasedOffloadingCompletableOperator(final Completable original, final Executor executor) {
             super(original, executor);
         }
 
@@ -85,7 +89,7 @@ final class PublishAndSubscribeOnCompletables {
      *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      */
-    private static final class PublishAndSubscribeOn extends AbstractOffloadingCompletable {
+    private static final class PublishAndSubscribeOn extends TaskBasedOffloadingCompletableOperator {
 
         PublishAndSubscribeOn(final Completable original, final Executor executor) {
             super(original, executor);
@@ -111,7 +115,7 @@ final class PublishAndSubscribeOnCompletables {
      *     <li>All {@link Subscriber} methods.</li>
      * </ul>
      */
-    private static final class PublishOn extends AbstractOffloadingCompletable {
+    private static final class PublishOn extends TaskBasedOffloadingCompletableOperator {
 
         PublishOn(final Completable original, final Executor executor) {
             super(original, executor);
@@ -135,7 +139,7 @@ final class PublishAndSubscribeOnCompletables {
      *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      */
-    private static final class SubscribeOn extends AbstractOffloadingCompletable {
+    private static final class SubscribeOn extends TaskBasedOffloadingCompletableOperator {
 
         SubscribeOn(final Completable original, final Executor executor) {
             super(original, executor);
@@ -146,6 +150,102 @@ final class PublishAndSubscribeOnCompletables {
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             Subscriber wrapped = contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
             Subscriber offloaded = new OffloadedCancellableCompletableSubscriber(wrapped, executor());
+            try {
+                executor().execute(() ->
+                        original.delegateSubscribe(offloaded, NOOP_OFFLOADER, contextMap, contextProvider));
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
+                deliverErrorFromSource(subscriber, throwable);
+            }
+        }
+    }
+
+    /**
+     * An asynchronous operator that coordinates the offloading to an executor for asynchronous execution.
+     */
+    private abstract static class ThreadBasedOffloadingCompletableOperator extends ThreadBasedAsyncCompletableOperator {
+
+        ThreadBasedOffloadingCompletableOperator(final Completable original, final Executor executor) {
+            super(original, executor);
+        }
+
+        @Override
+        public final Subscriber apply(final Subscriber subscriber) {
+            // We only do offloading
+            return subscriber;
+        }
+    }
+
+    /**
+     * Completable that invokes the following methods on the provided executor
+     *
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     */
+    private static final class PublishAndSubscribeOnThread extends ThreadBasedOffloadingCompletableOperator {
+
+        PublishAndSubscribeOnThread(final Completable original, final Executor executor) {
+            super(original, executor);
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            try {
+                executor().execute(() ->
+                        super.handleSubscribe(subscriber, NOOP_OFFLOADER, contextMap, contextProvider));
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
+                deliverErrorFromSource(subscriber, throwable);
+            }
+        }
+    }
+
+    /**
+     * Completable that invokes the following methods on the provided executor
+     *
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     * </ul>
+     */
+    private static final class PublishOnThread extends ThreadBasedOffloadingCompletableOperator {
+
+        PublishOnThread(final Completable original, final Executor executor) {
+            super(original, executor);
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+            Subscriber offloaded = new OffloadedCompletableSubscriber(this, wrapped);
+
+            original.delegateSubscribe(offloaded, NOOP_OFFLOADER, contextMap, contextProvider);
+        }
+    }
+
+    /**
+     * Completable that invokes on the provided executor the following methods:
+     *
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     */
+    private static final class SubscribeOnThread extends ThreadBasedOffloadingCompletableOperator {
+
+        SubscribeOnThread(final Completable original, final Executor executor) {
+            super(original, executor);
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            Subscriber wrapped = contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
+            Subscriber offloaded = new OffloadedCompletableCancellable(this, wrapped);
             try {
                 executor().execute(() ->
                         original.delegateSubscribe(offloaded, NOOP_OFFLOADER, contextMap, contextProvider));

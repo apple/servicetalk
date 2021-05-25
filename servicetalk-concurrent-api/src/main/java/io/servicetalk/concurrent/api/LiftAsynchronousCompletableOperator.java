@@ -15,13 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
-
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-final class LiftAsynchronousCompletableOperator extends AbstractAsynchronousCompletableOperator {
+final class LiftAsynchronousCompletableOperator extends TaskBasedAsyncCompletableOperator {
     private final Function<Subscriber, Subscriber> customOperator;
 
     LiftAsynchronousCompletableOperator(Completable original,
