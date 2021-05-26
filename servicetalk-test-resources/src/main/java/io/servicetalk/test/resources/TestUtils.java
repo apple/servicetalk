@@ -15,7 +15,6 @@
  */
 package io.servicetalk.test.resources;
 
-import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -49,7 +48,7 @@ public final class TestUtils {
             return;
         }
 
-        final AssertionError error = new AssertionError(Objects.requireNonNull(message, "message"));
+        final AssertionError error = null != message ? new AssertionError(message) : new AssertionError();
         Throwable t;
         while ((t = errors.poll()) != null) {
             error.addSuppressed(t);
