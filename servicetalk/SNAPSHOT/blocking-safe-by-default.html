@@ -209,6 +209,9 @@
           <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-client-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-client-api/0.39/index.html">0.39</a>
         </li>
         <li class="version">
@@ -260,6 +263,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.40/index.html">0.40</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-concurrent-api/0.39/index.html">0.39</a>
@@ -333,6 +339,9 @@
           <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-examples/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-examples/0.39/index.html">0.39</a>
         </li>
         <li class="version">
@@ -402,6 +411,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.40/index.html">0.40</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-grpc-api/0.39/index.html">0.39</a>
@@ -475,6 +487,9 @@
           <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-http-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-http-api/0.39/index.html">0.39</a>
         </li>
         <li class="version">
@@ -544,6 +559,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.40/index.html">0.40</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-router-jersey/0.39/index.html">0.39</a>
@@ -617,6 +635,9 @@
           <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-data-jackson-jersey/0.39/index.html">0.39</a>
         </li>
         <li class="version">
@@ -688,6 +709,9 @@
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-loadbalancer/0.39/index.html">0.39</a>
         </li>
         <li class="version">
@@ -754,6 +778,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.40/index.html">0.40</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-security-jersey/0.39/index.html">0.39</a>
@@ -825,6 +852,9 @@
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../0.40/index.html">0.40</a>
         </li>
         <li class="version">
           <a href="../0.39/index.html">0.39</a>
@@ -911,6 +941,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="blocking-safe-by-default.html">SNAPSHOT</a>
+    <a class="version" href="../0.40/blocking-safe-by-default.html">0.40</a>
     <a class="version" href="../0.39/blocking-safe-by-default.html">0.39</a>
     <a class="version" href="../0.38/blocking-safe-by-default.html">0.38</a>
     <a class="version" href="../0.37/blocking-safe-by-default.html">0.37</a>
@@ -961,7 +992,7 @@ when using ServiceTalk.
 <div class="paragraph">
 <p>ServiceTalk uses <a href="https://netty.io">Netty</a> under the hood which uses the
 <a href="https://en.wikipedia.org/wiki/Event_loop">Event loop execution model</a>. A drawback of this construct is that
-any potentially long running work (blocking calls, intensive computations, etc) that is done on the event loop
+any potentially long-running work (blocking calls, intensive computations, etc) that is done on the event loop
 negatively impacts the processing of all subsequent tasks. This is the reason why writing blocking code is usually
 discouraged when using Netty.</p>
 </div>
@@ -1082,11 +1113,11 @@ provided strategy.</p>
 <div class="paragraph">
 <p>ServiceTalk acknowledges that <span class="underline">writing completely asynchronous code is hard and is <em>not</em> an
 "all or nothing" decision</span>.
-Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
+Practically, applications will have a mixed profile such that some paths are completely asynchronous, and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
 client/server. These selective opt-ins are specific to protocols, for example as elaborated under
-<a href="../../servicetalk-http-api/SNAPSHOT/blocking-safe-by-default.html" class="page">HTTP</a>. In addition there is a way to override
-the strategy for a client/server but it comes with additional responsibility from the user assuming
+<a href="../../servicetalk-http-api/SNAPSHOT/blocking-safe-by-default.html" class="page">HTTP</a>. In addition, there is a way to override
+the strategy for a client/server, but it comes with additional responsibility from the user assuming
 "you know what you are doing".</p>
 </div>
 </div>
