@@ -55,6 +55,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -149,7 +150,8 @@ class LoadBalancerReadyHttpClientTest {
     private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action,
                                    Consumer<Throwable> errorConsumer, Throwable error) throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
+                appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
+                        testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -171,9 +173,9 @@ class LoadBalancerReadyHttpClientTest {
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
-
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
+                appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
+                        testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(client).subscribe(resp -> latch.countDown());
@@ -185,8 +187,8 @@ class LoadBalancerReadyHttpClientTest {
         latch.await();
     }
 
-    private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(TestPublisher<Object> loadBalancerPublisher,
-                                                                            TestCompletable sdStatusCompletable) {
+    private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
+            TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
         return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
                 .newStrategy(loadBalancerPublisher, sdStatusCompletable));
     }

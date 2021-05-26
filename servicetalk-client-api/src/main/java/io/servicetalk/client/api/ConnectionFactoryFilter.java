@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,12 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
      * </pre>
+     *
+     * @deprecated Use {@code appendConnectionFactoryFilter(ConnectionFactoryFilter)} at the builder of a client
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before} function and then applies this function.
      */
+    @Deprecated
     default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
         requireNonNull(before);
         return original -> create(before.create(original));
