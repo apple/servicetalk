@@ -17,8 +17,8 @@ package io.servicetalk.concurrent;
 
 /**
  * An entity that can be cancelled.
- *
- * <p>Cancellations are a hint from a consumer of any asynchronous result to the producer that it is no more interested
+ * <p>
+ * Cancellations are a hint from a consumer of any asynchronous result to the producer that it is no more interested
  * in the result. ServiceTalk does not provide any guarantees that at a certain time, whether the asynchronous execution
  * is cancellable or not. It is up to the producer of data to take any action on cancellation or ignore the same.
  * Thus, a consumer of the result must <em>not</em> assume that it will not receive any callback post cancellation i.e.

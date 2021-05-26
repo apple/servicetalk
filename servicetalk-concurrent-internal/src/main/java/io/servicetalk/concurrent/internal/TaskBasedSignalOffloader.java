@@ -723,7 +723,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
     }
 
-    static final class OffloadedCancellableCompletableSubscriber implements CompletableSource.Subscriber {
+    private static final class OffloadedCancellableCompletableSubscriber implements CompletableSource.Subscriber {
         private final CompletableSource.Subscriber subscriber;
         private final Executor executor;
 
