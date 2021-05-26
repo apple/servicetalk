@@ -46,9 +46,9 @@ ARTIFACTS="$(ls -d -- */ | grep '^servicetalk-' | sed 's/.$//' | \
 
 for ARTIFACT_ID in $ARTIFACTS
 do
-  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$OLD_ST_VERSION \
+  mvn -N -U dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$OLD_ST_VERSION \
       -Dtransitive=false >/dev/null
-  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$NEW_ST_VERSION \
+  mvn -N -U dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$NEW_ST_VERSION \
       -Dtransitive=false >/dev/null
   java -jar "$JAR_FILE" -b --ignore-missing-classes \
       --old $BASEPATH/$ARTIFACT_ID/$OLD_ST_VERSION/$ARTIFACT_ID-$OLD_ST_VERSION.jar \
