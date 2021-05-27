@@ -32,12 +32,23 @@ public final class TestUtils {
      * a suppressed error will be captured and surface through a single {@link AssertionError}.
      * @param errors The queue of captured errors.
      */
-    public static void assertNoAsyncErrors(final Queue<Throwable> errors) {
+    public static void assertNoAsyncErrors(final Queue<? extends Throwable> errors) {
+        assertNoAsyncErrors("Async errors occurred. See suppressed!", errors);
+    }
+
+    /**
+     * Helper method to check if a given {@link Queue} contains any errors,
+     * usually produced through async sources. For ALL {@link Throwable}s found in the queue,
+     * a suppressed error will be captured and surface through a single {@link AssertionError}.
+     * @param message message for the AssertionError.
+     * @param errors The queue of captured errors.
+     */
+    public static void assertNoAsyncErrors(final String message, final Queue<? extends Throwable> errors) {
         if (errors.isEmpty()) {
             return;
         }
 
-        final AssertionError error = new AssertionError("Async errors occurred. See suppressed!");
+        final AssertionError error = null != message ? new AssertionError(message) : new AssertionError();
         Throwable t;
         while ((t = errors.poll()) != null) {
             error.addSuppressed(t);
