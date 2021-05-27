@@ -76,7 +76,6 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             return sdEvents.map(eventsCache::consumeAndFilter)
                     .onErrorResume(cause -> {
                         final Collection<E> events = eventsCache.errorSeen();
-                        // FIXME: it returns the same collection of unavailable events on each subsequent error
                         return events == null ? failed(cause) : Publisher.from(events.stream()
                                 .map(flipAvailability).collect(toList()))
                                 .concat(failed(cause));
@@ -227,9 +226,10 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         Collection<E> errorSeen() {
             if (retainedAddresses == NONE_RETAINED) {
                 retainedAddresses = new HashMap<>(activeAddresses);
+                activeAddresses.clear();
+                return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
             }
-            activeAddresses.clear();
-            return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
+            return null;    // We already returned retainedAddresses for previous error, return null to avoid duplicates
         }
 
         Collection<E> consumeAndFilter(final Collection<E> events) {

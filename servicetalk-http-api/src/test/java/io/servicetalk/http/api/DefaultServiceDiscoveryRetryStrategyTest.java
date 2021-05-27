@@ -188,6 +188,23 @@ class DefaultServiceDiscoveryRetryStrategyTest {
         sendUpAndVerifyReceive(state, "addr1", sdEvents);
     }
 
+    @Test
+    void noRetainActiveAddressesTwoSequentialErrors() throws Exception {
+        State state = new State(false);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
+        final ServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
+        final ServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
+
+        sdEvents = triggerRetry(state, sdEvents);
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0),
+                containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2)));
+
+        triggerRetry(state, sdEvents);
+        verifyNoEventsReceived(state);
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: retainAddressesTillSuccess={0}, available={1}")
     @MethodSource("booleanMatrix")
     void duplicatedAddresses(final boolean retainAddressesTillSuccess, final boolean available) throws Exception {
