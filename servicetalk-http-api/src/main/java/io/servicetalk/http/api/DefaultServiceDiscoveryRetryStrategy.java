@@ -68,14 +68,15 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         return defer(() -> {
             EventsCache<ResolvedAddress, E> eventsCache = new EventsCache<>(flipAvailability);
             if (retainAddressesTillSuccess) {
-                return sdEvents.map(eventsCache::consume)
+                return sdEvents.map(eventsCache::consumeAndFilter)
                         .beforeOnError(__ -> eventsCache.errorSeen())
                         .retryWhen(retryStrategy);
             }
 
-            return sdEvents.map(eventsCache::consume)
+            return sdEvents.map(eventsCache::consumeAndFilter)
                     .onErrorResume(cause -> {
                         final Collection<E> events = eventsCache.errorSeen();
+                        // FIXME: it returns the same collection of unavailable events on each subsequent error
                         return events == null ? failed(cause) : Publisher.from(events.stream()
                                 .map(flipAvailability).collect(toList()))
                                 .concat(failed(cause));
@@ -231,33 +232,41 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
         }
 
-        @Nullable
-        Collection<E> consume(final Collection<E> events) {
+        Collection<E> consumeAndFilter(final Collection<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
+                List<E> toReturn = new ArrayList<>(events.size());
                 for (E e : events) {
                     if (e.isAvailable()) {
-                        activeAddresses.put(e.address(), e);
+                        if (activeAddresses.putIfAbsent(e.address(), e) == null) {
+                            // FIXME: what if it's a custom E that has more fields?
+                            toReturn.add(e);    // filter out duplicated addresses
+                        }
                     } else {
-                        activeAddresses.remove(e.address());
+                        if (activeAddresses.remove(e.address()) != null) {
+                            toReturn.add(e);   // filter out addresses that were already unavailable
+                        }
                     }
+                    // FIXME: remove addresses that are available and unavailable in the same events collection
                 }
-                return events;
+                return toReturn;
             }
 
             // we have seen an error, replace cache with new addresses and deactivate the ones which are not present
             // in the new list.
             for (E event : events) {
-                final R address = event.address();
                 if (event.isAvailable()) {
-                    activeAddresses.put(address, event);
+                    activeAddresses.put(event.address(), event);
                 } else {
-                    activeAddresses.remove(address);
+                    activeAddresses.remove(event.address());
                 }
             }
 
-            List<E> toReturn = new ArrayList<>(activeAddresses.values());
-            for (R address : activeAddresses.keySet()) {
-                retainedAddresses.remove(address);
+            // Worst case size is a sum of activeAddresses and retainedAddresses
+            List<E> toReturn = new ArrayList<>(activeAddresses.size() + retainedAddresses.size());
+            for (Map.Entry<R, E> entry : activeAddresses.entrySet()) {
+                if (retainedAddresses.remove(entry.getKey()) == null) {
+                    toReturn.add(entry.getValue()); // Add only those new addresses that were not retained before
+                }
             }
 
             if (!retainedAddresses.isEmpty()) {
@@ -266,7 +275,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                 }
             }
             retainedAddresses = noneRetained();
-            return toReturn.isEmpty() ? null : toReturn;
+            return toReturn;
         }
 
         @SuppressWarnings("unchecked")
