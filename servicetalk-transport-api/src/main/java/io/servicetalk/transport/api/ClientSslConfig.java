@@ -40,7 +40,7 @@ public interface ClientSslConfig extends SslConfig {
     /**
      * Get the non-authoritative name of the peer.
      * @return the non-authoritative name of the peer, or {@code null} if unavailable (which may require disabling
-     * {@link #hostnameVerificationAlgorithm()} hostname verification, and may disable
+     * {@link #hostnameVerificationAlgorithm() hostname verification}, and may disable
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      * @see SSLEngine#getPeerHost()
      */

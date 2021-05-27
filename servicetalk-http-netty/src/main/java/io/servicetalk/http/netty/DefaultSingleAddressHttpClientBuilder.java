@@ -565,20 +565,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disablePeerHostInference() {
-        config.disablePeerHostInference();
+    public SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+        config.inferPeerHost(shouldInfer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disablePeerPortInference() {
-        config.disablePeerPortInference();
+    public SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+        config.inferPeerPort(shouldInfer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disableSni() {
-        config.disableSni();
+    public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+        config.inferSniHostname(shouldInfer);
         return this;
     }
 

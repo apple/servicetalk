@@ -76,12 +76,27 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @param algorithm The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
      * Endpoint Identification Algorithm Name</a>.
-     * An empty {@code String} disables hostname verification.
+     * An empty {@code String} ({@code ""}) disables hostname verification.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     public ClientSslConfigBuilder hostnameVerificationAlgorithm(String algorithm) {
         this.hostnameVerificationAlgorithm = requireNonNull(algorithm);
+        return this;
+    }
+
+    /**
+     * Disable host name verification.
+     * @deprecated Disabling hostname verification may leave you vulnerable to man-in-the-middle attacks. See
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> on the risks of disabling.
+     * If the expected value isn't automatically inferred use {@link #peerHost(String)} to set the expected value.
+     * When disabling is intended, use {@link #hostnameVerificationAlgorithm} with {@code ""} as argument.
+     * @return {@code this}.
+     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
+     */
+    @Deprecated
+    public ClientSslConfigBuilder disableHostnameVerification() {
+        hostnameVerificationAlgorithm = null;
         return this;
     }
 

@@ -146,24 +146,27 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     /**
-     * Disables inference of value to use instead of {@link ClientSslConfig#peerHost()}
-     * from client's address when peer host is not specified.
+     * Toggle inference of value to use instead of {@link ClientSslConfig#peerHost()}
+     * from client's address when peer host is not specified. By default, inference is enabled.
+     * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> disablePeerHostInference();
+    public abstract SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
 
     /**
-     * Disables inference of value to use instead of {@link ClientSslConfig#peerPort()}
-     * from client's address when peer port is not specified (equals {@code -1}).
+     * Toggle inference of value to use instead of {@link ClientSslConfig#peerPort()}
+     * from client's address when peer port is not specified (equals {@code -1}). By default, inference is enabled.
+     * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> disablePeerPortInference();
+    public abstract SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
 
     /**
-     * Effectively disables <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">SNI</a>
-     * and possible SNI hostname inference from client's address if not explicitly specified
-     * via {@link #sslConfig(ClientSslConfig)}.
+     * Toggle <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">SNI</a>
+     * hostname inference from client's address if not explicitly specified
+     * via {@link #sslConfig(ClientSslConfig)}. By default, inference is enabled.
+     * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> disableSni();
+    public abstract SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
 }

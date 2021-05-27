@@ -34,9 +34,9 @@ final class HttpClientConfig {
     @Nullable
     private String fallbackPeerHost;
     private int fallbackPeerPort = -1;
-    private boolean disablePeerHostInference;
-    private boolean disablePeerPortInference;
-    private boolean disableSni;
+    private boolean inferPeerHost = true;
+    private boolean inferPeerPort = true;
+    private boolean inferSniHostname = true;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -49,9 +49,9 @@ final class HttpClientConfig {
         connectAddress = from.connectAddress;
         fallbackPeerHost = from.fallbackPeerHost;
         fallbackPeerPort = from.fallbackPeerPort;
-        disablePeerHostInference = from.disablePeerHostInference;
-        disablePeerPortInference = from.disablePeerPortInference;
-        disableSni = from.disableSni;
+        inferPeerHost = from.inferPeerHost;
+        inferPeerPort = from.inferPeerPort;
+        inferSniHostname = from.inferSniHostname;
     }
 
     TcpClientConfig tcpConfig() {
@@ -79,16 +79,16 @@ final class HttpClientConfig {
         this.fallbackPeerPort = fallbackPeerPort;
     }
 
-    void disablePeerHostInference() {
-        this.disablePeerHostInference = true;
+    void inferPeerHost(boolean shouldInfer) {
+        this.inferPeerHost = shouldInfer;
     }
 
-    void disablePeerPortInference() {
-        this.disablePeerPortInference = true;
+    void inferPeerPort(boolean shouldInfer) {
+        this.inferPeerPort = shouldInfer;
     }
 
-    void disableSni() {
-        this.disableSni = true;
+    void inferSniHostname(boolean shouldInfer) {
+        this.inferSniHostname = shouldInfer;
     }
 
     ReadOnlyHttpClientConfig asReadOnly() {
@@ -140,19 +140,16 @@ final class HttpClientConfig {
 
                 @Nullable
                 private String evaluatePeerHost() {
-                    return (configPeerHost == null && !disablePeerHostInference) ? fallbackPeerHost : configPeerHost;
+                    return (configPeerHost == null && inferPeerHost) ? fallbackPeerHost : configPeerHost;
                 }
 
                 private int evaluatePeerPort() {
-                    return (configPeerPort < 0 && !disablePeerPortInference) ? fallbackPeerPort : configPeerPort;
+                    return (configPeerPort < 0 && inferPeerPort) ? fallbackPeerPort : configPeerPort;
                 }
 
                 @Nullable
                 private String evaluateSniHostname() {
-                    if (disableSni) {
-                        return null;
-                    }
-                    return configSni == null ? filterSniName(fallbackPeerHost) : configSni;
+                    return (configSni == null && inferSniHostname) ? filterSniName(fallbackPeerHost) : configSni;
                 }
             });
         }

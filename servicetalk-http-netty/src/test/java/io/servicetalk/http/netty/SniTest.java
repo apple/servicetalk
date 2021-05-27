@@ -100,7 +100,7 @@ class SniTest {
         sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
-                .disableSni()
+                .inferSniHostname(false)
                 .buildBlocking());
     }
 
@@ -118,7 +118,7 @@ class SniTest {
                              serverHostAndPort(serverContext).port())
              )
                      .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
-                     .disableSni()
+                     .inferSniHostname(false)
                      .buildBlocking()) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
         }

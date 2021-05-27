@@ -184,7 +184,7 @@ class SslAndNonSslConnectionsTest {
                         // if verification is not disabled, identity check fails against the undefined address
                         .hostnameVerificationAlgorithm("")
                         .build())
-                .disablePeerHostInference()
+                .inferPeerHost(false)
                 .buildBlocking()) {
             testRequestResponse(client, "/", true);
         }
