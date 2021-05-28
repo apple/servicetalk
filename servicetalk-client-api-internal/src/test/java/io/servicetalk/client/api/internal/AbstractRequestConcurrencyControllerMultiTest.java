@@ -16,13 +16,13 @@
 package io.servicetalk.client.api.internal;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
@@ -34,8 +34,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractRequestConcurrencyControllerMultiTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    public final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 

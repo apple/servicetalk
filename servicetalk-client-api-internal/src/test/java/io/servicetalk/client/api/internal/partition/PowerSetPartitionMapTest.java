@@ -23,17 +23,17 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PowerSetPartitionMapTest {
     private static final Key<Integer> DC_ID = Key.newKey("dc");
@@ -241,16 +241,16 @@ public class PowerSetPartitionMapTest {
     @Test
     public void testAddDuplicationPartitions() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
-        assertTrue("New map is not empty.", map.isEmpty());
+        assertTrue(map.isEmpty(), "New map is not empty.");
         PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MAIN, true).add(SHARD_ID, 1)
                 .build();
         List<ListenableAsyncCloseable> added1 = map.add(partition);
         List<ListenableAsyncCloseable> added2 = map.add(partition);
-        assertEquals("Added partitions are not equal.", added1, added2);
-        assertEquals("Same partition added twice.", 1, map.size());
+        assertEquals(added1, added2, "Added partitions are not equal.");
+        assertEquals(1, map.size(), "Same partition added twice.");
 
         List<ListenableAsyncCloseable> removed = map.remove(partition);
-        assertEquals("Unexpected size of removed partitions.", removed.size(), added1.size());
+        assertEquals(removed.size(), added1.size(), "Unexpected size of removed partitions.");
     }
 
     private static void assertMapSize(PowerSetPartitionMap<ListenableAsyncCloseable> map, int size, int indexSize) {
