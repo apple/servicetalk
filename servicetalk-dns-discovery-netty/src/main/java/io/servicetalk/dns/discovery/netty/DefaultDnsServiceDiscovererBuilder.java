@@ -111,7 +111,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
         if (maxUdpPayloadSize <= 0) {
-            throw new IllegalArgumentException("maxUdpPayloadSize: " + minTTLSeconds + " (expected > 0)");
+            throw new IllegalArgumentException("maxUdpPayloadSize: " + maxUdpPayloadSize + " (expected > 0)");
         }
         this.maxUdpPayloadSize = maxUdpPayloadSize;
         return this;
