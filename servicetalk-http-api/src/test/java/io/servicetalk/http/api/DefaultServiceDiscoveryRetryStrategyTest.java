@@ -47,7 +47,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -126,7 +125,7 @@ class DefaultServiceDiscoveryRetryStrategyTest {
         sdEvents.onNext(asList(evt1, evt1Un, evt1));
         final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
-        assertThat("Unexpected event received", items.get(0), empty());
+        assertThat("Unexpected event received", items.get(0), contains(evt1Un, evt1));
     }
 
     @Test
