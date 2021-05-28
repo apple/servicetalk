@@ -254,8 +254,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                     if (retainedAddresses.remove(address) == null) {
                         toReturn.add(event);
                     }
-                    // bitwise inclusive | intentional because removal from both collections is required
-                } else if (activeAddresses.remove(address) != null | retainedAddresses.remove(address) != null) {
+                } else if (activeAddresses.remove(address) != null || retainedAddresses.remove(address) != null) {
                     toReturn.add(event);
                 }
             }
