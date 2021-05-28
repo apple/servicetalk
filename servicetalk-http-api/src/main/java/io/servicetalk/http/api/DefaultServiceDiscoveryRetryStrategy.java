@@ -234,46 +234,36 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
 
         Collection<E> consumeAndFilter(final Collection<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
-                List<E> toReturn = new ArrayList<>(events.size());
                 for (E e : events) {
                     if (e.isAvailable()) {
-                        if (activeAddresses.putIfAbsent(e.address(), e) == null) {
-                            // FIXME: what if it's a custom E that has more fields?
-                            toReturn.add(e);    // filter out duplicated addresses
-                        }
+                        activeAddresses.put(e.address(), e);
                     } else {
-                        if (activeAddresses.remove(e.address()) != null) {
-                            toReturn.add(e);   // filter out addresses that were already unavailable
-                        }
+                        activeAddresses.remove(e.address());
                     }
-                    // FIXME: remove addresses that are available and unavailable in the same events collection
                 }
-                return toReturn;
+                return events;
             }
 
             // we have seen an error, replace cache with new addresses and deactivate the ones which are not present
             // in the new list.
-            for (E event : events) {
-                if (event.isAvailable()) {
-                    activeAddresses.put(event.address(), event);
-                } else {
-                    activeAddresses.remove(event.address());
-                }
-            }
-
-            // Worst case size is a sum of activeAddresses and retainedAddresses
             List<E> toReturn = new ArrayList<>(activeAddresses.size() + retainedAddresses.size());
-            for (Map.Entry<R, E> entry : activeAddresses.entrySet()) {
-                if (retainedAddresses.remove(entry.getKey()) == null) {
-                    toReturn.add(entry.getValue()); // Add only those new addresses that were not retained before
+            for (E event : events) {
+                final R address = event.address();
+                if (event.isAvailable()) {
+                    activeAddresses.put(address, event);
+                    if (retainedAddresses.remove(address) == null) {
+                        toReturn.add(event);
+                    }
+                    // bitwise inclusive | intentional because removal from both collections is required
+                } else if (activeAddresses.remove(address) != null | retainedAddresses.remove(address) != null) {
+                    toReturn.add(event);
                 }
             }
 
-            if (!retainedAddresses.isEmpty()) {
-                for (E evt : retainedAddresses.values()) {
-                    toReturn.add(flipAvailability.apply(evt));
-                }
+            for (E event : retainedAddresses.values()) {
+                toReturn.add(flipAvailability.apply(event));
             }
+
             retainedAddresses = noneRetained();
             return toReturn;
         }

@@ -25,9 +25,7 @@ import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy.Builder;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 import java.util.List;
@@ -203,22 +201,6 @@ class DefaultServiceDiscoveryRetryStrategyTest {
 
         triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: retainAddressesTillSuccess={0}, available={1}")
-    @MethodSource("booleanMatrix")
-    void duplicatedAddresses(final boolean retainAddressesTillSuccess, final boolean available) throws Exception {
-        State state = new State(retainAddressesTillSuccess);
-        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
-        final String addr = "addr1";
-        if (!available) {
-            // First, emit available event for the same address
-            sendUpAndVerifyReceive(state, addr, sdEvents);
-        }
-        final DefaultServiceDiscovererEvent<String> evt1 = new DefaultServiceDiscovererEvent<>(addr, available);
-        final DefaultServiceDiscovererEvent<String> evt2 = new DefaultServiceDiscovererEvent<>(addr, available);
-        sdEvents.onNext(asList(evt1, evt2));
-        verifyReceive(state, addr, available);
     }
 
     private void verifyNoEventsReceived(final State state) {
