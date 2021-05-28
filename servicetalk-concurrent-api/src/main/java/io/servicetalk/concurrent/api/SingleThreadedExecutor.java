@@ -19,10 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.BlockingQueue;
+import java.util.Objects;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
@@ -39,8 +41,9 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
 
     private static final String DEFAULT_NAME_PREFIX = "servicetalk-solo";
     private static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
+
     /**
-     * Using plain {@link SynchronousQueue#offer(Object)} with only a single worker thread will result in occasional
+     * Using plain {@link TransferQueue#offer(Object)} with only a single worker thread will result in occasional
      * spurious rejections as thread scheduling jitter can cause delay it entering {@link SynchronousQueue#poll()}
      * following a task. The "right" default is unfortunately difficult because the reasonable amount of time to wait is
      * dependent upon system environment and load and is, in any event, just a guess. The default is instead chosen to
@@ -74,7 +77,7 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
      * appended.
      */
     SingleThreadedExecutor(String namePrefix) {
-        this(namePrefix, SynchronousQueue::new, DEFAULT_OFFER_WAIT, TimeUnit.NANOSECONDS, true);
+        this(namePrefix, LinkedTransferQueue::new, DEFAULT_OFFER_WAIT, TimeUnit.NANOSECONDS, true);
     }
 
     /**
@@ -89,7 +92,7 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
      * @param interruptOnClose If true then {@link #close()} will {@linkplain Thread#interrupt() interrupt} the worker
      * thread to close it more quickly.
      */
-    SingleThreadedExecutor(String namePrefix, Supplier<? extends BlockingQueue> queueSupplier,
+    SingleThreadedExecutor(String namePrefix, Supplier<? extends TransferQueue> queueSupplier,
                            long offerWait, TimeUnit offerWaitUnits,
                            boolean interruptOnClose) {
         String name = namePrefix + "-" + INSTANCE_COUNT.incrementAndGet();
@@ -107,9 +110,12 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
      * @param command {@inheritDoc}
      * @throws RejectedExecutionException if executor is closed, thread enqueuing task was interrupted, or the task
      * could not be enqueued
+     * @throws NullPointerException if command is null
      */
     @Override
     public void execute(final Runnable command) throws RejectedExecutionException {
+        Objects.requireNonNull(command, "command");
+
         if (WorkerThread.OPEN != thread.state) {
             throw new RejectedExecutionException(thread.getName() + ": Executor closed");
         }
@@ -123,16 +129,17 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
         } else {
             try {
                 if (offerWaitNanos < Long.MAX_VALUE) {
-                    // Using non-waiting offer() sometimes results in spurious rejections for sequential tasks.
-                    if (!thread.queue.offer(command)) {
-                        // So if offer() fails, try again giving the worker thread a better chance to be ready and
+                    // Using non-waiting tryTransfer() sometimes results in spurious rejections for sequential tasks.
+                    if (!thread.queue.hasWaitingConsumer() || !thread.queue.tryTransfer(command)) {
+                        // So if tryTransfer() fails, try again giving the worker thread a better chance to be ready and
                         // waiting in poll() before rejecting execution.
                         Thread.yield();
-                        // offer() again with a (typically) very small wait to give worker thread a chance to poll().
-                        if (!thread.queue.offer(command, offerWaitNanos, TimeUnit.NANOSECONDS)) {
+                        // tryTransfer() again with a (typically) very small wait to give worker thread a chance to
+                        // poll().
+                        if (!thread.queue.tryTransfer(command, offerWaitNanos, TimeUnit.NANOSECONDS)) {
                             // worker thread is probably busy with another task.
                             throw new RejectedExecutionException(
-                                    thread.getName() + ": Enqueue rejected, refusing to wait");
+                                    thread.getName() + ": Refusing to wait; enqueue rejected for " + command);
                         }
                     }
                  } else {
@@ -164,13 +171,13 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
         static final int ORPHANED = 2; // executor GCed without close()
         static final int EXITED = 3; // Worker thread exit
 
-        private final BlockingQueue<Runnable> queue;
+        private final TransferQueue<Runnable> queue;
         /**
          * If the executor is discarded and GCed this reference will be cleared and the worker thread can exit.
          */
         private final WeakReference<SingleThreadedExecutor> owner;
 
-        WorkerThread(SingleThreadedExecutor owner, Supplier<? extends BlockingQueue> queueSupplier, String name) {
+        WorkerThread(SingleThreadedExecutor owner, Supplier<? extends TransferQueue> queueSupplier, String name) {
             super(name);
             this.queue = queueSupplier.get();
             this.owner = new WeakReference<>(owner);
@@ -207,6 +214,9 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
                 } catch (Throwable all) {
                     LOGGER.warn("Uncaught throwable in worker thread", all);
                 }
+            }
+            if (queue.size() > 0) {
+                LOGGER.warn("WorkerThread exiting with {} enqueued", queue.size());
             }
             int terminal = null != owner.get() ? ORPHANED : EXITED;
             int was = stateUpdater.getAndSet(this, terminal);
