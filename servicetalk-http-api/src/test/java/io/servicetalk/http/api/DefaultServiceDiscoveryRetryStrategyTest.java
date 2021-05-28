@@ -116,12 +116,13 @@ class DefaultServiceDiscoveryRetryStrategyTest {
     void sameAddressPostRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
-        final ServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
+        final String addr = "addr1";
+        final ServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, addr, sdEvents);
 
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
 
-        final ServiceDiscovererEvent<String> evt1Un = new DefaultServiceDiscovererEvent<>("addr1", false);
+        final ServiceDiscovererEvent<String> evt1Un = new DefaultServiceDiscovererEvent<>(addr, false);
         sdEvents.onNext(asList(evt1, evt1Un, evt1));
         final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
