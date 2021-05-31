@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
@@ -110,7 +109,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
-            return from(newRoundRobinFactory());
+            return from(RoundRobinLoadBalancerFactory
+                    .<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder().build());
         }
 
         /**
