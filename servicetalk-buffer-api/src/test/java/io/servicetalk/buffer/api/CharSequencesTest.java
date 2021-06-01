@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CharSequencesTest {
+class CharSequencesTest {
 
     // Common strings
     public static final String GZIP = "gzip";
@@ -141,22 +141,22 @@ public class CharSequencesTest {
     }
 
     @Test
-    public void splitStringNoTrim() {
+    void splitStringNoTrim() {
         splitNoTrim(identity());
     }
 
     @Test
-    public void splitStringWithTrim() {
+    void splitStringWithTrim() {
         splitWithTrim(identity());
     }
 
     @Test
-    public void splitAsciiNoTrim() {
+    void splitAsciiNoTrim() {
         splitNoTrim(CharSequences::newAsciiString);
     }
 
     @Test
-    public void splitAsciiWithTrim() {
+    void splitAsciiWithTrim() {
         splitWithTrim(CharSequences::newAsciiString);
     }
 
@@ -164,7 +164,7 @@ public class CharSequencesTest {
     @ValueSource(longs = { Long.MIN_VALUE, Long.MIN_VALUE + 1,
             -101, -100, -99, -11, -10, -9, -1, 0, 1, 9, 10, 11, 99, 100, 101,
             Long.MAX_VALUE - 1, Long.MAX_VALUE })
-    public void parseLong(final long value) {
+    void parseLong(final long value) {
         final String strValue = String.valueOf(value);
         assertThat("Unexpected result for String representation", CharSequences.parseLong(strValue), is(value));
         assertThat("Unexpected result for AsciiBuffer representation",
@@ -173,7 +173,7 @@ public class CharSequencesTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "-0", "+0", "+1", "+10", "000" })
-    public void parseLongSigned(final String value) {
+    void parseLongSigned(final String value) {
         assertThat("Unexpected result for String representation",
                 CharSequences.parseLong(value), is(Long.parseLong(value)));
         assertThat("Unexpected result for AsciiBuffer representation",
@@ -182,7 +182,7 @@ public class CharSequencesTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "", "-", "+", "a", "0+", "0-", "--0", "++0", "0a0" })
-    public void parseLongFailure(final String value) {
+    void parseLongFailure(final String value) {
         assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(value),
                 "Unexpected result for String representation");
         assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(newAsciiString(value)),
@@ -190,7 +190,7 @@ public class CharSequencesTest {
     }
 
     @Test
-    public void parseLongFromSubSequence() {
+    void parseLongFromSubSequence() {
         String value = "text42text";
         assertThat("Unexpected result for String representation",
                 CharSequences.parseLong(value.subSequence(4, 6)), is(42L));
@@ -200,7 +200,7 @@ public class CharSequencesTest {
 
     @Test
     @Disabled("ReadOnlyByteBuffer#slice() does not account for the slice offset")
-    public void parseLongFromSlice() {
+    void parseLongFromSlice() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
         assertThat("Unexpected result for AsciiBuffer representation",
                 CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
