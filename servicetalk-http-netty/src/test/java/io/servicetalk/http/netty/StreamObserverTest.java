@@ -68,7 +68,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class StreamObserverTest {
+class StreamObserverTest {
 
 
 
@@ -85,7 +85,7 @@ public class StreamObserverTest {
     private final HttpClient client;
     private final CountDownLatch requestReceived = new CountDownLatch(1);
 
-    public StreamObserverTest() {
+    StreamObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");

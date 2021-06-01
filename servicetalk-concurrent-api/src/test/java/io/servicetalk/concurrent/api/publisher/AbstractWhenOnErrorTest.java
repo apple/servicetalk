@@ -36,7 +36,7 @@ public abstract class AbstractWhenOnErrorTest {
     final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testError() {
+    void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = mock(Consumer.class);
         doError(publisher, onError).subscribe(subscriber);
@@ -47,7 +47,7 @@ public abstract class AbstractWhenOnErrorTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    abstract void testCallbackThrowsError();
 
     protected abstract <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer);
 }

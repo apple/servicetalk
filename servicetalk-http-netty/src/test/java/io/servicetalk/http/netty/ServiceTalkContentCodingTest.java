@@ -71,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
+class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     private static final BiFunction<Scenario, List<Throwable>, StreamingHttpServiceFilterFactory> REQ_FILTER =
             (scenario, errors) -> new StreamingHttpServiceFilterFactory() {

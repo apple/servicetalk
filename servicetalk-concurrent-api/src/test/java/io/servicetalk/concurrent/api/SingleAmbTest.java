@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class SingleAmbTest {
+class SingleAmbTest {
 
     private final TestSingle<Integer> first = new TestSingle<>();
     private final TestSingle<Integer> second = new TestSingle<>();
@@ -69,7 +69,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirst(final AmbParam ambParam) {
+    void successFirst(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -77,7 +77,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecond(final AmbParam ambParam) {
+    void successSecond(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -85,7 +85,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirst(final AmbParam ambParam) {
+    void failFirst(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -93,7 +93,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecond(final AmbParam ambParam) {
+    void failSecond(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
@@ -101,7 +101,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirstThenSecond(final AmbParam ambParam) {
+    void successFirstThenSecond(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -110,7 +110,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecondThenFirst(final AmbParam ambParam) {
+    void successSecondThenFirst(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -119,7 +119,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirstThenSecond(final AmbParam ambParam) {
+    void failFirstThenSecond(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -128,7 +128,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecondThenFirst(final AmbParam ambParam) {
+    void failSecondThenFirst(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
@@ -137,7 +137,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirstThenSecondFail(final AmbParam ambParam) {
+    void successFirstThenSecondFail(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -146,7 +146,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecondThenFirstFail(final AmbParam ambParam) {
+    void successSecondThenFirstFail(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -155,7 +155,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirstThenSecondSuccess(final AmbParam ambParam) {
+    void failFirstThenSecondSuccess(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -164,7 +164,7 @@ public class SingleAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecondThenFirstSuccess(final AmbParam ambParam) {
+    void failSecondThenFirstSuccess(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);

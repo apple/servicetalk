@@ -54,7 +54,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public final class SequentialSubscriptionTest {
+final class SequentialSubscriptionTest {
     private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
     private SequentialSubscription s;
     private Subscription s1;
@@ -62,7 +62,7 @@ public final class SequentialSubscriptionTest {
     private ExecutorService executor;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         s1 = mock(Subscription.class);
         s = new SequentialSubscription(s1);
         s2 = mock(Subscription.class);
@@ -70,31 +70,31 @@ public final class SequentialSubscriptionTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         executor.shutdownNow();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @Test
-    public void testInvalidRequestNNegative1() {
+    void testInvalidRequestNNegative1() {
         s.request(-1);
         verify(s1).request(-1);
     }
 
     @Test
-    public void testInvalidRequestNZero() {
+    void testInvalidRequestNZero() {
         s.request(0);
         verify(s1).request(leq(0L));
     }
 
     @Test
-    public void testInvalidRequestNLongMin() {
+    void testInvalidRequestNLongMin() {
         s.request(MIN_VALUE);
         verify(s1).request(leq(0L));
     }
 
     @Test
-    public void testInvalidRequestNDefaultConstructorPropagatedAfterSwitch() {
+    void testInvalidRequestNDefaultConstructorPropagatedAfterSwitch() {
         s = new SequentialSubscription();
         s.request(-1);
         s.switchTo(s1);
@@ -104,7 +104,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testRequestNIncremental() {
+    void testRequestNIncremental() {
         s.request(1);
         verify(s1).request(1);
         verifyNoMoreInteractions(s1);
@@ -114,7 +114,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         s.cancel();
 
         verify(s1).cancel();
@@ -126,7 +126,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testPendingRequest() {
+    void testPendingRequest() {
         s.request(5);
         verify(s1).request(5);
         verifyNoMoreInteractions(s1);
@@ -139,18 +139,18 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testOldSubscriptionIsNotCancelled() {
+    void testOldSubscriptionIsNotCancelled() {
         s.switchTo(s2);
         verifyNoMoreInteractions(s1);
     }
 
     @Test
-    public void testSwitchToNull() {
+    void testSwitchToNull() {
         assertThrows(NullPointerException.class, () -> s.switchTo(null));
     }
 
     @Test
-    public void testCancelAfterRequest() {
+    void testCancelAfterRequest() {
         s.cancel();
         verify(s1).cancel();
         s.request(1);
@@ -158,7 +158,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testSubscriptionRequestThrows() {
+    void testSubscriptionRequestThrows() {
         doThrow(DELIBERATE_EXCEPTION).when(s1).request(anyLong());
         try {
             s.request(1);
@@ -178,43 +178,43 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testConcurrentNoSwitch() throws Exception {
+    void testConcurrentNoSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1000, 1000);
     }
 
     @Test
-    public void testConcurrentWithSwitch() throws Exception {
+    void testConcurrentWithSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1000, 5);
     }
 
     @Test
-    public void testConcurrentLargeRequestedWithSwitch() throws Exception {
+    void testConcurrentLargeRequestedWithSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1_000_000, 10_000);
     }
 
     @Test
-    public void testRequestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void testRequestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             requestNAlwaysDirectedTowardSwitchedSubscription();
         }
     }
 
     @Test
-    public void requestNNegative1AlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNNegative1AlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(-1, matchValueOrCancelled(is(-1L)));
         }
     }
 
     @Test
-    public void requestNZeroAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNZeroAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(0, matchValueOrCancelled(lessThanOrEqualTo(0L)));
         }
     }
 
     @Test
-    public void requestNLongMinAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNLongMinAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(MIN_VALUE, matchValueOrCancelled(is(MIN_VALUE)));
         }

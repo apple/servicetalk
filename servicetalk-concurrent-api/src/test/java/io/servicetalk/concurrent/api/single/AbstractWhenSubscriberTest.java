@@ -40,12 +40,12 @@ public abstract class AbstractWhenSubscriberTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = mock(SingleSource.Subscriber.class);
     }
 
     @Test
-    public void testOnWithOnSuccess() {
+    void testOnWithOnSuccess() {
         toSource(doSubscriber(Single.succeeded("Hello"), () -> subscriber)).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello"));
         verify(subscriber).onSubscribe(any());
@@ -53,7 +53,7 @@ public abstract class AbstractWhenSubscriberTest {
     }
 
     @Test
-    public void testOnWithOnError() {
+    void testOnWithOnError() {
         toSource(doSubscriber(Single.failed(DELIBERATE_EXCEPTION), () -> subscriber)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(subscriber).onSubscribe(any());

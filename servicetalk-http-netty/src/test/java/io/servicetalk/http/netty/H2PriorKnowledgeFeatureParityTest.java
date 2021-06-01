@@ -1095,7 +1095,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
     @MethodSource("clientExecutors")
-    public void clientFilterAsyncContext(HttpTestExecutionStrategy strategy,
+    void clientFilterAsyncContext(HttpTestExecutionStrategy strategy,
                                          boolean h2PriorKnowledge) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();

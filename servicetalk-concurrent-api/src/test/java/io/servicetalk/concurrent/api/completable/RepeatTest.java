@@ -26,10 +26,10 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class RepeatTest {
+class RepeatTest {
 
     @Test
-    public void repeatValueSupplier() throws Exception {
+    void repeatValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeat(count -> count < 2).map(new Function<Object, Integer>() {
             private int count;
 
@@ -42,7 +42,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void repeatWhenValueSupplier() throws Exception {
+    void repeatWhenValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeatWhen(count ->
                         count < 2 ? completed() : failed(DELIBERATE_EXCEPTION)).map(
             new Function<Object, Integer>() {

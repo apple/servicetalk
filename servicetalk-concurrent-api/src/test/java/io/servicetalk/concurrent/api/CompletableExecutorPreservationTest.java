@@ -25,25 +25,25 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class CompletableExecutorPreservationTest {
+class CompletableExecutorPreservationTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Completable completable;
 
     @BeforeEach
-    public void setupCompletable() {
+    void setupCompletable() {
         completable = completed().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
-    public void testTimeoutCompletable() {
+    void testTimeoutCompletable() {
         assertSame(EXEC.executor(), completable.timeout(1, MILLISECONDS).executor());
         assertSame(EXEC.executor(), completable.timeout(Duration.ofMillis(1)).executor());
     }
 
     @Test
-    public void testBeforeFinallyCompletable() {
+    void testBeforeFinallyCompletable() {
         assertSame(EXEC.executor(), completable.beforeFinally(() -> { /* NOOP */ }).executor());
     }
 }

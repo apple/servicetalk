@@ -43,7 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class HostHeaderHttpRequesterFilterTest {
+class HostHeaderHttpRequesterFilterTest {
 
     private enum HttpVersionConfig {
         HTTP_1_0 {

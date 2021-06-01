@@ -35,7 +35,7 @@ public abstract class AbstractWhenOnCompleteTest {
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         Runnable onComplete = mock(Runnable.class);
         toSource(doComplete(publisher, onComplete)).subscribe(subscriber);
         publisher.onComplete();
@@ -44,7 +44,7 @@ public abstract class AbstractWhenOnCompleteTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         Publisher<String> src = doComplete(Publisher.failed(srcEx), () -> {
             throw DELIBERATE_EXCEPTION;

@@ -40,13 +40,13 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestPublisherTest {
+class TestPublisherTest {
 
     private final TestPublisherSubscriber<String> subscriber1 = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<String> subscriber2 = new TestPublisherSubscriber<>();
 
     @Test
-    public void testNonResubscribeablePublisher() {
+    void testNonResubscribeablePublisher() {
         TestPublisher<String> source = new TestPublisher.Builder<String>()
                 .singleSubscriber()
                 .build();
@@ -67,7 +67,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testSequentialSubscribePublisher() {
+    void testSequentialSubscribePublisher() {
         TestPublisher<String> source = new TestPublisher.Builder<String>()
                 .build();
 
@@ -81,7 +81,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testConcurrentSubscribePublisher() {
+    void testConcurrentSubscribePublisher() {
         TestPublisher<String> source = new TestPublisher.Builder<String>()
                 .concurrentSubscribers()
                 .build();
@@ -96,7 +96,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testFanOut() {
+    void testFanOut() {
         final ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
@@ -127,7 +127,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testFanOut2() {
+    void testFanOut2() {
         ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
@@ -159,7 +159,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testFanOut3() {
+    void testFanOut3() {
         ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().build(
@@ -191,7 +191,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testDemandNoRequest() {
+    void testDemandNoRequest() {
         TestPublisher<String> source = new TestPublisher<>();
         source.subscribe(subscriber1);
 
@@ -200,7 +200,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testDemandPostCancel() {
+    void testDemandPostCancel() {
         TestPublisher<String> source = new TestPublisher<>();
         source.subscribe(subscriber1);
 
@@ -210,7 +210,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testInsufficientDemand() {
+    void testInsufficientDemand() {
         TestPublisher<String> source = new TestPublisher.Builder<String>().build();
         source.subscribe(subscriber1);
 
@@ -224,7 +224,7 @@ public class TestPublisherTest {
     }
 
     @Test
-    public void testRequestMaxMultiple() {
+    void testRequestMaxMultiple() {
         TestPublisher<String> source = new TestPublisher.Builder<String>()
                 .build();
         source.subscribe(subscriber1);

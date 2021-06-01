@@ -32,11 +32,12 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DeadlineUtilsTest {
+class DeadlineUtilsTest {
 
     private static final Duration EXCESSIVE_TIMEOUT = GRPC_MAX_TIMEOUT.plusNanos(1);
     private static final Duration INFINITE_TIMEOUT = Duration.ofHours(EIGHT_NINES + 1);
 
+    @SuppressWarnings("unused")
     private static Stream<Arguments> testMakeTimeoutHeader() {
         return Stream.of(
                 Arguments.of(null, null),
@@ -55,12 +56,13 @@ public class DeadlineUtilsTest {
 
     @ParameterizedTest
     @MethodSource
-    public void testMakeTimeoutHeader(Duration duration, CharSequence expected) {
+    void testMakeTimeoutHeader(Duration duration, CharSequence expected) {
         CharSequence result = makeTimeoutHeader(duration);
         assertTrue(CharSequences.contentEquals(expected, result),
                 () -> "Expected: '" + expected + "' Found: '" + result + "'");
     }
 
+    @SuppressWarnings("unused")
     private static Stream<Arguments> testParseTimeoutHeader() {
         return Stream.of(
                 Arguments.of(Duration.ZERO, "0n"),
@@ -75,11 +77,12 @@ public class DeadlineUtilsTest {
 
     @ParameterizedTest
     @MethodSource
-    public void testParseTimeoutHeader(Duration expected, CharSequence headerValue) {
+    void testParseTimeoutHeader(Duration expected, CharSequence headerValue) {
         Duration timeout = parseTimeoutHeader(headerValue);
         assertEquals(expected, timeout);
     }
 
+    @SuppressWarnings("unused")
     private static Stream<Arguments> testRoundTripping() {
         return Stream.of(
                 Arguments.of("0n"),
@@ -94,7 +97,7 @@ public class DeadlineUtilsTest {
 
     @ParameterizedTest
     @MethodSource
-    public void testRoundTripping(CharSequence expected) {
+    void testRoundTripping(CharSequence expected) {
         Duration parsed = parseTimeoutHeader(expected);
         CharSequence result = makeTimeoutHeader(parsed);
         assertTrue(CharSequences.contentEquals(expected, result),

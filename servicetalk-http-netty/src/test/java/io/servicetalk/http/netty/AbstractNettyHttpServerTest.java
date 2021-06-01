@@ -143,7 +143,7 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     @BeforeAll
-    public static void createIoExecutors() {
+    static void createIoExecutors() {
         clientIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io-executor"));
         serverIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("server-io-executor"));
     }
@@ -222,13 +222,13 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     @AfterEach
-    public void stopServer() throws Exception {
+    void stopServer() throws Exception {
         newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverContext, serverExecutor)
                 .close();
     }
 
     @AfterAll
-    public static void shutdownClientIoExecutor() throws Exception {
+    static void shutdownClientIoExecutor() throws Exception {
         newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).close();
     }
 

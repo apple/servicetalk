@@ -67,7 +67,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class AbstractH2DuplexHandlerTest {
+class AbstractH2DuplexHandlerTest {
 
     private static final HttpHeadersFactory HEADERS_FACTORY = H2HeadersFactory.INSTANCE;
 
@@ -331,7 +331,7 @@ public class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    public void emptyMessageWrittenAsSingleFrame(Variant param) {
+    void emptyMessageWrittenAsSingleFrame(Variant param) {
         setUp(param);
         HttpMetaData msg;
         switch (variant) {
@@ -357,7 +357,7 @@ public class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    public void noDataFramesForEmptyBuffers(Variant param) {
+    void noDataFramesForEmptyBuffers(Variant param) {
         setUp(param);
         Buffer[] payload = {EMPTY_BUFFER, DEFAULT_ALLOCATOR.fromAscii("data"), EMPTY_BUFFER};
 

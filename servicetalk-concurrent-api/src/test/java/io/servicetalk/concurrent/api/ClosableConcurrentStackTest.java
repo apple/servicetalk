@@ -41,12 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ClosableConcurrentStackTest {
+class ClosableConcurrentStackTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     @Test
-    public void singleThreadPushClose() {
+    void singleThreadPushClose() {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
@@ -63,7 +63,7 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
-    public void singleThreadPushRemove() {
+    void singleThreadPushRemove() {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
@@ -77,7 +77,7 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
-    public void concurrentPushClose() throws Exception {
+    void concurrentPushClose() throws Exception {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
@@ -106,7 +106,7 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
-    public void concurrentPushRemove() throws Exception {
+    void concurrentPushRemove() throws Exception {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
@@ -131,7 +131,7 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
-    public void concurrentPushRemoveDifferentThread() throws Exception {
+    void concurrentPushRemoveDifferentThread() throws Exception {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
@@ -156,7 +156,7 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
-    public void concurrentClosePushRemove() throws Exception {
+    void concurrentClosePushRemove() throws Exception {
         ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);

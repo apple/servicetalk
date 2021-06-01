@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
-public class AfterCancelTest extends AbstractWhenCancelTest {
+class AfterCancelTest extends AbstractWhenCancelTest {
     @Override
     protected <T> Single<T> doCancel(Single<T> single, Runnable runnable) {
         return single.afterCancel(runnable);

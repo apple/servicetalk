@@ -35,7 +35,7 @@ public abstract class AbstractWhenCancelTest {
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
-    public void testCancelNoEmissions() {
+    void testCancelNoEmissions() {
         Runnable onCancel = Mockito.mock(Runnable.class);
         LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(doCancel(completable, onCancel)).subscribe(listener);
@@ -45,7 +45,7 @@ public abstract class AbstractWhenCancelTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         DeliberateException e = assertThrows(DeliberateException.class, () -> {
             try {

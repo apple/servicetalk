@@ -31,21 +31,21 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CompletableConcatWithCompletableTest {
+class CompletableConcatWithCompletableTest {
 
     private TestCompletableSubscriber subscriber;
     private TestCompletable source;
     private TestCompletable next;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = new TestCompletableSubscriber();
         source = new TestCompletable();
         next = new TestCompletable();
     }
 
     @Test
-    public void testSourceSuccessNextSuccess() {
+    void testSourceSuccessNextSuccess() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -54,7 +54,7 @@ public class CompletableConcatWithCompletableTest {
     }
 
     @Test
-    public void testSourceSuccessNextError() {
+    void testSourceSuccessNextError() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -63,7 +63,7 @@ public class CompletableConcatWithCompletableTest {
     }
 
     @Test
-    public void testSourceError() {
+    void testSourceError() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -71,7 +71,7 @@ public class CompletableConcatWithCompletableTest {
     }
 
     @Test
-    public void testCancelSource() {
+    void testCancelSource() {
         toSource(source.concat(next)).subscribe(subscriber);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
@@ -82,7 +82,7 @@ public class CompletableConcatWithCompletableTest {
     }
 
     @Test
-    public void testCancelNext() {
+    void testCancelNext() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));

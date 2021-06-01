@@ -28,6 +28,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ExecutionException;
@@ -52,15 +53,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.core.IsEqual.equalTo;
 
-public abstract class AbstractEchoServerBasedHttpRequesterTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @RegisterExtension
     static final ExecutionContextExtension CTX = ExecutionContextExtension.immediate().setClassLevel(true);
 
-    static ServerContext serverContext;
+    ServerContext serverContext;
 
     @BeforeAll
-    public static void startServer() throws Exception {
+    void startServer() throws Exception {
         serverContext = forAddress(localAddress(0))
             .ioExecutor(CTX.ioExecutor())
             .executionStrategy(noOffloadsStrategy())
@@ -68,7 +70,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     }
 
     @AfterAll
-    public static void stopServer() throws Exception {
+    void stopServer() throws Exception {
         serverContext.closeAsync().toFuture().get();
     }
 

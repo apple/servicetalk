@@ -27,17 +27,17 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class SimpleSubscribeTest {
+class SimpleSubscribeTest {
 
     @Test
-    public void noRunnable() throws Exception {
+    void noRunnable() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         completed().afterFinally(latch::countDown).subscribe();
         latch.await();
     }
 
     @Test
-    public void runnableThrows() throws Exception {
+    void runnableThrows() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         doThrow(DELIBERATE_EXCEPTION).when(onComplete).run();
         CountDownLatch latch = new CountDownLatch(1);
@@ -47,7 +47,7 @@ public class SimpleSubscribeTest {
     }
 
     @Test
-    public void runnableIsInvokedOnComplete() throws Exception {
+    void runnableIsInvokedOnComplete() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
         completed().afterFinally(latch::countDown).subscribe(onComplete);
@@ -56,7 +56,7 @@ public class SimpleSubscribeTest {
     }
 
     @Test
-    public void runnableIsNotInvokedOnError() throws Exception {
+    void runnableIsNotInvokedOnError() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
         failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete);
@@ -65,7 +65,7 @@ public class SimpleSubscribeTest {
     }
 
     @Test
-    public void runnableIsNotInvokedWhenCancelled() throws Exception {
+    void runnableIsNotInvokedWhenCancelled() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
         failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete).cancel();

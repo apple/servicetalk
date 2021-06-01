@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public final class SingleFlatMapSingleTest {
+final class SingleFlatMapSingleTest {
 
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
@@ -38,44 +38,44 @@ public final class SingleFlatMapSingleTest {
     private LegacyTestSingle<String> second;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         first = new LegacyTestSingle<>();
         second = new LegacyTestSingle<>();
     }
 
     @Test
-    public void testFirstAndSecondPropagate() {
+    void testFirstAndSecondPropagate() {
         toSource(succeeded(1).flatMap(s -> succeeded("Hello" + s))).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello1"));
     }
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         toSource(succeeded(1).flatMap(s -> succeeded("Hello"))).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
-    public void testFirstEmitsError() {
+    void testFirstEmitsError() {
         toSource(failed(DELIBERATE_EXCEPTION).flatMap(s -> succeeded("Hello"))).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testSecondEmitsError() {
+    void testSecondEmitsError() {
         SourceAdapters.<String>toSource(succeeded(1).flatMap(s -> failed(DELIBERATE_EXCEPTION))).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelBeforeFirst() {
+    void testCancelBeforeFirst() {
         toSource(first.flatMap(s -> second)).subscribe(listener);
         listener.awaitSubscription().cancel();
         first.verifyCancelled();
     }
 
     @Test
-    public void testCancelBeforeSecond() {
+    void testCancelBeforeSecond() {
         toSource(first.flatMap(s -> second)).subscribe(listener);
         first.onSuccess("Hello");
         listener.awaitSubscription().cancel();
@@ -84,7 +84,7 @@ public final class SingleFlatMapSingleTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(first.flatMap(s -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);
@@ -93,7 +93,7 @@ public final class SingleFlatMapSingleTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(first.flatMap(s -> null)).subscribe(listener);
         first.onSuccess("Hello");
         assertThat(listener.awaitOnError(), instanceOf(NullPointerException.class));

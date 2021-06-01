@@ -32,19 +32,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SingleDeferTest {
+class SingleDeferTest {
 
     private Supplier<Single<Integer>> factory;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = mock(Supplier.class);
         when(factory.get()).thenReturn(succeeded(1));
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() {
+    void testEverySubscribeCreatesNew() {
         Single<Integer> source = Single.defer(factory);
         listenAndVerify(source);
         listenAndVerify(source);

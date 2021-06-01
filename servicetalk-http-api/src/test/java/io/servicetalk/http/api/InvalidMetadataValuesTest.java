@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @SuppressWarnings("ConstantConditions")
-public class InvalidMetadataValuesTest {
+class InvalidMetadataValuesTest {
 
     @SuppressWarnings("unused")
     private static Stream<Arguments> data() throws ExecutionException, InterruptedException {
