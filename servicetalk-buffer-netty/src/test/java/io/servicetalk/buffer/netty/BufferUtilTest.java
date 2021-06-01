@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,25 @@ package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
-public class BufferUtilTest {
+class BufferUtilTest {
 
     @Test
-    public void toByteBufNoThrowWrapped() {
+    void toByteBufNoThrowWrapped() {
         Buffer buffer = mock(Buffer.class);
         WrappedBuffer wrapped = new WrappedBuffer(buffer);
         assertNull(toByteBufNoThrow(wrapped));
     }
 
     @Test
-    public void emptyBufferCanBeConvertedToByteBuf() {
+    void emptyBufferCanBeConvertedToByteBuf() {
         assertNotNull(toByteBufNoThrow(EMPTY_BUFFER));
     }
 }

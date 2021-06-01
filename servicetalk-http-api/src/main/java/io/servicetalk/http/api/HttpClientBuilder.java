@@ -202,6 +202,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
+     * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
     public abstract HttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, SDE> retryStrategy);
