@@ -22,22 +22,22 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.opentracing.References.CHILD_OF;
 import static io.opentracing.References.FOLLOWS_FROM;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultInMemoryTracerTest {
+class DefaultInMemoryTracerTest {
     @Test
-    public void childOfReferenceRespected() {
+    void childOfReferenceRespected() {
         verifyParentReference("childOfReferenceRespected", true);
     }
 
     @Test
-    public void followsFromReferenceRespected() {
+    void followsFromReferenceRespected() {
         verifyParentReference("followsFromReferenceRespected", false);
     }
 
