@@ -68,7 +68,7 @@ import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-public class ServerEffectiveStrategyTest {
+class ServerEffectiveStrategyTest {
 
     @Nullable
     private Params params;

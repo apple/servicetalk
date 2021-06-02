@@ -35,20 +35,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SupplierSingleTest {
+class SupplierSingleTest {
     private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Supplier<Integer> factory;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = mock(Supplier.class);
         when(factory.get()).thenReturn(1);
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() {
+    void testEverySubscribeCreatesNew() {
         final Single<Integer> source = Single.fromSupplier(factory);
         listenAndVerify(source);
         listenAndVerify(source);
@@ -65,7 +65,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void testOnError() {
+    void testOnError() {
         when(factory.get()).thenThrow(IllegalArgumentException.class);
 
         final Single<Integer> source = Single.fromSupplier(factory);
@@ -83,7 +83,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void cancelInterrupts() throws Exception {
+    void cancelInterrupts() throws Exception {
         final Single<Integer> source = Single.fromSupplier(factory);
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -118,7 +118,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void onSubscribeThrows() {
+    void onSubscribeThrows() {
         final Single<Integer> source = Single.fromSupplier(factory);
 
         @SuppressWarnings("unchecked")

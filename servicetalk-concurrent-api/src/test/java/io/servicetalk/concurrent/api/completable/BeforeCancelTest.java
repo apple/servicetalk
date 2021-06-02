@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 
-public class BeforeCancelTest extends AbstractWhenCancelTest {
+class BeforeCancelTest extends AbstractWhenCancelTest {
     @Override
     protected Completable doCancel(Completable completable, Runnable runnable) {
         return completable.beforeCancel(runnable);

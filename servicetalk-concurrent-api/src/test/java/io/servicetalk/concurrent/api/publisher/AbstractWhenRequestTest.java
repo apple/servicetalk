@@ -42,7 +42,7 @@ public abstract class AbstractWhenRequestTest {
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testSingleRequest() {
+    void testSingleRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -54,7 +54,7 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testMultiRequest() {
+    void testMultiRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -68,7 +68,7 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testRequestNoEmissions() {
+    void testRequestNoEmissions() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -79,7 +79,7 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         doRequest(Publisher.from("Hello"), n -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);

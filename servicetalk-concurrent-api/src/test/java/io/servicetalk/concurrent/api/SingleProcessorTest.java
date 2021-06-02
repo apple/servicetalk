@@ -41,21 +41,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SingleProcessorTest {
+class SingleProcessorTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
     @Test
-    public void testSuccessBeforeListen() {
+    void testSuccessBeforeListen() {
         testSuccessBeforeListen("foo");
     }
 
     @Test
-    public void testSuccessThrowableBeforeListen() {
+    void testSuccessThrowableBeforeListen() {
         testSuccessBeforeListen(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testSuccessNullBeforeListen() {
+    void testSuccessNullBeforeListen() {
         testSuccessBeforeListen(null);
     }
 
@@ -68,7 +68,7 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void testErrorBeforeListen() {
+    void testErrorBeforeListen() {
         SingleProcessor<String> processor = new SingleProcessor<>();
         processor.onError(DELIBERATE_EXCEPTION);
         TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
@@ -77,17 +77,17 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void testSuccessAfterListen() {
+    void testSuccessAfterListen() {
         testSuccessAfterListen("foo");
     }
 
     @Test
-    public void testSuccessNullAfterListen() {
+    void testSuccessNullAfterListen() {
         testSuccessAfterListen(null);
     }
 
     @Test
-    public void testSuccessThrowableAfterListen() {
+    void testSuccessThrowableAfterListen() {
         testSuccessAfterListen(DELIBERATE_EXCEPTION);
     }
 
@@ -101,7 +101,7 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void testErrorAfterListen() {
+    void testErrorAfterListen() {
         SingleProcessor<String> processor = new SingleProcessor<>();
         TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
         processor.subscribe(subscriber);
@@ -111,17 +111,17 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void testSuccessThenError() {
+    void testSuccessThenError() {
         testSuccessThenError("foo");
     }
 
     @Test
-    public void testSuccessThrowableThenError() {
+    void testSuccessThrowableThenError() {
         testSuccessThenError(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testSuccessNullThenError() {
+    void testSuccessNullThenError() {
         testSuccessThenError(null);
     }
 
@@ -135,17 +135,17 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void testErrorThenSuccess() {
+    void testErrorThenSuccess() {
         testErrorThenSuccess("foo");
     }
 
     @Test
-    public void testErrorThenSuccessThrowable() {
+    void testErrorThenSuccessThrowable() {
         testErrorThenSuccess(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testErrorThenSuccessNull() {
+    void testErrorThenSuccessNull() {
         testErrorThenSuccess(null);
     }
 
@@ -159,17 +159,17 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
+    void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
         cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified("foo");
     }
 
     @Test
-    public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotifiedWithNull() {
+    void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotifiedWithNull() {
         cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified(null);
     }
 
     @Test
-    public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotifiedWithThrowable() {
+    void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotifiedWithThrowable() {
         cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified(DELIBERATE_EXCEPTION);
     }
 
@@ -188,7 +188,7 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void synchronousCancelStillAllowsForGC() throws InterruptedException {
+    void synchronousCancelStillAllowsForGC() throws InterruptedException {
         SingleProcessor<Integer> processor = new SingleProcessor<>();
         ReferenceQueue<Subscriber<Integer>> queue = new ReferenceQueue<>();
         WeakReference<Subscriber<Integer>> subscriberRef =
@@ -219,17 +219,17 @@ public class SingleProcessorTest {
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesError() throws Exception {
+    void multiThreadedAddAlwaysTerminatesError() throws Exception {
         multiThreadedAddAlwaysTerminates(null, DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesSuccess() throws Exception {
+    void multiThreadedAddAlwaysTerminatesSuccess() throws Exception {
         multiThreadedAddAlwaysTerminates("foo", null);
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesSuccessNull() throws Exception {
+    void multiThreadedAddAlwaysTerminatesSuccessNull() throws Exception {
         multiThreadedAddAlwaysTerminates(null, null);
     }
 

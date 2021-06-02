@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RepeatTest {
+class RepeatTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<Integer> source = new TestPublisher<>();
@@ -48,13 +48,13 @@ public class RepeatTest {
     private boolean shouldRepeatValue;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         when(shouldRepeat.test(anyInt())).thenAnswer(invocation -> shouldRepeatValue);
         toSource(source.repeat(shouldRepeat)).subscribe(subscriber);
     }
 
     @Test
-    public void testError() {
+    void testError() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -64,7 +64,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void testRepeatCount() {
+    void testRepeatCount() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
@@ -75,7 +75,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void testRequestAcrossRepeat() {
+    void testRequestAcrossRepeat() {
         shouldRepeatValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -89,7 +89,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void testTwoCompletes() {
+    void testTwoCompletes() {
         shouldRepeatValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -107,7 +107,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void testMaxRepeats() {
+    void testMaxRepeats() {
         shouldRepeatValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -121,7 +121,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);

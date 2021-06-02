@@ -40,7 +40,7 @@ public abstract class AbstractWhenSubscriberTest {
     private final TestPublisherSubscriber<String> finalSubscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testOnWithOnComplete() {
+    void testOnWithOnComplete() {
         toSource(doSubscriber(from("Hello"), () -> subscriber)).subscribe(finalSubscriber);
         finalSubscriber.awaitSubscription().request(1);
         assertThat(finalSubscriber.takeOnNext(), is("Hello"));
@@ -50,7 +50,7 @@ public abstract class AbstractWhenSubscriberTest {
     }
 
     @Test
-    public void testOnWithOnError() {
+    void testOnWithOnError() {
         toSource(doSubscriber(Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
                 .subscribe(finalSubscriber);
         assertThat(finalSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));

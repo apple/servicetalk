@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 
-public class BasicAuthHttpServiceFilterTest {
+class BasicAuthHttpServiceFilterTest {
 
     private static final class BasicUserInfo {
 
@@ -56,7 +56,7 @@ public class BasicAuthHttpServiceFilterTest {
     private static final String REALM_VALUE = "hw_realm";
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(appendServiceFilterFactory(
                 new StreamingHttpServiceFilterFactory() {
                     @Override

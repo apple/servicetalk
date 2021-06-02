@@ -28,14 +28,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
+class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
     @Override
     Single<String> from(final CompletableFuture<String> future) {
         return fromStage(future);
     }
 
     @Test
-    public void failure() {
+    void failure() {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));

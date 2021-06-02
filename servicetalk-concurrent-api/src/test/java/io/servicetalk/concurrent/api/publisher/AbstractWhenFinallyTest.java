@@ -46,7 +46,7 @@ abstract class AbstractWhenFinallyTest {
     private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
-    public void testForCancelPostEmissions() {
+    void testForCancelPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -59,7 +59,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelNoEmissions() {
+    void testForCancelNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().cancel();
@@ -69,7 +69,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostError() {
+    void testForCancelPostError() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -80,7 +80,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostComplete() {
+    void testForCancelPostComplete() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertFalse(subscription.isCancelled());
@@ -92,7 +92,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCompletePostEmissions() {
+    void testForCompletePostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -107,7 +107,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCompleteNoEmissions() {
+    void testForCompleteNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -120,7 +120,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForErrorPostEmissions() {
+    void testForErrorPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -134,7 +134,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForErrorNoEmissions() {
+    void testForErrorNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -146,7 +146,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testCallbackThrowsErrorOnCancel() {
+    void testCallbackThrowsErrorOnCancel() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         try {
             doFinally(publisher, mock).subscribe(subscriber);
@@ -161,10 +161,10 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsErrorOnComplete();
+    abstract void testCallbackThrowsErrorOnComplete();
 
     @Test
-    public abstract void testCallbackThrowsErrorOnError();
+    abstract void testCallbackThrowsErrorOnError();
 
     protected abstract <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer);
 

@@ -44,10 +44,10 @@ import static org.hamcrest.core.Is.is;
  * {@link Subscriber#onSubscribe(Subscription)}.
  */
 
-public class MulticastRealizedSourcePublisherTest {
+class MulticastRealizedSourcePublisherTest {
 
     @Test
-    public void testOnSubscribeErrors() throws InterruptedException {
+    void testOnSubscribeErrors() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION))
                 .multicastToExactly(2);
@@ -61,7 +61,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesNoItems() throws InterruptedException {
+    void testOnSubscribeCompletesNoItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
@@ -74,7 +74,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesWithItems() throws InterruptedException {
+    void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = from(1, 2).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
@@ -87,7 +87,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
+    void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = from(1).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);

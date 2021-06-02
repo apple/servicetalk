@@ -35,7 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
+class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return newPublisher(executor, values, (timeout, unit) -> { }, (timeout, unit) -> { }, () -> { });
@@ -67,7 +67,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
     }
 
     @Test
-    public void requestNTimeoutIsCaught() {
+    void requestNTimeoutIsCaught() {
         BiConsumer<Long, TimeUnit> hashNextConsumer = (timeout, unit) -> {
             throw DELIBERATE_EXCEPTION;
         };
@@ -83,7 +83,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
     }
 
     @Test
-    public void nextWithTimeoutIsCalled() {
+    void nextWithTimeoutIsCalled() {
         BiConsumer<Long, TimeUnit> hashNextConsumer = (timeout, unit) -> {
         };
         BiConsumer<Long, TimeUnit> nextConsumer = (timeout, unit) -> {

@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class CharSequencesTest {
 
     // Common strings
-    public static final String GZIP = "gzip";
-    public static final String DEFLATE = "deflate";
-    public static final String COMPRESS = "compress";
+    static final String GZIP = "gzip";
+    static final String DEFLATE = "deflate";
+    static final String COMPRESS = "compress";
 
     private static void splitNoTrim(Function<String, ? extends CharSequence> f) {
         assertThat(split(f.apply(" ,      "), ',', false),

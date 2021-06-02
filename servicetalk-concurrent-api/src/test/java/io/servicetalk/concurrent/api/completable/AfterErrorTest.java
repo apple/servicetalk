@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class AfterErrorTest extends AbstractWhenOnErrorTest {
+class AfterErrorTest extends AbstractWhenOnErrorTest {
 
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
@@ -36,7 +36,7 @@ public class AfterErrorTest extends AbstractWhenOnErrorTest {
 
     @Test
     @Override
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         toSource(doError(Completable.failed(srcEx), __ -> {
             throw DELIBERATE_EXCEPTION;

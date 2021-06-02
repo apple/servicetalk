@@ -28,10 +28,10 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class AfterSubscribeTest extends AbstractWhenOnSubscribeTest {
+class AfterSubscribeTest extends AbstractWhenOnSubscribeTest {
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         Publisher<String> src = doSubscribe(from("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;
         });

@@ -32,7 +32,7 @@ public abstract class AbstractWhenOnSuccessTest {
     final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         @SuppressWarnings("unchecked")
         Consumer<String> onSuccess = Mockito.mock(Consumer.class);
         toSource(doSuccess(Single.succeeded("Hello"), onSuccess)).subscribe(listener);
@@ -41,7 +41,7 @@ public abstract class AbstractWhenOnSuccessTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    abstract void testCallbackThrowsError();
 
     protected abstract <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer);
 }

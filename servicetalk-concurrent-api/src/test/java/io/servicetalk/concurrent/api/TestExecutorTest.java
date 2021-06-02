@@ -28,10 +28,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestExecutorTest {
+class TestExecutorTest {
 
     @Test
-    public void testAdvanceTimeByNoExecuteTasks() {
+    void testAdvanceTimeByNoExecuteTasks() {
         TestExecutor fixture = new TestExecutor();
 
         long initialTime = fixture.currentNanos();
@@ -43,7 +43,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testExecute() {
+    void testExecute() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -58,7 +58,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testExecuteSameTaskMultipleTimes() {
+    void testExecuteSameTaskMultipleTimes() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -74,7 +74,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testSchedule() {
+    void testSchedule() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -99,7 +99,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testScheduleAtSameTime() {
+    void testScheduleAtSameTime() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -125,7 +125,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testScheduleAtSameTimeFromDifferentNow() {
+    void testScheduleAtSameTimeFromDifferentNow() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -152,7 +152,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testScheduleAtDifferentTimes() {
+    void testScheduleAtDifferentTimes() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -186,7 +186,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testExecuteNextTask() {
+    void testExecuteNextTask() {
         TestExecutor fixture = new TestExecutor();
 
         AtomicInteger i = new AtomicInteger();
@@ -204,12 +204,12 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testExecuteNextScheduledTask() {
+    void testExecuteNextScheduledTask() {
         testExecuteNextScheduledTask(new TestExecutor());
     }
 
     @Test
-    public void testScheduleDoesNotOverflow() {
+    void testScheduleDoesNotOverflow() {
         testExecuteNextScheduledTask(new TestExecutor(Long.MAX_VALUE - 1));
     }
 
@@ -231,7 +231,7 @@ public class TestExecutorTest {
     }
 
     @Test
-    public void testCloseAsync() throws Exception {
+    void testCloseAsync() throws Exception {
         TestExecutor fixture = new TestExecutor();
         Future<Void> closeFuture = fixture.closeAsync().toFuture();
         Future<Void> onCloseFuture = fixture.onClose().toFuture();

@@ -67,7 +67,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FlushStrategyOnServerTest {
+class FlushStrategyOnServerTest {
 
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();

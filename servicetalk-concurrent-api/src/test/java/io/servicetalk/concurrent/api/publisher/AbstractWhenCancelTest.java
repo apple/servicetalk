@@ -40,7 +40,7 @@ public abstract class AbstractWhenCancelTest {
     private TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testCancelAfterEmissions() {
+    void testCancelAfterEmissions() {
         Runnable onCancel = mock(Runnable.class);
         doCancel(publisher, onCancel).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -53,7 +53,7 @@ public abstract class AbstractWhenCancelTest {
     }
 
     @Test
-    public void testCancelNoEmissions() {
+    void testCancelNoEmissions() {
         Runnable onCancel = mock(Runnable.class);
         doCancel(publisher, onCancel).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -63,7 +63,7 @@ public abstract class AbstractWhenCancelTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         Exception e = assertThrows(DeliberateException.class, () -> {
 
             try {

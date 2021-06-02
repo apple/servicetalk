@@ -28,13 +28,13 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestSingleTest {
+class TestSingleTest {
 
     private final TestSingleSubscriber<String> subscriber1 = new TestSingleSubscriber<>();
     private final TestSingleSubscriber<String> subscriber2 = new TestSingleSubscriber<>();
 
     @Test
-    public void testNonResubscribeableSingle() {
+    void testNonResubscribeableSingle() {
         TestSingle<String> source = new TestSingle.Builder<String>()
                 .singleSubscriber()
                 .build();
@@ -55,7 +55,7 @@ public class TestSingleTest {
     }
 
     @Test
-    public void testSequentialSubscribeSingle() {
+    void testSequentialSubscribeSingle() {
         TestSingle<String> source = new TestSingle.Builder<String>()
                 .build();
 
@@ -69,7 +69,7 @@ public class TestSingleTest {
     }
 
     @Test
-    public void testConcurrentSubscribeSingle() {
+    void testConcurrentSubscribeSingle() {
         TestSingle<String> source = new TestSingle.Builder<String>()
                 .concurrentSubscribers()
                 .build();

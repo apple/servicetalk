@@ -21,34 +21,34 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class PublisherExecutorPreservationTest {
+class PublisherExecutorPreservationTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Publisher<String> publisher;
 
     @BeforeEach
-    public void setupPublisher() {
+    void setupPublisher() {
         publisher = Publisher.<String>empty().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
-    public void testPubToSingle() {
+    void testPubToSingle() {
         assertSame(EXEC.executor(), publisher.firstOrElse(() -> null).executor());
     }
 
     @Test
-    public void testPubToSingleOrError() {
+    void testPubToSingleOrError() {
         assertSame(EXEC.executor(), publisher.firstOrError().executor());
     }
 
     @Test
-    public void testPubToCompletable() {
+    void testPubToCompletable() {
         assertSame(EXEC.executor(), publisher.ignoreElements().executor());
     }
 
     @Test
-    public void testReduceSingle() {
+    void testReduceSingle() {
         assertSame(EXEC.executor(), publisher.collect(() -> 0, (n, s) -> n += s.length()).executor());
     }
 }

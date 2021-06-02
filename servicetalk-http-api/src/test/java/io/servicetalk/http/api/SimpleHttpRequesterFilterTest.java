@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 /**
  * This is a test-case for the {@link AbstractHttpRequesterFilterTest} HTTP request filter test utilities.
  */
-public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
+class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
 
     private static final class HeaderEnrichingRequestFilter implements StreamingHttpClientFilterFactory,
                                                                        StreamingHttpConnectionFilterFactory {

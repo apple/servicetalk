@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
+class SingleToFutureTest extends AbstractToFutureTest<Integer> {
 
     private final TestSingle<Integer> source = new TestSingle.Builder<Integer>().build(subscriber -> {
         subscriber.onSubscribe(mockCancellable);
@@ -63,7 +63,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
     }
 
     @Test
-    public void testSucceededNull() throws Exception {
+    void testSucceededNull() throws Exception {
         Future<Integer> future = toFuture();
         exec.executor().schedule(() -> source.onSuccess(null), 10, MILLISECONDS);
         assertThat(future.get(), is(nullValue()));
@@ -73,7 +73,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
     }
 
     @Test
-    public void testSucceededThrowable() throws Exception {
+    void testSucceededThrowable() throws Exception {
         TestSingle<Throwable> throwableSingle = new TestSingle<>();
         Future<Throwable> future = throwableSingle.toFuture();
         exec.executor().schedule(() -> throwableSingle.onSuccess(DELIBERATE_EXCEPTION), 10, MILLISECONDS);

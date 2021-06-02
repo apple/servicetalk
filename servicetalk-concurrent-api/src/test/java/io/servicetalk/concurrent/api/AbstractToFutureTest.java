@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractToFutureTest<T> {
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
+    protected final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
 
     protected final Cancellable mockCancellable = Mockito.mock(Cancellable.class);
 
@@ -60,14 +60,14 @@ public abstract class AbstractToFutureTest<T> {
     protected abstract T expectedResult();
 
     @Test
-    public void testSubscribed() {
+    void testSubscribed() {
         assertThat(isSubscribed(), is(false));
         toFuture();
         assertThat(isSubscribed(), is(true));
     }
 
     @Test
-    public void testSucceeded() throws Exception {
+    void testSucceeded() throws Exception {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         completeSource();
@@ -79,7 +79,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testSucceededAfterGet() throws Exception {
+    void testSucceededAfterGet() throws Exception {
         Future<T> future = toFuture();
         exec.executor().schedule(this::completeSource, 10, MILLISECONDS);
         assertThat(future.get(), is(expectedResult()));
@@ -89,7 +89,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testSucceededAfterGetWithTimeout() throws Exception {
+    void testSucceededAfterGetWithTimeout() throws Exception {
         Future<T> future = toFuture();
         exec.executor().schedule(this::completeSource, 10, MILLISECONDS);
         assertThat(future.get(3, SECONDS), is(expectedResult()));
@@ -99,7 +99,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testSucceededAfterGetWithEnoughTimeout() throws Exception {
+    void testSucceededAfterGetWithEnoughTimeout() throws Exception {
         Future<T> future = toFuture();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -126,7 +126,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testFailed() throws Exception {
+    void testFailed() throws Exception {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         failSource(DELIBERATE_EXCEPTION);
@@ -148,14 +148,14 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testFailedWithNull() {
+    void testFailedWithNull() {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         assertThrows(NullPointerException.class, () -> failSource(null));
     }
 
     @Test
-    public void testFailedAfterGet() throws Exception {
+    void testFailedAfterGet() throws Exception {
         Future<T> future = toFuture();
         exec.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
         try {
@@ -170,7 +170,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testFailedAfterGetWithTimeout() throws Exception {
+    void testFailedAfterGetWithTimeout() throws Exception {
         Future<T> future = toFuture();
         exec.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
         try {
@@ -185,14 +185,14 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testGetTimeoutException() {
+    void testGetTimeoutException() {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         assertThrows(TimeoutException.class, () -> future.get(10, MILLISECONDS));
     }
 
     @Test
-    public void testMultipleGets() throws Exception {
+    void testMultipleGets() throws Exception {
         Future<T> future = toFuture();
 
         CountDownLatch latch = new CountDownLatch(3);
@@ -214,17 +214,17 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testCancelWithMayInterruptIfRunning() {
+    void testCancelWithMayInterruptIfRunning() {
         testCancel(true, future -> { });
     }
 
     @Test
-    public void testCancelWithoutMayInterruptIfRunning() {
+    void testCancelWithoutMayInterruptIfRunning() {
         testCancel(false, future -> { });
     }
 
     @Test
-    public void testOnSuccessResultIsIgnoredAfterCancel() {
+    void testOnSuccessResultIsIgnoredAfterCancel() {
         testCancel(true, future -> {
             completeSource();
             assertThat(future.isCancelled(), is(true));
@@ -233,7 +233,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testOnErrorResultIsIgnoredAfterCancel() {
+    void testOnErrorResultIsIgnoredAfterCancel() {
         testCancel(true, future -> {
             failSource(DELIBERATE_EXCEPTION);
             assertThat(future.isCancelled(), is(true));
@@ -259,7 +259,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testCancelIsIgnoredAfterOnSuccess() throws Exception {
+    void testCancelIsIgnoredAfterOnSuccess() throws Exception {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         assertThat(future.isCancelled(), is(false));
@@ -272,7 +272,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testCancelIsIgnoredAfterOnError() throws Exception {
+    void testCancelIsIgnoredAfterOnError() throws Exception {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         assertThat(future.isCancelled(), is(false));
@@ -290,7 +290,7 @@ public abstract class AbstractToFutureTest<T> {
     }
 
     @Test
-    public void testSubsequentCancelsAreIgnored() {
+    void testSubsequentCancelsAreIgnored() {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
         assertThat(future.isCancelled(), is(false));

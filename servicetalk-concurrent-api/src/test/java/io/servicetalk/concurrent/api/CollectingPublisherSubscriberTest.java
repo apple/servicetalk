@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CollectingPublisherSubscriberTest {
+class CollectingPublisherSubscriberTest {
 
     private final CollectingPublisherSubscriber<String> subscriber = new CollectingPublisherSubscriber<>();
     private final TestPublisher<String> source = new TestPublisher.Builder<String>()
@@ -38,7 +38,7 @@ public class CollectingPublisherSubscriberTest {
             .build();
 
     @Test
-    public void testAssertItems() {
+    void testAssertItems() {
         source.subscribe(subscriber);
         assertThat(subscriber.items(), hasSize(0));
 
@@ -50,7 +50,7 @@ public class CollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void testSubscriptionReceived() {
+    void testSubscriptionReceived() {
         assertFalse(subscriber.subscriptionReceived());
 
         source.subscribe(subscriber);
@@ -59,7 +59,7 @@ public class CollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         source.subscribe(subscriber);
 
         assertNull(subscriber.terminal());
@@ -73,7 +73,7 @@ public class CollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void testError() {
+    void testError() {
         source.subscribe(subscriber);
 
         assertThat(subscriber.terminal(), nullValue());

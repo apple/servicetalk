@@ -43,7 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class ConcurrentTerminalSubscriberTest {
+class ConcurrentTerminalSubscriberTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
@@ -52,62 +52,62 @@ public class ConcurrentTerminalSubscriberTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void concurrentOnSubscribeWithOnNextAndOnComplete() throws Exception {
+    void concurrentOnSubscribeWithOnNextAndOnComplete() throws Exception {
         concurrentOnSubscribe(true, true);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnComplete() throws Exception {
+    void concurrentOnSubscribeWithOnComplete() throws Exception {
         concurrentOnSubscribe(true, false);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnNextAndOnError() throws Exception {
+    void concurrentOnSubscribeWithOnNextAndOnError() throws Exception {
         concurrentOnSubscribe(false, true);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnError() throws Exception {
+    void concurrentOnSubscribeWithOnError() throws Exception {
         concurrentOnSubscribe(false, false);
     }
 
     @Test
-    public void concurrentOnNextWithOnComplete() throws Exception {
+    void concurrentOnNextWithOnComplete() throws Exception {
         concurrentOnNext(true);
     }
 
     @Test
-    public void concurrentOnNextWithOnError() throws Exception {
+    void concurrentOnNextWithOnError() throws Exception {
         concurrentOnNext(false);
     }
 
     @Test
-    public void concurrentOnCompleteWithOnComplete() throws Exception {
+    void concurrentOnCompleteWithOnComplete() throws Exception {
         concurrentOnComplete(true, true);
     }
 
     @Test
-    public void concurrentOnCompleteWithOnError() throws Exception {
+    void concurrentOnCompleteWithOnError() throws Exception {
         concurrentOnComplete(true, false);
     }
 
     @Test
-    public void concurrentOnErrorWithOnComplete() throws Exception {
+    void concurrentOnErrorWithOnComplete() throws Exception {
         concurrentOnComplete(false, true);
     }
 
     @Test
-    public void concurrentOnErrorWithOnError() throws Exception {
+    void concurrentOnErrorWithOnError() throws Exception {
         concurrentOnComplete(false, false);
     }
 
     @Test
-    public void reentrySynchronousOnNextAllowedOnComplete() {
+    void reentrySynchronousOnNextAllowedOnComplete() {
         reentrySynchronousOnNextAllowed(true);
     }
 
     @Test
-    public void reentrySynchronousOnNextAllowedOnError() {
+    void reentrySynchronousOnNextAllowedOnError() {
         reentrySynchronousOnNextAllowed(false);
     }
 
