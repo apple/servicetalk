@@ -57,7 +57,7 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
         // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the STATE_QUIT
         // before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency error messages for
         // the users on connection tear-down.
-        toSource(onClosing.publishAndSubscribeOnOverride(immediate())).subscribe(new Subscriber() {
+        toSource(onClosing.publishAndSubscribeOn(immediate())).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op
