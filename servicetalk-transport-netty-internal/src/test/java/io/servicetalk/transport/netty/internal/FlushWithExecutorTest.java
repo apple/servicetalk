@@ -17,37 +17,29 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushBeforeEnd;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushOnEach;
 
-@RunWith(Parameterized.class)
-public class FlushWithExecutorTest extends AbstractFlushTest {
+class FlushWithExecutorTest extends AbstractFlushTest {
 
     private static final String[] data = new String[]{"1", "2", "3", "4"};
 
-    @Rule
-    public final ExecutionContextRule contextRule = cached();
+    @RegisterExtension
+    final ExecutionContextExtension contextRule = cached();
 
-    private FlushStrategyAndVerifier flushStrategyAndVerifier;
-
-    public FlushWithExecutorTest(final FlushStrategyAndVerifier flushStrategyAndVerifier) {
-        this.flushStrategyAndVerifier = flushStrategyAndVerifier;
-    }
-
-    @Parameterized.Parameters(name = "{index}: flushStrategy = {0}")
-    public static Collection<FlushStrategyAndVerifier> data() {
+    @SuppressWarnings("unused")
+    public static Collection<FlushStrategyAndVerifier> flushStrategyAndVerifiers() {
         List<FlushStrategyAndVerifier> params = new ArrayList<>();
         params.add(flushOnEach());
         params.add(flushBeforeEnd(data.length));
@@ -55,8 +47,9 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
         return params;
     }
 
-    @Test
-    public void testFlushBeforeEnd() throws Exception {
+    @ParameterizedTest(name = "{index}: flushStrategy = {0}")
+    @MethodSource("flushStrategyAndVerifiers")
+    void testFlushBeforeEnd(final FlushStrategyAndVerifier flushStrategyAndVerifier) throws Exception {
         Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
         Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.flushStrategy());
         flushSource.toFuture().get();

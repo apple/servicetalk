@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
@@ -31,11 +30,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
@@ -64,20 +61,18 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class NettyChannelPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class NettyChannelPublisherTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
@@ -86,7 +81,7 @@ public class NettyChannelPublisherTest {
     private boolean nextItemTerminal;
     private boolean readRequested;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         setUp(integer -> nextItemTerminal);
     }
@@ -107,7 +102,7 @@ public class NettyChannelPublisherTest {
         channel.config().setAutoRead(false);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (!channel.close().await(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Channel close not finished in 1 second.");
@@ -156,7 +151,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void errorFromOnSubscribeResumeTerminatesOnce() throws Exception {
+    void errorFromOnSubscribeResumeTerminatesOnce() throws Exception {
         channel.close().await();
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
@@ -171,22 +166,22 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testNettyHandlerSendsQueuedDataOnShutdownInputFromCancel() throws Exception {
+    void testNettyHandlerSendsQueuedDataOnShutdownInputFromCancel() throws Exception {
         testCancelThenResubscribeDeliversErrorAndNotQueuedData(false, true);
     }
 
     @Test
-    public void testNettyHandlerSendsQueuedDataOnShutdownInputFromClose() throws Exception {
+    void testNettyHandlerSendsQueuedDataOnShutdownInputFromClose() throws Exception {
         testCancelThenResubscribeDeliversErrorAndNotQueuedData(true, true);
     }
 
     @Test
-    public void testCancelThenReadThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
+    void testCancelThenReadThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
         testCancelThenResubscribeDeliversErrorAndNotQueuedData(true, false);
     }
 
     @Test
-    public void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
+    void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
         testCancelThenResubscribeDeliversErrorAndNotQueuedData(false, false);
     }
 
@@ -226,7 +221,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSupplyEqualsDemand() {
+    void testSupplyEqualsDemand() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         fireChannelRead(1, 2);
@@ -238,7 +233,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSupplyLessThanDemand() {
+    void testSupplyLessThanDemand() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(4);
         fireChannelRead(1, 2);
@@ -250,7 +245,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDemandLessThanSupply() {
+    void testDemandLessThanSupply() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         fireChannelRead(1, 2);
@@ -264,7 +259,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testBufferDrainOnClose() throws Exception {
+    void testBufferDrainOnClose() throws Exception {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2);
         channel.close().await();
@@ -274,7 +269,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorBufferedWithExactDemand() {
+    void testErrorBufferedWithExactDemand() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         fireChannelRead(1, 2);
@@ -286,7 +281,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorBufferedWithMoreDemand() {
+    void testErrorBufferedWithMoreDemand() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         fireChannelRead(1, 2);
@@ -298,14 +293,14 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorWithNoDemandNoBuffer() {
+    void testErrorWithNoDemandNoBuffer() {
         toSource(publisher).subscribe(subscriber);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testErrorWithNoDemandAndBuffer() {
+    void testErrorWithNoDemandAndBuffer() {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -315,7 +310,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorNoEmission() {
+    void testErrorNoEmission() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -323,7 +318,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testConcurrentSubscribers() {
+    void testConcurrentSubscribers() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         fireChannelRead(1);
@@ -344,7 +339,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSequentialSubscriptionsNoCarryOverDemand() {
+    void testSequentialSubscriptionsNoCarryOverDemand() {
         nextItemTerminal = true;
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -360,7 +355,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSequentialSubscriptionsCarryOverDemand() {
+    void testSequentialSubscriptionsCarryOverDemand() {
         nextItemTerminal = true;
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
@@ -380,7 +375,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testBufferBetweenSubscriptions() {
+    void testBufferBetweenSubscriptions() {
         nextItemTerminal = true;
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
@@ -396,7 +391,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeTerminal() {
+    void testCancelBeforeTerminal() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         fireChannelRead(1);
@@ -406,7 +401,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testCancelAfterTerminal() {
+    void testCancelAfterTerminal() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         nextItemTerminal = true;
@@ -418,7 +413,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDelayedCancel() {
+    void testDelayedCancel() {
         nextItemTerminal = true;
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
@@ -441,7 +436,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDelayedRequestN() {
+    void testDelayedRequestN() {
         nextItemTerminal = true;
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
@@ -467,7 +462,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testEmitItemsWithNoSubscriber() {
+    void testEmitItemsWithNoSubscriber() {
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
         toSource(publisher).subscribe(subscriber);
@@ -477,7 +472,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testCancelFromWithinComplete() {
+    void testCancelFromWithinComplete() {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
@@ -502,14 +497,14 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSubscribePostChannelClose() throws Exception {
+    void testSubscribePostChannelClose() throws Exception {
         channel.close().await();
         toSource(publisher).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
     }
 
     @Test
-    public void testTwoSubscribersPostChannelClose() throws Exception {
+    void testTwoSubscribersPostChannelClose() throws Exception {
         channel.close().await();
         toSource(publisher).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
@@ -522,7 +517,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedCompleteAndFatalErrorExactDemand() {
+    void testQueuedCompleteAndFatalErrorExactDemand() {
         toSource(publisher).subscribe(subscriber);
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
@@ -533,7 +528,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedCompleteAndFatalErrorMoreDemand() {
+    void testQueuedCompleteAndFatalErrorMoreDemand() {
         toSource(publisher).subscribe(subscriber);
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
@@ -544,7 +539,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedErrorAndFatalErrorExactDemand() {
+    void testQueuedErrorAndFatalErrorExactDemand() {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -555,7 +550,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedErrorAndFatalErrorMoreDemand() {
+    void testQueuedErrorAndFatalErrorMoreDemand() {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -566,7 +561,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void invalidRequestNDoesCancel() {
+    void invalidRequestNDoesCancel() {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2, 3);
         subscriber.awaitSubscription().request(1);
@@ -582,17 +577,17 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testChannelReadThrowsRequestBeforeChannelRead() {
+    void testChannelReadThrowsRequestBeforeChannelRead() {
         testChannelReadThrows(false);
     }
 
     @Test
-    public void testChannelReadThrowsRequestAfterChannelRead() {
+    void testChannelReadThrowsRequestAfterChannelRead() {
         testChannelReadThrows(true);
     }
 
     @Test
-    public void resubscribePostErrorEmitsError() {
+    void resubscribePostErrorEmitsError() {
         toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2, 3);
         subscriber.awaitSubscription().request(3);
@@ -609,7 +604,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSubscribeAndRequestWithinOnCompleteWithPendingData() throws Exception {
+    void testSubscribeAndRequestWithinOnCompleteWithPendingData() throws Exception {
         // With data queued up for multiple payloads in NettyChannelPublisher, when an existing subscriber terminates
         // and a new Subscriber requests data synchronously from the previous terminal signal, the demand should be
         // fulfilled synchronously using the pending data.
@@ -635,7 +630,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSubscribeAndRequestWithinOnErrorWithPendingData() {
+    void testSubscribeAndRequestWithinOnErrorWithPendingData() {
         // With data and a fatal error queued up in NettyChannelPublisher, when an existing subscriber terminates and a
         // new Subscriber requests data synchronously from the previous terminal signal, the demand should trigger
         // observing a ClosedChannelException.
