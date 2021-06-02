@@ -146,29 +146,47 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 for (final Channel channel : channelMap.values()) {
                     Attribute<AsyncCloseable> closeableAttribute = channel.attr(CHANNEL_CLOSEABLE_KEY);
                     AsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
-                    if (channelCloseable != null) {
-                        // Upon shutdown of the set, we will close all live channels. If close of individual channels
-                        // are offloaded, then this would trigger a surge in threads required to offload these closures.
-                        // Here we assume that if there is any offloading required, it is done by offloading the
-                        // Completable returned by closeAsyncGracefully() hence offloading each channel is not required.
-                        // Hence, we override the offloading on each channel for this particular subscribe to use
-                        // immediate and effectively disable offloading on each channel.
-                        closeable.merge(new AsyncCloseable() {
-                            @Override
-                            public Completable closeAsync() {
-                                return channelCloseable.closeAsync().publishOnOverride(immediate());
-                            }
+                    if (null != channelCloseable) {
+                        // Upon shutdown of the set, we will close all live channels. If close of individual
+                        // channels are offloaded, then this would trigger a surge in threads required to offload
+                        // these closures.
+                        if (channelCloseable instanceof NettyChannelListenableAsyncCloseable) {
+                            NettyChannelListenableAsyncCloseable asNCLAC =
+                                    (NettyChannelListenableAsyncCloseable) channelCloseable;
+                            // Here we disable offloading on each channel.
+                            closeable.merge(new AsyncCloseable() {
+                                @Override
+                                public Completable closeAsync() {
+                                    return asNCLAC.closeAsyncNoOffload();
+                                }
 
-                            @Override
-                            public Completable closeAsyncGracefully() {
-                                return channelCloseable.closeAsyncGracefully().publishOnOverride(immediate());
-                            }
-                        });
+                                @Override
+                                public Completable closeAsyncGracefully() {
+                                    return asNCLAC.closeAsyncGracefullyNoOffload();
+                                }
+                            });
+                        } else {
+                            // Here we assume that if there is any offloading required, it is done by offloading the
+                            // Completable returned by closeAsyncGracefully() hence offloading each channel is not
+                            // required. Hence, we override the offloading on each channel for this particular
+                            // subscribe to use immediate() and hopefully disable offloading on each channel. There
+                            // could still be offloading embedded within the Completable but we can't override that.
+                            closeable.merge(new AsyncCloseable() {
+                                @Override
+                                public Completable closeAsync() {
+                                    return channelCloseable.closeAsync().publishOn(immediate());
+                                }
+
+                                @Override
+                                public Completable closeAsyncGracefully() {
+                                    return channelCloseable.closeAsyncGracefully().publishOn(immediate());
+                                }
+                            });
+                        }
                     } else {
                         channel.close();
                     }
                 }
-
                 toSource(closeable.closeAsyncGracefully()).subscribe(subscriber);
             }
         };

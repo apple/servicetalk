@@ -69,7 +69,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -172,11 +171,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
             // in the pipeline may race with closure as we have already created the channel. If that happens, we may
             // miss channelInactive event.
-            toSource(onClose()
-                    // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
-                    // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
-                    // Subscriber end of CompletableProcessor (onClosing) will not block.
-                    .publishAndSubscribeOnOverride(immediate()))
+            // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
+            // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
+            // Subscriber end of CompletableProcessor (onClosing) will not block.
+            toSource(onCloseNoOffload())
                     .subscribe(onClosing);
         } else {
             onClosing = null;
