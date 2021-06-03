@@ -33,7 +33,7 @@ final class ContextPreservingExecutor implements Executor {
 
     @Override
     public String toString() {
-        return ContextPreservingExecutor.class.getSimpleName() + "{delegate=" + delegate +"}";
+        return ContextPreservingExecutor.class.getSimpleName() + "{delegate=" + delegate + "}";
     }
 
     static ContextPreservingExecutor of(Executor executor) {

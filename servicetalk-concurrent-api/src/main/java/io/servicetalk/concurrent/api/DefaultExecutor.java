@@ -104,7 +104,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     @Override
     public String toString() {
-        return DefaultExecutor.class.getSimpleName() + "{executor=" + executor +", scheduler=" + scheduler + "}";
+        return DefaultExecutor.class.getSimpleName() + "{executor=" + executor + ", scheduler=" + scheduler + "}";
     }
 
     @Override
@@ -234,7 +234,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         @Override
         public String toString() {
-            return SingleThreadedScheduler.class.getSimpleName() + "{offloadExecutor=" + offloadExecutor +"}";
+            return SingleThreadedScheduler.class.getSimpleName() + "{offloadExecutor=" + offloadExecutor + "}";
         }
 
         @Override
