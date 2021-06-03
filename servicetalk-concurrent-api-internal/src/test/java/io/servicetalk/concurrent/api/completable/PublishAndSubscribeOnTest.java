@@ -30,8 +30,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(Function.identity());
         TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
         TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete " + threads,
+                capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
@@ -39,8 +42,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishOn(offloader.executor()));
         TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete " + threads,
+                capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
@@ -49,8 +55,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
                 c -> c.subscribeOn(offloader.executor()));
         TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
         TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete " + threads,
+                capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
@@ -58,8 +67,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishAndSubscribeOn(offloader.executor()));
         TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete " + threads,
+                capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
@@ -67,8 +79,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.subscribeOn(offloader.executor()));
         TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
-        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel " + threads,
+                capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
@@ -76,7 +91,10 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.publishAndSubscribeOn(offloader.executor()));
         TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
-        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
+        String threads = capturedThreadsToString(capturedThreads);
+        assertThat("Unexpected executor for subscribe " + threads,
+                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel " + threads,
+                capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 }

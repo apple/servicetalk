@@ -25,12 +25,15 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static java.lang.Thread.currentThread;
@@ -77,10 +80,15 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
             recordThread(capturedThreads, SOURCE_THREAD);
             try {
+                // don't emit until AFTER subscribe is complete.
                 subscribed.await();
             } catch (InterruptedException woken) {
                 Thread.interrupted();
+                CancellationException cancel = new CancellationException("Source cancelled due to interrupt");
+                cancel.initCause(woken);
+                throw cancel;
             }
+            // Emit the result
         }, sourceExecutorService);
 
         app.executor().execute(() -> {
@@ -92,14 +100,18 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
             Cancellable cancel = offloaded.afterOnComplete(allDone::countDown)
                     .afterOnSubscribe(cancellable -> recordThread(capturedThreads, SUBSCRIBE_THREAD))
-                    .subscribe(() -> recordThread(capturedThreads, TERMINAL_THREAD));
+                    .afterFinally(() -> recordThread(capturedThreads, TERMINAL_THREAD))
+                    .subscribe();
             subscribed.countDown();
             try {
+                // Still waiting for "afterOnSubscribe" to fire
                 subscribed.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
             }
             try {
+                // Waiting for "afterOnComplete" to fire
                 allDone.await();
             } catch (InterruptedException woken) {
                 Thread.interrupted();
@@ -109,6 +121,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 throw new RuntimeException("impossible, but keeps cancel alive.");
             }
         });
+        // Waiting for "afterOnComplete" to fire
         allDone.await();
 
         return verifyCapturedThreads(capturedThreads);
@@ -123,10 +136,15 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
             recordThread(capturedThreads, SOURCE_THREAD);
             try {
-                allDone.await();
+                // don't emit until AFTER subscribe is complete.
+                subscribed.await();
             } catch (InterruptedException woken) {
                 Thread.interrupted();
+                CancellationException cancel = new CancellationException("Source cancelled due to interrupt");
+                cancel.initCause(woken);
+                throw cancel;
             }
+            // Emit the result
         }, sourceExecutorService);
 
         app.executor().execute(() -> {
@@ -146,12 +164,15 @@ public abstract class AbstractPublishAndSubscribeOnTest {
             Cancellable cancel = offloaded.subscribe();
             subscribed.countDown();
             try {
+                // Still waiting for "afterOnSubscribe" to fire
                 subscribed.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
             }
             cancel.cancel();
             try {
+                // Waiting for "afterOnComplete" to fire
                 allDone.await();
             } catch (InterruptedException woken) {
                 Thread.interrupted();
@@ -161,6 +182,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 throw new RuntimeException("impossible, but keeps cancel alive.");
             }
         });
+        // Waiting for "afterOnComplete" to fire
         allDone.await();
 
         return verifyCapturedThreads(capturedThreads);
@@ -188,6 +210,14 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 matchPrefix(SOURCE_EXECUTOR_PREFIX));
 
         return capturedThreads;
+    }
+
+    public static String capturedThreadsToString(AtomicReferenceArray<Thread> capturedThreads) {
+        return IntStream.range(0, capturedThreads.length())
+                .mapToObj(capturedThreads::get)
+                .map(Thread::getName)
+                .map(AbstractPublishAndSubscribeOnTest::getNamePrefix)
+                .collect(Collectors.joining(", ", "[ ", " ]"));
     }
 
     public static TypeSafeMatcher<Thread> matchPrefix(String prefix) {
