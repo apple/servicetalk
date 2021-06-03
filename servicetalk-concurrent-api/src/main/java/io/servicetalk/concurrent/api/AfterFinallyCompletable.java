@@ -25,8 +25,8 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
 
     private final TerminalSignalConsumer doFinally;
 
-    AfterFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
-        super(original, executor);
+    AfterFinallyCompletable(Completable original, TerminalSignalConsumer doFinally) {
+        super(original);
         this.doFinally = requireNonNull(doFinally);
     }
 

@@ -34,7 +34,6 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
     SingleFlatMapCompletable(Single<T> original, Function<? super T, ? extends Completable> nextFactory,
                              Executor executor) {
-        super(executor);
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);
     }

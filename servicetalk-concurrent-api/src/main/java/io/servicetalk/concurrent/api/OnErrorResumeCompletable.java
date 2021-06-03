@@ -31,11 +31,15 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
     private final Function<? super Throwable, ? extends Completable> nextFactory;
 
     OnErrorResumeCompletable(Completable original, Predicate<? super Throwable> predicate,
-                             Function<? super Throwable, ? extends Completable> nextFactory, Executor executor) {
-        super(executor);
+                             Function<? super Throwable, ? extends Completable> nextFactory) {
         this.original = original;
         this.predicate = requireNonNull(predicate);
         this.nextFactory = requireNonNull(nextFactory);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

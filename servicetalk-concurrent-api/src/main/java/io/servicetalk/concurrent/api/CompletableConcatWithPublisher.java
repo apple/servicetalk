@@ -26,8 +26,8 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
     private final Completable original;
     private final Publisher<? extends T> next;
 
-    CompletableConcatWithPublisher(final Completable original, Publisher<? extends T> next, Executor executor) {
-        super(executor);
+    CompletableConcatWithPublisher(final Completable original, Publisher<? extends T> next) {
+        super(original.executor());
         this.original = original;
         this.next = next;
     }

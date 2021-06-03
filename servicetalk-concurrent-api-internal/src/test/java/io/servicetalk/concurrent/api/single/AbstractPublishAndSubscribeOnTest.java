@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleWithExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
@@ -28,8 +30,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -80,5 +84,55 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
         verifyCapturedThreads(capturedThreads);
         return capturedThreads;
+    }
+
+    private static void recordThread(AtomicReferenceArray<Thread> threads, final int index) {
+        Thread was = threads.getAndUpdate(index, AbstractPublishAndSubscribeOnTest::updateThread);
+        assertThat("Thread already recorded at index: " + index, was, nullValue());
+    }
+
+    private static Thread updateThread(Thread current) {
+        assertThat(current, nullValue());
+        return currentThread();
+    }
+
+    public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
+        for (int i = 0; i < capturedThreads.length(); i++) {
+            final Thread capturedThread = capturedThreads.get(i);
+            assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
+        }
+
+        return capturedThreads;
+    }
+
+    public static TypeSafeMatcher<Thread> matchPrefix(String prefix) {
+        return new TypeSafeMatcher<Thread>() {
+            final String matchPrefix = prefix;
+
+            @Override
+            public void describeTo(final Description description) {
+                description.appendText("a prefix of ")
+                        .appendValue(matchPrefix);
+            }
+
+            @Override
+            public void describeMismatchSafely(Thread item, Description mismatchDescription) {
+                mismatchDescription
+                        .appendText("was ")
+                        .appendValue(getNamePrefix(item.getName()));
+            }
+
+            @Override
+            protected boolean matchesSafely(final Thread item) {
+                return item.getName().startsWith(matchPrefix);
+            }
+        };
+    }
+
+    private static String getNamePrefix(String name) {
+        int firstDash = name.indexOf('-');
+        return -1 == firstDash ?
+                name :
+                name.substring(0, firstDash);
     }
 }

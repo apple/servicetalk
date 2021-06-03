@@ -15,43 +15,50 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndSubscribeOnTest {
 
     @Test
     public void testPublishOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
     public void testSubscribeOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishAndSubscribeOnOverride(immediate()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisableWithCancel() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
+        AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.publishAndSubscribeOnOverride(immediate()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
 }

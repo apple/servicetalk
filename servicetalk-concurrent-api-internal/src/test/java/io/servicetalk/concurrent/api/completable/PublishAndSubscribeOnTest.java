@@ -15,86 +15,68 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
-
-import org.junit.Rule;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
-
     @Test
-    public void testPublishOnNoOverride() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.publishOn(executorRule.executor()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+    public void testNoOffload() throws InterruptedException {
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(Function.identity());
+        TypeSafeMatcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
-    public void testPublishOnOverride() throws InterruptedException {
+    public void testPublishOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
-                c -> c.publishOnOverride(executorRule.executor()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+                c -> c.publishOn(offloader.executor()));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
-    public void testSubscribeOnNoOverride() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
-                c -> c.subscribeOn(executorRule.executor()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
-    }
-
-    @Test
-    public void testSubscribeOnOverride() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
-                c -> c.subscribeOnOverride(executorRule.executor()));
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
-    }
-
-    @Test
-    public void testNoOverride() throws InterruptedException {
+    public void testSubscribeOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
-                c -> c.publishAndSubscribeOn(executorRule.executor()));
-
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+                c -> c.subscribeOn(offloader.executor()));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        TypeSafeMatcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
     }
 
     @Test
-    public void testOverride() throws InterruptedException {
+    public void testPublishAndSubscribeOn() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
-                c -> c.publishAndSubscribeOnOverride(executorRule.executor()));
-
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+                c -> c.publishAndSubscribeOn(offloader.executor()));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
-    public void testNoOverrideWithCancel() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
-                c -> c.publishAndSubscribeOn(executorRule.executor()));
-
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+    public void testSubscribeOnWithCancel() throws InterruptedException {
+        AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
+                c -> c.subscribeOn(offloader.executor()));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
-    public void testOverrideWithCancel() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(c ->
-                c.publishAndSubscribeOnOverride(executorRule.executor()));
-
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
+    public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
+        AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
+                c -> c.publishAndSubscribeOn(offloader.executor()));
+        TypeSafeMatcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
+        assertThat("Unexpected executor for subscribe", capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+        assertThat("Unexpected executor for cancel", capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 }

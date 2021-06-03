@@ -41,7 +41,7 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOn(executor, original);
+        return original.executor() == executor ? original : new PublishAndSubscribeOn(original, executor);
     }
 
     @Deprecated
@@ -50,7 +50,7 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOn(executor, original);
+        return original.executor() == executor ? original : new PublishOn(original, executor);
     }
 
     @Deprecated
@@ -59,7 +59,7 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable subscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOn(executor, original);
+        return original.executor() == executor ? original : new SubscribeOn(original, executor);
     }
 
     @Deprecated
@@ -67,12 +67,37 @@ final class PublishAndSubscribeOnCompletables {
         return original.executor() == executor ? original : new SubscribeOnOverride(original, executor);
     }
 
-    private static final class PublishAndSubscribeOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
+    private abstract static class OffloadingCompletable extends AbstractNoHandleSubscribeCompletable {
+        protected final Executor executor;
+        protected final Completable original;
 
-        PublishAndSubscribeOn(final Executor executor, final Completable original) {
-            super(executor);
+        protected OffloadingCompletable(Completable original, Executor executor) {
             this.original = original;
+            this.executor = executor;
+        }
+
+        final Executor executor() {
+            return executor;
+        }
+    }
+
+    private abstract static class OffloadingOverrideCompletable extends AbstractSynchronousCompletableOperator {
+        protected final Executor executor;
+
+        protected OffloadingOverrideCompletable(Completable original, Executor executor) {
+            super(original);
+            this.executor = executor;
+        }
+
+        final Executor executor() {
+            return executor;
+        }
+    }
+
+    private static final class PublishAndSubscribeOn extends OffloadingCompletable {
+
+        PublishAndSubscribeOn(final Completable original, final Executor executor) {
+            super(original, executor);
         }
 
         @Override
@@ -100,7 +125,7 @@ final class PublishAndSubscribeOnCompletables {
      * the same way. Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra
      * offloading, it just overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static final class PublishAndSubscribeOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class PublishAndSubscribeOnOverride extends OffloadingOverrideCompletable {
         PublishAndSubscribeOnOverride(final Completable original, final Executor executor) {
             super(original, executor);
         }
@@ -113,12 +138,10 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static final class PublishOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
+    private static final class PublishOn extends OffloadingCompletable {
 
-        PublishOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadPublish(original.executor(), executor));
-            this.original = original;
+        PublishOn(final Completable original, final Executor executor) {
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -145,7 +168,7 @@ final class PublishAndSubscribeOnCompletables {
      * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
      * just overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static final class PublishOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class PublishOnOverride extends OffloadingOverrideCompletable {
 
         PublishOnOverride(final Completable original, final Executor executor) {
             super(original, mergeAndOffloadPublish(original.executor(), executor));
@@ -159,12 +182,10 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static final class SubscribeOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
+    private static final class SubscribeOn extends OffloadingCompletable {
 
-        SubscribeOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadSubscribe(original.executor(), executor));
-            this.original = original;
+        SubscribeOn(final Completable original, final Executor executor) {
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override
@@ -190,7 +211,7 @@ final class PublishAndSubscribeOnCompletables {
      * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
      * just overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static final class SubscribeOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class SubscribeOnOverride extends OffloadingOverrideCompletable {
 
         SubscribeOnOverride(final Completable original, final Executor executor) {
             super(original, mergeAndOffloadSubscribe(original.executor(), executor));

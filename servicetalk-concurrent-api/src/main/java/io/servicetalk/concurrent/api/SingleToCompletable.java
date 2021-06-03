@@ -27,8 +27,11 @@ final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable 
     private final Single<T> original;
 
     SingleToCompletable(Single<T> original, Executor executor) {
-        super(executor);
         this.original = requireNonNull(original);
+    }
+
+    Executor executor() {
+        return original.executor();
     }
 
     @Override
