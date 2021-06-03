@@ -30,7 +30,7 @@ final class ContextPreservingStExecutor implements Executor {
 
     @Override
     public String toString() {
-        return ContextPreservingStExecutor.class.getSimpleName() + "{delegate=" + delegate +"}";
+        return ContextPreservingStExecutor.class.getSimpleName() + "{delegate=" + delegate + "}";
     }
 
     @Override
