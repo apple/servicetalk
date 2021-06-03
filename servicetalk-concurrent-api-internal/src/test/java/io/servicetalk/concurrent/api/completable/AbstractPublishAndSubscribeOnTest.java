@@ -60,16 +60,13 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     public final ExecutorService offloadExecutorService = Executors.newCachedThreadPool(
             new DefaultThreadFactory(OFFLOAD_EXECUTOR_PREFIX));
     @Rule
-    public final ExecutorRule<Executor> offloader = ExecutorRule.withExecutor(() -> from(task -> {
-        offloadExecutorService.execute(task);
-    }));
+    public final ExecutorRule<Executor> offloader = ExecutorRule.withExecutor(() ->
+            from(offloadExecutorService::execute));
 
     public final ExecutorService sourceExecutorService = Executors.newCachedThreadPool(
             new DefaultThreadFactory(SOURCE_EXECUTOR_PREFIX));
     @Rule
-    public final ExecutorRule<Executor> source = ExecutorRule.withExecutor(() -> from(task -> {
-        sourceExecutorService.execute(task);
-    }));
+    public final ExecutorRule<Executor> source = ExecutorRule.withExecutor(() -> from(sourceExecutorService::execute));
 
     protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {

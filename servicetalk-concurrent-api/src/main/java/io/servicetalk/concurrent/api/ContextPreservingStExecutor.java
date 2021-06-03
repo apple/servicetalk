@@ -29,6 +29,11 @@ final class ContextPreservingStExecutor implements Executor {
     }
 
     @Override
+    public String toString() {
+        return ContextPreservingStExecutor.class.getSimpleName() + "{delegate=" + delegate +"}";
+    }
+
+    @Override
     public Cancellable execute(final Runnable task) {
         return delegate.execute(new ContextPreservingRunnable(task));
     }

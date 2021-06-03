@@ -108,6 +108,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
                                      final Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
+            LOGGER.debug("executing Publisher subscribe on {}", executor);
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
@@ -119,6 +120,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
                                      final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         try {
+            LOGGER.debug("executing Single subscribe on {}", executor);
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
@@ -130,6 +132,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
                                  final Consumer<CompletableSource.Subscriber> handleSubscribe) {
         try {
+            LOGGER.debug("executing Completable subscribe on {}", executor);
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
@@ -306,21 +309,25 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         public void onSubscribe(final Subscription s) {
             subscription = s;
+            LOGGER.debug("executing Publisher subscribe on {}", executor);
             offerSignal(s);
         }
 
         @Override
         public void onNext(final T t) {
+            LOGGER.debug("executing Publisher onNext on {}", executor);
             offerSignal(t == null ? NULL_WRAPPER : t);
         }
 
         @Override
         public void onError(final Throwable t) {
+            LOGGER.debug("executing Publisher onError on {}", executor);
             offerSignal(TerminalNotification.error(t));
         }
 
         @Override
         public void onComplete() {
+            LOGGER.debug("executing Publisher onComplete on {}", executor);
             offerSignal(TerminalNotification.complete());
         }
 
@@ -475,6 +482,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             this.cancellable = cancellable;
             state = ON_SUBSCRIBE_RECEIVED_MASK;
             try {
+                LOGGER.debug("executing Single onSubscribe on {}", executor);
                 executor.execute(this);
             } catch (Throwable t) {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
@@ -634,11 +642,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onComplete() {
+            LOGGER.debug("executing Completable onComplete on {}", executor);
             terminal(COMPLETED);
         }
 
         @Override
         public void onError(final Throwable t) {
+            LOGGER.debug("executing Completable onError on {}", executor);
             terminal(t);
         }
 
@@ -683,6 +693,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         public void cancel() {
             try {
+                LOGGER.debug("executing Completable cancel on {}", executor);
                 executor.execute(() -> safeCancel(cancellable));
             } catch (Throwable t) {
                 LOGGER.error("Failed to execute task on the executor {}. " +
