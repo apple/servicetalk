@@ -130,19 +130,25 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
             // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
             ByteBuf byteBuf = ctx.alloc().directBuffer((int) headersEncodedSizeAccumulator);
-            Buffer stBuf = newBufferFrom(byteBuf);
+            try {
+                Buffer stBuf = newBufferFrom(byteBuf);
 
-            // Encode the message.
-            encodeInitialLine(stBuf, metaData);
-            state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
-                    isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
+                // Encode the message.
+                encodeInitialLine(stBuf, metaData);
+                state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
+                        isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
 
-            sanitizeHeadersBeforeEncode(metaData, state);
+                sanitizeHeadersBeforeEncode(metaData, state);
 
-            encodeHeaders(metaData.headers(), byteBuf, stBuf);
-            writeShortBE(byteBuf, CRLF_SHORT);
-            headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
-                                            HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
+                encodeHeaders(metaData.headers(), byteBuf, stBuf);
+                writeShortBE(byteBuf, CRLF_SHORT);
+                headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
+                                                HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
+            } catch (Exception e) {
+                // Encoding of meta-data can fail or cause expansion of the initial ByteBuf capacity that can fail
+                byteBuf.release();
+                throw e;
+            }
             ctx.write(byteBuf, promise);
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
@@ -258,8 +264,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
             ByteBuf buf = ctx.alloc().directBuffer(lengthHex.length() + 2);
-            buf.writeCharSequence(lengthHex, US_ASCII);
-            writeShortBE(buf, CRLF_SHORT);
+            try {
+                buf.writeCharSequence(lengthHex, US_ASCII);
+                writeShortBE(buf, CRLF_SHORT);
+            } catch (Exception e) {
+                buf.release();
+                throw e;
+            }
             promiseCombiner.add(ctx.write(buf));
             promiseCombiner.add(ctx.write(encodeAndRetain(msg)));
             promiseCombiner.add(ctx.write(CRLF_BUF.duplicate()));
@@ -276,11 +287,17 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
         } else {
             ByteBuf buf = ctx.alloc().directBuffer((int) trailersEncodedSizeAccumulator);
-            writeMediumBE(buf, ZERO_CRLF_MEDIUM);
-            encodeHeaders(headers, buf);
-            writeShortBE(buf, CRLF_SHORT);
-            trailersEncodedSizeAccumulator = TRAILERS_WEIGHT_NEW * padSizeForAccumulation(buf.readableBytes()) +
-                    TRAILERS_WEIGHT_HISTORICAL * trailersEncodedSizeAccumulator;
+            try {
+                writeMediumBE(buf, ZERO_CRLF_MEDIUM);
+                encodeHeaders(headers, buf);
+                writeShortBE(buf, CRLF_SHORT);
+                trailersEncodedSizeAccumulator = TRAILERS_WEIGHT_NEW * padSizeForAccumulation(buf.readableBytes()) +
+                        TRAILERS_WEIGHT_HISTORICAL * trailersEncodedSizeAccumulator;
+            } catch (Exception e) {
+                // Encoding of trailers can fail or cause expansion of the initial ByteBuf capacity that can fail
+                buf.release();
+                throw e;
+            }
             ctx.write(buf, promise);
         }
     }
