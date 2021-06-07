@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -166,20 +165,17 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                                 }
                             });
                         } else {
-                            // Here we assume that if there is any offloading required, it is done by offloading the
-                            // Completable returned by closeAsyncGracefully() hence offloading each channel is not
-                            // required. Hence, we override the offloading on each channel for this particular
-                            // subscribe to use immediate() and hopefully disable offloading on each channel. There
-                            // could still be offloading embedded within the Completable but we can't override that.
+                            // Hopefully the returned Completable does not include any offloading but we can't know or
+                            // influence it.
                             closeable.merge(new AsyncCloseable() {
                                 @Override
                                 public Completable closeAsync() {
-                                    return channelCloseable.closeAsync().publishOn(immediate());
+                                    return channelCloseable.closeAsync();
                                 }
 
                                 @Override
                                 public Completable closeAsyncGracefully() {
-                                    return channelCloseable.closeAsyncGracefully().publishOn(immediate());
+                                    return channelCloseable.closeAsyncGracefully();
                                 }
                             });
                         }
