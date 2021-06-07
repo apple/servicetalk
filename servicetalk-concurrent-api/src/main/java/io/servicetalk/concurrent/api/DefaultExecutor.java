@@ -173,11 +173,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
                 private final ExecutorService service = (ExecutorService) jdkExecutor;
 
                 @Override
-                public String toString() {
-                    return InternalExecutor.class.getSimpleName() + "{service=" + service + "}";
-                }
-
-                @Override
                 public void run() {
                     service.shutdown();
                 }
@@ -230,11 +225,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         SingleThreadedScheduler(final java.util.concurrent.Executor offloadExecutor) {
             this.offloadExecutor = offloadExecutor;
-        }
-
-        @Override
-        public String toString() {
-            return SingleThreadedScheduler.class.getSimpleName() + "{offloadExecutor=" + offloadExecutor + "}";
         }
 
         @Override

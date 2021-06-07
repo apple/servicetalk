@@ -22,14 +22,21 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 
 import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,6 +44,7 @@ import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -45,7 +53,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
     protected static final String APP_EXECUTOR_PREFIX = "app";
     protected static final String SOURCE_EXECUTOR_PREFIX = "source";
-    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offloader";
+    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
 
     static final int APP_THREAD = 0;
     static final int SOURCE_THREAD = 1;
@@ -57,48 +65,100 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final ExecutorRule<Executor> app = ExecutorRule.withNamePrefix(APP_EXECUTOR_PREFIX);
 
-    public final ExecutorService offloadExecutorService = Executors.newCachedThreadPool(
-            new DefaultThreadFactory(OFFLOAD_EXECUTOR_PREFIX));
-    @Rule
-    public final ExecutorRule<Executor> offloader = ExecutorRule.withExecutor(() ->
-            from(offloadExecutorService::execute));
+    private volatile Runnable afterOffload;
 
-    public final ExecutorService sourceExecutorService = Executors.newCachedThreadPool(
+    private final ThreadPoolExecutor offloadExecutorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue<Runnable>(),
+                                      new DefaultThreadFactory(OFFLOAD_EXECUTOR_PREFIX)) {
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Runnable runnable, final T value) {
+            Runnable after = () -> {
+                try {
+                    runnable.run();
+                } finally {
+                    Runnable executeAfterOffload = afterOffload;
+                    if (null != executeAfterOffload) {
+                        executeAfterOffload.run();
+                    }
+                }
+            };
+            return super.newTaskFor(after, value);
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Callable<T> callable) {
+            Callable<T> after = () -> {
+                try {
+                    return callable.call();
+                } finally {
+                    Runnable executeAfterOffload = afterOffload;
+                    if (null != executeAfterOffload) {
+                        executeAfterOffload.run();
+                    }
+                }
+            };
+            return super.newTaskFor(after);
+        }
+    };
+    @Rule
+    public final ExecutorRule<Executor> offload = ExecutorRule.withExecutor(() -> from(offloadExecutorService));
+
+    private final ExecutorService sourceExecutorService = Executors.newSingleThreadExecutor(
             new DefaultThreadFactory(SOURCE_EXECUTOR_PREFIX));
     @Rule
-    public final ExecutorRule<Executor> source = ExecutorRule.withExecutor(() -> from(sourceExecutorService::execute));
+    public final ExecutorRule<Executor> source = ExecutorRule.withExecutor(() -> from(sourceExecutorService));
 
     protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
-        CountDownLatch subscribed = new CountDownLatch(2);
+        return setupAndSubscribe(-1, offloadingFunction);
+    }
+
+    protected AtomicReferenceArray<Thread> setupAndSubscribe(int offloadsExpected,
+                                                             Function<Completable, Completable> offloadingFunction)
+            throws InterruptedException {
+        CountDownLatch subscribed = new CountDownLatch(offloadsExpected > 0 ? 3 : 2);
         CountDownLatch allDone = new CountDownLatch(1);
+        AtomicInteger offloads = new AtomicInteger();
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
         CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
-            recordThread(capturedThreads, SOURCE_THREAD);
             try {
                 // don't emit until AFTER subscribe is complete.
                 subscribed.await();
+                // Emit the result
+                while (offloadExecutorService.getActiveCount() > 0) {
+                    TimeUnit.MILLISECONDS.sleep(10);
+                }
+                recordThread(capturedThreads, SOURCE_THREAD);
             } catch (InterruptedException woken) {
                 Thread.interrupted();
                 CancellationException cancel = new CancellationException("Source cancelled due to interrupt");
                 cancel.initCause(woken);
                 throw cancel;
             }
-            // Emit the result
+
         }, sourceExecutorService);
 
         app.executor().execute(() -> {
             recordThread(capturedThreads, APP_THREAD);
-            Completable original = Completable.fromStage(task)
-                    .afterOnSubscribe(cancellable -> subscribed.countDown());
+            Completable original = Completable.fromStage(task);
 
             Completable offloaded = offloadingFunction.apply(original);
 
+            afterOffload = () -> {
+                if (0 == offloads.getAndIncrement()) {
+                    subscribed.countDown();
+                }
+            };
+
             Cancellable cancel = offloaded.afterOnComplete(allDone::countDown)
-                    .afterOnSubscribe(cancellable -> recordThread(capturedThreads, SUBSCRIBE_THREAD))
+                    .afterOnSubscribe(cancellable -> {
+                        recordThread(capturedThreads, SUBSCRIBE_THREAD);
+                        subscribed.countDown();
+                    })
                     .afterFinally(() -> recordThread(capturedThreads, TERMINAL_THREAD))
-                    .subscribe();
+                    .subscribe(() -> System.out.println("done!"));
             subscribed.countDown();
             try {
                 // Still waiting for "afterOnSubscribe" to fire
@@ -120,6 +180,10 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         });
         // Waiting for "afterOnComplete" to fire
         allDone.await();
+
+        if (-1 != offloadsExpected) {
+            assertThat("Unexpected offloads", offloads.intValue(), is(offloadsExpected));
+        }
 
         return verifyCapturedThreads(capturedThreads);
     }
@@ -217,7 +281,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 .collect(Collectors.joining(", ", "[ ", " ]"));
     }
 
-    public static TypeSafeMatcher<Thread> matchPrefix(String prefix) {
+    public static Matcher<Thread> matchPrefix(String prefix) {
         return new TypeSafeMatcher<Thread>() {
             final String matchPrefix = prefix;
 

@@ -1382,8 +1382,7 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
-     * invokes methods on that {@link Subscriber} when
-     * PublishAndSubscribeOnTesthe corresponding methods are called for {@link Subscriber}s of
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
      * the returned {@link Publisher}.
      *
      * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
