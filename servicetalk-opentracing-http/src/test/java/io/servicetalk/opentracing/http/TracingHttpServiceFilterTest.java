@@ -17,7 +17,6 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
@@ -38,12 +37,12 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentracing.Tracer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,32 +80,30 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class TracingHttpServiceFilterTest {
+@ExtendWith(MockitoExtension.class)
+class TracingHttpServiceFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TracingHttpServiceFilterTest.class);
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Mock
     private Tracer mockTracer;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
         LoggerStringWriter.reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         LoggerStringWriter.remove();
     }
@@ -134,7 +131,7 @@ public class TracingHttpServiceFilterTest {
     }
 
     @Test
-    public void testRequestWithTraceKey() throws Exception {
+    void testRequestWithTraceKey() throws Exception {
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         try (ServerContext context = buildServer(spanListener)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
@@ -167,7 +164,7 @@ public class TracingHttpServiceFilterTest {
     }
 
     @Test
-    public void testRequestWithoutTraceKey() throws Exception {
+    void testRequestWithoutTraceKey() throws Exception {
         final String requestUrl = "/foo";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         try (ServerContext context = buildServer(spanListener)) {
@@ -198,7 +195,7 @@ public class TracingHttpServiceFilterTest {
     }
 
     @Test
-    public void tracerThrowsReturnsErrorResponse() throws Exception {
+    void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(new TracingHttpServiceFilter(mockTracer, "testServer"))
@@ -212,7 +209,7 @@ public class TracingHttpServiceFilterTest {
     }
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         final DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         verifyServerFilterAsyncContextVisibility(new TracingHttpServiceFilter(tracer, "testServer"));
     }

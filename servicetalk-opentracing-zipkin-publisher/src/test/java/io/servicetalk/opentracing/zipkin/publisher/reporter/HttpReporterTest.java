@@ -18,7 +18,6 @@ package io.servicetalk.opentracing.zipkin.publisher.reporter;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
@@ -26,17 +25,13 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.opentracing.zipkin.publisher.reporter.HttpReporter.Builder;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -54,30 +49,23 @@ import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.ver
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.time.Duration.ofMillis;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static zipkin2.CheckResult.OK;
 
-@RunWith(Parameterized.class)
-public class HttpReporterTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class HttpReporterTest {
     private final BlockingQueue<HttpRequest> receivedRequests;
     private final ServerContext context;
-    private final Codec codec;
     @Nullable
     private HttpReporter reporter;
     private volatile BiFunction<HttpServiceContext, HttpResponseFactory, HttpResponse> responseGenerator =
             (__, factory) -> factory.ok();
 
-    public HttpReporterTest(final Codec codec) throws Exception {
-        this.codec = codec;
+    HttpReporterTest() throws Exception {
         receivedRequests = new LinkedBlockingQueue<>();
         this.context = forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
@@ -86,12 +74,7 @@ public class HttpReporterTest {
                 });
     }
 
-    @Parameterized.Parameters(name = "codec: {0}")
-    public static Collection<Codec> data() {
-        return asList(Codec.values());
-    }
-
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         if (reporter != null) {
@@ -101,81 +84,89 @@ public class HttpReporterTest {
         closeable.closeGracefully();
     }
 
-    @Test
-    public void disableBatching() throws Exception {
-        HttpReporter reporter = initReporter(Builder::disableSpanBatching);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void disableBatching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
         reporter.report(newSpan("1"));
-        List<Span> spans = verifyRequest(receivedRequests.take(), false);
+        List<Span> spans = verifyRequest(codec, receivedRequests.take(), false);
         assertThat("Unexpected spans received.", spans, hasSize(1));
         verifySpan(spans.get(0), "1");
 
         reporter.report(newSpan("2"));
-        List<Span> spans2 = verifyRequest(receivedRequests.take(), false);
+        List<Span> spans2 = verifyRequest(codec, receivedRequests.take(), false);
         assertThat("Unexpected spans received.", spans, hasSize(1));
         verifySpan(spans2.get(0), "2");
     }
 
-    @Test
-    public void batching() throws Exception {
-        HttpReporter reporter = initReporter(builder -> builder.batchSpans(2, ofMillis(200)));
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void batching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(2, ofMillis(200)));
         reporter.report(newSpan("1"));
         reporter.report(newSpan("2"));
-        List<Span> spans = verifyRequest(receivedRequests.take(), true);
+        List<Span> spans = verifyRequest(codec, receivedRequests.take(), true);
         assertThat("Unexpected spans received.", spans, hasSize(2));
         verifySpan(spans.get(0), "1");
         verifySpan(spans.get(1), "2");
     }
 
-    @Test
-    public void reportAfterClose() {
-        HttpReporter reporter = initReporter(Builder::disableSpanBatching);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void reportAfterClose(final Codec codec) {
+        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
         assertThat("Unexpected check state.", reporter.check(), is(OK));
         reporter.close();
         assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
-        assertThrows("Report post close accepted.", IllegalStateException.class,
-                () -> reporter.report(newSpan("1")));
+        assertThrows(IllegalStateException.class, () -> reporter.report(newSpan("1")),
+                "Report post close accepted.");
     }
 
-    @Test
-    public void non200ResponsesAreOkWithoutBatching() throws Exception {
-        HttpReporter reporter = initReporter(Builder::disableSpanBatching);
-        verifyNon200ResponsesAreOk(reporter, false);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void non200ResponsesAreOkWithoutBatching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        verifyNon200ResponsesAreOk(codec, reporter, false);
     }
 
-    @Test
-    public void non200ResponsesAreOkWithBatching() throws Exception {
-        HttpReporter reporter = initReporter(builder -> builder.batchSpans(1, ofMillis(200)));
-        verifyNon200ResponsesAreOk(reporter, true);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void non200ResponsesAreOkWithBatching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(1, ofMillis(200)));
+        verifyNon200ResponsesAreOk(codec, reporter, true);
     }
 
-    @Test
-    public void reportFailuresAreRecoveredWithBatching() throws Exception {
-        HttpReporter reporter = initReporter(builder -> builder.batchSpans(1, ofMillis(200)));
-        verifySpanSendFailuresAreRecovered(reporter, true);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void reportFailuresAreRecoveredWithBatching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(1, ofMillis(200)));
+        verifySpanSendFailuresAreRecovered(codec, reporter, true);
     }
 
-    @Test
-    public void reportFailuresAreRecoveredWithoutBatching() throws Exception {
-        HttpReporter reporter = initReporter(Builder::disableSpanBatching);
-        verifySpanSendFailuresAreRecovered(reporter, false);
+    @ParameterizedTest(name = "codec: {0}")
+    @EnumSource(Codec.class)
+    void reportFailuresAreRecoveredWithoutBatching(final Codec codec) throws Exception {
+        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        verifySpanSendFailuresAreRecovered(codec, reporter, false);
     }
 
-    private void verifyNon200ResponsesAreOk(final HttpReporter reporter, final boolean batched) throws Exception {
+    private void verifyNon200ResponsesAreOk(final Codec codec, final HttpReporter reporter,
+                                            final boolean batched) throws Exception {
         responseGenerator = (__, factory) -> factory.internalServerError();
         reporter.report(newSpan("1"));
-        List<Span> spans = verifyRequest(receivedRequests.take(), batched);
+        List<Span> spans = verifyRequest(codec, receivedRequests.take(), batched);
         assertThat("Unexpected spans received.", spans, hasSize(1));
         verifySpan(spans.get(0), "1");
 
         responseGenerator = (__, factory) -> factory.ok();
         reporter.report(newSpan("2"));
-        List<Span> spans2 = verifyRequest(receivedRequests.take(), batched);
+        List<Span> spans2 = verifyRequest(codec, receivedRequests.take(), batched);
         assertThat("Unexpected spans received.", spans2, hasSize(1));
         verifySpan(spans2.get(0), "2");
     }
 
-    private void verifySpanSendFailuresAreRecovered(final HttpReporter reporter, final boolean batched)
-            throws Exception {
+    private void verifySpanSendFailuresAreRecovered(final Codec codec, final HttpReporter reporter,
+                                                    final boolean batched) throws Exception {
         responseGenerator = (httpServiceContext, factory) -> {
             try {
                 httpServiceContext.closeAsync().toFuture().get();
@@ -185,18 +176,18 @@ public class HttpReporterTest {
             return factory.ok();
         };
         reporter.report(newSpan("1"));
-        List<Span> spans = verifyRequest(receivedRequests.take(), batched);
+        List<Span> spans = verifyRequest(codec, receivedRequests.take(), batched);
         assertThat("Unexpected spans received.", spans, hasSize(1));
         verifySpan(spans.get(0), "1");
 
         responseGenerator = (__, factory) -> factory.ok();
         reporter.report(newSpan("2"));
-        List<Span> spans2 = verifyRequest(receivedRequests.take(), batched);
+        List<Span> spans2 = verifyRequest(codec, receivedRequests.take(), batched);
         assertThat("Unexpected spans received.", spans2, hasSize(1));
         verifySpan(spans2.get(0), "2");
     }
 
-    private List<Span> verifyRequest(final HttpRequest request, final boolean multipleSpans) {
+    private List<Span> verifyRequest(final Codec codec, final HttpRequest request, final boolean multipleSpans) {
         SpanBytesDecoder decoder;
         switch (codec) {
             case JSON_V1:
@@ -230,7 +221,7 @@ public class HttpReporterTest {
         return decoded;
     }
 
-    private HttpReporter initReporter(UnaryOperator<Builder> configurator) {
+    private HttpReporter initReporter(final Codec codec, final UnaryOperator<Builder> configurator) {
         reporter = configurator.apply(new Builder(forSingleAddress(serverHostAndPort(context))).codec(codec)).build();
         return reporter;
     }

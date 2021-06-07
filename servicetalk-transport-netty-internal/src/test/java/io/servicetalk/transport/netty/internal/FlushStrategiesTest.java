@@ -20,34 +20,34 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushWith;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class FlushStrategiesTest {
+class FlushStrategiesTest {
 
     private FlushSender flushSender;
     private TestPublisher<String> durationSource;
     private WriteEventsListener listener;
     private TestSubscription subscription = new TestSubscription();
 
-    @Before
+    @BeforeEach
     public void setUp() {
         flushSender = mock(FlushSender.class);
         durationSource = new TestPublisher<>();
     }
 
     @Test
-    public void testFlushOnEach() {
+    void testFlushOnEach() {
         setupFor(flushOnEach());
         listener.itemWritten(1);
         listener.itemWritten(2);
@@ -55,19 +55,19 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testBatchFlush() {
+    void testBatchFlush() {
         setupForBatch(2);
         testBatch(2, 2);
     }
 
     @Test
-    public void testNoFlushForBatch() {
+    void testNoFlushForBatch() {
         setupForBatch(3);
         testBatch(3, 2);
     }
 
     @Test
-    public void testFlushOnDuration() {
+    void testFlushOnDuration() {
         setupForBatch(5);
         testBatch(5, 2);
         durationSource.onNext("Flush");
@@ -75,7 +75,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testBatchFlushWriteCancel() {
+    void testBatchFlushWriteCancel() {
         setupForBatch(5);
         durationSource.onSubscribe(subscription);
         testBatch(5, 2);
@@ -84,13 +84,13 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testSourceEmitErrorForFlushOnEach() {
+    void testSourceEmitErrorForFlushOnEach() {
         setupFor(flushOnEach());
         listener.writeTerminated();
     }
 
     @Test
-    public void testSourceEmitErrorForBatchFlush() {
+    void testSourceEmitErrorForBatchFlush() {
         setupForBatch(2);
         durationSource.onSubscribe(subscription);
         listener.writeTerminated();
@@ -98,7 +98,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testDurationComplete() {
+    void testDurationComplete() {
         setupForBatch(2);
         durationSource.onComplete();
         listener.itemWritten(1);
@@ -108,7 +108,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testDurationEmitError() {
+    void testDurationEmitError() {
         setupForBatch(2);
         durationSource.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(flushSender);
@@ -118,7 +118,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testDurationEmitErrorPostComplete() {
+    void testDurationEmitErrorPostComplete() {
         setupForBatch(2);
         listener.writeTerminated();
         durationSource.onError(DELIBERATE_EXCEPTION);
@@ -126,7 +126,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testDurationCompletePostComplete() {
+    void testDurationCompletePostComplete() {
         setupForBatch(2);
         listener.itemWritten(1);
         listener.writeTerminated();
@@ -135,7 +135,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testFlushOnEndComplete() {
+    void testFlushOnEndComplete() {
         setupFor(flushOnEnd());
         listener.itemWritten(1);
         verifyFlush(0);
@@ -144,7 +144,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testFlushWith() {
+    void testFlushWith() {
         setupFor(flushWith(durationSource));
         durationSource.onSubscribe(subscription);
         listener.itemWritten(1);
@@ -157,7 +157,7 @@ public class FlushStrategiesTest {
     }
 
     @Test
-    public void testFlushWithWriteCancelCancelsSource() {
+    void testFlushWithWriteCancelCancelsSource() {
         setupFor(flushWith(durationSource));
         durationSource.onSubscribe(subscription);
         listener.writeCancelled();

@@ -17,7 +17,6 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
@@ -39,13 +38,12 @@ import io.servicetalk.transport.api.ServerContext;
 
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,40 +78,36 @@ import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class TracingHttpRequesterFilterTest {
+@ExtendWith(MockitoExtension.class)
+class TracingHttpRequesterFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TracingHttpRequesterFilterTest.class);
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expected = none();
 
     @Mock
     private Tracer mockTracer;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
         LoggerStringWriter.reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         LoggerStringWriter.remove();
     }
 
     @Test
-    public void testInjectWithNoParent() throws Exception {
+    void testInjectWithNoParent() throws Exception {
         final String requestUrl = "/";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
@@ -149,7 +143,7 @@ public class TracingHttpRequesterFilterTest {
     }
 
     @Test
-    public void testInjectWithParent() throws Exception {
+    void testInjectWithParent() throws Exception {
         final String requestUrl = "/foo";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
@@ -193,16 +187,16 @@ public class TracingHttpRequesterFilterTest {
     }
 
     @Test
-    public void tracerThrowsReturnsErrorResponse() throws Exception {
+    void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                     .appendConnectionFilter(
                             new TracingHttpRequesterFilter(mockTracer, "testClient")).build()) {
                 HttpRequest request = client.get("/");
-                expected.expect(ExecutionException.class);
-                expected.expectCause(is(DELIBERATE_EXCEPTION));
-                client.request(request).toFuture().get();
+                ExecutionException ex = assertThrows(ExecutionException.class,
+                    () -> client.request(request).toFuture().get());
+                assertThat(ex.getCause(), is(DELIBERATE_EXCEPTION));
             }
         }
     }
