@@ -48,20 +48,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TimeoutCompletableTest {
+class TimeoutCompletableTest {
     @RegisterExtension
-    public final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
+    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
     private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TestSingle<Integer> source = new TestSingle<>();
     private TestExecutor testExecutor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         testExecutor = executorExtension.executor();
     }
 
     @Test
-    public void executorScheduleThrows() {
+    void executorScheduleThrows() {
         toSource(source.ignoreElement().timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
@@ -76,7 +76,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataOnCompletionNoTimeout() {
+    void noDataOnCompletionNoTimeout() {
         init();
 
         source.onSuccess(1);
@@ -87,7 +87,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataOnErrorNoTimeout() {
+    void noDataOnErrorNoTimeout() {
         init();
 
         source.onError(DELIBERATE_EXCEPTION);
@@ -98,7 +98,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void subscriptionCancelAlsoCancelsTimer() {
+    void subscriptionCancelAlsoCancelsTimer() {
         init();
 
         listener.awaitSubscription().cancel();
@@ -108,7 +108,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataAndTimeout() {
+    void noDataAndTimeout() {
         init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
@@ -119,7 +119,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void justSubscribeTimeout() {
+    void justSubscribeTimeout() {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
 
         init(delayedCompletable, false);
@@ -137,7 +137,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void cancelDoesOnError() throws Exception {
+    void cancelDoesOnError() throws Exception {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
         init(delayedCompletable, false);
         CountDownLatch cancelLatch = new CountDownLatch(1);

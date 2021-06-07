@@ -30,16 +30,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DefaultBlockingIterableProcessorTest {
+class DefaultBlockingIterableProcessorTest {
 
     private final BlockingIterable.Processor<Integer> processor;
 
-    public DefaultBlockingIterableProcessorTest() {
+    DefaultBlockingIterableProcessorTest() {
         processor = Processors.newBlockingIterableProcessor(2);
     }
 
     @Test
-    public void emitBuffersNoIterator() throws Exception {
+    void emitBuffersNoIterator() throws Exception {
         processor.next(1);
         processor.next(2);
         BlockingIterator<Integer> iterator = processor.iterator();
@@ -50,7 +50,7 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void emitBuffersNoDemand() throws Exception {
+    void emitBuffersNoDemand() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.next(1);
         processor.next(2);
@@ -61,26 +61,26 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void hasNextTimesout() {
+    void hasNextTimesout() {
         BlockingIterator<Integer> iterator = processor.iterator();
         assertThrows(TimeoutException.class, () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void nextTimesout() {
+    void nextTimesout() {
         BlockingIterator<Integer> iterator = processor.iterator();
         assertThrows(TimeoutException.class, () -> iterator.next(10, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void emitNull() throws Exception {
+    void emitNull() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.next(null);
         assertThat("Unexpected item received.", iterator.next(), is(nullValue()));
     }
 
     @Test
-    public void iteratorCloseAfterProcessorTermination() throws Exception {
+    void iteratorCloseAfterProcessorTermination() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.close();
         iterator.close();
@@ -88,7 +88,7 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void iteratorCloseAfterProcessorFail() throws Exception {
+    void iteratorCloseAfterProcessorFail() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.fail(DELIBERATE_EXCEPTION);
         iterator.close();
@@ -96,14 +96,14 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void postIteratorCloseHasNextThrows() throws Exception {
+    void postIteratorCloseHasNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
         assertThrows(CancellationException.class, () -> iterator.hasNext());
     }
 
     @Test
-    public void postIteratorCloseNextThrows() throws Exception {
+    void postIteratorCloseNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
         assertThrows(CancellationException.class, () -> iterator.next());

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Consumer;
 
-public class BeforeErrorTest extends AbstractWhenOnErrorTest {
+class BeforeErrorTest extends AbstractWhenOnErrorTest {
     @Override
     protected <T> Single<T> doError(Single<T> single, Consumer<Throwable> consumer) {
         return single.beforeOnError(consumer);

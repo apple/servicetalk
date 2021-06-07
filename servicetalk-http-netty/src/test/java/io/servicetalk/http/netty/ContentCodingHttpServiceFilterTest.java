@@ -23,10 +23,10 @@ import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static java.util.Collections.singletonList;
 
-public class ContentCodingHttpServiceFilterTest {
+class ContentCodingHttpServiceFilterTest {
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(new ContentCodingHttpServiceFilter(singletonList(identity())));
     }
 }

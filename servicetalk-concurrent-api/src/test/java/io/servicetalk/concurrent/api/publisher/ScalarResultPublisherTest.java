@@ -29,12 +29,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class ScalarResultPublisherTest {
+class ScalarResultPublisherTest {
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testJust() {
+    void testJust() {
         toSource(from("Hello")).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is("Hello"));
@@ -42,19 +42,19 @@ public class ScalarResultPublisherTest {
     }
 
     @Test
-    public void testError() {
+    void testError() {
         toSource(Publisher.<String>failed(DELIBERATE_EXCEPTION)).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         toSource(Publisher.<String>empty()).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testNever() {
+    void testNever() {
         toSource(Publisher.<String>never()).subscribe(subscriber);
         subscriber.awaitSubscription();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));

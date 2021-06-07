@@ -43,9 +43,6 @@ public final class Matchers {
 
             @Override
             protected boolean matchesSafely(final CharSequence item) {
-                if (item == null) {
-                    return false;
-                }
                 return contentEquals(expected, item);
             }
 

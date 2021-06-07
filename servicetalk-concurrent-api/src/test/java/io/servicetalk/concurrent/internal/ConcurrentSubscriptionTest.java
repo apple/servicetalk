@@ -40,11 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ConcurrentSubscriptionTest {
+class ConcurrentSubscriptionTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void singleThreadSingleRequest() throws InterruptedException {
+    void singleThreadSingleRequest() throws InterruptedException {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final long demand = Long.MAX_VALUE;
         concurrent.request(demand);
@@ -53,7 +53,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadMultipleRequest() throws InterruptedException {
+    void singleThreadMultipleRequest() throws InterruptedException {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final int demand = 100;
         for (int i = 0; i < demand; ++i) {
@@ -64,14 +64,14 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadCancel() {
+    void singleThreadCancel() {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         concurrent.cancel();
         assertTrue(subscription.isCancelled());
     }
 
     @Test
-    public void singleThreadCancelDeliveredIfRequestThrows() throws InterruptedException {
+    void singleThreadCancelDeliveredIfRequestThrows() throws InterruptedException {
         CountDownLatch cancelledLatch = new CountDownLatch(1);
         Subscription concurrent = ConcurrentSubscription.wrap(new Subscription() {
             @Override
@@ -95,7 +95,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadReentrant() {
+    void singleThreadReentrant() {
         final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
         final Subscription concurrent = ConcurrentSubscription.wrap(reentrantSubscription);
         reentrantSubscription.outerSubscription(concurrent);
@@ -104,7 +104,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadInvalidRequestN() {
+    void singleThreadInvalidRequestN() {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final long invalidN = ThreadLocalRandom.current().nextLong(Long.MIN_VALUE, 1);
         concurrent.request(invalidN);
@@ -112,12 +112,12 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadRequest() throws ExecutionException, InterruptedException {
+    void multiThreadRequest() throws ExecutionException, InterruptedException {
         multiThread(300, false);
     }
 
     @Test
-    public void multiThreadCancel() throws ExecutionException, InterruptedException {
+    void multiThreadCancel() throws ExecutionException, InterruptedException {
         multiThread(250, true);
     }
 
@@ -157,7 +157,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadCancelNotDeliveredIfRequestThrows() throws Exception {
+    void multiThreadCancelNotDeliveredIfRequestThrows() throws Exception {
         ExecutorService executorService = newFixedThreadPool(1);
         try {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -201,7 +201,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadReentrant() throws Exception {
+    void multiThreadReentrant() throws Exception {
         ExecutorService executorService = newFixedThreadPool(1);
         try {
             final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
@@ -228,12 +228,12 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadInvalidRequestN() throws Exception {
+    void multiThreadInvalidRequestN() throws Exception {
         multiThreadInvalidRequestN(false);
     }
 
     @Test
-    public void multiThreadInvalidRequestNCancel() throws Exception {
+    void multiThreadInvalidRequestNCancel() throws Exception {
         multiThreadInvalidRequestN(true);
     }
 

@@ -40,11 +40,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class From2PublisherTest {
+class From2PublisherTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void request2Complete() {
+    void request2Complete() {
         toSource(fromPublisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
@@ -52,7 +52,7 @@ public class From2PublisherTest {
     }
 
     @Test
-    public void request1Complete() {
+    void request1Complete() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -65,7 +65,7 @@ public class From2PublisherTest {
     }
 
     @Test
-    public void request1Cancel() {
+    void request1Cancel() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -78,12 +78,12 @@ public class From2PublisherTest {
     }
 
     @Test
-    public void throwFirst() {
+    void throwFirst() {
         throwInOnNext(1);
     }
 
     @Test
-    public void throwSecond() {
+    void throwSecond() {
         throwInOnNext(2);
     }
 
@@ -107,12 +107,12 @@ public class From2PublisherTest {
     }
 
     @Test
-    public void invalidRequestNZero() {
+    void invalidRequestNZero() {
         invalidRequestN(0);
     }
 
     @Test
-    public void invalidRequestNNeg() {
+    void invalidRequestNNeg() {
         invalidRequestN(-1);
     }
 

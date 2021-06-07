@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import io.netty.channel.Channel;
@@ -28,14 +27,11 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -50,19 +46,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ChannelSetTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+@ExtendWith(MockitoExtension.class)
+class ChannelSetTest {
 
     @Mock
     private Channel channel;
@@ -81,20 +72,20 @@ public class ChannelSetTest {
     private final Processor closeAsyncCompletable = newCompletableProcessor();
     private GenericFutureListener<ChannelFuture> listener;
 
-    @Before
+    @BeforeEach
     public void setupMocks() {
         when(channel.id()).thenReturn(channelId);
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
-        when(channel.close()).then(invocation -> {
+        lenient().when(channel.close()).then(invocation -> {
             listener.operationComplete(channelCloseFuture);
             return channelCloseFuture;
         });
         when(channelCloseFuture.channel()).thenReturn(channel);
-        when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
-        when(mockClosableAttribute.getAndSet(any())).thenReturn(nettyConnection);
-        when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
-        when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));
+        lenient().when(channel.pipeline()).thenReturn(channelPipeline);
+        lenient().when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
+        lenient().when(mockClosableAttribute.getAndSet(any())).thenReturn(nettyConnection);
+        lenient().when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
+        lenient().when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
             listener = invocation.getArgument(0);
             return channelCloseFuture;
@@ -103,7 +94,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsync() {
+    void closeAsync() {
         Completable completable = fixture.closeAsync();
         verify(channel, never()).close();
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
@@ -113,7 +104,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsyncGracefullyWithNettyConnectionChannelHandler() throws Exception {
+    void closeAsyncGracefullyWithNettyConnectionChannelHandler() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(nettyConnection, never()).closeAsyncGracefully();
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
@@ -128,7 +119,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() {
+    void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() {
         when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(channel, never()).close();
@@ -139,7 +130,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void testCloseAsyncGracefullyThenCloseAsync() throws Exception {
+    void testCloseAsyncGracefullyThenCloseAsync() throws Exception {
         Completable gracefulCompletable = closeAsyncGracefully(fixture, 100, SECONDS);
         Completable closeCompletable = fixture.closeAsync();
 
@@ -161,7 +152,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void testCloseAsyncThenCloseAsyncGracefully() throws Exception {
+    void testCloseAsyncThenCloseAsyncGracefully() throws Exception {
         Completable closeCompletable = fixture.closeAsync();
         Completable gracefulCompletable = closeAsyncGracefully(fixture, 100, SECONDS);
 
@@ -180,7 +171,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void testCloseAsyncGracefullyTwice() throws Exception {
+    void testCloseAsyncGracefullyTwice() throws Exception {
         Completable gracefulCompletable1 = closeAsyncGracefully(fixture, 60, SECONDS);
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 60, SECONDS);
 
@@ -205,7 +196,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void testCloseAsyncGracefullyTwiceTimesOut() throws Exception {
+    void testCloseAsyncGracefullyTwiceTimesOut() throws Exception {
         Completable gracefulCompletable1 = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 1000, MILLISECONDS);
 
@@ -224,7 +215,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void testCloseAsyncTwice() throws Exception {
+    void testCloseAsyncTwice() throws Exception {
         Completable closeCompletable1 = fixture.closeAsync();
         Completable closeCompletable2 = fixture.closeAsync();
 
@@ -243,7 +234,7 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsyncGracefullyClosesAfterTimeout() throws Exception {
+    void closeAsyncGracefullyClosesAfterTimeout() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);

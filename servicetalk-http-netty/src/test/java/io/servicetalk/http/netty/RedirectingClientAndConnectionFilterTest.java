@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.equalTo;
  * This test-case is for integration testing the {@link RedirectingHttpRequesterFilter} with the various types
  * of {@link HttpClient} and {@link HttpConnection} builders.
  */
-public final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequesterFilterTest {
+final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequesterFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
     @MethodSource("requesterTypes")

@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class BeforeSuccessTest extends AbstractWhenOnSuccessTest {
+class BeforeSuccessTest extends AbstractWhenOnSuccessTest {
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
         return single.beforeOnSuccess(consumer);
@@ -34,7 +34,7 @@ public class BeforeSuccessTest extends AbstractWhenOnSuccessTest {
 
     @Test
     @Override
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         toSource(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);

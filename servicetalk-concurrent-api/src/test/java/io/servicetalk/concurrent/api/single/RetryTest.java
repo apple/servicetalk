@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryTest {
+class RetryTest {
 
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
 
@@ -49,7 +49,7 @@ public class RetryTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         setUp(subscriber);
     }
 
@@ -61,14 +61,14 @@ public class RetryTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         source.onSuccess(1);
         assertThat(subscriber.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
@@ -76,7 +76,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testTwoFailures() {
+    void testTwoFailures() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -88,7 +88,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -100,14 +100,14 @@ public class RetryTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         subscriber.awaitSubscription().cancel();
         source.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);

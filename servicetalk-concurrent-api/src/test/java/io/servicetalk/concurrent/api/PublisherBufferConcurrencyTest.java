@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PublisherBufferConcurrencyTest {
+class PublisherBufferConcurrencyTest {
     private static final String THREAD_NAME_PREFIX = "buffer-concurrency-test";
     private static final Key<Integer> CTX_KEY = Key.newKey("foo");
 
@@ -49,12 +49,12 @@ public class PublisherBufferConcurrencyTest {
     final ExecutorExtension<Executor> executorExtension = withCachedExecutor(THREAD_NAME_PREFIX);
 
     @Test
-    public void largeRun() throws Exception {
+    void largeRun() throws Exception {
         runTest(identity(), identity());
     }
 
     @Test
-    public void executorIsPreserved() throws Exception {
+    void executorIsPreserved() throws Exception {
         final Executor executor = executorExtension.executor();
         runTest(beforeBuffer -> beforeBuffer.publishOn(executor),
                 afterBuffer -> afterBuffer.beforeOnNext(__ ->
@@ -67,7 +67,7 @@ public class PublisherBufferConcurrencyTest {
     }
 
     @Test
-    public void contextIsPreserved() throws Exception {
+    void contextIsPreserved() throws Exception {
         AsyncContext.put(CTX_KEY, 0);
         runTest(beforeBuffer -> beforeBuffer.beforeOnSubscribe(__ -> AsyncContext.put(CTX_KEY, 1)),
                 afterBuffer -> afterBuffer.beforeOnNext(__ ->
@@ -79,7 +79,7 @@ public class PublisherBufferConcurrencyTest {
     }
 
     @Test
-    public void addingAndBoundaryEmission() throws Exception {
+    void addingAndBoundaryEmission() throws Exception {
         TestPublisher<Integer> original = new TestPublisher<>();
         TestPublisher<Accumulator<Integer, Integer>> boundaries = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();

@@ -29,14 +29,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FutureToSingleTest extends AbstractFutureToSingleTest {
+class FutureToSingleTest extends AbstractFutureToSingleTest {
     @Override
     Single<String> from(final CompletableFuture<String> future) {
         return fromFuture(future);
     }
 
     @Test
-    public void failure() throws Exception {
+    void failure() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));

@@ -32,45 +32,45 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public final class SingleFlatMapCompletableTest {
+final class SingleFlatMapCompletableTest {
     private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     private LegacyTestSingle<String> single;
     private LegacyTestCompletable completable;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         single = new LegacyTestSingle<>();
         completable = new LegacyTestCompletable();
     }
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         toSource(succeeded(1).flatMapCompletable(s -> completed())).subscribe(listener);
         listener.awaitOnComplete();
     }
 
     @Test
-    public void testFirstEmitsError() {
+    void testFirstEmitsError() {
         toSource(Single.failed(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testSecondEmitsError() {
+    void testSecondEmitsError() {
         toSource(succeeded(1).flatMapCompletable(s -> failed(DELIBERATE_EXCEPTION))).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelBeforeFirst() {
+    void testCancelBeforeFirst() {
         toSource(single.flatMapCompletable(s -> completable)).subscribe(listener);
         listener.awaitSubscription().cancel();
         single.verifyCancelled();
     }
 
     @Test
-    public void testCancelBeforeSecond() {
+    void testCancelBeforeSecond() {
         toSource(single.flatMapCompletable(s -> completable)).subscribe(listener);
         single.onSuccess("Hello");
         listener.awaitSubscription().cancel();
@@ -79,7 +79,7 @@ public final class SingleFlatMapCompletableTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(single.flatMapCompletable(s -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);
@@ -88,7 +88,7 @@ public final class SingleFlatMapCompletableTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         toSource(single.flatMapCompletable(s -> null)).subscribe(listener);
         single.onSuccess("Hello");
         assertThat(listener.awaitOnError(), instanceOf(NullPointerException.class));

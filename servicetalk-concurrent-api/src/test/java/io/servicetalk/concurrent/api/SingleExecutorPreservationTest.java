@@ -23,25 +23,25 @@ import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class SingleExecutorPreservationTest {
+class SingleExecutorPreservationTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Single<String> single;
 
     @BeforeEach
-    public void setupSingle() {
+    void setupSingle() {
         single = Single.<String>never().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
-    public void testTimeoutSingle() {
+    void testTimeoutSingle() {
         assertSame(EXEC.executor(), single.timeout(1, MILLISECONDS).executor());
         assertSame(EXEC.executor(), single.timeout(ofMillis(1)).executor());
     }
 
     @Test
-    public void testAfterFinallySingle() {
+    void testAfterFinallySingle() {
         assertSame(EXEC.executor(), single.afterFinally(() -> { /* NOOP */ }).executor());
     }
 }

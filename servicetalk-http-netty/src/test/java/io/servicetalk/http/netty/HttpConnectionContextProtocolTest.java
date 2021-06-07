@@ -42,7 +42,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class HttpConnectionContextProtocolTest {
+class HttpConnectionContextProtocolTest {
 
     private enum Config {
 

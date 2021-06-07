@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
@@ -32,10 +31,8 @@ import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
@@ -73,7 +70,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultNettyConnectionTest {
+class DefaultNettyConnectionTest {
 
     private static final String TRAILER_MSG = "Trailer";
     private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG);
@@ -81,8 +78,6 @@ public class DefaultNettyConnectionTest {
     private TestCompletableSubscriber writeListener = new TestCompletableSubscriber();
     private final TestCompletableSubscriber secondWriteListener = new TestCompletableSubscriber();
     private final TestCompletableSubscriber closeListener = new TestCompletableSubscriber();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     private final TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
     private BufferAllocator allocator;
     private EmbeddedDuplexChannel channel;
@@ -90,7 +85,7 @@ public class DefaultNettyConnectionTest {
     private int requestNext = MAX_VALUE;
     private DefaultNettyConnection<Buffer, Buffer> conn;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         setupWithCloseHandler(__ -> UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
@@ -133,7 +128,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testWritePublisher() {
+    void testWritePublisher() {
         toSource(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())))
                 .subscribe(writeListener);
         writeListener.awaitOnComplete();
@@ -141,7 +136,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testConcurrentWritePubAndPub() {
+    void testConcurrentWritePubAndPub() {
         toSource(conn.write(Publisher.never())).subscribe(writeListener);
         assertThat(writeListener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         toSource(conn.write(Publisher.never())).subscribe(secondWriteListener);
@@ -149,14 +144,14 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testSequentialPubAndPub() {
+    void testSequentialPubAndPub() {
         testWritePublisher();
         writeListener = new TestCompletableSubscriber();
         testWritePublisher();
     }
 
     @Test
-    public void testWriteActiveWithPublisher() {
+    void testWriteActiveWithPublisher() {
         toSource(conn.write(publisher)).subscribe(writeListener);
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
         publisher.onNext(newBuffer("Hello"));
@@ -168,13 +163,13 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testPublisherErrorFailsWrite() {
+    void testPublisherErrorFailsWrite() {
         toSource(conn.write(Publisher.failed(DELIBERATE_EXCEPTION))).subscribe(writeListener);
         assertThat(writeListener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testPublisherWithPredictor() {
+    void testPublisherWithPredictor() {
         requestNext = 1;
         toSource(conn.write(publisher, FlushStrategies::defaultFlushStrategy, () -> demandEstimator))
                 .subscribe(writeListener);
@@ -195,7 +190,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testUpdateFlushStrategy() {
+    void testUpdateFlushStrategy() {
         toSource(conn.write(from(newBuffer("Hello"), TRAILER.duplicate()))).subscribe(writeListener);
         writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello", TRAILER_MSG); // Flush on each (default)
@@ -220,7 +215,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testRead() {
+    void testRead() {
         toSource(conn.read()).subscribe(subscriber);
         Buffer expected = allocator.fromAscii("data");
         channel.writeInbound(expected.duplicate());
@@ -232,7 +227,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testCloseAsync() {
+    void testCloseAsync() {
         conn.updateFlushStrategy((__, ___) -> flushOnEnd());
         toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
@@ -247,7 +242,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testOnClosingWithGracefulClose() throws Exception {
+    void testOnClosingWithGracefulClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         toSource(conn.onClosing()).subscribe(closeListener);
         conn.closeAsyncGracefully().toFuture().get();
@@ -255,7 +250,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testOnClosingWithHardClose() throws Exception {
+    void testOnClosingWithHardClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         toSource(conn.onClosing()).subscribe(closeListener);
         conn.closeAsync().toFuture().get();
@@ -263,7 +258,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testOnClosingWithoutUserInitiatedClose() throws Exception {
+    void testOnClosingWithoutUserInitiatedClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         toSource(conn.onClosing()).subscribe(closeListener);
         channel.close().get(); // Close and await closure.
@@ -300,7 +295,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testErrorEnrichmentWithCloseHandlerOnWriteError() throws Exception {
+    void testErrorEnrichmentWithCloseHandlerOnWriteError() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         channel.shutdownOutput().sync();
         assertThat(channel.isActive(), is(false));
@@ -318,7 +313,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
+    void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         toSource(conn.read()).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -328,7 +323,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
+    void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
         channel.close().syncUninterruptibly();
         toSource(conn.write(publisher)).subscribe(writeListener);
 
@@ -340,7 +335,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testConnectionDoesNotHoldAThread() throws Exception {
+    void testConnectionDoesNotHoldAThread() throws Exception {
         AtomicInteger taskSubmitted = new AtomicInteger();
         ExecutorService executor = java.util.concurrent.Executors.newCachedThreadPool();
         try {
@@ -355,7 +350,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testExceptionWithNoSubscriberIsQueued() throws Exception {
+    void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -363,7 +358,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
+    void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
         channel.close().get();
         toSource(conn.read()).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
@@ -371,7 +366,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testChannelCloseBeforeWriteComplete() {
+    void testChannelCloseBeforeWriteComplete() {
         toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);
@@ -386,7 +381,7 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testChannelCloseAfterWriteComplete() {
+    void testChannelCloseAfterWriteComplete() {
         toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);

@@ -17,22 +17,22 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 
-public class FlushStrategyHolderTest {
+class FlushStrategyHolderTest {
 
     private final FlushStrategyHolder holder;
 
-    public FlushStrategyHolderTest() {
+    FlushStrategyHolderTest() {
         holder = new FlushStrategyHolder(mock(FlushStrategy.class));
     }
 
     @Test
-    public void updateWhenOriginal() {
+    void updateWhenOriginal() {
         FlushStrategy prev = holder.currentStrategy();
         FlushStrategy next = mock(FlushStrategy.class);
         Cancellable revert =
@@ -43,7 +43,7 @@ public class FlushStrategyHolderTest {
     }
 
     @Test
-    public void revertNoOpOnMismatch() {
+    void revertNoOpOnMismatch() {
         FlushStrategy prev = holder.currentStrategy();
         FlushStrategy next1 = mock(FlushStrategy.class);
         Cancellable revert1 =

@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ConcurrentUtilsTest {
+final class ConcurrentUtilsTest {
     private static final AtomicIntegerFieldUpdater<ConcurrentUtilsTest> lockUpdater =
             AtomicIntegerFieldUpdater.newUpdater(ConcurrentUtilsTest.class, "lock");
     private static final AtomicLongFieldUpdater<ConcurrentUtilsTest> reentrantLockUpdater =
@@ -48,24 +48,24 @@ public final class ConcurrentUtilsTest {
     private ExecutorService executor;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         executor = newCachedThreadPool();
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @Test
-    public void lockSingleThread() {
+    void lockSingleThread() {
         assertTrue(tryAcquireLock(lockUpdater, this));
         assertTrue(releaseLock(lockUpdater, this));
     }
 
     @Test
-    public void reentrantLockSingleThread() {
+    void reentrantLockSingleThread() {
         long acquireId = tryAcquireReentrantLock(reentrantLockUpdater, this);
         assertThat(acquireId, greaterThan(0L));
         long acquireId2 = tryAcquireReentrantLock(reentrantLockUpdater, this);
@@ -75,7 +75,7 @@ public final class ConcurrentUtilsTest {
     }
 
     @Test
-    public void lockFromDifferentThread() throws Exception {
+    void lockFromDifferentThread() throws Exception {
         assertTrue(tryAcquireLock(lockUpdater, this));
         executor.submit(() -> assertFalse(tryAcquireLock(lockUpdater, this))).get();
 
@@ -88,7 +88,7 @@ public final class ConcurrentUtilsTest {
     }
 
     @Test
-    public void reentrantLockFromDifferentThread() throws Exception {
+    void reentrantLockFromDifferentThread() throws Exception {
         long acquireId = tryAcquireReentrantLock(reentrantLockUpdater, this);
         assertThat(acquireId, greaterThan(0L));
         executor.submit(() -> assertThat(tryAcquireReentrantLock(reentrantLockUpdater, this), is(0L))).get();
@@ -103,7 +103,7 @@ public final class ConcurrentUtilsTest {
     }
 
     @Test
-    public void lockFromDifferentThreadReAcquireFromDifferentThread() throws Exception {
+    void lockFromDifferentThreadReAcquireFromDifferentThread() throws Exception {
         assertTrue(tryAcquireLock(lockUpdater, this));
         executor.submit(() -> assertFalse(tryAcquireLock(lockUpdater, this))).get();
 
@@ -118,7 +118,7 @@ public final class ConcurrentUtilsTest {
     }
 
     @Test
-    public void reentrantLockFromDifferentThreadReAcquireFromDifferentThread() throws Exception {
+    void reentrantLockFromDifferentThreadReAcquireFromDifferentThread() throws Exception {
         long acquireId = tryAcquireReentrantLock(reentrantLockUpdater, this);
         assertThat(acquireId, greaterThan(0L));
         executor.submit(() -> assertThat(tryAcquireReentrantLock(reentrantLockUpdater, this), is(0L))).get();

@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class BeforeNextTest extends AbstractWhenOnNextTest {
+class BeforeNextTest extends AbstractWhenOnNextTest {
     @Override
     protected <T> Publisher<T> doNext(Publisher<T> publisher, Consumer<T> consumer) {
         return publisher.beforeOnNext(consumer);
@@ -34,7 +34,7 @@ public class BeforeNextTest extends AbstractWhenOnNextTest {
 
     @Override
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         try {
             toSource(doNext(Publisher.from("Hello"), s1 -> {
                 throw DELIBERATE_EXCEPTION;

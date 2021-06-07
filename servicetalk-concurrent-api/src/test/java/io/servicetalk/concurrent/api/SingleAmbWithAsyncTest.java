@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SingleAmbWithAsyncTest {
+class SingleAmbWithAsyncTest {
     private static final String FIRST_EXECUTOR_THREAD_NAME_PREFIX = "first";
     private static final String SECOND_EXECUTOR_THREAD_NAME_PREFIX = "second";
 
@@ -49,7 +49,7 @@ public class SingleAmbWithAsyncTest {
     final ExecutorExtension<Executor> secondExec = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
 
     @Test
-    public void offloadSuccessFromFirst() throws Exception {
+    void offloadSuccessFromFirst() throws Exception {
         assertThat("Unexpected result.", testOffloadSecond(succeeded(1), never()), is(1));
     }
 
@@ -59,104 +59,104 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void offloadErrorFromFirst() {
+    void offloadErrorFromFirst() {
         assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void offloadSuccessFromSecond() throws Exception {
+    void offloadSuccessFromSecond() throws Exception {
         assertThat("Unexpected result.", testOffloadSecond(never(), succeeded(2)), is(2));
     }
 
     @Test
-    public void offloadErrorFromSecond() {
+    void offloadErrorFromSecond() {
         assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void contextFromSubscribeFirstSuccess() throws Exception {
+    void contextFromSubscribeFirstSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSubscribe(succeeded(1), never()), is(1));
     }
 
     @Test
-    public void contextFromSubscribeFirstError() {
+    void contextFromSubscribeFirstError() {
         assertThrowsWithDeliberateExceptionAsCause(
                 () -> testContextFromSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
-    public void contextFromSubscribeSecondSuccess() throws Exception {
+    void contextFromSubscribeSecondSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSubscribe(never(), succeeded(2)), is(2));
     }
 
     @Test
-    public void contextFromSubscribeSecondError() {
+    void contextFromSubscribeSecondError() {
         assertThrowsWithDeliberateExceptionAsCause(
                 () -> testContextFromSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void contextFromSecondSubscribeFirstSuccess() throws Exception {
+    void contextFromSecondSubscribeFirstSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSecondSubscribe(succeeded(1), never()), is(1));
     }
 
     @Test
-    public void contextFromSecondSubscribeFirstError() {
+    void contextFromSecondSubscribeFirstError() {
         assertThrowsWithDeliberateExceptionAsCause(() ->
                 testContextFromSecondSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
-    public void contextFromSecondSubscribeSecondSuccess() throws Exception {
+    void contextFromSecondSubscribeSecondSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSecondSubscribe(never(), succeeded(2)), is(2));
     }
 
     @Test
-    public void contextFromSecondSubscribeSecondError() {
+    void contextFromSecondSubscribeSecondError() {
         assertThrowsWithDeliberateExceptionAsCause(() ->
                 testContextFromSecondSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void contextFromOnSubscribeFirstSuccess() throws Exception {
+    void contextFromOnSubscribeFirstSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromOnSubscribe(succeeded(1), never()), is(1));
     }
 
     @Test
-    public void contextFromOnSubscribeFirstError() {
+    void contextFromOnSubscribeFirstError() {
         assertThrowsWithDeliberateExceptionAsCause(
                 () -> testContextFromOnSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
-    public void contextFromOnSubscribeSecondSuccess() throws Exception {
+    void contextFromOnSubscribeSecondSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromOnSubscribe(never(), succeeded(2)), is(2));
     }
 
     @Test
-    public void contextFromOnSubscribeSecondError() {
+    void contextFromOnSubscribeSecondError() {
         assertThrowsWithDeliberateExceptionAsCause(
                 () -> testContextFromOnSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void contextFromSecondOnSubscribeFirstSuccess() throws Exception {
+    void contextFromSecondOnSubscribeFirstSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSecondOnSubscribe(succeeded(1), never()), is(1));
     }
 
     @Test
-    public void contextFromSecondOnSubscribeFirstError() {
+    void contextFromSecondOnSubscribeFirstError() {
         assertThrowsWithDeliberateExceptionAsCause(() ->
                 testContextFromSecondOnSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
-    public void contextFromSecondOnSubscribeSecondSuccess() throws Exception {
+    void contextFromSecondOnSubscribeSecondSuccess() throws Exception {
         assertThat("Unexpected result.", testContextFromSecondOnSubscribe(never(), succeeded(2)), is(2));
     }
 
     @Test
-    public void contextFromSecondOnSubscribeSecondError() {
+    void contextFromSecondOnSubscribeSecondError() {
         assertThrowsWithDeliberateExceptionAsCause(() ->
                 testContextFromSecondOnSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }

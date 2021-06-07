@@ -21,19 +21,19 @@ import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public final class SubscribeTest {
+final class SubscribeTest {
 
     private LegacyTestCompletable source;
     private Cancellable cancellable;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new LegacyTestCompletable();
         cancellable = source.subscribe();
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         source.verifyNotCancelled();
         cancellable.cancel();
         source.verifyCancelled();

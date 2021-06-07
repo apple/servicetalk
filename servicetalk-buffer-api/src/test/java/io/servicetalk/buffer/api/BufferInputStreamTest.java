@@ -15,7 +15,7 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.util.Scanner;
@@ -25,43 +25,43 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class BufferInputStreamTest {
+class BufferInputStreamTest {
 
     private static final String DATA = "12345";
     private final InputStream is = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii("12345"));
 
     @Test
-    public void skipNegative() throws Exception {
+    void skipNegative() throws Exception {
         testSkip(-1, 0, "12345");
     }
 
     @Test
-    public void skipZero() throws Exception {
+    void skipZero() throws Exception {
         testSkip(0, 0, "12345");
     }
 
     @Test
-    public void skipOne() throws Exception {
+    void skipOne() throws Exception {
         testSkip(1, 1, "2345");
     }
 
     @Test
-    public void skipFour() throws Exception {
+    void skipFour() throws Exception {
         testSkip(4, 4, "5");
     }
 
     @Test
-    public void skipAll() throws Exception {
+    void skipAll() throws Exception {
         testSkip(5, 5, "");
     }
 
     @Test
-    public void skipMore() throws Exception {
+    void skipMore() throws Exception {
         testSkip(10, DATA.length(), "");
     }
 
     @Test
-    public void skipMoreThanIntegerMax() throws Exception {
+    void skipMoreThanIntegerMax() throws Exception {
         testSkip(Long.MAX_VALUE, DATA.length(), "");
     }
 

@@ -26,7 +26,6 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
-import java.util.function.Function;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -55,7 +54,7 @@ class SniTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(trustedServerConfig(), singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = ((Function<ServerContext, BlockingHttpClient>) SniTest::newClient).apply(serverContext)) {
+             BlockingHttpClient client = newClient(serverContext)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
     }

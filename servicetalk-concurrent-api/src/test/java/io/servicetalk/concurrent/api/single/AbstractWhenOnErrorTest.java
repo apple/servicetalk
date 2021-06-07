@@ -34,7 +34,7 @@ public abstract class AbstractWhenOnErrorTest {
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void testError() {
+    void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
         toSource(doError(Single.<String>failed(DELIBERATE_EXCEPTION), onError)).subscribe(listener);
@@ -43,7 +43,7 @@ public abstract class AbstractWhenOnErrorTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         toSource(doError(Single.<String>failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;

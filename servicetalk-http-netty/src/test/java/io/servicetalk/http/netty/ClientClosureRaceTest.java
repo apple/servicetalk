@@ -50,7 +50,7 @@ import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 @Timeout(90)
-public class ClientClosureRaceTest {
+class ClientClosureRaceTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientClosureRaceTest.class);
     private static final int ITERATIONS = 600;

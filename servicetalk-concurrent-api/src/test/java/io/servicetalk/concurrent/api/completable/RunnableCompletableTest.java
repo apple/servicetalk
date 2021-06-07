@@ -33,18 +33,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class RunnableCompletableTest {
+class RunnableCompletableTest {
     private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Runnable factory;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = mock(Runnable.class);
     }
 
     @Test
-    public void testEverySubscribeRuns() {
+    void testEverySubscribeRuns() {
         Completable source = Completable.fromRunnable(factory);
         listenAndVerify(source);
         listenAndVerify(source);
@@ -60,7 +60,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void testOnError() {
+    void testOnError() {
         doThrow(IllegalArgumentException.class).when(factory).run();
         Completable source = Completable.fromRunnable(factory);
         listenAndVerifyError(source);
@@ -76,7 +76,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void cancelInterrupts() throws Exception {
+    void cancelInterrupts() throws Exception {
         final Completable source = Completable.fromRunnable(factory);
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -111,7 +111,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void onSubscribeThrows() {
+    void onSubscribeThrows() {
         final Completable source = Completable.fromRunnable(factory);
 
         final CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);

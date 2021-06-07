@@ -19,15 +19,13 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -40,9 +38,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ConnectionAcceptorTest {
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+@ExtendWith(MockitoExtension.class)
+class ConnectionAcceptorTest {
     private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Mock
@@ -54,7 +51,7 @@ public class ConnectionAcceptorTest {
     private ConnectionAcceptor second;
 
     @Test
-    public void factoryAppend() throws Exception {
+    void factoryAppend() throws Exception {
         ConnectionAcceptorFactory f = ConnectionAcceptorFactory.identity();
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
         f.append(original -> new OrderVerifyingConnectionAcceptor(original, order, 1))
@@ -65,7 +62,7 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingCompletedThenCompletedShouldReturnTrue() {
+    void chainingCompletedThenCompletedShouldReturnTrue() {
         setFilterResult(first, Completable.completed());
         setFilterResult(second, Completable.completed());
 
@@ -77,7 +74,7 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingCompletedThenErrorShouldReturnError() {
+    void chainingCompletedThenErrorShouldReturnError() {
         setFilterResult(first, Completable.completed());
         setFilterResult(second, Completable.failed(DELIBERATE_EXCEPTION));
 
@@ -89,7 +86,7 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingAfterErrorShouldNotCallNextFilter() {
+    void chainingAfterErrorShouldNotCallNextFilter() {
         setFilterResult(first, Completable.failed(DELIBERATE_EXCEPTION));
 
         applyFilters();
@@ -103,7 +100,6 @@ public class ConnectionAcceptorTest {
         when(filter.accept(context)).thenReturn(resultCompletable);
     }
 
-    @Nonnull
     protected void applyFilters() {
         ConnectionAcceptorFactory f = (original -> original.append(ctx -> second.accept(ctx)));
         f = f.append(original -> original.append(ctx -> first.accept(ctx)));

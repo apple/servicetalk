@@ -37,14 +37,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class CompletableToPublisherTest {
+class CompletableToPublisherTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void invalidRequestNCancelsCompletable() {
+    void invalidRequestNCancelsCompletable() {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         toSource(completable.<String>toPublisher()).subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
@@ -55,14 +55,14 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void noTerminalSucceeds() {
+    void noTerminalSucceeds() {
         toSource(Completable.completed().<String>toPublisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -88,7 +88,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnComplete() throws Exception {
+    void publishOnOriginalIsPreservedOnComplete() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
@@ -100,7 +100,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnError() throws Exception {
+    void publishOnOriginalIsPreservedOnError() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
@@ -113,7 +113,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+    void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();

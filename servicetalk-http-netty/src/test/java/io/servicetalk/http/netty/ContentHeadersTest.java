@@ -84,7 +84,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ContentHeadersTest extends AbstractNettyHttpServerTest {
+class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
     private static final String EXISTING_CONTENT = "Hello World!";

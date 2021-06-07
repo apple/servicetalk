@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public final class DefaultExecutorTest {
+final class DefaultExecutorTest {
 
     private static final int UNBOUNDED = -1;
     private Executor executor;
@@ -159,13 +159,13 @@ public final class DefaultExecutorTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         executor.closeAsync().subscribe();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void execution(ExecutorParam executorParam) throws Throwable {
+    void execution(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task task = new Task();
         executor.execute(task);
@@ -174,7 +174,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void longRunningTasksDoesNotHaltOthers(ExecutorParam executorParam) throws Throwable {
+    void longRunningTasksDoesNotHaltOthers(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task awaitForever = Task.newAwaitForeverTask();
         executor.execute(awaitForever);
@@ -185,7 +185,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void interDependentTasksCanRun(ExecutorParam executorParam) throws Throwable {
+    void interDependentTasksCanRun(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task first = new Task();
         Task second = new Task(() -> {
@@ -202,7 +202,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void scheduledTasks(ExecutorParam executorParam) throws Throwable {
+    void scheduledTasks(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task scheduled = new Task();
         executor.schedule(scheduled, 1, MILLISECONDS);
@@ -211,7 +211,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void cancelExecute(ExecutorParam executorParam) throws Throwable {
+    void cancelExecute(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         assumeTrue(executorParam.supportsCancellation(),
                 () -> "Ignoring executor: " + executorParam + ", it does not support cancellation.");
@@ -227,7 +227,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void executeRejection(ExecutorParam executorParam) {
+    void executeRejection(ExecutorParam executorParam) {
         executor = executorParam.get();
         assumeTrue(executorParam.size() > 0,
                 () -> "Ignoring executor: " + executorParam + ", it has an unbounded thread pool.");
@@ -240,7 +240,7 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void rejectSchedule() {
+    void rejectSchedule() {
         executor = from(new RejectAllScheduler());
         assertThrows(RejectedExecutionException.class, () -> executor.schedule(() -> {
         }, 1, SECONDS));
@@ -248,28 +248,28 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void timerRaw(ExecutorParam executorParam) throws Exception {
+    void timerRaw(ExecutorParam executorParam) throws Exception {
         executor = executorParam.get();
         executor.timer(1, NANOSECONDS).toFuture().get();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void timerDuration(ExecutorParam executorParam) throws Exception {
+    void timerDuration(ExecutorParam executorParam) throws Exception {
         executor = executorParam.get();
         executor.timer(ofNanos(1)).toFuture().get();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void timerRawCancel(ExecutorParam executorParam) throws InterruptedException {
+    void timerRawCancel(ExecutorParam executorParam) throws InterruptedException {
         executor = executorParam.get();
         timerCancel(executor.timer(100, MILLISECONDS));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void timerDurationCancel(ExecutorParam executorParam) throws InterruptedException {
+    void timerDurationCancel(ExecutorParam executorParam) throws InterruptedException {
         executor = executorParam.get();
         timerCancel(executor.timer(ofNanos(1)));
     }
@@ -305,14 +305,14 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void timerRawRejected() {
+    void timerRawRejected() {
         executor = from(new RejectAllScheduler());
         Executable executable = () -> executor.timer(1, NANOSECONDS).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
     @Test
-    public void timerDurationRejected() {
+    void timerDurationRejected() {
         executor = from(new RejectAllScheduler());
         Executable executable = () -> executor.timer(ofNanos(1)).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
@@ -320,7 +320,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitRunnable(ExecutorParam executorParam) throws Throwable {
+    void submitRunnable(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task submitted = new Task();
         executor.submit(submitted).toFuture().get();
@@ -329,7 +329,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitRunnableSupplier(ExecutorParam executorParam) throws Throwable {
+    void submitRunnableSupplier(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         Task submitted1 = new Task();
         Task submitted2 = new Task();
@@ -342,14 +342,14 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void submitRunnableRejected() {
+    void submitRunnableRejected() {
         executor = from(new RejectAllExecutor());
         Executable executable = () -> executor.submit(() -> { }).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
     @Test
-    public void submitRunnableSupplierRejected() {
+    void submitRunnableSupplierRejected() {
         executor = from(new RejectAllExecutor());
         Executable executable = () -> executor.submitRunnable(() -> () -> { }).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
@@ -357,7 +357,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitRunnableThrows(ExecutorParam executorParam) {
+    void submitRunnableThrows(ExecutorParam executorParam) {
         executor = executorParam.get();
         Executable executable = () -> executor.submit((Runnable) () -> {
             throw DELIBERATE_EXCEPTION;
@@ -367,7 +367,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitRunnableSupplierThrows(ExecutorParam executorParam) {
+    void submitRunnableSupplierThrows(ExecutorParam executorParam) {
         executor = executorParam.get();
         Executable executable = () -> executor.submitRunnable(() -> () -> {
             throw DELIBERATE_EXCEPTION;
@@ -377,7 +377,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitCallable(ExecutorParam executorParam) throws Throwable {
+    void submitCallable(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         CallableTask<Integer> submitted = new CallableTask<>(() -> 1);
         Integer result = awaitIndefinitelyNonNull(executor.submit(submitted));
@@ -387,7 +387,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitCallableSupplier(ExecutorParam executorParam) throws Throwable {
+    void submitCallableSupplier(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         CallableTask<Integer> submitted1 = new CallableTask<>(() -> 1);
         CallableTask<Integer> submitted2 = new CallableTask<>(() -> 2);
@@ -403,14 +403,14 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void submitCallableRejected() {
+    void submitCallableRejected() {
         executor = from(new RejectAllExecutor());
         Executable executable = () -> executor.submit(() -> 1).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
     @Test
-    public void submitCallableSupplierRejected() {
+    void submitCallableSupplierRejected() {
         executor = from(new RejectAllExecutor());
         Executable executable = () -> executor.submitCallable(() -> () -> 1).toFuture().get();
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
@@ -418,7 +418,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitCallableThrows(ExecutorParam executorParam) {
+    void submitCallableThrows(ExecutorParam executorParam) {
         executor = executorParam.get();
         Executable executable = () -> executor.submit((Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
@@ -428,7 +428,7 @@ public final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void submitCallableSupplierThrows(ExecutorParam executorParam) {
+    void submitCallableSupplierThrows(ExecutorParam executorParam) {
         executor = executorParam.get();
         Executable executable = () -> executor.submitCallable(() -> (Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
