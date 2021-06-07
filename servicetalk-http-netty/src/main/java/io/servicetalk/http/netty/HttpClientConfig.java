@@ -111,11 +111,17 @@ final class HttpClientConfig {
             tcpConfig.sslConfig(new DelegatingClientSslConfig(sslConfig) {
                 @Nullable
                 private final List<String> alpnProtocols = httpAlpnProtocols(configAlpn, httpAlpnProtocols);
+
                 @Nullable
-                private final String peerHost = evaluatePeerHost();
-                private final int peerPort = evaluatePeerPort();
+                private final String peerHost =
+                        (configPeerHost == null && inferPeerHost) ? fallbackPeerHost : configPeerHost;
+
+                private final int peerPort =
+                        (configPeerPort < 0 && inferPeerPort) ? fallbackPeerPort : configPeerPort;
+
                 @Nullable
-                private final String sniHostname = evaluateSniHostname();
+                private final String sniHostname =
+                        (configSni == null && inferSniHostname) ? filterSniName(fallbackPeerHost) : configSni;
 
                 @Override
                 public List<String> alpnProtocols() {
@@ -136,20 +142,6 @@ final class HttpClientConfig {
                 @Override
                 public String sniHostname() {
                     return sniHostname;
-                }
-
-                @Nullable
-                private String evaluatePeerHost() {
-                    return (configPeerHost == null && inferPeerHost) ? fallbackPeerHost : configPeerHost;
-                }
-
-                private int evaluatePeerPort() {
-                    return (configPeerPort < 0 && inferPeerPort) ? fallbackPeerPort : configPeerPort;
-                }
-
-                @Nullable
-                private String evaluateSniHostname() {
-                    return (configSni == null && inferSniHostname) ? filterSniName(fallbackPeerHost) : configSni;
                 }
             });
         }

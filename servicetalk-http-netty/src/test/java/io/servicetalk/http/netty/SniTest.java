@@ -19,7 +19,6 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
@@ -42,6 +41,7 @@ class SniTest {
 
     @Test
     void sniSuccess() throws Exception {
+
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(untrustedServerConfig(), singletonMap(SNI_HOSTNAME, trustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
@@ -52,15 +52,10 @@ class SniTest {
 
     @Test
     void sniDefaultFallbackSuccess() throws Exception {
-        sniDefaultFallbackSuccess(SniTest::newClient);
-    }
-
-    private static void sniDefaultFallbackSuccess(Function<ServerContext, BlockingHttpClient> clientFunc)
-            throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(trustedServerConfig(), singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = clientFunc.apply(serverContext)) {
+             BlockingHttpClient client = ((Function<ServerContext, BlockingHttpClient>) SniTest::newClient).apply(serverContext)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
     }
@@ -97,11 +92,18 @@ class SniTest {
 
     @Test
     void noSniClientDefaultServerFallbackSuccess() throws Exception {
-        sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                        .peerHost(serverPemHostname()).build())
-                .inferSniHostname(false)
-                .buildBlocking());
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .sslConfig(trustedServerConfig(), singletonMap("localhost", untrustedServerConfig()))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+             BlockingHttpClient client = HttpClients.forSingleAddress(
+                     InetAddress.getLoopbackAddress().getHostName(),
+                     serverHostAndPort(serverContext).port())
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                             .peerHost(serverPemHostname()).build())
+                     .inferSniHostname(false)
+                     .buildBlocking()) {
+            assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
+        }
     }
 
     @Test
@@ -113,9 +115,8 @@ class SniTest {
                 )
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = HttpClients.forSingleAddress(
-                     HostAndPort.of(
-                             InetAddress.getLoopbackAddress().getHostName(),
-                             serverHostAndPort(serverContext).port())
+                     InetAddress.getLoopbackAddress().getHostName(),
+                     serverHostAndPort(serverContext).port()
              )
                      .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                      .inferSniHostname(false)
