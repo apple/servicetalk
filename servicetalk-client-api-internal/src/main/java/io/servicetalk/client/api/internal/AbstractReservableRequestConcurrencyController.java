@@ -26,7 +26,6 @@ import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -57,7 +56,7 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
         // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the STATE_QUIT
         // before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency error messages for
         // the users on connection tear-down.
-        toSource(onClosing.publishAndSubscribeOn(immediate())).subscribe(new Subscriber() {
+        toSource(onClosing).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op
