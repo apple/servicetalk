@@ -22,15 +22,12 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -67,16 +64,14 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class DefaultDnsClientTest {
+class DefaultDnsClientTest {
     private static final int DEFAULT_TTL = 1;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final TestRecordStore recordStore = new TestRecordStore();
@@ -85,7 +80,7 @@ public class DefaultDnsClientTest {
     private DnsClient client;
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
 
@@ -107,7 +102,7 @@ public class DefaultDnsClientTest {
         client = dnsClientBuilder().build();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         client.closeAsync().toFuture().get();
         dnsServer.stop();
@@ -116,7 +111,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void singleSrvSingleADiscover() throws Exception {
+    void singleSrvSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
         final int targetPort = 9876;
@@ -132,7 +127,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void singleSrvMultipleADiscover() throws Exception {
+    void singleSrvMultipleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
         final int targetPort = 9876;
@@ -151,7 +146,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void multipleSrvSingleADiscover() throws Exception {
+    void multipleSrvSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
@@ -174,7 +169,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void multipleSrvChangeSingleADiscover() throws Exception {
+    void multipleSrvChangeSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
@@ -206,7 +201,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void multipleSrvMultipleADiscover() throws Exception {
+    void multipleSrvMultipleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
@@ -233,7 +228,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvWithCNAMEEntryLowerTTLDoesNotFail() throws Exception {
+    void srvWithCNAMEEntryLowerTTLDoesNotFail() throws Exception {
         final String domain = "sd.servicetalk.io";
         final String srvCNAME = "sdcname.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
@@ -255,12 +250,12 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvCNAMEDuplicateAddressesRemoveFail() throws Exception {
+    void srvCNAMEDuplicateAddressesRemoveFail() throws Exception {
         srvCNAMEDuplicateAddresses(false);
     }
 
     @Test
-    public void srvCNAMEDuplicateAddressesRemoveInactive() throws Exception {
+    void srvCNAMEDuplicateAddressesRemoveInactive() throws Exception {
         srvCNAMEDuplicateAddresses(true);
     }
 
@@ -310,7 +305,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvInactiveEventsAggregated() throws Exception {
+    void srvInactiveEventsAggregated() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder().inactiveEventsOnError(true).build();
         final String domain = "sd.servicetalk.io";
@@ -362,7 +357,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvRecordRemovalPropagatesError() throws Exception {
+    void srvRecordRemovalPropagatesError() throws Exception {
         final String domain = "sd.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
         final String targetDomain2 = "target2.mysvc.servicetalk.io";
@@ -391,12 +386,12 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvDuplicateAddressesNoFilter() throws Exception {
+    void srvDuplicateAddressesNoFilter() throws Exception {
         srvDuplicateAddresses(false);
     }
 
     @Test
-    public void srvDuplicateAddressesFilter() throws Exception {
+    void srvDuplicateAddressesFilter() throws Exception {
         srvDuplicateAddresses(true);
     }
 
@@ -433,12 +428,12 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvAAAAFailsGeneratesInactive() throws Exception {
+    void srvAAAAFailsGeneratesInactive() throws Exception {
         srvAAAAFailsGeneratesInactive(true);
     }
 
     @Test
-    public void srvAAAAFailsGeneratesInactiveEvenIfNotRequested() throws Exception {
+    void srvAAAAFailsGeneratesInactiveEvenIfNotRequested() throws Exception {
         srvAAAAFailsGeneratesInactive(false);
     }
 
@@ -476,12 +471,12 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvNoMoreSrvRecordsFails() throws Exception {
+    void srvNoMoreSrvRecordsFails() throws Exception {
         srvRecordFailsGeneratesInactive(false);
     }
 
     @Test
-    public void srvNoMoreSrvRecordsGeneratesInactive() throws Exception {
+    void srvNoMoreSrvRecordsGeneratesInactive() throws Exception {
         srvRecordFailsGeneratesInactive(true);
     }
 
@@ -519,7 +514,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void unknownHostDiscover() {
+    void unknownHostDiscover() {
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery("unknown.com");
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(Long.MAX_VALUE);
@@ -528,7 +523,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void singleADiscover() throws Exception {
+    void singleADiscover() throws Exception {
         final String ip = nextIp();
         final String domain = "servicetalk.io";
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
@@ -546,7 +541,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void singleDiscoverMultipleRecords() throws Exception {
+    void singleDiscoverMultipleRecords() throws Exception {
         final String domain = "servicetalk.io";
         final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
@@ -566,7 +561,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void singleDiscoverDuplicateRecords() throws Exception {
+    void singleDiscoverDuplicateRecords() throws Exception {
         final String dupIp = nextIp();
         final String domain = "servicetalk.io";
         final String[] ips = new String[] {nextIp(), nextIp(), dupIp, dupIp, nextIp()};
@@ -591,7 +586,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void repeatDiscoverMultipleRecords() throws Exception {
+    void repeatDiscoverMultipleRecords() throws Exception {
         final String domain = "servicetalk.io";
         final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
@@ -620,7 +615,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void repeatDiscoverMultipleHosts() throws Exception {
+    void repeatDiscoverMultipleHosts() throws Exception {
         final String ip1 = nextIp();
         final String domain1 = "servicetalk.io";
         final String ip2 = nextIp();
@@ -649,7 +644,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void repeatDiscoverNxDomainAndRecover() throws Exception {
+    void repeatDiscoverNxDomainAndRecover() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilderWithRetry().inactiveEventsOnError(true).build();
         final String ip = nextIp();
@@ -668,7 +663,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void preferIpv4() throws Exception {
+    void preferIpv4() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder().completeOncePreferredResolved(false)
                 .dnsResolverAddressTypes(IPV4_PREFERRED).build();
@@ -693,7 +688,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void preferIpv4ButOnlyAAAARecordIsPresent() throws Exception {
+    void preferIpv4ButOnlyAAAARecordIsPresent() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder().dnsResolverAddressTypes(IPV4_PREFERRED).build();
         final String ipv6 = nextIp6();
@@ -712,7 +707,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void acceptOnlyIpv6() throws Exception {
+    void acceptOnlyIpv6() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder().dnsResolverAddressTypes(IPV6_ONLY).build();
         final String ipv6 = nextIp6();
@@ -728,7 +723,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void exceptionInSubscriberOnNext() throws Exception {
+    void exceptionInSubscriberOnNext() throws Exception {
         final String domain = "servicetalk.io";
         final String ip = nextIp();
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
@@ -741,7 +736,7 @@ public class DefaultDnsClientTest {
     }
 
     @Test
-    public void srvExceptionInSubscriberOnNext() throws Exception {
+    void srvExceptionInSubscriberOnNext() throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder().srvHostNameRepeatDelay(ofMillis(50), ofMillis(10)).build();
         final String domain = "sd.servicetalk.io";
