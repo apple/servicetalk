@@ -35,8 +35,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Single<T> original;
 
-    SingleToPublisher(Single<T> original, Executor executor) {
-        super(executor);
+    SingleToPublisher(Single<T> original) {
+        super(original.executor());
         this.original = original;
     }
 

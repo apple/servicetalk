@@ -25,8 +25,8 @@ final class BeforeFinallySingle<T> extends AbstractSynchronousSingleOperator<T, 
 
     private final SingleTerminalSignalConsumer<? super T> doFinally;
 
-    BeforeFinallySingle(Single<T> original, SingleTerminalSignalConsumer<? super T> doFinally, Executor executor) {
-        super(original, executor);
+    BeforeFinallySingle(Single<T> original, SingleTerminalSignalConsumer<? super T> doFinally) {
+        super(original);
         this.doFinally = requireNonNull(doFinally);
     }
 

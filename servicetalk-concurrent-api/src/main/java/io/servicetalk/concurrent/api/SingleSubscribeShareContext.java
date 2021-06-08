@@ -21,8 +21,12 @@ final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSing
     private final Single<T> original;
 
     SingleSubscribeShareContext(Single<T> original) {
-        super(original.executor(), true);
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override
@@ -32,5 +36,10 @@ final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSing
         // AsyncContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the AsyncContextMap and we don't want to discard those changes by using a different AsyncContextMap.
         original.handleSubscribe(singleSubscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    @Override
+    boolean shareContextOnSubscribe() {
+        return true;
     }
 }
