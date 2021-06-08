@@ -564,6 +564,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+        config.inferPeerHost(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+        config.inferPeerPort(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+        config.inferSniHostname(shouldInfer);
+        return this;
+    }
+
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
         influencerChainBuilder.add(multiAddressHttpClientFilterFactory);
     }
