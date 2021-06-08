@@ -144,7 +144,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 writeShortBE(byteBuf, CRLF_SHORT);
                 headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
                                                 HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // Encoding of meta-data can fail or cause expansion of the initial ByteBuf capacity that can fail
                 byteBuf.release();
                 throw e;
@@ -267,7 +267,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             try {
                 buf.writeCharSequence(lengthHex, US_ASCII);
                 writeShortBE(buf, CRLF_SHORT);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 buf.release();
                 throw e;
             }
@@ -293,7 +293,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 writeShortBE(buf, CRLF_SHORT);
                 trailersEncodedSizeAccumulator = TRAILERS_WEIGHT_NEW * padSizeForAccumulation(buf.readableBytes()) +
                         TRAILERS_WEIGHT_HISTORICAL * trailersEncodedSizeAccumulator;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // Encoding of trailers can fail or cause expansion of the initial ByteBuf capacity that can fail
                 buf.release();
                 throw e;
