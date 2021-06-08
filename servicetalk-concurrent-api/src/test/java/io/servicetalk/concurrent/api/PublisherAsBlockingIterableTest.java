@@ -42,12 +42,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public final class PublisherAsBlockingIterableTest {
+final class PublisherAsBlockingIterableTest {
 
     private final TestPublisher<Integer> source = new TestPublisher<>();
 
     @Test
-    public void subscribeDelayedTillIterator() {
+    void subscribeDelayedTillIterator() {
         Iterable<Integer> iterable = source.toIterable();
         assertFalse(source.isSubscribed());
         iterable.iterator();
@@ -55,19 +55,19 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void removeNotSupported() {
+    void removeNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> source.toIterable().iterator().remove());
     }
 
     @Test
-    public void allItemsAreReturned() {
+    void allItemsAreReturned() {
         Spliterator<Integer> iterator = from(1, 2, 3, 4).toIterable().spliterator();
         List<Integer> result = stream(iterator, false).collect(toList());
         assertThat("Unexpected result.", result, contains(1, 2, 3, 4));
     }
 
     @Test
-    public void errorEmittedIsThrown() {
+    void errorEmittedIsThrown() {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
@@ -75,7 +75,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void doubleHashNextWithError() {
+    void doubleHashNextWithError() {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
@@ -84,20 +84,20 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void hasNextWithEmpty() {
+    void hasNextWithEmpty() {
         Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
     }
 
     @Test
-    public void nextWithEmpty() {
+    void nextWithEmpty() {
         Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
         assertThrows(NoSuchElementException.class, () -> iterator.next());
     }
 
     @Test
-    public void hasNextWithTimeout() throws Exception {
+    void hasNextWithTimeout() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         TestSubscription subscription = new TestSubscription();
@@ -113,7 +113,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void nextWithTimeout() throws Exception {
+    void nextWithTimeout() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         TestSubscription subscription = new TestSubscription();
@@ -130,7 +130,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void cancelShouldTerminatePostDrain() throws Exception {
+    void cancelShouldTerminatePostDrain() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1, 2);
@@ -141,7 +141,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void cancelShouldTerminatePostDrainAndRejectSubsequentItems() throws Exception {
+    void cancelShouldTerminatePostDrainAndRejectSubsequentItems() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1, 2);
@@ -153,7 +153,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void nextWithoutHasNext() {
+    void nextWithoutHasNext() {
         Iterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1);
@@ -165,7 +165,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void nextWithoutHasNextAndTerminal() {
+    void nextWithoutHasNextAndTerminal() {
         Iterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1);
@@ -177,7 +177,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void nextWithTimeoutWithoutHasNextAndTerminal() {
+    void nextWithTimeoutWithoutHasNextAndTerminal() {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1);
@@ -189,7 +189,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void errorEmittedIsThrownAfterEmittingAllItems() {
+    void errorEmittedIsThrownAfterEmittingAllItems() {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = from(1, 2, 3, 4)
                 .concat(Publisher.failed(de)).toIterable().iterator();
@@ -206,7 +206,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void delayOnNextThenComplete() {
+    void delayOnNextThenComplete() {
         Iterator<Integer> iterator = source.toIterable(2).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -221,7 +221,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void delayOnNextThenError() {
+    void delayOnNextThenError() {
         Iterator<Integer> iterator = source.toIterable(2).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -239,7 +239,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void verifyRequestedReplenishedCapacityAs1() {
+    void verifyRequestedReplenishedCapacityAs1() {
         Iterator<Integer> iterator = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -253,7 +253,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void verifyRequestedReplenishedOddQueueCapacity() {
+    void verifyRequestedReplenishedOddQueueCapacity() {
         Iterator<Integer> iterator = source.toIterable(5).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -268,7 +268,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void verifyRequestedReplenishedEvenQueueCapacity() {
+    void verifyRequestedReplenishedEvenQueueCapacity() {
         Iterator<Integer> iterator = source.toIterable(4).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -283,7 +283,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void verifyFullRequestedSatisfiedAndRequestMore() {
+    void verifyFullRequestedSatisfiedAndRequestMore() {
         Iterator<Integer> iterator = source.toIterable(2).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -299,7 +299,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void queueFullButAccommodatesOnError() {
+    void queueFullButAccommodatesOnError() {
         Iterator<Integer> iterator = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -315,7 +315,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void queueFullButAccommodatesOnComplete() {
+    void queueFullButAccommodatesOnComplete() {
         Iterator<Integer> iterator = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -328,7 +328,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void queueFullButAccommodatesCancel() throws Exception {
+    void queueFullButAccommodatesCancel() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -341,7 +341,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void replenishingRequestedShouldHonourQueueContents() {
+    void replenishingRequestedShouldHonourQueueContents() {
         Iterator<Integer> iterator = source.toIterable(2).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -367,7 +367,7 @@ public final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    public void nullShouldBeEmitted() {
+    void nullShouldBeEmitted() {
         Iterator<Void> iterator = Publisher.from((Void) null).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Unexpected item found.", iterator.next(), is(nullValue()));

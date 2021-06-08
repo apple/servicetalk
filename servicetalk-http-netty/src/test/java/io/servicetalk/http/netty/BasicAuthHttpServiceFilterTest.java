@@ -29,14 +29,16 @@ import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVeri
 
 import org.junit.jupiter.api.Test;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendServiceFilterFactory;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 
-public class BasicAuthHttpServiceFilterTest {
+class BasicAuthHttpServiceFilterTest {
 
     private static final class BasicUserInfo {
 
@@ -54,8 +56,8 @@ public class BasicAuthHttpServiceFilterTest {
     private static final String REALM_VALUE = "hw_realm";
 
     @Test
-    public void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(
+    void verifyAsyncContext() throws Exception {
+        verifyServerFilterAsyncContextVisibility(appendServiceFilterFactory(
                 new StreamingHttpServiceFilterFactory() {
                     @Override
                     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
@@ -69,17 +71,18 @@ public class BasicAuthHttpServiceFilterTest {
                             }
                         };
                     }
-                }.append(new BasicAuthHttpServiceFilter.Builder<>(new CredentialsVerifier<Object>() {
-                            @Override
-                            public Completable closeAsync() {
-                                return Completable.completed();
-                            }
+                },
+                new BasicAuthHttpServiceFilter.Builder<>(new CredentialsVerifier<Object>() {
+                    @Override
+                    public Completable closeAsync() {
+                        return completed();
+                    }
 
-                            @Override
-                            public Single<Object> apply(final String userId, final String password) {
-                                return succeeded(new BasicUserInfo(userId));
-                            }
-                        }, REALM_VALUE).buildServer()));
+                    @Override
+                    public Single<Object> apply(final String userId, final String password) {
+                        return succeeded(new BasicUserInfo(userId));
+                    }
+                }, REALM_VALUE).buildServer()));
     }
 
     private static String userPassBase64() {

@@ -54,7 +54,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
+class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> completed()),

@@ -32,14 +32,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class OnErrorResumePublisherTest {
+final class OnErrorResumePublisherTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> first = new TestPublisher<>();
     private TestPublisher<Integer> second = new TestPublisher<>();
 
     @Test
-    public void testFirstComplete() {
+    void testFirstComplete() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onNext(1);
@@ -49,7 +49,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testFirstErrorSecondComplete() {
+    void testFirstErrorSecondComplete() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -62,7 +62,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testFirstErrorSecondError() {
+    void testFirstErrorSecondError() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(new DeliberateException());
@@ -73,7 +73,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testCancelFirstActive() {
+    void testCancelFirstActive() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         first.onSubscribe(subscription);
@@ -85,7 +85,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testCancelSecondActive() {
+    void testCancelSecondActive() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         subscriber.awaitSubscription().request(1);
@@ -99,7 +99,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testDemandAcrossPublishers() {
+    void testDemandAcrossPublishers() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         first.onNext(1);
@@ -113,7 +113,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void testDuplicateOnError() {
+    void testDuplicateOnError() {
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -126,7 +126,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         toSource(first.onErrorResume(throwable -> {
             throw ex;
@@ -139,7 +139,7 @@ public final class OnErrorResumePublisherTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         toSource(first.onErrorResume(throwable -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);

@@ -39,7 +39,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PublisherProcessorTest {
+class PublisherProcessorTest {
     private final BlockingQueue<Integer> bufferQueue = new LinkedBlockingQueue<>();
     private final PublisherProcessor<Integer> processor;
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -48,7 +48,7 @@ public class PublisherProcessorTest {
     @Nullable
     private volatile TerminalNotification terminalNotification;
 
-    public PublisherProcessorTest() {
+    PublisherProcessorTest() {
         @SuppressWarnings("unchecked")
         final PublisherProcessorSignalsHolder<Integer> buffer = mock(PublisherProcessorSignalsHolder.class);
         doAnswer(invocation -> {
@@ -99,7 +99,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void itemBeforeSubscriber() {
+    void itemBeforeSubscriber() {
         processor.onNext(1);
         toSource(processor).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -109,7 +109,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void itemBeforeRequest() {
+    void itemBeforeRequest() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         subscriber.awaitSubscription().request(1);
@@ -119,21 +119,21 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void terminalBeforeSubscriber() {
+    void terminalBeforeSubscriber() {
         processor.onComplete();
         toSource(processor).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void terminalAfterSubscriber() {
+    void terminalAfterSubscriber() {
         toSource(processor).subscribe(subscriber);
         processor.onComplete();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void terminalErrorBeforeSubscriber() {
+    void terminalErrorBeforeSubscriber() {
         processor.onError(DELIBERATE_EXCEPTION);
         toSource(processor).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -141,14 +141,14 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void terminalErrorAfterSubscriber() {
+    void terminalErrorAfterSubscriber() {
         toSource(processor).subscribe(subscriber);
         processor.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void completeDeliveredAfterBuffer() {
+    void completeDeliveredAfterBuffer() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onComplete();
@@ -159,7 +159,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void completeNotDeliveredWithoutRequestWhenAfterBuffer() {
+    void completeNotDeliveredWithoutRequestWhenAfterBuffer() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onComplete();
@@ -172,7 +172,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void errorDeliveredAfterBuffer() {
+    void errorDeliveredAfterBuffer() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onError(DELIBERATE_EXCEPTION);
@@ -183,7 +183,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void errorNotDeliveredWithoutRequestWhenAfterBuffer() {
+    void errorNotDeliveredWithoutRequestWhenAfterBuffer() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onError(DELIBERATE_EXCEPTION);
@@ -196,7 +196,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void duplicateSubscriber() {
+    void duplicateSubscriber() {
         toSource(processor).subscribe(subscriber);
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(processor).subscribe(subscriber2);
@@ -205,7 +205,7 @@ public class PublisherProcessorTest {
     }
 
     @Test
-    public void duplicateSubscriberPostCancel() {
+    void duplicateSubscriberPostCancel() {
         toSource(processor).subscribe(subscriber);
         subscriber.awaitSubscription().cancel();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();

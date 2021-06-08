@@ -35,7 +35,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.lang.Thread.currentThread;
 
-public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Test
     void newRequestsGetFreshContextImmediate() throws Exception {

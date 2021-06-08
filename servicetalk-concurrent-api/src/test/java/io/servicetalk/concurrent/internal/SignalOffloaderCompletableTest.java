@@ -49,7 +49,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SignalOffloaderCompletableTest {
+class SignalOffloaderCompletableTest {
 
     private enum OffloaderTestParam {
         THREAD_BASED {
@@ -88,7 +88,7 @@ public class SignalOffloaderCompletableTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (state != null) {
             state.shutdown();
             state = null;
@@ -97,7 +97,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void offloadingSubscriberShouldNotOffloadCancellable(OffloaderTestParam offloader)
+    void offloadingSubscriberShouldNotOffloadCancellable(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         Subscriber offloadedSubscriber = state.offloader.offloadCancellable(state.subscriber);
@@ -110,7 +110,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void offloadingCancellableShouldNotOffloadSubscriber(OffloaderTestParam offloader)
+    void offloadingCancellableShouldNotOffloadSubscriber(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         Subscriber offloaded = state.offloader.offloadCancellable(state.subscriber);
@@ -123,7 +123,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void offloadSubscriber(OffloaderTestParam offloader) throws Exception {
+    void offloadSubscriber(OffloaderTestParam offloader) throws Exception {
         init(offloader);
         Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
@@ -133,7 +133,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void cancelShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
+    void cancelShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
@@ -145,7 +145,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void onErrorShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
+    void onErrorShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
@@ -156,7 +156,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void onCompleteShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
+    void onCompleteShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
@@ -167,7 +167,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void onSubscribeThrows(OffloaderTestParam offloader) throws Exception {
+    void onSubscribeThrows(OffloaderTestParam offloader) throws Exception {
         init(offloader);
         Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloadedWhenThrows(offloaded);
@@ -177,7 +177,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void onSuccessThrows(OffloaderTestParam offloader) throws Exception {
+    void onSuccessThrows(OffloaderTestParam offloader) throws Exception {
         init(offloader);
         Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
@@ -187,7 +187,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void onErrorThrows(OffloaderTestParam offloader) throws Exception {
+    void onErrorThrows(OffloaderTestParam offloader) throws Exception {
         init(offloader);
         Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
@@ -197,7 +197,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void offloadPostTermination(OffloaderTestParam offloader) throws Exception {
+    void offloadPostTermination(OffloaderTestParam offloader) throws Exception {
         assumeTrue(offloader.isSupportsTermination(), "Termination test not supported by this offloader.");
         init(offloader);
         Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
@@ -209,7 +209,7 @@ public class SignalOffloaderCompletableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void executorRejectsForHandleSubscribe(OffloaderTestParam offloader) {
+    void executorRejectsForHandleSubscribe(OffloaderTestParam offloader) {
         init(offloader);
         ThreadBasedSignalOffloader rejectOffloader = new ThreadBasedSignalOffloader(from(task -> {
             throw new RejectedExecutionException();

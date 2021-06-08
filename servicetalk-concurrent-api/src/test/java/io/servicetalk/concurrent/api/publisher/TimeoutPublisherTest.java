@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TimeoutPublisherTest {
+class TimeoutPublisherTest {
 
     private enum TimerBehaviorParam {
         IDLE_TIMER { // timeout : idle
@@ -83,7 +83,7 @@ public class TimeoutPublisherTest {
     }
 
     @RegisterExtension
-    public final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
+    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
 
     private final TestPublisher<Integer> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -91,12 +91,12 @@ public class TimeoutPublisherTest {
     private TestExecutor testExecutor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         testExecutor = executorExtension.executor();
     }
 
     @Test
-    public void executorScheduleThrowsTerminalTimeout() {
+    void executorScheduleThrowsTerminalTimeout() {
         toSource(publisher.timeoutTerminal(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
@@ -110,7 +110,7 @@ public class TimeoutPublisherTest {
     }
 
     @Test
-    public void executorScheduleThrowsIdleTimeout() {
+    void executorScheduleThrowsIdleTimeout() {
         toSource(publisher.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
@@ -125,7 +125,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void noDataOnCompletionNoTimeout(TimerBehaviorParam params) {
+    void noDataOnCompletionNoTimeout(TimerBehaviorParam params) {
         init(params);
 
         subscriber.awaitSubscription().request(10);
@@ -140,7 +140,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void dataOnCompletionNoTimeout(TimerBehaviorParam params) {
+    void dataOnCompletionNoTimeout(TimerBehaviorParam params) {
         init(params);
 
         subscriber.awaitSubscription().request(10);
@@ -157,7 +157,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void noDataOnErrorNoTimeout(TimerBehaviorParam params) {
+    void noDataOnErrorNoTimeout(TimerBehaviorParam params) {
         init(params);
 
         subscriber.awaitSubscription().request(10);
@@ -172,7 +172,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void dataOnErrorNoTimeout(TimerBehaviorParam params) {
+    void dataOnErrorNoTimeout(TimerBehaviorParam params) {
         init(params);
 
         subscriber.awaitSubscription().request(10);
@@ -189,7 +189,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void subscriptionCancelAlsoCancelsTimer(TimerBehaviorParam params) {
+    void subscriptionCancelAlsoCancelsTimer(TimerBehaviorParam params) {
         init(params);
 
         subscriber.awaitSubscription().cancel();
@@ -200,7 +200,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void noDataAndTimeout(TimerBehaviorParam params) {
+    void noDataAndTimeout(TimerBehaviorParam params) {
         init(params);
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
@@ -212,7 +212,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void dataAndTimeout(TimerBehaviorParam params) throws Exception {
+    void dataAndTimeout(TimerBehaviorParam params) throws Exception {
         final long millisMultiplier = 100;
         init(params, Duration.ofMillis(2 * millisMultiplier));
 
@@ -257,7 +257,7 @@ public class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    public void justSubscribeTimeout(TimerBehaviorParam params) {
+    void justSubscribeTimeout(TimerBehaviorParam params) {
         DelayedOnSubscribePublisher<Integer> delayedPublisher = new DelayedOnSubscribePublisher<>();
 
         init(delayedPublisher, params, Duration.ofNanos(1), false);
@@ -275,7 +275,7 @@ public class TimeoutPublisherTest {
     }
 
     @Test
-    public void concurrentTimeoutInvocation() throws InterruptedException {
+    void concurrentTimeoutInvocation() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
 

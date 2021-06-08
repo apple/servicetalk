@@ -67,7 +67,7 @@ import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
 
-public class ClientEffectiveStrategyTest {
+class ClientEffectiveStrategyTest {
 
     private Params params;
 

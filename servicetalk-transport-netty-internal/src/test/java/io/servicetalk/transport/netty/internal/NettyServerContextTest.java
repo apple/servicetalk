@@ -28,12 +28,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,13 +48,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NettyServerContextTest {
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+@ExtendWith(MockitoExtension.class)
+class NettyServerContextTest {
     private final TestCompletableSubscriber subscriberRule = new TestCompletableSubscriber();
 
     LegacyTestCompletable closeBeforeCloseAsyncCompletable = new LegacyTestCompletable();
@@ -111,7 +110,7 @@ public class NettyServerContextTest {
     private volatile boolean closed;
     private ServerContext fixture;
 
-    @Before
+    @BeforeEach
     public void setupMocks() {
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
         when(channel.close()).then(invocation -> {
@@ -121,8 +120,8 @@ public class NettyServerContextTest {
             closed = true;
             return channelCloseFuture;
         });
-        when(channelCloseFuture.channel()).thenReturn(channel);
-        when(channelCloseFuture.addListener(any())).then((invocation) -> {
+        lenient().when(channelCloseFuture.channel()).thenReturn(channel);
+        lenient().when(channelCloseFuture.addListener(any())).then((invocation) -> {
             GenericFutureListener<ChannelFuture> listener = invocation.getArgument(0);
             if (closed) {
                 listener.operationComplete(channelCloseFuture);
@@ -131,15 +130,15 @@ public class NettyServerContextTest {
             }
             return channelCloseFuture;
         });
-        when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
-        when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
+        lenient().when(channel.pipeline()).thenReturn(channelPipeline);
+        lenient().when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
+        lenient().when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
                 new ExecutionContextBuilder().executor(immediate()).build());
     }
 
     @Test
-    public void testCloseAsyncOrdering() {
+    void testCloseAsyncOrdering() {
         closeBeforeCloseAsyncCompletable.verifyListenNotCalled();
         fixture.closeAsync().subscribe();
         closeBeforeCloseAsyncCompletable.verifyListenCalled();
@@ -161,7 +160,7 @@ public class NettyServerContextTest {
     }
 
     @Test
-    public void testCloseAsyncGracefulOrdering() {
+    void testCloseAsyncGracefulOrdering() {
         closeBeforeCloseAsyncGracefulCompletable.verifyListenNotCalled();
         closeAsyncGracefully(fixture, 100, SECONDS).subscribe();
         closeBeforeCloseAsyncGracefulCompletable.verifyListenCalled();
@@ -182,7 +181,7 @@ public class NettyServerContextTest {
     }
 
     @Test
-    public void testCloseAsyncOrderingExtraWrap() {
+    void testCloseAsyncOrderingExtraWrap() {
 
         fixture = NettyServerContext.wrap((NettyServerContext) fixture, closeBeforeBefore);
 

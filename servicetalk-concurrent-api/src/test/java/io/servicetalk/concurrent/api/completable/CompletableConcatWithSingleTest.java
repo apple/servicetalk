@@ -33,14 +33,14 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CompletableConcatWithSingleTest {
+class CompletableConcatWithSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
     private TestCompletable source;
     private TestSingle<Integer> next;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = new TestSingleSubscriber<>();
         source = new TestCompletable();
         next = new TestSingle<>();
@@ -48,7 +48,7 @@ public class CompletableConcatWithSingleTest {
     }
 
     @Test
-    public void testSourceSuccessNextSuccess() {
+    void testSourceSuccessNextSuccess() {
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onSuccess(1);
@@ -56,7 +56,7 @@ public class CompletableConcatWithSingleTest {
     }
 
     @Test
-    public void testSourceSuccessNextError() {
+    void testSourceSuccessNextError() {
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
@@ -64,14 +64,14 @@ public class CompletableConcatWithSingleTest {
     }
 
     @Test
-    public void testSourceError() {
+    void testSourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertFalse(next.isSubscribed());
     }
 
     @Test
-    public void testCancelSource() {
+    void testCancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
@@ -81,7 +81,7 @@ public class CompletableConcatWithSingleTest {
     }
 
     @Test
-    public void testCancelNext() {
+    void testCancelNext() {
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();

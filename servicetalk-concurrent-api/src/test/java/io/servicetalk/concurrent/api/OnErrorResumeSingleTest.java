@@ -33,14 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class OnErrorResumeSingleTest {
+final class OnErrorResumeSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
     private TestSingle<Integer> first;
     private TestSingle<Integer> second;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = new TestSingleSubscriber<>();
         first = new TestSingle<>();
         second = new TestSingle<>();
@@ -48,13 +48,13 @@ public final class OnErrorResumeSingleTest {
     }
 
     @Test
-    public void testFirstComplete() {
+    void testFirstComplete() {
         first.onSuccess(1);
         assertThat(subscriber.awaitOnSuccess(), is(1));
     }
 
     @Test
-    public void testFirstErrorSecondComplete() {
+    void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onSuccess(1);
@@ -62,7 +62,7 @@ public final class OnErrorResumeSingleTest {
     }
 
     @Test
-    public void testFirstErrorSecondError() {
+    void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onError(DELIBERATE_EXCEPTION);
@@ -70,7 +70,7 @@ public final class OnErrorResumeSingleTest {
     }
 
     @Test
-    public void testCancelFirstActive() {
+    void testCancelFirstActive() {
         subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
         first.onSubscribe(cancellable);
@@ -79,7 +79,7 @@ public final class OnErrorResumeSingleTest {
     }
 
     @Test
-    public void testCancelSecondActive() {
+    void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
@@ -92,7 +92,7 @@ public final class OnErrorResumeSingleTest {
     }
 
     @Test
-    public void testErrorSuppressOriginalException() {
+    void testErrorSuppressOriginalException() {
         first = new TestSingle<>();
         subscriber = new TestSingleSubscriber<>();
         DeliberateException ex = new DeliberateException();

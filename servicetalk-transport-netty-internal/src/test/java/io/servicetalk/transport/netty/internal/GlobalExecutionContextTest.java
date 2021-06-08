@@ -15,12 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -28,13 +25,10 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class GlobalExecutionContextTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class GlobalExecutionContextTest {
 
     @Test
-    public void testGetGlobalExecutionContext() throws InterruptedException {
+    void testGetGlobalExecutionContext() throws InterruptedException {
         ExecutionContext gec = globalExecutionContext();
         CountDownLatch scheduleLatch = new CountDownLatch(2);
         gec.executor().schedule(scheduleLatch::countDown, 1, SECONDS);

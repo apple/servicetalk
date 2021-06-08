@@ -27,7 +27,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.Thread.currentThread;
 
-public class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,

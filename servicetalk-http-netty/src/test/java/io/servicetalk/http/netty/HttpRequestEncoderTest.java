@@ -101,7 +101,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class HttpRequestEncoderTest {
+class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
+
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
@@ -116,10 +117,14 @@ public class HttpRequestEncoderTest {
             () -> createIoExecutor(new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
             Executors::newCachedThreadExecutor);
 
-    private enum TransferEncoding {
-        ContentLength,
-        Chunked,
-        Variable
+    @Override
+    EmbeddedChannel newEmbeddedChannel() {
+        return new EmbeddedChannel(new HttpRequestEncoder(new ArrayDeque<>(), 256, 256));
+    }
+
+    @Override
+    HttpRequestMetaData newMetaData(final HttpHeaders headers) {
+        return newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy", headers);
     }
 
     @Test
@@ -386,17 +391,6 @@ public class HttpRequestEncoderTest {
                 throw new Error();
         }
         return actualMetaData;
-    }
-
-    private static void consumeEmptyBufferFromTrailers(EmbeddedChannel channel) {
-        // Empty buffer is written when trailers are seen to indicate the end of the request
-        ByteBuf byteBuf = channel.readOutbound();
-        assertFalse(byteBuf.isReadable());
-        byteBuf.release();
-    }
-
-    private static EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpRequestEncoder(new ArrayDeque<>(), 256, 256));
     }
 
     @Test

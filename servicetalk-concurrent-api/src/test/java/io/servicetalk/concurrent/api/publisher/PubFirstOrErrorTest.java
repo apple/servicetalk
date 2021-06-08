@@ -34,26 +34,26 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PubFirstOrErrorTest {
+class PubFirstOrErrorTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
 
     @Test
-    public void syncSingleItemCompleted() {
+    void syncSingleItemCompleted() {
         toSource(from("hello").firstOrError()).subscribe(listenerRule);
         assertThat(listenerRule.awaitOnSuccess(), is("hello"));
     }
 
     @Test
-    public void syncMultipleItemCompleted() {
+    void syncMultipleItemCompleted() {
         toSource(from("foo", "bar").firstOrError()).subscribe(listenerRule);
         assertThat(listenerRule.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void asyncSingleItemCompleted() throws Exception {
+    void asyncSingleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         executorExtension.executor().submit(() -> {
             publisher.onNext("hello");
@@ -63,7 +63,7 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void asyncMultipleItemCompleted() throws Exception {
+    void asyncMultipleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         executorExtension.executor().submit(() -> {
             publisher.onNext("foo", "bar");
@@ -73,14 +73,14 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void singleItemNoComplete() {
+    void singleItemNoComplete() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("hello");
         assertThat(listenerRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
-    public void singleItemErrorPropagates() {
+    void singleItemErrorPropagates() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("hello");
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -88,21 +88,21 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void noItemsFails() {
+    void noItemsFails() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onComplete();
         assertThat(listenerRule.awaitOnError(), instanceOf(NoSuchElementException.class));
     }
 
     @Test
-    public void noItemErrorPropagates() {
+    void noItemErrorPropagates() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void multipleItemsFails() {
+    void multipleItemsFails() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("foo", "bar");
         publisher.onComplete();

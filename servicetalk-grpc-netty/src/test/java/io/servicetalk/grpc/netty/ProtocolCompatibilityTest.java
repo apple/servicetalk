@@ -171,13 +171,13 @@ public class ProtocolCompatibilityTest {
     }
 
     @DataPoints("ssl")
-    public static boolean[] ssl = {false, true};
+    public static final boolean[] SSL = {false, true};
 
     @DataPoints("streaming")
-    public static boolean[] streaming = {false, true};
+    public static final boolean[] STREAMING = {false, true};
 
     @DataPoints("compression")
-    public static String[] compression = {"gzip", "identity", null};
+    public static final String[] COMPRESSION = {"gzip", "identity", null};
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

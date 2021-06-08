@@ -26,7 +26,7 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Cache Gradle packages
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v2.1.6
         with:
           path: |
             ~/.gradle/caches
@@ -67,7 +67,7 @@ jobs:
           ./gradlew --parallel$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@a915ba6359417544044fb06093a6c75097fe2a2b
+        uses: scacap/action-surefire-report@9fb92762fe4c378b6c2d4210e24328bbd8ac9abb
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'

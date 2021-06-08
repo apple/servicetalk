@@ -46,15 +46,15 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ScanWithPublisherTest {
+class ScanWithPublisherTest {
 
     @Test
-    public void scanWithComplete() {
+    void scanWithComplete() {
         scanWithNoTerminalMapper(true);
     }
 
     @Test
-    public void scanWithError() {
+    void scanWithError() {
         scanWithNoTerminalMapper(false);
     }
 
@@ -80,7 +80,7 @@ public class ScanWithPublisherTest {
     }
 
     @Test
-    public void scanWithLifetimeSignalReentry() throws InterruptedException {
+    void scanWithLifetimeSignalReentry() throws InterruptedException {
         AtomicInteger finalizations = new AtomicInteger();
         CountDownLatch completed = new CountDownLatch(1);
         PublisherSource<Integer> syncNoReentryProtectionSource =
@@ -159,25 +159,25 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void scanOnNextOnCompleteNoConcat(boolean withLifetime) {
+    void scanOnNextOnCompleteNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(true, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void scanOnNextOnErrorNoConcat(boolean withLifetime) {
+    void scanOnNextOnErrorNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(true, false, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void scanOnCompleteNoConcat(boolean withLifetime) {
+    void scanOnCompleteNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(false, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void scanOnErrorNoConcat(boolean withLifetime) {
+    void scanOnErrorNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(false, false, withLifetime);
     }
 
@@ -235,25 +235,25 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onCompleteConcatUpfrontDemand(boolean withLifetime) {
+    void onCompleteConcatUpfrontDemand(boolean withLifetime) {
         terminalConcatWithDemand(true, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onErrorConcatWithUpfrontDemand(boolean withLifetime) {
+    void onErrorConcatWithUpfrontDemand(boolean withLifetime) {
         terminalConcatWithDemand(true, false, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onCompleteConcatDelayedDemand(boolean withLifetime) {
+    void onCompleteConcatDelayedDemand(boolean withLifetime) {
         terminalConcatWithDemand(false, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onErrorConcatDelayedDemand(boolean withLifetime) {
+    void onErrorConcatDelayedDemand(boolean withLifetime) {
         terminalConcatWithDemand(false, false, withLifetime);
     }
 
@@ -317,7 +317,7 @@ public class ScanWithPublisherTest {
     }
 
     @Test
-    public void scanWithFinalizationOnCancel() {
+    void scanWithFinalizationOnCancel() {
         final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -359,7 +359,7 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void scanWithFinalizationOnCancelDifferentThreads(final boolean interleaveCancellation) {
+    void scanWithFinalizationOnCancelDifferentThreads(final boolean interleaveCancellation) {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final AtomicInteger finalizations = new AtomicInteger(0);
@@ -453,13 +453,13 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onCompleteThrowsHandled(boolean withLifetime) {
+    void onCompleteThrowsHandled(boolean withLifetime) {
         terminalThrowsHandled(true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void onErrorThrowsHandled(boolean withLifetime) {
+    void onErrorThrowsHandled(boolean withLifetime) {
         terminalThrowsHandled(false, withLifetime);
     }
 
@@ -511,13 +511,13 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void mapOnCompleteThrows(boolean withLifetime) {
+    void mapOnCompleteThrows(boolean withLifetime) {
         mapTerminalSignalThrows(true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void mapOnErrorThrows(boolean withLifetime) {
+    void mapOnErrorThrows(boolean withLifetime) {
         mapTerminalSignalThrows(false, withLifetime);
     }
 
@@ -569,7 +569,7 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void invalidDemandAllowsError(boolean withLifetime) {
+    void invalidDemandAllowsError(boolean withLifetime) {
         final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -585,7 +585,7 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
-    public void invalidDemandWithOnNextAllowsError(boolean withLifetime) throws InterruptedException {
+    void invalidDemandWithOnNextAllowsError(boolean withLifetime) throws InterruptedException {
         final AtomicInteger finalizations = new AtomicInteger(0);
         TestSubscription upstreamSubscription = new TestSubscription();
         TestPublisher<Integer> publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe()
@@ -613,7 +613,7 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("cancelStillAllowsMapsParams")
-    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore, boolean withLifetime) {
+    void cancelStillAllowsMaps(boolean onError, boolean cancelBefore, boolean withLifetime) {
         final AtomicInteger finalizations = new AtomicInteger(0);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();

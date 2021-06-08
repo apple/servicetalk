@@ -26,24 +26,24 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
-public class SchedulerOffloadTest {
+class SchedulerOffloadTest {
 
-    public static final String EXPECTED_THREAD_PREFIX = "jdk-executor";
+    static final String EXPECTED_THREAD_PREFIX = "jdk-executor";
     @Nullable
     private Executor executor;
 
-    public SchedulerOffloadTest() {
+    SchedulerOffloadTest() {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void userSchedulerInvokesUserCode() throws InterruptedException {
+    void userSchedulerInvokesUserCode() throws InterruptedException {
         verifyInvokerThread(
                 from(java.util.concurrent.Executors.newCachedThreadPool(new DefaultThreadFactory("foo")),
                         java.util.concurrent.Executors.newScheduledThreadPool(1,
@@ -51,7 +51,7 @@ public class SchedulerOffloadTest {
     }
 
     @Test
-    public void globalSchedulerDoesNotInvokeUserCode() throws InterruptedException {
+    void globalSchedulerDoesNotInvokeUserCode() throws InterruptedException {
         verifyInvokerThread(from(java.util.concurrent.Executors.newFixedThreadPool(1,
                 new DefaultThreadFactory(EXPECTED_THREAD_PREFIX))));
     }

@@ -63,7 +63,7 @@ abstract class AbstractTimeoutHttpFilterTest {
                                                        Single<StreamingHttpResponse> responseSingle);
 
     @Test
-    public void constructorValidatesDuration() {
+    void constructorValidatesDuration() {
         //noinspection ConstantConditions
         assertThrows(NullPointerException.class, () -> newFilter(null));
         assertThrows(IllegalArgumentException.class, () -> newFilter(Duration.ZERO));
@@ -72,7 +72,7 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void responseTimeout(boolean fullRequestResponse) {
+    void responseTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
         StepVerifiers.create(applyFilter(ofNanos(1L), fullRequestResponse, responseSingle))
                 .expectError(TimeoutException.class)
@@ -82,13 +82,13 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void responseWithZeroTimeout(boolean fullRequestResponse) {
+    void responseWithZeroTimeout(boolean fullRequestResponse) {
         responseWithNonPositiveTimeout(ZERO, fullRequestResponse);
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void responseWithNegativeTimeout(boolean fullRequestResponse) {
+    void responseWithNegativeTimeout(boolean fullRequestResponse) {
         responseWithNonPositiveTimeout(ofNanos(1L).negated(), fullRequestResponse);
     }
 
@@ -102,7 +102,7 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void responseCompletesBeforeTimeout(boolean fullRequestResponse) {
+    void responseCompletesBeforeTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
         StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2), fullRequestResponse, responseSingle))
                 .then(() -> immediate().schedule(() -> responseSingle.onSuccess(mock(StreamingHttpResponse.class)),
@@ -113,7 +113,7 @@ abstract class AbstractTimeoutHttpFilterTest {
     }
 
     @Test
-    public void payloadBodyTimeout() {
+    void payloadBodyTimeout() {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicBoolean responseSucceeded = new AtomicBoolean();
         StepVerifiers.create(applyFilter(ofMillis(100L), true, responseWith(payloadBody))
@@ -127,7 +127,7 @@ abstract class AbstractTimeoutHttpFilterTest {
     }
 
     @Test
-    public void payloadBodyDoesNotTimeoutWhenIgnored() {
+    void payloadBodyDoesNotTimeoutWhenIgnored() {
         Duration timeout = ofMillis(100L);
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicBoolean responseSucceeded = new AtomicBoolean();
@@ -147,7 +147,7 @@ abstract class AbstractTimeoutHttpFilterTest {
     }
 
     @Test
-    public void subscribeToPayloadBodyAfterTimeout() {
+    void subscribeToPayloadBodyAfterTimeout() {
         Duration timeout = ofMillis(100L);
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicReference<StreamingHttpResponse> response = new AtomicReference<>();
@@ -163,7 +163,7 @@ abstract class AbstractTimeoutHttpFilterTest {
     }
 
     @Test
-    public void payloadBodyCompletesBeforeTimeout() {
+    void payloadBodyCompletesBeforeTimeout() {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicReference<StreamingHttpResponse> response = new AtomicReference<>();
         StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2), true, responseWith(payloadBody)))

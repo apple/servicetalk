@@ -28,18 +28,18 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class OnErrorPublisherTest {
+class OnErrorPublisherTest {
     private TestPublisherSubscriber<Integer> subscriber;
     private TestPublisher<Integer> first;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = new TestPublisherSubscriber<>();
         first = new TestPublisher<>();
     }
 
     @Test
-    public void onErrorComplete() {
+    void onErrorComplete() {
         toSource(first.onErrorComplete()).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -47,7 +47,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorCompleteClassMatch() {
+    void onErrorCompleteClassMatch() {
         toSource(first.onErrorComplete(DeliberateException.class)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -55,7 +55,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorCompleteClassNoMatch() {
+    void onErrorCompleteClassNoMatch() {
         toSource(first.onErrorComplete(IllegalArgumentException.class)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -63,7 +63,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorCompletePredicateMatch() {
+    void onErrorCompletePredicateMatch() {
         toSource(first.onErrorComplete(t -> t == DELIBERATE_EXCEPTION)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -71,7 +71,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorCompletePredicateNoMatch() {
+    void onErrorCompletePredicateNoMatch() {
         toSource(first.onErrorComplete(t -> false)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -79,7 +79,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnMatch() {
+    void onErrorReturnMatch() {
         toSource(first.onErrorReturn(t -> 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -88,7 +88,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnThrows() {
+    void onErrorReturnThrows() {
         toSource(first.onErrorReturn(t -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -98,7 +98,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnClassMatch() {
+    void onErrorReturnClassMatch() {
         toSource(first.onErrorReturn(DeliberateException.class, t -> 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -107,7 +107,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnClassNoMatch() {
+    void onErrorReturnClassNoMatch() {
         toSource(first.onErrorReturn(IllegalArgumentException.class, t -> 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -115,7 +115,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnPredicateMatch() {
+    void onErrorReturnPredicateMatch() {
         toSource(first.onErrorReturn(t -> t == DELIBERATE_EXCEPTION, t -> 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -124,7 +124,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorReturnPredicateNoMatch() {
+    void onErrorReturnPredicateNoMatch() {
         toSource(first.onErrorReturn(t -> false, t -> 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -132,7 +132,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapMatch() {
+    void onErrorMapMatch() {
         toSource(first.onErrorMap(t -> DELIBERATE_EXCEPTION)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(new DeliberateException());
@@ -140,7 +140,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapMatchThrows() {
+    void onErrorMapMatchThrows() {
         toSource(first.onErrorMap(t -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -150,7 +150,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapClassMatch() {
+    void onErrorMapClassMatch() {
         toSource(first.onErrorMap(DeliberateException.class, t -> DELIBERATE_EXCEPTION)).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(new DeliberateException());
@@ -158,7 +158,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapClassNoMatch() {
+    void onErrorMapClassNoMatch() {
         toSource(first.onErrorMap(IllegalArgumentException.class, t -> new DeliberateException()))
                 .subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -167,7 +167,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapPredicateMatch() {
+    void onErrorMapPredicateMatch() {
         toSource(first.onErrorMap(t -> t instanceof DeliberateException, t -> DELIBERATE_EXCEPTION))
                 .subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -176,7 +176,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorMapPredicateNoMatch() {
+    void onErrorMapPredicateNoMatch() {
         toSource(first.onErrorMap(t -> false, t -> new IllegalStateException())).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -184,7 +184,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorResumeClassMatch() {
+    void onErrorResumeClassMatch() {
         toSource(first.onErrorResume(DeliberateException.class, t -> failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -193,7 +193,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorResumeClassNoMatch() {
+    void onErrorResumeClassNoMatch() {
         toSource(first.onErrorResume(IllegalArgumentException.class, t -> empty())).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
@@ -201,7 +201,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorResumePredicateMatch() {
+    void onErrorResumePredicateMatch() {
         toSource(first.onErrorResume(t -> t instanceof DeliberateException,
                 t -> failed(DELIBERATE_EXCEPTION))).subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -210,7 +210,7 @@ public class OnErrorPublisherTest {
     }
 
     @Test
-    public void onErrorResumePredicateNoMatch() {
+    void onErrorResumePredicateNoMatch() {
         toSource(first.onErrorResume(t -> false, t -> empty())).subscribe(subscriber);
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);

@@ -68,7 +68,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class BasicAuthStrategyInfluencerTest {
+class BasicAuthStrategyInfluencerTest {
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @Nullable

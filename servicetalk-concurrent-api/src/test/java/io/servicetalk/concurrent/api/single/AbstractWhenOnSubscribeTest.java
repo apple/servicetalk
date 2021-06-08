@@ -38,12 +38,12 @@ public abstract class AbstractWhenOnSubscribeTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         doOnListen = mock(Consumer.class);
     }
 
     @Test
-    public void testSubscribe() {
+    void testSubscribe() {
         toSource(doSubscribe(Single.succeeded("Hello"), doOnListen)).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello"));
         verify(doOnListen).accept(any(Cancellable.class));

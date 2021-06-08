@@ -31,7 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class IterableMergeCompletableDelayErrorTest {
+class IterableMergeCompletableDelayErrorTest {
 
     private final CompletableHolder collectionHolder =
             new CompletableHolder() {
@@ -51,14 +51,14 @@ public class IterableMergeCompletableDelayErrorTest {
     };
 
     @Test
-    public void testCollectionCompletion() {
+    void testCollectionCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCollectionCompletionFew() {
+    void testCollectionCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -67,7 +67,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testCollectionFailFirstEvent() {
+    void testCollectionFailFirstEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -76,7 +76,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testCollectionFailLastEvent() {
+    void testCollectionFailLastEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).complete(0, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -85,7 +85,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testCollectionFailMiddleEvent() {
+    void testCollectionFailMiddleEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).complete(0);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -96,21 +96,21 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testCollectionMergeWithOne() {
+    void testCollectionMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testIterableCompletion() {
+    void testIterableCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testIterableCompletionFew() {
+    void testIterableCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -119,7 +119,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testIterableFailFirstEvent() {
+    void testIterableFailFirstEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -128,7 +128,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testIterableFailLastEvent() {
+    void testIterableFailLastEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).complete(0, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -137,7 +137,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testIterableFailMiddleEvent() {
+    void testIterableFailMiddleEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).complete(0);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -148,14 +148,14 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testIterableMergeWithOne() {
+    void testIterableMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void mergedCompletablesTerminateSynchronouslyWithDelayErrorDoesNotTerminateTwice()
+    void mergedCompletablesTerminateSynchronouslyWithDelayErrorDoesNotTerminateTwice()
             throws InterruptedException, ExecutionException {
         ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
         executorService.submit(() -> { }).get();

@@ -15,8 +15,6 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher.reporter;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -29,11 +27,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
 
@@ -51,47 +47,44 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static zipkin2.CheckResult.OK;
 
-public class UdpReporterTest {
+class UdpReporterTest {
     private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048;
     private static final MaxMessagesRecvByteBufAllocator DEFAULT_RECV_BUF_ALLOCATOR =
             new FixedRecvByteBufAllocator(DEFAULT_MAX_DATAGRAM_PACKET_SIZE);
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private EventLoopGroup group;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         group = new NioEventLoopGroup(2);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         group.shutdownGracefully(0, 0, SECONDS);
     }
 
     @Test
-    public void testJsonV1RoundTrip() throws Exception {
+    void testJsonV1RoundTrip() throws Exception {
         testRoundTrip(Codec.JSON_V1, SpanBytesDecoder.JSON_V1);
     }
 
     @Test
-    public void testJsonV2RoundTrip() throws Exception {
+    void testJsonV2RoundTrip() throws Exception {
         testRoundTrip(Codec.JSON_V2, SpanBytesDecoder.JSON_V2);
     }
 
     @Test
-    public void testThriftRoundTrip() throws Exception {
+    void testThriftRoundTrip() throws Exception {
         testRoundTrip(Codec.THRIFT, SpanBytesDecoder.THRIFT);
     }
 
     @Test
-    public void testProto3RoundTrip() throws Exception {
+    void testProto3RoundTrip() throws Exception {
         testRoundTrip(Codec.PROTO3, SpanBytesDecoder.PROTO3);
     }
 
@@ -109,14 +102,14 @@ public class UdpReporterTest {
     }
 
     @Test
-    public void reportAfterClose() throws Exception {
+    void reportAfterClose() throws Exception {
         try (TestReceiver receiver = new TestReceiver(SpanBytesDecoder.JSON_V2)) {
             UdpReporter reporter = buildReporter((InetSocketAddress) receiver.channel.localAddress(), Codec.JSON_V2);
             assertThat("Unexpected check state.", reporter.check(), is(OK));
             reporter.close();
             assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
-            assertThrows("Report post close accepted.", RuntimeException.class,
-                    () -> reporter.report(newSpan("1")));
+            assertThrows(RuntimeException.class, () -> reporter.report(newSpan("1")),
+                    "Report post close accepted.");
         }
     }
 

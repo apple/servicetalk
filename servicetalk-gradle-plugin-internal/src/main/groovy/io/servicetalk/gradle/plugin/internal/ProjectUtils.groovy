@@ -21,6 +21,7 @@ import org.gradle.api.Task
 import org.gradle.api.XmlProvider
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.internal.artifacts.repositories.AbstractArtifactRepository
 import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
@@ -170,9 +171,19 @@ final class ProjectUtils {
     }
   }
 
+  static File copyResource(String resourceSourcePath, DirectoryProperty destinationFolder) {
+    def content = ProjectUtils.class.getResource(resourceSourcePath).text
+    writeToFile(content, destinationFolder, new File(resourceSourcePath).name)
+  }
+
   static File copyResource(String resourceSourcePath, File destinationFolder) {
     def content = ProjectUtils.class.getResource(resourceSourcePath).text
     writeToFile(content, destinationFolder, new File(resourceSourcePath).name)
+  }
+
+  static File writeToFile(String content, DirectoryProperty folder, String fileName) {
+    def destAsFile = folder.get().asFile;
+    writeToFile(content, destAsFile, fileName)
   }
 
   static File writeToFile(String content, File folder, String fileName) {

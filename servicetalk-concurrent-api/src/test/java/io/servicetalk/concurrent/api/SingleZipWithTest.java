@@ -31,25 +31,25 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class SingleZipWithTest {
+class SingleZipWithTest {
     private TestSingle<Integer> first;
     private TestSingle<Double> second;
     private TestSingleSubscriber<String> subscriber;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         first = new TestSingle<>();
         second = new TestSingle<>();
         subscriber = new TestSingleSubscriber<>();
     }
 
     @Test
-    public void bothCompleteInOrder() {
+    void bothCompleteInOrder() {
         bothComplete(true);
     }
 
     @Test
-    public void bothCompleteOutOfOrder() {
+    void bothCompleteOutOfOrder() {
         bothComplete(false);
     }
 
@@ -69,12 +69,12 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void justErrorFirst() {
+    void justErrorFirst() {
         justError(true);
     }
 
     @Test
-    public void justErrorSecond() {
+    void justErrorSecond() {
         justError(false);
     }
 
@@ -90,12 +90,12 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void errorAfterCompleteInOrder() {
+    void errorAfterCompleteInOrder() {
         errorAfterComplete(true);
     }
 
     @Test
-    public void errorAfterCompleteOutOfOrder() {
+    void errorAfterCompleteOutOfOrder() {
         errorAfterComplete(false);
     }
 
@@ -113,7 +113,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void justCancel() throws InterruptedException {
+    void justCancel() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -131,7 +131,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void cancelAfterCompleteOutOfOrder() throws InterruptedException {
+    void cancelAfterCompleteOutOfOrder() throws InterruptedException {
         TestCancellable cancellable = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable);
@@ -145,7 +145,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void delayErrorOneFail() {
+    void delayErrorOneFail() {
         toSource(first.zipWithDelayError(second, SingleZipWithTest::combine)).subscribe(subscriber);
         subscriber.awaitSubscription();
         DeliberateException e1 = new DeliberateException();
@@ -156,7 +156,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void delayErrorAllFail() {
+    void delayErrorAllFail() {
         toSource(first.zipWithDelayError(second, SingleZipWithTest::combine)).subscribe(subscriber);
         subscriber.awaitSubscription();
         DeliberateException e1 = new DeliberateException();

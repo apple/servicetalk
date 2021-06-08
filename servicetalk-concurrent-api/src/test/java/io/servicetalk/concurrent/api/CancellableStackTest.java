@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-public class CancellableStackTest extends AbstractCompositeCancellableTest<CancellableStack> {
+class CancellableStackTest extends AbstractCompositeCancellableTest<CancellableStack> {
     @Override
     protected CancellableStack newCompositeCancellable() {
         return new CancellableStack();

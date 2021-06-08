@@ -33,14 +33,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PublisherConcatWithSingleTest {
+class PublisherConcatWithSingleTest {
     private TestSubscription subscription;
     private TestCancellable cancellable;
     private TestPublisher<Long> source;
     private TestPublisherSubscriber<Long> subscriber;
     private TestSingle<Long> single;
 
-    public PublisherConcatWithSingleTest() {
+    PublisherConcatWithSingleTest() {
         initState();
         toSource(source.concat(single)).subscribe(subscriber);
         source.onSubscribe(subscription);
@@ -66,7 +66,7 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void subscriberDemandThenOnNextThrowsSendsOnError() {
+    void subscriberDemandThenOnNextThrowsSendsOnError() {
         initStateOnNextThrows();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -77,7 +77,7 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void subscriberOnNextThenDemandThrowsSendsOnError() {
+    void subscriberOnNextThenDemandThrowsSendsOnError() {
         initStateOnNextThrows();
         source.onSubscribe(subscription);
         source.onComplete();
@@ -87,12 +87,12 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void bothComplete() {
+    void bothComplete() {
         testBothComplete(2L);
     }
 
     @Test
-    public void publisherEmpty() {
+    void publisherEmpty() {
         completeSource();
         subscriber.awaitSubscription().request(1);
         single.onSuccess(1L);
@@ -100,12 +100,12 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void nextEmitsNull() {
+    void nextEmitsNull() {
         testBothComplete(null);
     }
 
     @Test
-    public void sourceError() {
+    void sourceError() {
         subscriber.awaitSubscription().request(1);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -114,7 +114,7 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void nextError() {
+    void nextError() {
         subscriber.awaitSubscription().request(1);
         source.onNext(1L);
         source.onComplete();
@@ -126,7 +126,7 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void sourceCancel() {
+    void sourceCancel() {
         subscriber.awaitSubscription().cancel();
         assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
         assertThat("Next source subscribed on cancellation.", single.isSubscribed(), is(false));
@@ -137,7 +137,7 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void nextCancel() {
+    void nextCancel() {
         source.onComplete();
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
         subscriber.awaitSubscription().cancel();
@@ -146,72 +146,72 @@ public class PublisherConcatWithSingleTest {
     }
 
     @Test
-    public void onSuccessBeforeRequest() {
+    void onSuccessBeforeRequest() {
         testOnSuccessBeforeRequest(1L);
     }
 
     @Test
-    public void onSuccessWithNullBeforeRequest() {
+    void onSuccessWithNullBeforeRequest() {
         testOnSuccessBeforeRequest(null);
     }
 
     @Test
-    public void invalidRequestNNegative1BeforeProcessingSingle() {
+    void invalidRequestNNegative1BeforeProcessingSingle() {
         invalidRequestNWhenProcessingSingle(-1, true);
     }
 
     @Test
-    public void invalidRequestNNegative1AfterProcessingSingle() {
+    void invalidRequestNNegative1AfterProcessingSingle() {
         invalidRequestNWhenProcessingSingle(-1, false);
     }
 
     @Test
-    public void invalidRequestNZeroBeforeProcessingSingle() {
+    void invalidRequestNZeroBeforeProcessingSingle() {
         invalidRequestNWhenProcessingSingle(0, true);
     }
 
     @Test
-    public void invalidRequestNZeroAfterProcessingSingle() {
+    void invalidRequestNZeroAfterProcessingSingle() {
         invalidRequestNWhenProcessingSingle(0, false);
     }
 
     @Test
-    public void invalidRequestNLongMinBeforeProcessingSingle() {
+    void invalidRequestNLongMinBeforeProcessingSingle() {
         invalidRequestNWhenProcessingSingle(Long.MIN_VALUE, true);
     }
 
     @Test
-    public void invalidRequestNLongMinAfterProcessingSingle() {
+    void invalidRequestNLongMinAfterProcessingSingle() {
         invalidRequestNWhenProcessingSingle(Long.MIN_VALUE, false);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNNegative1AfterProcessingSingle() {
+    void validRequestNAfterInvalidRequestNNegative1AfterProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(-1, false);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNNegative1BeforeProcessingSingle() {
+    void validRequestNAfterInvalidRequestNNegative1BeforeProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(-1, true);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNZeroBeforeProcessingSingle() {
+    void validRequestNAfterInvalidRequestNZeroBeforeProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(0, true);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNZeroAfterProcessingSingle() {
+    void validRequestNAfterInvalidRequestNZeroAfterProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(0, false);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNLongMinBeforeProcessingSingle() {
+    void validRequestNAfterInvalidRequestNLongMinBeforeProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(Long.MIN_VALUE, true);
     }
 
     @Test
-    public void validRequestNAfterInvalidRequestNLongMinAfterProcessingSingle() {
+    void validRequestNAfterInvalidRequestNLongMinAfterProcessingSingle() {
         validRequestNAfterInvalidRequestNWhenProcessingSingle(Long.MIN_VALUE, false);
     }
 

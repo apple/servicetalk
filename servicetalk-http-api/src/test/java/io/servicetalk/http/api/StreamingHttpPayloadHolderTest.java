@@ -60,7 +60,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class StreamingHttpPayloadHolderTest {
+class StreamingHttpPayloadHolderTest {
 
     private enum UpdateMode {
         None,

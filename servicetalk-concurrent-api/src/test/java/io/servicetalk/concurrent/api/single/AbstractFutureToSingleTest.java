@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -42,16 +43,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class AbstractFutureToSingleTest {
-    static ExecutorService jdkExecutor;
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+abstract class AbstractFutureToSingleTest {
+    protected ExecutorService jdkExecutor;
 
     @BeforeAll
-    public static void beforeClass() {
+    void beforeClass() {
         jdkExecutor = Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void afterClass() {
+    void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
@@ -60,7 +62,7 @@ public abstract class AbstractFutureToSingleTest {
     abstract Single<String> from(CompletableFuture<String> future);
 
     @Test
-    public void completion() throws Exception {
+    void completion() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.complete("foo"));
@@ -68,7 +70,7 @@ public abstract class AbstractFutureToSingleTest {
     }
 
     @Test
-    public void timeout() {
+    void timeout() {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future).timeout(1, MILLISECONDS);
         Exception e = assertThrows(ExecutionException.class, () -> single.toFuture().get());
@@ -77,7 +79,7 @@ public abstract class AbstractFutureToSingleTest {
     }
 
     @Test
-    public void cancellation() throws InterruptedException {
+    void cancellation() throws InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         toSource(single).subscribe(new SingleSource.Subscriber<String>() {

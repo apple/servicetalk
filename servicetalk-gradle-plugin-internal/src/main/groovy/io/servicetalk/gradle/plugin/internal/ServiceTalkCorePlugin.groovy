@@ -69,16 +69,16 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
 
         doLast {
-          copyResource("checkstyle/checkstyle.xml", checkstyle.configDir)
-          copyResource("checkstyle/global-suppressions.xml", checkstyle.configDir)
-          copyResource("checkstyle/copyright-slashstar-style.header", checkstyle.configDir)
-          copyResource("checkstyle/copyright-xml-style.header", checkstyle.configDir)
-          copyResource("checkstyle/copyright-script-style.header", checkstyle.configDir)
-          copyResource("checkstyle/copyright-sh-script-style.header", checkstyle.configDir)
+          copyResource("checkstyle/checkstyle.xml", checkstyle.configDirectory)
+          copyResource("checkstyle/global-suppressions.xml", checkstyle.configDirectory)
+          copyResource("checkstyle/copyright-slashstar-style.header", checkstyle.configDirectory)
+          copyResource("checkstyle/copyright-xml-style.header", checkstyle.configDirectory)
+          copyResource("checkstyle/copyright-script-style.header", checkstyle.configDirectory)
+          copyResource("checkstyle/copyright-sh-script-style.header", checkstyle.configDirectory)
 
           File checkstyleLocalSuppressionsFile = locateBuildLevelConfigFile(project, "/gradle/checkstyle/suppressions.xml")
           if (checkstyleLocalSuppressionsFile.exists()) {
-            writeToFile(checkstyleLocalSuppressionsFile.text, checkstyle.configDir, "local-suppressions.xml")
+            writeToFile(checkstyleLocalSuppressionsFile.text, checkstyle.configDirectory, "local-suppressions.xml")
           }
         }
       }
