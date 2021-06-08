@@ -37,7 +37,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     protected abstract RequestConcurrencyController newController(Publisher<Integer> maxSetting, Completable onClose);
 
     @Test
-    public void singleRequestAtTime() {
+    void singleRequestAtTime() {
         RequestConcurrencyController controller = newController(from(1), never());
         for (int i = 0; i < 100; ++i) {
             assertThat(controller.tryRequest(), is(Accepted));
@@ -47,7 +47,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void singleRequestEventIfLimitIsHigher() {
+    void singleRequestEventIfLimitIsHigher() {
         RequestConcurrencyController controller = newController(limitPublisher, never());
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(i);
@@ -58,7 +58,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void singleRequestEventIfLimitIsLower() {
+    void singleRequestEventIfLimitIsLower() {
         RequestConcurrencyController controller = newController(limitPublisher, never());
         limitPublisher.onNext(0);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
@@ -78,7 +78,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void noMoreRequestsAfterClose() {
+    void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(from(1), completed());
         assertThat(controller.tryRequest(), is(RejectedTemporary));
     }

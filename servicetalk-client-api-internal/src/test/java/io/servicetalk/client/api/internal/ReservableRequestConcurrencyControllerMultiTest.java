@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ReservableRequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
+class ReservableRequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
     @Override
     protected ReservableRequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                                    final Completable onClosing,
@@ -38,7 +38,7 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
     }
 
     @Test
-    public void reserveWithNoRequests() throws Exception {
+    void reserveWithNoRequests() throws Exception {
         ReservableRequestConcurrencyController controller = newController(from(10), never(), 10);
         for (int i = 0; i < 10; ++i) {
             assertTrue(controller.tryReserve());
@@ -54,7 +54,7 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
     }
 
     @Test
-    public void reserveFailsWhenPendingRequest() {
+    void reserveFailsWhenPendingRequest() {
         ReservableRequestConcurrencyController controller = newController(from(10), never(), 10);
         assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());

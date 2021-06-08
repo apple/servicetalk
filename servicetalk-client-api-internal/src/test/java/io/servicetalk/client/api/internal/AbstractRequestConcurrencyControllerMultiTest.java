@@ -30,7 +30,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public abstract class AbstractRequestConcurrencyControllerMultiTest {
+abstract class AbstractRequestConcurrencyControllerMultiTest {
 
     private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 
@@ -39,7 +39,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
                                                                   int init);
 
     @Test
-    public void maxConcurrencyRequestAtTime() {
+    void maxConcurrencyRequestAtTime() {
         final int maxRequestCount = 10;
         RequestConcurrencyController controller = newController(from(maxRequestCount), never(), maxRequestCount);
         for (int i = 0; i < 100; ++i) {
@@ -54,7 +54,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     }
 
     @Test
-    public void limitIsAllowedToIncrease() {
+    void limitIsAllowedToIncrease() {
         RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(i);
@@ -69,7 +69,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     }
 
     @Test
-    public void limitIsAllowedToDecrease() {
+    void limitIsAllowedToDecrease() {
         int maxRequestCount = 10;
         RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
 
@@ -87,13 +87,13 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     }
 
     @Test
-    public void noMoreRequestsAfterClose() {
+    void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(from(1), completed(), 10);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
     }
 
     @Test
-    public void defaultValueIsUsed() {
+    void defaultValueIsUsed() {
         final int maxRequestCount = 10;
         RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
