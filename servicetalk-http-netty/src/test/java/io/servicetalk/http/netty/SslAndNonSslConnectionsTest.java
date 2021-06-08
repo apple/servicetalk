@@ -177,7 +177,7 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    public void singleAddressClientWithSslToSecureServerWithoutPeerHost() throws Exception {
+    void singleAddressClientWithSslToSecureServerWithoutPeerHost() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
@@ -191,7 +191,7 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    public void hostNameVerificationIsEnabledByDefault() throws Exception {
+    void hostNameVerificationIsEnabledByDefault() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
@@ -205,7 +205,7 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    public void hostNameVerificationUsesInferredAddress() throws Exception {
+    void hostNameVerificationUsesInferredAddress() throws Exception {
         assert secureServerCtx != null;
 
         HostAndPort localAddress = HostAndPort.of(
@@ -220,7 +220,7 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    public void multiAddressClientWithSslToSecureServer() throws Exception {
+    void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .initializer((scheme, address, builder) ->
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
