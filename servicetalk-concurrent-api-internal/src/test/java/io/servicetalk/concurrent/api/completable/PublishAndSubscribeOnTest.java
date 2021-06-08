@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -28,49 +27,45 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testNoOffload() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(0, Function.identity());
-        Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
-        Matcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), appExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), appExecutor);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
+                capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
 
     @Test
     public void testPublishOn() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(2, // 2 subscribes
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
+                2, // onSubscribe, onComplete
                 c -> c.publishOn(offload.executor()));
-        Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), offloadExecutor);
         assertThat("Unexpected executor for complete " + threads,
                 capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
 
     @Test
     public void testSubscribeOn() throws InterruptedException {
-        System.out.println("subscribeOn");
-        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(1,
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
+                1, // subscribe
                 c -> c.subscribeOn(offload.executor()));
-        Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-        Matcher<Thread> sourceExecutor = matchPrefix(SOURCE_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), offloadExecutor);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads.get(TERMINAL_THREAD), sourceExecutor);
+                capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
 
     @Test
     public void testPublishAndSubscribeOn() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(3, // 2 subscribes + 1 publish
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
+                3, // subscribe, onSubscribe, onComplete
                 c -> c.publishAndSubscribeOn(offload.executor()));
-        Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), offloadExecutor);
         assertThat("Unexpected executor for complete " + threads,
                 capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
@@ -78,11 +73,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testSubscribeOnWithCancel() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
+                2, // subscribe, cancel
                 c -> c.subscribeOn(offload.executor()));
-        Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), offloadExecutor);
         assertThat("Unexpected executor for cancel " + threads,
                 capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }
@@ -90,11 +85,11 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
+                3, // subscribe, onSubscribe, cancel
                 c -> c.publishAndSubscribeOn(offload.executor()));
-        Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
         String threads = capturedThreadsToString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads.get(SUBSCRIBE_THREAD), offloadExecutor);
+                capturedThreads.get(ON_SUBSCRIBE_THREAD), offloadExecutor);
         assertThat("Unexpected executor for cancel " + threads,
                 capturedThreads.get(TERMINAL_THREAD), offloadExecutor);
     }

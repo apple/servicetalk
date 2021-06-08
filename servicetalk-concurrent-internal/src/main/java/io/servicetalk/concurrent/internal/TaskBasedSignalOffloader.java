@@ -142,6 +142,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
     @Override
     public <T> void offloadSignal(final T signal, final Consumer<T> signalConsumer) {
+        LOGGER.debug("executing signal for {} on {}", signalConsumer, executor);
         executor.execute(() -> signalConsumer.accept(signal));
     }
 
@@ -309,25 +310,25 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         public void onSubscribe(final Subscription s) {
             subscription = s;
-            LOGGER.debug("executing Publisher subscribe on {}", executor);
+            LOGGER.debug("offloading Publisher subscribe on {}", executor);
             offerSignal(s);
         }
 
         @Override
         public void onNext(final T t) {
-            LOGGER.debug("executing Publisher onNext on {}", executor);
+            LOGGER.debug("offloading Publisher onNext on {}", executor);
             offerSignal(t == null ? NULL_WRAPPER : t);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.debug("executing Publisher onError on {}", executor);
+            LOGGER.debug("offloading Publisher onError on {}", executor);
             offerSignal(TerminalNotification.error(t));
         }
 
         @Override
         public void onComplete() {
-            LOGGER.debug("executing Publisher onComplete on {}", executor);
+            LOGGER.debug("offloading Publisher onComplete on {}", executor);
             offerSignal(TerminalNotification.complete());
         }
 
@@ -482,7 +483,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             this.cancellable = cancellable;
             state = ON_SUBSCRIBE_RECEIVED_MASK;
             try {
-                LOGGER.debug("executing Single onSubscribe on {}", executor);
+                LOGGER.debug("executing {} onSubscribe on {}",
+                        this instanceof OffloadedCompletableSubscriber ? "Completable" : "Single",
+                        executor);
                 executor.execute(this);
             } catch (Throwable t) {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
@@ -495,9 +498,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public final void run() {
+            LOGGER.debug("offloaded for {}", executor);
             for (;;) {
                 int cState = state;
                 if (cState == STATE_TERMINATED) {
+                    LOGGER.debug("terminated for {}", executor);
                     return;
                 }
                 if (!casAppend(cState, EXECUTING_MASK)) {
@@ -517,9 +522,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     if (stateUpdater.compareAndSet(this, cState, STATE_TERMINATED)) {
                         assert terminal != null;
                         deliverTerminalToSubscriber(terminal);
+                        LOGGER.debug("finished for {}", executor);
                         return;
                     }
                 } else if (stateUpdater.compareAndSet(this, cState, STATE_AWAITING_TERMINAL)) {
+                    LOGGER.debug("idle for {}", executor);
                     return;
                 }
             }
@@ -586,11 +593,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onSuccess(@Nullable final T result) {
+            LOGGER.debug("offloading Single onSuccess on {}", executor);
             terminal(result == null ? NULL_WRAPPER : result);
         }
 
         @Override
         public void onError(final Throwable t) {
+            LOGGER.debug("offloading Single onError on {}", executor);
             terminal(TerminalNotification.error(t));
         }
 
@@ -606,8 +615,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             if (terminal instanceof TerminalNotification) {
                 final Throwable error = ((TerminalNotification) terminal).cause();
                 assert error != null;
+                LOGGER.debug("delivering Single onError");
                 safeOnError(target, error);
             } else {
+                LOGGER.debug("delivering Completable onSuccess");
                 safeOnSuccess(target, uncheckCast(terminal));
             }
         }
@@ -615,6 +626,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void sendOnSubscribe(final Cancellable cancellable) {
             try {
+                LOGGER.debug("delivering Single onSubscribe");
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
@@ -642,13 +654,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onComplete() {
-            LOGGER.debug("executing Completable onComplete on {}", executor);
+            LOGGER.debug("offloading Completable onComplete on {}", executor);
             terminal(COMPLETED);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.debug("executing Completable onError on {}", executor);
+            LOGGER.debug("offloading Completable onError on {}", executor);
             terminal(t);
         }
 
@@ -663,8 +675,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof Throwable) {
+                LOGGER.debug("delivering Completable onError");
                 safeOnError(target, (Throwable) terminal);
             } else {
+                LOGGER.debug("delivering Completable onComplete");
                 safeOnComplete(target);
             }
         }
@@ -672,6 +686,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void sendOnSubscribe(final Cancellable cancellable) {
             try {
+                LOGGER.debug("delivering Completable onSubscribe");
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
