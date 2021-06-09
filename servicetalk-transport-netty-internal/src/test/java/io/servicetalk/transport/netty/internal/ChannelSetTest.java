@@ -26,6 +26,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,10 +84,7 @@ class ChannelSetTest {
         lenient().when(channel.pipeline()).thenReturn(channelPipeline);
         lenient().when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
         lenient().when(mockClosableAttribute.getAndSet(any())).thenReturn(nettyConnection);
-        lenient().when(nettyConnection.onClose()).thenReturn(fromSource(closeAsyncCompletable));
-        lenient().when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
         lenient().when(nettyConnection.closeAsyncNoOffload()).thenReturn(fromSource(closeAsyncCompletable));
-        lenient().when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));
         lenient().when(nettyConnection.closeAsyncGracefullyNoOffload())
                 .thenReturn(fromSource(closeAsyncGracefullyCompletable));
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
@@ -94,6 +92,14 @@ class ChannelSetTest {
             return channelCloseFuture;
         });
         fixture.addIfAbsent(channel);
+    }
+
+    @AfterEach
+    public void finalValidation() {
+        // ChannelSet uses only "NoOffload" variant of these methods:
+        verify(nettyConnection, never()).onClose();
+        verify(nettyConnection, never()).closeAsync();
+        verify(nettyConnection, never()).closeAsyncGracefully();
     }
 
     @Test
@@ -110,6 +116,7 @@ class ChannelSetTest {
     void closeAsyncGracefullyWithNettyConnectionChannelHandler() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(nettyConnection, never()).closeAsyncGracefully();
+        verify(nettyConnection, never()).closeAsyncGracefullyNoOffload();
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefullyNoOffload();
@@ -165,7 +172,6 @@ class ChannelSetTest {
 
         TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(gracefulCompletable).subscribe(subscriber2);
-        verify(nettyConnection, never()).closeAsyncGracefully();
 
         fixture.onClose().toFuture().get();
 

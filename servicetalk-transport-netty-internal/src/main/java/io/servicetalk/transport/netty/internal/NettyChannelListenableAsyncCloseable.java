@@ -43,8 +43,8 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     private final Channel channel;
     @SuppressWarnings("unused")
     private volatile int state;
+    private final Completable onCloseNoOffload;
     private final Completable onClose;
-    private final Completable beforeOffload;
 
     /**
      * New instance.
@@ -55,7 +55,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
      */
     public NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
-        beforeOffload = new SubscribableCompletable() {
+        onCloseNoOffload = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 try {
@@ -67,7 +67,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                 NettyFutureCompletable.connectToSubscriber(subscriber, channel.closeFuture());
             }
         };
-        onClose = beforeOffload
+        onClose = onCloseNoOffload
                 // Since onClose termination will come from EventLoop, offload those signals to avoid blocking EventLoop
                 .publishOn(offloadingExecutor);
     }
@@ -82,10 +82,12 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         return closeAsyncGracefully(onClose());
     }
 
+    @Override
     public final Completable closeAsyncNoOffload() {
         return closeAsync(onCloseNoOffload());
     }
 
+    @Override
     public final Completable closeAsyncGracefullyNoOffload() {
         return closeAsyncGracefully(onCloseNoOffload());
     }
@@ -126,7 +128,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     }
 
     final Completable onCloseNoOffload() {
-        return beforeOffload;
+        return onCloseNoOffload;
     }
 
     /**
