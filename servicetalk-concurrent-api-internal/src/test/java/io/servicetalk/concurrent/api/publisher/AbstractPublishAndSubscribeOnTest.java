@@ -24,8 +24,6 @@ import io.servicetalk.concurrent.api.PublisherWithExecutor;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
@@ -63,13 +61,13 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.executor(),
                 from("Hello"))
-                .beforeOnNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
-                .beforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));
+                .beforeOnNext(__ -> recordThread(capturedThreads, ORIGINAL_SUBSCRIBER_THREAD))
+                .beforeRequest(__ -> recordThread(capturedThreads, ORIGINAL_SUBSCRIPTION_THREAD));
 
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        toSource(offloaded.beforeOnNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
-                .beforeRequest(__ -> capturedThreads.set(OFFLOADED_SUBSCRIPTION_THREAD, currentThread()))
+        toSource(offloaded.beforeOnNext(__ -> recordThread(capturedThreads, OFFLOADED_SUBSCRIBER_THREAD))
+                .beforeRequest(__ -> recordThread(capturedThreads, OFFLOADED_SUBSCRIPTION_THREAD))
                 .afterFinally(allDone::countDown))
                 .subscribe(new Subscriber<String>() {
                     @Override
@@ -100,13 +98,8 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     }
 
     private static void recordThread(AtomicReferenceArray<Thread> threads, final int index) {
-        Thread was = threads.getAndUpdate(index, AbstractPublishAndSubscribeOnTest::updateThread);
+        Thread was = threads.getAndSet(index, currentThread());
         assertThat("Thread already recorded at index: " + index, was, nullValue());
-    }
-
-    private static Thread updateThread(Thread current) {
-        assertThat(current, nullValue());
-        return currentThread();
     }
 
     public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
@@ -116,36 +109,5 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         }
 
         return capturedThreads;
-    }
-
-    public static TypeSafeMatcher<Thread> matchPrefix(String prefix) {
-        return new TypeSafeMatcher<Thread>() {
-            final String matchPrefix = prefix;
-
-            @Override
-            public void describeTo(final Description description) {
-                description.appendText("a prefix of ")
-                        .appendValue(matchPrefix);
-            }
-
-            @Override
-            public void describeMismatchSafely(Thread item, Description mismatchDescription) {
-                mismatchDescription
-                        .appendText("was ")
-                        .appendValue(getNamePrefix(item.getName()));
-            }
-
-            @Override
-            protected boolean matchesSafely(final Thread item) {
-                return item.getName().startsWith(matchPrefix);
-            }
-        };
-    }
-
-    private static String getNamePrefix(String name) {
-        int firstDash = name.indexOf('-');
-        return -1 == firstDash ?
-                name :
-                name.substring(0, firstDash);
     }
 }

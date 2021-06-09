@@ -2217,11 +2217,8 @@ public abstract class Completable {
     /**
      * Returns the {@link Executor} used for this {@link Completable}.
      *
-     * @deprecated Executor is only relevant to some operators and will not be exposed.
-     *
      * @return {@link Executor} used for this {@link Completable}.
      */
-    @Deprecated
     Executor executor() {
         return immediate();
     }

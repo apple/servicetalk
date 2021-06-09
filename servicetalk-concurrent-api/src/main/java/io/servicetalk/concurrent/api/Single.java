@@ -436,7 +436,7 @@ public abstract class Single<T> {
      * {@link Single} completes successfully.
      */
     public final Completable flatMapCompletable(Function<? super T, ? extends Completable> next) {
-        return new SingleFlatMapCompletable<>(this, next, executor);
+        return new SingleFlatMapCompletable<>(this, next);
     }
 
     /**

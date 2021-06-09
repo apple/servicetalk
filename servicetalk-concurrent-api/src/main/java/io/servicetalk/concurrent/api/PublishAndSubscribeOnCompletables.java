@@ -76,6 +76,7 @@ final class PublishAndSubscribeOnCompletables {
             this.executor = executor;
         }
 
+        @Override
         final Executor executor() {
             return executor;
         }
@@ -89,6 +90,7 @@ final class PublishAndSubscribeOnCompletables {
             this.executor = executor;
         }
 
+        @Override
         final Executor executor() {
             return executor;
         }

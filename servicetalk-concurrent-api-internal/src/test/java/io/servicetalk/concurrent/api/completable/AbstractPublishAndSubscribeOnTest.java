@@ -21,11 +21,11 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,12 +56,12 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     static final int ON_SUBSCRIBE_THREAD = 1;
     static final int TERMINAL_THREAD = 2;
 
-    // @Rule
-    // public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule<Executor> app = ExecutorRule.withNamePrefix(APP_EXECUTOR_PREFIX);
-    protected Matcher<Thread> offloadExecutor = matchPrefix(OFFLOAD_EXECUTOR_PREFIX);
-    Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
+    protected Matcher<Thread> offloadExecutor = matchThreadNamePrefix(OFFLOAD_EXECUTOR_PREFIX);
+    Matcher<Thread> appExecutor = matchThreadNamePrefix(APP_EXECUTOR_PREFIX);
     AtomicInteger offloadsStarted = new AtomicInteger();
     AtomicInteger offloadsFinished = new AtomicInteger();
     private volatile Runnable afterOffload;
@@ -87,7 +88,6 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 try {
                     runnable.run();
                 } finally {
-                    System.out.println("offload finished");
                     Runnable executeAfterOffload = afterOffload;
                     if (null != executeAfterOffload) {
                         executeAfterOffload.run();
@@ -236,13 +236,8 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     }
 
     private static void recordThread(AtomicReferenceArray<Thread> threads, final int index) {
-        Thread was = threads.getAndUpdate(index, AbstractPublishAndSubscribeOnTest::updateThread);
+        Thread was = threads.getAndSet(index, currentThread());
         assertThat("Thread already recorded at index: " + index, was, nullValue());
-    }
-
-    private static Thread updateThread(Thread current) {
-        assertThat(current, nullValue());
-        return currentThread();
     }
 
     public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
@@ -252,7 +247,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         }
 
         assertThat("Unexpected executor for app", capturedThreads.get(APP_THREAD),
-                matchPrefix(APP_EXECUTOR_PREFIX));
+                matchThreadNamePrefix(APP_EXECUTOR_PREFIX));
 
         return capturedThreads;
     }
@@ -261,38 +256,6 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         return IntStream.range(0, capturedThreads.length())
                 .mapToObj(capturedThreads::get)
                 .map(Thread::getName)
-                .map(AbstractPublishAndSubscribeOnTest::getNamePrefix)
                 .collect(Collectors.joining(", ", "[ ", " ]"));
-    }
-
-    public static Matcher<Thread> matchPrefix(String prefix) {
-        return new TypeSafeMatcher<Thread>() {
-            final String matchPrefix = prefix;
-
-            @Override
-            public void describeTo(final Description description) {
-                description.appendText("a prefix of ")
-                        .appendValue(matchPrefix);
-            }
-
-            @Override
-            public void describeMismatchSafely(Thread item, Description mismatchDescription) {
-                mismatchDescription
-                        .appendText("was ")
-                        .appendValue(getNamePrefix(item.getName()));
-            }
-
-            @Override
-            protected boolean matchesSafely(final Thread item) {
-                return item.getName().startsWith(matchPrefix);
-            }
-        };
-    }
-
-    private static String getNamePrefix(String name) {
-        int firstDash = name.indexOf('-');
-        return -1 == firstDash ?
-                name :
-                name.substring(0, firstDash);
     }
 }

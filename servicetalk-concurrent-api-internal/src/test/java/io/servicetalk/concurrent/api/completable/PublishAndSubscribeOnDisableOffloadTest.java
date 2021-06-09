@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -28,7 +27,6 @@ public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndS
     @Test
     public void testPublishOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
-        Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
         assertThat("Unexpected executor for subscribe", capturedThreads.get(ON_SUBSCRIBE_THREAD), appExecutor);
         assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
@@ -36,7 +34,6 @@ public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndS
     @Test
     public void testSubscribeOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
-        Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
         assertThat("Unexpected executor for subscribe", capturedThreads.get(ON_SUBSCRIBE_THREAD), appExecutor);
         assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
@@ -45,7 +42,6 @@ public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndS
     public void testPublishAndSubscribeOnDisable() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
                 c -> c.publishAndSubscribeOnOverride(immediate()));
-        Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
         assertThat("Unexpected executor for subscribe", capturedThreads.get(ON_SUBSCRIBE_THREAD), appExecutor);
         assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
@@ -54,7 +50,6 @@ public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndS
     public void testPublishAndSubscribeOnDisableWithCancel() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupAndCancel(
                 c -> c.publishAndSubscribeOnOverride(immediate()));
-        Matcher<Thread> appExecutor = matchPrefix(APP_EXECUTOR_PREFIX);
         assertThat("Unexpected executor for subscribe", capturedThreads.get(ON_SUBSCRIBE_THREAD), appExecutor);
         assertThat("Unexpected executor for complete", capturedThreads.get(TERMINAL_THREAD), appExecutor);
     }
