@@ -451,7 +451,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Completable onClosing() {
-        return onClosing == null ? onClose() : fromSource(onClosing).publishOn(executionContext().executor());
+        return onClosing == null ? onClose() : fromSource(onClosing);
     }
 
     @Override

@@ -60,7 +60,8 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             }
         }
     };
-    public static final AttributeKey<AsyncCloseable> CHANNEL_CLOSEABLE_KEY = AttributeKey.newInstance("closeable");
+    public static final AttributeKey<PrivilegedListenableAsyncCloseable> CHANNEL_CLOSEABLE_KEY =
+            AttributeKey.newInstance("closeable");
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
     private final Processor onCloseProcessor = newCompletableProcessor();
@@ -143,42 +144,24 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
-                    Attribute<AsyncCloseable> closeableAttribute = channel.attr(CHANNEL_CLOSEABLE_KEY);
-                    AsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
+                    Attribute<PrivilegedListenableAsyncCloseable> closeableAttribute =
+                            channel.attr(CHANNEL_CLOSEABLE_KEY);
+                    PrivilegedListenableAsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
                     if (null != channelCloseable) {
                         // Upon shutdown of the set, we will close all live channels. If close of individual
                         // channels are offloaded, then this would trigger a surge in threads required to offload
                         // these closures.
-                        if (channelCloseable instanceof NettyChannelListenableAsyncCloseable) {
-                            NettyChannelListenableAsyncCloseable asNCLAC =
-                                    (NettyChannelListenableAsyncCloseable) channelCloseable;
-                            // Here we disable offloading on each channel.
-                            closeable.merge(new AsyncCloseable() {
-                                @Override
-                                public Completable closeAsync() {
-                                    return asNCLAC.closeAsyncNoOffload();
-                                }
+                        closeable.merge(new AsyncCloseable() {
+                            @Override
+                            public Completable closeAsync() {
+                                return channelCloseable.closeAsyncNoOffload();
+                            }
 
-                                @Override
-                                public Completable closeAsyncGracefully() {
-                                    return asNCLAC.closeAsyncGracefullyNoOffload();
-                                }
-                            });
-                        } else {
-                            // Hopefully the returned Completable does not include any offloading but we can't know or
-                            // influence it.
-                            closeable.merge(new AsyncCloseable() {
-                                @Override
-                                public Completable closeAsync() {
-                                    return channelCloseable.closeAsync();
-                                }
-
-                                @Override
-                                public Completable closeAsyncGracefully() {
-                                    return channelCloseable.closeAsyncGracefully();
-                                }
-                            });
-                        }
+                            @Override
+                            public Completable closeAsyncGracefully() {
+                                return channelCloseable.closeAsyncGracefullyNoOffload();
+                            }
+                        });
                     } else {
                         channel.close();
                     }
