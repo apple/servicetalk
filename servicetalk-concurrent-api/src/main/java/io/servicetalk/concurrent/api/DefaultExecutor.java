@@ -103,11 +103,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
     }
 
     @Override
-    public String toString() {
-        return DefaultExecutor.class.getSimpleName() + "{executor=" + executor + ", scheduler=" + scheduler + "}";
-    }
-
-    @Override
     public Cancellable execute(Runnable task) {
         return executor.apply(task);
     }
@@ -185,12 +180,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
             };
         }
         return new InternalExecutor() {
-
-            @Override
-            public String toString() {
-                return InternalExecutor.class.getSimpleName() + "{jdkExecutor=" + jdkExecutor + "}";
-            }
-
             @Override
             public void run() {
                 shutdownExecutor(jdkExecutor);

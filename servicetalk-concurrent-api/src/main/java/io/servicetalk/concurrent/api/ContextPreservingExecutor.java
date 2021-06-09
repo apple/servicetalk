@@ -31,11 +31,6 @@ final class ContextPreservingExecutor implements Executor {
         delegate.execute(new ContextPreservingRunnable(command));
     }
 
-    @Override
-    public String toString() {
-        return ContextPreservingExecutor.class.getSimpleName() + "{delegate=" + delegate + "}";
-    }
-
     static ContextPreservingExecutor of(Executor executor) {
         return executor instanceof ContextPreservingExecutor ? (ContextPreservingExecutor) executor :
                 new ContextPreservingExecutor(executor);
