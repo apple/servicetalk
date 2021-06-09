@@ -48,11 +48,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class HttpResponseEncoderTest {
-    private enum TransferEncoding {
-        ContentLength,
-        Chunked,
-        Variable
+class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
+
+    @Override
+    EmbeddedChannel newEmbeddedChannel() {
+        return new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
+    }
+
+    @Override
+    HttpResponseMetaData newMetaData(final HttpHeaders headers) {
+        return newResponseMetaData(HTTP_1_1, OK, headers);
     }
 
     @Test
@@ -336,16 +341,5 @@ class HttpResponseEncoderTest {
                 throw new Error();
         }
         return actualMetaData;
-    }
-
-    private static void consumeEmptyBufferFromTrailers(EmbeddedChannel channel) {
-        // Empty buffer is written when trailers are seen to indicate the end of the request
-        ByteBuf byteBuf = channel.readOutbound();
-        assertFalse(byteBuf.isReadable());
-        byteBuf.release();
-    }
-
-    private static EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
     }
 }

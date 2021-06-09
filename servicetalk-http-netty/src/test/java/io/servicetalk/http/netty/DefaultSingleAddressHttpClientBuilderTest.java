@@ -85,7 +85,7 @@ class DefaultSingleAddressHttpClientBuilderTest {
                      forResolvedAddress(hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port),
                              serverCtx.listenAddress())
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                                     .disableHostnameVerification().build())
+                                     .hostnameVerificationAlgorithm("").build())
                              .buildBlocking()) {
             ReservedBlockingHttpConnection conn = client.reserveConnection(client.get("/"));
             try {

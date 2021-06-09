@@ -75,7 +75,8 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      *
      * @param algorithm The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
-     * Endpoint Identification Algorithm Name</a>
+     * Endpoint Identification Algorithm Name</a>.
+     * An empty {@code String} ({@code ""}) disables hostname verification.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
@@ -89,6 +90,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @deprecated Disabling hostname verification may leave you vulnerable to man-in-the-middle attacks. See
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> on the risks of disabling.
      * If the expected value isn't automatically inferred use {@link #peerHost(String)} to set the expected value.
+     * When disabling is intended, use {@link #hostnameVerificationAlgorithm} with {@code ""} as argument.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
@@ -104,10 +106,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @return {@code this}.
      * @see SSLEngine#getPeerHost()
      */
-    public ClientSslConfigBuilder peerHost(String peerHost) {
-        if (peerHost.isEmpty()) {
-            throw new IllegalArgumentException("peerHost cannot be empty");
-        }
+    public ClientSslConfigBuilder peerHost(@Nullable String peerHost) {
         this.peerHost = peerHost;
         return this;
     }
@@ -166,8 +165,10 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         @Nullable
         private final String sniHostname;
 
-        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm, @Nullable final String peerHost,
-                               final int peerPort, @Nullable final String sniHostname,
+        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm,
+                               @Nullable final String peerHost,
+                               final int peerPort,
+                               @Nullable final String sniHostname,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
                                @Nullable final KeyManagerFactory keyManagerFactory,

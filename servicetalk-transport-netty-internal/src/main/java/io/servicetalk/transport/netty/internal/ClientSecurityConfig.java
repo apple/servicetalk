@@ -256,7 +256,7 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
         }
 
         if (hostnameVerificationAlgorithm == null) {
-            builder.disableHostnameVerification();
+            builder.hostnameVerificationAlgorithm("");
         } else {
             builder.hostnameVerificationAlgorithm(hostnameVerificationAlgorithm);
         }
