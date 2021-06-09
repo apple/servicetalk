@@ -148,9 +148,12 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                             channel.attr(CHANNEL_CLOSEABLE_KEY);
                     PrivilegedListenableAsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
                     if (null != channelCloseable) {
-                        // Upon shutdown of the set, we will close all live channels. If close of individual
-                        // channels are offloaded, then this would trigger a surge in threads required to offload
-                        // these closures.
+                        // Upon shutdown of the set, we will close all live channels. If close of individual hannels
+                        // are offloaded, then this would trigger a surge in threads required to offload these closures.
+                        // Here we assume that if there is any offloading required, it is done by offloading the
+                        // Completable returned by closeAsyncGracefully() hence offloading each channel is not required.
+                        // Hence, we use the "noOffload" variant for each channel for this particular subscribe to use
+                        // immediate and effectively disable offloading on each channel.
                         closeable.merge(new AsyncCloseable() {
                             @Override
                             public Completable closeAsync() {

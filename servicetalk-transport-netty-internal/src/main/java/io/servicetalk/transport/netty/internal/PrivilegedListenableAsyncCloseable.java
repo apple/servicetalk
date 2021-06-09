@@ -21,11 +21,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 /**
  * Provides access to variations of {@link AsyncCloseable#closeAsync()} and
- * {@link AsyncCloseable#closeAsyncGracefully()} that omit any offloading. As the returned {@code Completable} is not
- * required to be blocking-safe it should be offloaded if the
- * {@link io.servicetalk.concurrent.CompletableSource.Subscriber} may block.
+ * {@link AsyncCloseable#closeAsyncGracefully()} with no offloading.
  */
-public interface PrivilegedListenableAsyncCloseable extends ListenableAsyncCloseable {
+interface PrivilegedListenableAsyncCloseable extends ListenableAsyncCloseable {
 
     /**
      * Returns a {@link Completable} that is notified once the {@link ListenableAsyncCloseable} has closed.
