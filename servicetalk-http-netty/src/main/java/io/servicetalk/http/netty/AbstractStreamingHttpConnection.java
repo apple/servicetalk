@@ -75,7 +75,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
-                .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
+                .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT))
+                .publishOn(executionContext.executor());
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
