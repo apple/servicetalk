@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 /**
- * A {@link Completable} that created with an {@link Executor}.
+ * A {@link Completable} created with an {@link Executor}.
  */
 public final class CompletableWithExecutor extends AbstractSynchronousCompletableOperator {
 
