@@ -37,7 +37,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
-public class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
+public class NettyChannelListenableAsyncCloseable implements PrivilegedListenableAsyncCloseable {
     private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
             newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
     private final Channel channel;
@@ -125,7 +125,7 @@ public class NettyChannelListenableAsyncCloseable implements ListenableAsyncClos
         return onClose;
     }
 
-    Completable onCloseNoOffload() {
+    final Completable onCloseNoOffload() {
         return beforeOffload;
     }
 

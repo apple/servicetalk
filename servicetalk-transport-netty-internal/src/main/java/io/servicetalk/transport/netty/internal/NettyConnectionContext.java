@@ -56,7 +56,9 @@ public interface NettyConnectionContext extends ConnectionContext {
     Single<Throwable> transportError();
 
     /**
-     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
+     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence. The
+     * {@code Completable} is not required to be blocking-safe and should be offloaded if the
+     * {@link io.servicetalk.concurrent.CompletableSource.Subscriber} may block.
      *
      * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
      * {@link CloseHandler} will determine whether more reads or writes will be allowed on this
