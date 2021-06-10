@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.internal.CaptureThreads;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.hamcrest.Matcher;
@@ -34,18 +35,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
-import static java.lang.Thread.currentThread;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -115,30 +110,40 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final ExecutorRule<Executor> offload = ExecutorRule.withExecutor(() -> from(offloadExecutorService));
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
+    CaptureThreads capturedThreads = new CaptureThreads(3) {
+        @Override
+        public Thread[] verify() {
+            Thread[] asArray = super.verify();
+
+            assertThat("Unexpected executor for app", asArray[APP_THREAD], appExecutor);
+
+            return asArray;
+        }
+    };
+
+    protected Thread[] setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
         return setupAndSubscribe(-1, offloadingFunction);
     }
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(int offloadsExpected,
+    protected Thread[] setupAndSubscribe(int offloadsExpected,
                                                              Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(3);
         TestCompletable original = new TestCompletable.Builder().singleSubscriber().build();
         Completable offloaded = offloadingFunction.apply(original);
         CountDownLatch subscribed = new CountDownLatch(1 + (offloadsExpected > 0 ? (offloadsExpected - 1) : 0));
         CountDownLatch allDone = new CountDownLatch(1);
 
         app.executor().execute(() -> {
-            recordThread(capturedThreads, APP_THREAD);
+            capturedThreads.capture(APP_THREAD);
 
             afterOffload = subscribed::countDown;
 
             Cancellable cancel = offloaded.afterOnComplete(allDone::countDown)
                     .afterOnSubscribe(cancellable -> {
-                        recordThread(capturedThreads, ON_SUBSCRIBE_THREAD);
+                        capturedThreads.capture(ON_SUBSCRIBE_THREAD);
                     })
-                    .afterFinally(() -> recordThread(capturedThreads, TERMINAL_THREAD))
+                    .afterFinally(() -> capturedThreads.capture(TERMINAL_THREAD))
                     .subscribe();
             subscribed.countDown();
             try {
@@ -171,34 +176,33 @@ public abstract class AbstractPublishAndSubscribeOnTest {
             assertThat("Unexpected offloads", offloadsFinished.intValue(), is(offloadsExpected));
         }
 
-        return verifyCapturedThreads(capturedThreads);
+        return capturedThreads.verify();
     }
 
-    protected AtomicReferenceArray<Thread> setupAndCancel(Function<Completable, Completable> offloadingFunction)
+    protected Thread[] setupAndCancel(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
         return setupAndCancel(-1, offloadingFunction);
     }
 
-    protected AtomicReferenceArray<Thread> setupAndCancel(int offloadsExpected,
+    protected Thread[] setupAndCancel(int offloadsExpected,
                                                           Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(3);
         CountDownLatch allDone = new CountDownLatch(1);
         TestCompletable original = new TestCompletable.Builder().singleSubscriber().build();
         Completable offloaded = offloadingFunction.apply(original);
         CountDownLatch subscribed = new CountDownLatch(original == offloaded ? 1 : 2);
 
         app.executor().execute(() -> {
-            recordThread(capturedThreads, APP_THREAD);
+            capturedThreads.capture(APP_THREAD);
 
             afterOffload = subscribed::countDown;
 
             Cancellable cancel = offloaded.afterOnSubscribe(cancellable -> {
-                recordThread(capturedThreads, ON_SUBSCRIBE_THREAD);
+                capturedThreads.capture(ON_SUBSCRIBE_THREAD);
                 subscribed.countDown();
             })
                     .afterCancel(() -> {
-                        recordThread(capturedThreads, TERMINAL_THREAD);
+                        capturedThreads.capture(TERMINAL_THREAD);
                         allDone.countDown();
                     }).subscribe();
             subscribed.countDown();
@@ -232,30 +236,6 @@ public abstract class AbstractPublishAndSubscribeOnTest {
             assertThat("Unexpected offloads", offloadsFinished.intValue(), is(offloadsExpected));
         }
 
-        return verifyCapturedThreads(capturedThreads);
-    }
-
-    private static void recordThread(AtomicReferenceArray<Thread> threads, final int index) {
-        Thread was = threads.getAndSet(index, currentThread());
-        assertThat("Thread already recorded at index: " + index, was, nullValue());
-    }
-
-    public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
-        for (int i = 0; i < capturedThreads.length(); i++) {
-            final Thread capturedThread = capturedThreads.get(i);
-            assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
-        }
-
-        assertThat("Unexpected executor for app", capturedThreads.get(APP_THREAD),
-                matchThreadNamePrefix(APP_EXECUTOR_PREFIX));
-
-        return capturedThreads;
-    }
-
-    public static String capturedThreadsToString(AtomicReferenceArray<Thread> capturedThreads) {
-        return IntStream.range(0, capturedThreads.length())
-                .mapToObj(capturedThreads::get)
-                .map(Thread::getName)
-                .collect(Collectors.joining(", ", "[ ", " ]"));
+        return capturedThreads.verify();
     }
 }

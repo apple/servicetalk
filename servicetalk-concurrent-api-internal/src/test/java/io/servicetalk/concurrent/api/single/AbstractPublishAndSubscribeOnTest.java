@@ -19,20 +19,16 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleWithExecutor;
+import io.servicetalk.concurrent.api.internal.CaptureThreads;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static java.lang.Thread.currentThread;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -43,57 +39,42 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule<Executor> originalSourceExecutorRule = ExecutorRule.newRule();
+    CaptureThreads capturedThreads = new CaptureThreads(2);
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(
+    protected Thread[] setupAndSubscribe(
             Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), succeeded("Hello"))
-                .beforeOnSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
+                .beforeOnSuccess(__ -> capturedThreads.capture(ORIGINAL_SUBSCRIBER_THREAD));
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
         offloaded.afterFinally(allDone::countDown)
-                .beforeOnSuccess(__ -> recordThread(capturedThreads, OFFLOADED_SUBSCRIBER_THREAD))
+                .beforeOnSuccess(__ -> capturedThreads.capture(OFFLOADED_SUBSCRIBER_THREAD))
                 .subscribe(val -> { });
         allDone.await();
 
-        return verifyCapturedThreads(capturedThreads);
+        return capturedThreads.verify();
     }
 
-    protected AtomicReferenceArray<Thread> setupForCancelAndSubscribe(
+    protected Thread[] setupForCancelAndSubscribe(
             Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(),
                 Single.<String>never())
                 .afterCancel(() -> {
-                    capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread());
+                    capturedThreads.capture(ORIGINAL_SUBSCRIBER_THREAD);
                     allDone.countDown();
                 });
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
-        offloaded.beforeCancel(() -> recordThread(capturedThreads, OFFLOADED_SUBSCRIBER_THREAD))
+        offloaded.beforeCancel(() -> capturedThreads.capture(OFFLOADED_SUBSCRIBER_THREAD))
                 .subscribe(val -> { }).cancel();
         allDone.await();
 
-        return verifyCapturedThreads(capturedThreads);
-    }
-
-    private static void recordThread(AtomicReferenceArray<Thread> threads, final int index) {
-        Thread was = threads.getAndSet(index, currentThread());
-        assertThat("Thread already recorded at index: " + index, was, nullValue());
-    }
-
-    public static AtomicReferenceArray<Thread> verifyCapturedThreads(AtomicReferenceArray<Thread> capturedThreads) {
-        for (int i = 0; i < capturedThreads.length(); i++) {
-            final Thread capturedThread = capturedThreads.get(i);
-            assertThat("No captured thread at index: " + i, capturedThread, notNullValue());
-        }
-
-        return capturedThreads;
+        return capturedThreads.verify();
     }
 }
