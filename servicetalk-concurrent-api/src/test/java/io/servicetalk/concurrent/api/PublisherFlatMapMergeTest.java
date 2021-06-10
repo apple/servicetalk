@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -100,6 +101,18 @@ class PublisherFlatMapMergeTest {
         if (executorService != null) {
             executorService.shutdown();
         }
+    }
+
+    @Test
+    public void singleToPublisherOnNextErrorPropagated() {
+        toSource(publisher.flatMapMerge(x -> succeeded(x).toPublisher(), 2)
+                .<Integer>map(y -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(2);
+        publisher.onNext(1, 2);
+        publisher.onComplete();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test

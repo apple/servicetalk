@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -83,6 +84,27 @@ class PublisherFlatMapSingleTest {
     @AfterAll
     static void afterClass() throws Exception {
         executor.closeAsync().toFuture().get();
+    }
+
+    @Test
+    void onNextErrorPropagated() {
+        onNextErrorPropagated(x -> executor.submit(() -> x));
+    }
+
+    @Test
+    void succeededSingleOnNextErrorPropagated() {
+        onNextErrorPropagated(Single::succeeded);
+    }
+
+    private void onNextErrorPropagated(Function<? super Integer, ? extends Single<? extends Integer>> func) {
+        toSource(source.flatMapMergeSingle(func, 2)
+                .<Integer>map(y -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(2);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
