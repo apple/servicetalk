@@ -104,7 +104,7 @@ class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleToPublisherOnNextErrorPropagated() {
+    void singleToPublisherOnNextErrorPropagated() {
         toSource(publisher.flatMapMerge(x -> succeeded(x).toPublisher(), 2)
                 .<Integer>map(y -> {
                     throw DELIBERATE_EXCEPTION;
