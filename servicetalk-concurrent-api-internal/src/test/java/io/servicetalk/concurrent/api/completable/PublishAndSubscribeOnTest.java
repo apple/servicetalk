@@ -15,82 +15,85 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.api.Completable;
+
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
+public class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubscribeOnTest {
 
     @Test
     public void testNoOffload() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(0, Function.identity());
+        Thread[] capturedThreads = setupAndSubscribe(
+                0, // none
+                (c, e) -> c, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], appExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], appExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 2, // onSubscribe, onComplete
-                c -> c.publishOn(offload.executor()));
+                Completable::publishOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], offloadExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], OFFLOAD_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], offloadExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
     }
 
     @Test
     public void testSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 1, // subscribe
-                c -> c.subscribeOn(offload.executor()));
+                Completable::subscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], offloadExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], OFFLOAD_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], appExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 3, // subscribe, onSubscribe, onComplete
-                c -> c.publishAndSubscribeOn(offload.executor()));
+                Completable::publishAndSubscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], offloadExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], OFFLOAD_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], offloadExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
     }
 
     @Test
     public void testSubscribeOnWithCancel() throws InterruptedException {
         Thread[] capturedThreads = setupAndCancel(
                 2, // subscribe, cancel
-                c -> c.subscribeOn(offload.executor()));
+                Completable::subscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], offloadExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], OFFLOAD_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], offloadExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
         Thread[] capturedThreads = setupAndCancel(
                 3, // subscribe, onSubscribe, cancel
-                c -> c.publishAndSubscribeOn(offload.executor()));
+                Completable::publishAndSubscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected executor for subscribe " + threads,
-                capturedThreads[ON_SUBSCRIBE_THREAD], offloadExecutor);
+                capturedThreads[ON_SUBSCRIBE_THREAD], OFFLOAD_EXECUTOR);
         assertThat("Unexpected executor for complete " + threads,
-                capturedThreads[TERMINAL_THREAD], offloadExecutor);
+                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
     }
 }

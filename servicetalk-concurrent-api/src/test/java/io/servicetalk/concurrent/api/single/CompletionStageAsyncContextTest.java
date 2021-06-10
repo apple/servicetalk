@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
+import io.servicetalk.concurrent.api.Single;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,7 +48,8 @@ class CompletionStageAsyncContextTest {
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final AtomicInteger threadCount = new AtomicInteger();
     private static ExecutorService jdkExecutor;
-    private LegacyTestSingle<String> source;
+    private LegacyTestSingle<String> testSource;
+    private Single<String> source;
 
     @BeforeAll
     static void beforeClass() {
@@ -65,7 +67,8 @@ class CompletionStageAsyncContextTest {
     @BeforeEach
     void beforeTest() {
         AsyncContext.clear();
-        source = new LegacyTestSingle<>(true, true);
+        testSource = new LegacyTestSingle<>(true, true);
+        source = testSource.publishAndSubscribeOn(executorExtension.executor());
     }
 
     @Test
@@ -97,7 +100,7 @@ class CompletionStageAsyncContextTest {
             latch.countDown();
             return 1;
         });
-        jdkExecutor.execute(() -> source.onSuccess("foo"));
+        jdkExecutor.execute(() -> testSource.onSuccess("foo"));
         latch.await();
         assertEquals(expectedK1Value, actualK1Value.get().intValue());
     }
@@ -113,7 +116,7 @@ class CompletionStageAsyncContextTest {
             latch.countDown();
             return 1;
         });
-        jdkExecutor.execute(() -> source.onSuccess("foo"));
+        jdkExecutor.execute(() -> testSource.onSuccess("foo"));
         latch.await();
         assertEquals(expectedK1Value, actualK1Value.get().intValue());
     }
@@ -139,7 +142,7 @@ class CompletionStageAsyncContextTest {
             actualK1Value3.compareAndSet(null, AsyncContext.get(K1));
             latch3.countDown();
         });
-        jdkExecutor.execute(() -> source.onSuccess("foo"));
+        jdkExecutor.execute(() -> testSource.onSuccess("foo"));
         latch1.await();
         latch2.await();
         latch3.await();

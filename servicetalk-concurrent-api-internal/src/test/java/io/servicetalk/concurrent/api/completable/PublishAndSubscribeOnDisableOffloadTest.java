@@ -15,40 +15,47 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.api.Completable;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndSubscribeOnTest {
+public class PublishAndSubscribeOnDisableOffloadTest extends AbstractCompletablePublishAndSubscribeOnTest {
+
+    @Test
+    public void testDefault() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe((c, e) -> c, immediate());
+        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
+    }
 
     @Test
     public void testPublishOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
-        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_THREAD], appExecutor);
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishOnOverride, immediate());
+        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
-        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_THREAD], appExecutor);
+        Thread[] capturedThreads = setupAndSubscribe(Completable::subscribeOnOverride, immediate());
+        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(
-                c -> c.publishAndSubscribeOnOverride(immediate()));
-        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_THREAD], appExecutor);
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishAndSubscribeOnOverride, immediate());
+        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisableWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupAndCancel(
-                c -> c.publishAndSubscribeOnOverride(immediate()));
-        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], appExecutor);
-        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_THREAD], appExecutor);
+        Thread[] capturedThreads = setupAndCancel(Completable::publishAndSubscribeOnOverride, immediate());
+        assertThat("Unexpected executor for subscribe", capturedThreads[ON_SUBSCRIBE_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete", capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
     }
 }

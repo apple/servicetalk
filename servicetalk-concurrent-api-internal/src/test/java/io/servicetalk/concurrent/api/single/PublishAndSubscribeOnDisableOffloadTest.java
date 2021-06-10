@@ -15,41 +15,49 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Single;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
-public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndSubscribeOnTest {
+public class PublishAndSubscribeOnDisableOffloadTest extends AbstractSinglePublishAndSubscribeOnTest {
+
+    @Test
+    public void testDefault() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe((s, e) -> s, immediate());
+        assertThat("Unexpected threads for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected threads for offloaded source.",
+                capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
+    }
 
     @Test
     public void testPublishOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
+        Thread[] capturedThreads = setupAndSubscribe(Single::publishOnOverride, immediate());
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
+        Thread[] capturedThreads = setupAndSubscribe(Single::subscribeOnOverride, immediate());
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(
-                c -> c.publishAndSubscribeOnOverride(immediate()));
+        Thread[] capturedThreads = setupAndSubscribe(Single::publishAndSubscribeOnOverride, immediate());
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
     }
 
     @Test
     public void testPublishAndSubscribeOnDisableWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(
-                c -> c.publishAndSubscribeOnOverride(immediate()));
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOnOverride, immediate());
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
     }
 }
