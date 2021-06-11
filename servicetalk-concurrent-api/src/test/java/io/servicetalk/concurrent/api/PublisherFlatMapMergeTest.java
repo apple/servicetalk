@@ -110,7 +110,7 @@ class PublisherFlatMapMergeTest {
     @ValueSource(booleans = {true, false})
     void singleToPublisherOnNextErrorPropagated(boolean delayError) {
         Function<? super Integer, ? extends Publisher<? extends Integer>> func = x -> succeeded(x).toPublisher();
-        toSource((delayError ? publisher.flatMapMerge(func, 2) : publisher.flatMapMergeDelayError(func, 2))
+        toSource((delayError ? publisher.flatMapMergeDelayError(func, 2) : publisher.flatMapMerge(func, 2))
                 .<Integer>map(y -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
