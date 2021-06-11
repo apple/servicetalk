@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -61,12 +60,13 @@ class SingleConcatWithPublisherTest {
     void onNextErrorPropagated() {
         subscriber = new TestPublisherSubscriber<>();
         source = new TestSingle<>();
-        toSource(source.concat(Publisher.never()).<Integer>map(x -> {
+        toSource(source.concat(next).<Integer>map(x -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertThat(next.isSubscribed(), is(false));
     }
 
     @Test
