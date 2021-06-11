@@ -306,7 +306,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private void enqueueFailed(Object item) {
+        private static void enqueueFailed(Object item) {
             LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
             // Note that we throw even if the item represents a terminal signal (even though we don't expect another
             // terminal signal to be delivered from the upstream source because we are already terminated). If we fail

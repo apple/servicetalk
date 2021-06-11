@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
@@ -103,9 +106,11 @@ class PublisherFlatMapMergeTest {
         }
     }
 
-    @Test
-    void singleToPublisherOnNextErrorPropagated() {
-        toSource(publisher.flatMapMerge(x -> succeeded(x).toPublisher(), 2)
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void singleToPublisherOnNextErrorPropagated(boolean delayError) {
+        Function<? super Integer, ? extends Publisher<? extends Integer>> func = x -> succeeded(x).toPublisher();
+        toSource((delayError ? publisher.flatMapMerge(func, 2) : publisher.flatMapMergeDelayError(func, 2))
                 .<Integer>map(y -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
