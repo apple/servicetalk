@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,16 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class DefaultClientGroupTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class DefaultClientGroupTest {
 
     @Test
-    public void requestingClientFromClosedClientGroupShouldNotHang() throws Exception {
+    void requestingClientFromClosedClientGroupShouldNotHang() throws Exception {
         DefaultClientGroup<String, ListenableAsyncCloseable> cg =
                 new DefaultClientGroup<>(s -> emptyAsyncCloseable());
         cg.closeAsync().toFuture().get();
