@@ -73,10 +73,8 @@ class LimitingConnectionFactoryFilterTest {
     void enforceMaxConnections() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
-        Exception e = assertThrows(ExecutionException.class, () -> {
-            cf.newConnection("c1", null).toFuture().get();
-            cf.newConnection("c2", null).toFuture().get();
-        });
+        cf.newConnection("c1", null).toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> cf.newConnection("c2", null).toFuture().get());
         assertThat(e.getCause(), instanceOf(ConnectException.class));
     }
 
