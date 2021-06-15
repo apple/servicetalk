@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 
 import java.util.function.Supplier;
 
-public class BeforeSubscriberTest extends AbstractWhenSubscriberTest {
+class BeforeSubscriberTest extends AbstractWhenSubscriberTest {
     @Override
     protected Completable doSubscriber(Completable completable,
                                        Supplier<CompletableSource.Subscriber> subscriberSupplier) {

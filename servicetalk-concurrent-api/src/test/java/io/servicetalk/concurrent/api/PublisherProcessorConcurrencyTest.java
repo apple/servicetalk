@@ -35,17 +35,17 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class PublisherProcessorConcurrencyTest {
+class PublisherProcessorConcurrencyTest {
 
     private final ExecutorService executorService = newCachedThreadPool();
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void concurrentEmissionAndConsumption() throws Exception {
+    void concurrentEmissionAndConsumption() throws Exception {
         final int items = 10_000;
         final Collection<Integer> expected = Publisher.range(0, items).toFuture().get();
         final CountDownLatch done = new CountDownLatch(1);

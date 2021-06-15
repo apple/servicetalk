@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -41,12 +40,11 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -63,16 +61,14 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PartitionedHttpClientTest {
+class PartitionedHttpClientTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private static final PartitionAttributes.Key<String> SRV_NAME = PartitionAttributes.Key.newKey();
     private static final PartitionAttributes.Key<Boolean> SRV_LEADER = PartitionAttributes.Key.newKey();
@@ -85,8 +81,8 @@ public class PartitionedHttpClientTest {
     private TestPublisher<PartitionedServiceDiscovererEvent<ServerAddress>> sdPublisher;
     private ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> psd;
 
-    @BeforeClass
-    public static void setUpServers() throws Exception {
+    @BeforeAll
+    static void setUpServers() throws Exception {
         srv1 = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_1));
@@ -96,9 +92,9 @@ public class PartitionedHttpClientTest {
                         responseFactory.ok().setHeader(X_SERVER, SRV_2));
     }
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
-    public void setUp() {
+    void setUp() {
         sdPublisher = new TestPublisher.Builder<PartitionedServiceDiscovererEvent<ServerAddress>>()
                 .disableAutoOnSubscribe().build();
         psd = mock(ServiceDiscoverer.class);
@@ -122,13 +118,13 @@ public class PartitionedHttpClientTest {
         when(psd.discover("test-cluster")).then(__ -> mappedSd);
     }
 
-    @AfterClass
-    public static void tearDownServers() throws Exception {
+    @AfterAll
+    static void tearDownServers() throws Exception {
         newCompositeCloseable().mergeAll(srv1, srv2).close();
     }
 
     @Test
-    public void testPartitionByHeader() throws Exception {
+    void testPartitionByHeader() throws Exception {
 
         final Function<HttpRequestMetaData, PartitionAttributesBuilder> selector = req ->
                 new DefaultPartitionAttributesBuilder(1)
@@ -148,13 +144,13 @@ public class PartitionedHttpClientTest {
             final HttpResponse httpResponse1 = clt.request(clt.get("/").addHeader(X_SERVER, SRV_2));
             final HttpResponse httpResponse2 = clt.request(clt.get("/").addHeader(X_SERVER, SRV_1));
 
-            assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
-            assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_1));
+            MatcherAssert.assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
+            MatcherAssert.assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_1));
         }
     }
 
     @Test
-    public void testPartitionByTarget() throws Exception {
+    void testPartitionByTarget() throws Exception {
 
         final Function<HttpRequestMetaData, PartitionAttributesBuilder> selector = req ->
                 new DefaultPartitionAttributesBuilder(1)
@@ -174,13 +170,13 @@ public class PartitionedHttpClientTest {
             final HttpResponse httpResponse1 = clt.request(clt.get("/" + SRV_2));
             final HttpResponse httpResponse2 = clt.request(clt.get("/" + SRV_1));
 
-            assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
-            assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_1));
+            MatcherAssert.assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
+            MatcherAssert.assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_1));
         }
     }
 
     @Test
-    public void testPartitionByLeader() throws Exception {
+    void testPartitionByLeader() throws Exception {
         final Function<HttpRequestMetaData, PartitionAttributesBuilder> selector = req ->
                 new DefaultPartitionAttributesBuilder(1).add(SRV_LEADER, true);
 
@@ -199,8 +195,8 @@ public class PartitionedHttpClientTest {
             final HttpResponse httpResponse1 = clt.request(clt.get("/foo"));
             final HttpResponse httpResponse2 = clt.request(clt.get("/bar"));
 
-            assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
-            assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
+            MatcherAssert.assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_2));
+            MatcherAssert.assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
         }
     }
 
@@ -208,8 +204,8 @@ public class PartitionedHttpClientTest {
      * Custom address type.
      */
     private static final class ServerAddress {
-        public final InetSocketAddress isa;
-        public final String name; // some metadata
+        final InetSocketAddress isa;
+        final String name; // some metadata
 
         ServerAddress(final InetSocketAddress isa, final String name) {
             this.isa = isa;
@@ -253,7 +249,7 @@ public class PartitionedHttpClientTest {
     }
 
     @Test
-    public void testClientGroupPartitioning() throws Exception {
+    void testClientGroupPartitioning() throws Exception {
         // user partition discovery service, userId=1 => srv1 | userId=2 => srv2
         try (ServerContext userDisco = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
@@ -279,11 +275,11 @@ public class PartitionedHttpClientTest {
                 StreamingHttpResponse httpResponse1 = client.request(new User(1), client.get("/foo")).toFuture().get();
                 StreamingHttpResponse httpResponse2 = client.request(new User(2), client.get("/foo")).toFuture().get();
 
-                assertThat(httpResponse1.status(), is(OK));
-                assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_1));
+                MatcherAssert.assertThat(httpResponse1.status(), is(OK));
+                MatcherAssert.assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_1));
 
-                assertThat(httpResponse2.status(), is(OK));
-                assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
+                MatcherAssert.assertThat(httpResponse2.status(), is(OK));
+                MatcherAssert.assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
             }
         }
     }
@@ -345,7 +341,7 @@ public class PartitionedHttpClientTest {
                             .buildStreaming());
         }
 
-        public Single<StreamingHttpResponse> request(User user, StreamingHttpRequest req) {
+        Single<StreamingHttpResponse> request(User user, StreamingHttpRequest req) {
             return udClient
                     .request(udClient.get("/partition?userId=" + user.id()))
                     .flatMap(resp -> {

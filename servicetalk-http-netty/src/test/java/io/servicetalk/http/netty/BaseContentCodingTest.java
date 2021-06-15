@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,16 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.encoding.api.ContentCodec;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.netty.ContentCodings.deflateDefault;
@@ -40,59 +39,58 @@ public abstract class BaseContentCodingTest {
 
     private static final int PAYLOAD_SIZE = 1024;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    Scenario scenario;
 
-    protected final Scenario scenario;
-
-    public BaseContentCodingTest(final HttpProtocol protocol, final Codings serverCodings,
-                                 final Codings clientCodings, final Compression compression,
-                                 final boolean valid) {
+    void setUp(final HttpProtocol protocol, final Codings serverCodings,
+               final Codings clientCodings, final Compression compression,
+               final boolean valid) {
         this.scenario = new Scenario(compression.codec, clientCodings.list, serverCodings.list, protocol, valid);
     }
 
-    @Parameterized.Parameters(name = "{index}, protocol={0}, server=[{1}], client=[{2}], request={3}, pass={4}")
-    public static Object[][] params() {
-        return new Object[][] {
-                {HTTP_1, Codings.DEFAULT, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_2, Codings.DEFAULT, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_1, Codings.DEFAULT, Codings.DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_2, Codings.DEFAULT, Codings.DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_1, Codings.GZIP_DEFLATE_ID, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_2, Codings.GZIP_DEFLATE_ID, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_1, Codings.ID_GZIP_DEFLATE, Codings.GZIP_ID, Compression.GZIP, true},
-                {HTTP_2, Codings.ID_GZIP_DEFLATE, Codings.GZIP_ID, Compression.GZIP, true},
-                {HTTP_1, Codings.ID_GZIP_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true},
-                {HTTP_2, Codings.ID_GZIP_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true},
-                {HTTP_1, Codings.ID_GZIP, Codings.DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_2, Codings.ID_GZIP, Codings.DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_1, Codings.ID_DEFLATE, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_2, Codings.ID_DEFLATE, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_1, Codings.ID_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true},
-                {HTTP_2, Codings.ID_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true},
-                {HTTP_1, Codings.ID_DEFLATE, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_2, Codings.ID_DEFLATE, Codings.DEFAULT, Compression.ID, true},
-                {HTTP_1, Codings.GZIP_ONLY, Codings.ID_ONLY, Compression.ID, true},
-                {HTTP_2, Codings.GZIP_ONLY, Codings.ID_ONLY, Compression.ID, true},
-                {HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true},
-                {HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true},
-                {HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true},
-                {HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true},
-                {HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.GZIP, true},
-                {HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.GZIP, true},
-                {HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false},
-                {HTTP_1, Codings.DEFAULT, Codings.GZIP_DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_2, Codings.DEFAULT, Codings.GZIP_DEFLATE_ID, Compression.DEFLATE, false},
-                {HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.ID, true},
-                {HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.ID, true},
-        };
+    static Stream<Arguments> params() {
+        return Stream.of(
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_1, Codings.GZIP_DEFLATE_ID, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.GZIP_DEFLATE_ID, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.ID_GZIP_DEFLATE, Codings.GZIP_ID, Compression.GZIP, true),
+                Arguments.of(HTTP_2, Codings.ID_GZIP_DEFLATE, Codings.GZIP_ID, Compression.GZIP, true),
+                Arguments.of(HTTP_1, Codings.ID_GZIP_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true),
+                Arguments.of(HTTP_2, Codings.ID_GZIP_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true),
+                Arguments.of(HTTP_1, Codings.ID_GZIP, Codings.DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_2, Codings.ID_GZIP, Codings.DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_1, Codings.ID_DEFLATE, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_2, Codings.ID_DEFLATE, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_1, Codings.ID_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true),
+                Arguments.of(HTTP_2, Codings.ID_DEFLATE, Codings.DEFLATE_ID, Compression.DEFLATE, true),
+                Arguments.of(HTTP_1, Codings.ID_DEFLATE, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.ID_DEFLATE, Codings.DEFAULT, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.GZIP_ONLY, Codings.ID_ONLY, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.GZIP_ONLY, Codings.ID_ONLY, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.ID, true),
+                Arguments.of(HTTP_1, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.GZIP, true),
+                Arguments.of(HTTP_2, Codings.GZIP_ONLY, Codings.GZIP_ID, Compression.GZIP, true),
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.GZIP, false),
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.GZIP_DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.GZIP_DEFLATE_ID, Compression.DEFLATE, false),
+                Arguments.of(HTTP_1, Codings.DEFAULT, Codings.GZIP_ID, Compression.ID, true),
+                Arguments.of(HTTP_2, Codings.DEFAULT, Codings.GZIP_ID, Compression.ID, true));
     }
 
-    @Test
-    public void testCompatibility() throws Throwable {
+    @ParameterizedTest(name = "{index}, protocol={0}, server=[{1}], client=[{2}], request={3}, pass={4}")
+    @MethodSource("params")
+    void testCompatibility(final HttpProtocol protocol, final Codings serverCodings,
+                           final Codings clientCodings, final Compression compression,
+                           final boolean valid) throws Throwable {
+        setUp(protocol, serverCodings, clientCodings, compression, valid);
         if (scenario.valid) {
             assertSuccessful(scenario.requestEncoding);
         } else {
@@ -104,13 +102,13 @@ public abstract class BaseContentCodingTest {
 
     protected abstract void assertNotSupported(ContentCodec requestEncoding) throws Throwable;
 
-    protected static byte[] payload(byte b) {
+    static byte[] payload(byte b) {
         byte[] payload = new byte[PAYLOAD_SIZE];
         Arrays.fill(payload, b);
         return payload;
     }
 
-    protected static String payloadAsString(byte b) {
+    static String payloadAsString(byte b) {
         return new String(payload(b), StandardCharsets.US_ASCII);
     }
 
@@ -126,7 +124,7 @@ public abstract class BaseContentCodingTest {
         DEFLATE_ONLY(singletonList(deflateDefault())),
         DEFLATE_ID(asList(deflateDefault(), identity()));
 
-        List<ContentCodec> list;
+        final List<ContentCodec> list;
 
         Codings(List<ContentCodec> list) {
             this.list = list;
@@ -154,7 +152,7 @@ public abstract class BaseContentCodingTest {
         GZIP(gzipDefault()),
         DEFLATE(deflateDefault());
 
-        ContentCodec codec;
+        final ContentCodec codec;
 
         Compression(ContentCodec codec) {
             this.codec = codec;
@@ -165,7 +163,7 @@ public abstract class BaseContentCodingTest {
         }
     }
 
-    protected static class Scenario {
+    static class Scenario {
         final ContentCodec requestEncoding;
         final List<ContentCodec> clientSupported;
         final List<ContentCodec> serverSupported;

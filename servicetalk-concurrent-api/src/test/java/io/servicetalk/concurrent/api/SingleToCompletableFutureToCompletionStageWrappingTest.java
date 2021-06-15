@@ -25,16 +25,16 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SingleToCompletableFutureToCompletionStageWrappingTest {
+class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Test
-    public void wrappedTerminationTerminates() throws Exception {
+    void wrappedTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
                 .thenCompose(s -> succeeded("Hello-Nested").toCompletionStage().toCompletableFuture());
         assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
     }
 
     @Test
-    public void deferredWrappedTerminationTerminates() throws Exception {
+    void deferredWrappedTerminationTerminates() throws Exception {
         CompletableFuture<String> cf = new CompletableFuture<>();
         CompletableFuture<String> composed = completedFuture("Hello")
                 .thenCompose(s -> fromStage(cf).toCompletionStage().toCompletableFuture());
@@ -44,7 +44,7 @@ public class SingleToCompletableFutureToCompletionStageWrappingTest {
     }
 
     @Test
-    public void wrappedAndApplyTerminationTerminates() throws Exception {
+    void wrappedAndApplyTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
                 .thenCompose(s -> succeeded("Hello-Nested").toCompletionStage().toCompletableFuture()
                         .thenApply(s1 -> s1));
@@ -52,7 +52,7 @@ public class SingleToCompletableFutureToCompletionStageWrappingTest {
     }
 
     @Test
-    public void deferredWrappedAndApplyTerminationTerminates() throws Exception {
+    void deferredWrappedAndApplyTerminationTerminates() throws Exception {
         CompletableFuture<String> cf = new CompletableFuture<>();
         CompletableFuture<String> composed = completedFuture("Hello")
                 .thenCompose(s -> fromStage(cf).toCompletionStage().toCompletableFuture().thenApply(str -> str));

@@ -273,8 +273,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
-                connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
-                        roConfig.connectAddress()).append(connectionFactoryFilter);
+                connectionFactoryFilter = appendConnectionFactoryFilter(
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress()), connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
@@ -375,7 +375,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         if (currClientFilterFactory == null) {
             return appendClientFilterFactory;
         } else {
-            return currClientFilterFactory.append(appendClientFilterFactory);
+            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
         }
     }
 
@@ -459,18 +459,32 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        connectionFilterFactory = connectionFilterFactory == null ?
-                requireNonNull(factory) : connectionFilterFactory.append(factory);
+        requireNonNull(factory);
+        connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    // Use another method to keep final references and avoid StackOverflowError
+    private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
+            @Nullable final StreamingHttpConnectionFilterFactory current,
+            final StreamingHttpConnectionFilterFactory next) {
+        return current == null ? next : connection -> current.create(next.create(connection));
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = connectionFactoryFilter.append(factory);
+        requireNonNull(factory);
+        connectionFactoryFilter = appendConnectionFactoryFilter(connectionFactoryFilter, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> current,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> next) {
+        return connection -> current.create(next.create(connection));
     }
 
     @Override
@@ -503,8 +517,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
-        clientFilterFactory = clientFilterFactory == null ? requireNonNull(factory) :
-                clientFilterFactory.append(factory);
+        requireNonNull(factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -547,6 +561,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
         setFallbackHostAndPort(config, address);
         config.tcpConfig().sslConfig(sslConfig);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+        config.inferPeerHost(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+        config.inferPeerPort(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+        config.inferSniHostname(shouldInfer);
         return this;
     }
 

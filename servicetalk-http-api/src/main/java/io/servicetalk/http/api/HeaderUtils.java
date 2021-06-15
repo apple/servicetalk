@@ -686,7 +686,7 @@ public final class HeaderUtils {
             throw new UnsupportedContentEncodingException(encoding.toString());
         }
 
-        return enc == identity() ? null : enc;
+        return identity().equals(enc) ? null : enc;
     }
 
     /**

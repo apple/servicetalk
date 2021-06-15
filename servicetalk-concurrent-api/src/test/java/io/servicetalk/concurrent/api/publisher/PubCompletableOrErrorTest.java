@@ -30,29 +30,29 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PubCompletableOrErrorTest {
+class PubCompletableOrErrorTest {
     private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
 
     @Test
-    public void noElementsCompleted() {
+    void noElementsCompleted() {
         toSource(empty().completableOrError()).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void noElementsError() {
+    void noElementsError() {
         toSource(failed(DELIBERATE_EXCEPTION).completableOrError()).subscribe(subscriber);
         assertSame(DELIBERATE_EXCEPTION, subscriber.awaitOnError());
     }
 
     @Test
-    public void oneElementsAlwaysFails() {
+    void oneElementsAlwaysFails() {
         toSource(from("foo").completableOrError()).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void twoElementsAlwaysFails() {
+    void twoElementsAlwaysFails() {
         // Use TestPublisher to force deliver two items, and verify the operator doesn't duplicate terminate.
         TestPublisher<String> publisher = new TestPublisher<>();
         toSource(publisher.completableOrError()).subscribe(subscriber);

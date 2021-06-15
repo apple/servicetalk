@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
-public class AfterCancelTest extends AbstractWhenCancelTest {
+class AfterCancelTest extends AbstractWhenCancelTest {
     @Override
     protected <T> PublisherSource<T> doCancel(Publisher<T> publisher, Runnable runnable) {
         return toSource(publisher.afterCancel(runnable));

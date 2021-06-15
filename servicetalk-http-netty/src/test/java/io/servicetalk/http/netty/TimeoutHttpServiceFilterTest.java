@@ -17,16 +17,16 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 
-public class TimeoutHttpServiceFilterTest {
+class TimeoutHttpServiceFilterTest {
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(new TimeoutHttpServiceFilter(Duration.ofDays(1), true));
     }
 }

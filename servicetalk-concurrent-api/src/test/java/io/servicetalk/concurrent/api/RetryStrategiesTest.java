@@ -36,10 +36,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class RetryStrategiesTest extends RedoStrategiesTest {
+class RetryStrategiesTest extends RedoStrategiesTest {
 
     @Test
-    public void testBackoff() throws Exception {
+    void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true, backoff,
                 ofNanos(1), timerExecutor));
@@ -52,7 +52,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testBackoffWithJitter() throws Exception {
+    void testBackoffWithJitter() throws Exception {
         Duration backoff = ofSeconds(1);
         Duration jitter = ofMillis(10);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true,
@@ -66,20 +66,20 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testBackoffMaxRetries() throws Exception {
+    void testBackoffMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
         testMaxRetries(retryWithExponentialBackoffFullJitter(1, cause -> true, backoff, ofDays(10), timerExecutor),
                 backoff);
     }
 
     @Test
-    public void testBackoffCauseFilter() {
+    void testBackoffCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffFullJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofDays(10), timerExecutor));
     }
 
     @Test
-    public void testExpBackoff() throws Exception {
+    void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffFullJitter(2, cause -> true, initialDelay,
                 ofDays(10), timerExecutor));
@@ -98,40 +98,40 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffMaxRetries() throws Exception {
+    void testExpBackoffMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
         testMaxRetries(retryWithExponentialBackoffFullJitter(1, cause -> true, backoff, ofDays(10), timerExecutor),
                 backoff);
     }
 
     @Test
-    public void testExpBackoffCauseFilter() {
+    void testExpBackoffCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffFullJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofDays(10), timerExecutor));
     }
 
     @Test
-    public void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
+    void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
         testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofDays(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
+    void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
         testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofDays(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
+    void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
         testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
+    void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
         testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterMaxRetries() throws Exception {
+    void testExpBackoffWithJitterMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
         Duration jitter = ofMillis(10);
         testMaxRetries(retryWithExponentialBackoffDeltaJitter(1, cause -> true, backoff, jitter, ofDays(10),
@@ -139,7 +139,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffWithJitterCauseFilter() {
+    void testExpBackoffWithJitterCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffDeltaJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofMillis(10), ofDays(10), timerExecutor));
     }

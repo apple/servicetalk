@@ -30,12 +30,12 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SubscribeShareContextTest {
+class SubscribeShareContextTest {
 
-    public static final AsyncContextMap.Key<String> KEY = AsyncContextMap.Key.newKey("share-context-key");
+    static final AsyncContextMap.Key<String> KEY = AsyncContextMap.Key.newKey("share-context-key");
 
     @Test
-    public void contextIsShared() throws Exception {
+    void contextIsShared() throws Exception {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
@@ -44,7 +44,7 @@ public class SubscribeShareContextTest {
     }
 
     @Test
-    public void contextIsNotSharedIfNotLastOperator() throws Exception {
+    void contextIsNotSharedIfNotLastOperator() throws Exception {
         // When we support this feature, then we can change this test
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective

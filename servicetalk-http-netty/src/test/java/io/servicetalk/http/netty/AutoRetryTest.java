@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -36,11 +35,8 @@ import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,13 +54,10 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class AutoRetryTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class AutoRetryTest {
     private final ServerContext svcCtx;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;
     private final AtomicInteger lbSelectInvoked;
@@ -72,7 +65,7 @@ public class AutoRetryTest {
     @Nullable
     private BlockingHttpClient client;
 
-    public AutoRetryTest() throws Exception {
+    AutoRetryTest() throws Exception {
         svcCtx = forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         clientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
@@ -82,8 +75,8 @@ public class AutoRetryTest {
         lbSelectInvoked = new AtomicInteger();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         if (client != null) {
             closeable.append(client.asClient());
@@ -93,16 +86,16 @@ public class AutoRetryTest {
     }
 
     @Test
-    public void disableAutoRetry() throws Exception {
+    void disableAutoRetry() {
         client = clientBuilder
                 .autoRetryStrategy(DISABLE_AUTO_RETRIES)
                 .buildBlocking();
-        expectedException.expect(instanceOf(RetryableException.class));
-        client.request(client.get("/"));
+        Exception e = assertThrows(Exception.class, () -> client.request(client.get("/")));
+        assertThat(e, instanceOf(RetryableException.class));
     }
 
     @Test
-    public void updateMaxRetry() {
+    void updateMaxRetry() {
         client = clientBuilder
                 .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().maxRetries(1).build())
                 .buildBlocking();

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public final class SubscribeTest {
+final class SubscribeTest {
 
     private LegacyTestSingle<Integer> source;
     private Consumer<Integer> resultConsumer;
@@ -35,21 +35,21 @@ public final class SubscribeTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new LegacyTestSingle<>();
         resultConsumer = (Consumer<Integer>) mock(Consumer.class);
         cancellable = source.subscribe(resultConsumer);
     }
 
     @Test
-    public void testSubscribe() {
+    void testSubscribe() {
         source.onSuccess(1);
         verify(resultConsumer).accept(1);
         verifyNoMoreInteractions(resultConsumer);
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         source.verifyNotCancelled();
         cancellable.cancel();
         source.verifyCancelled();

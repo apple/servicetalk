@@ -33,9 +33,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ServerContext;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -46,9 +43,9 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -92,7 +89,7 @@ public final class AsyncContextHttpFilterVerifier {
         final HttpResponse resp = client.request(request);
         assertThat(resp.status(), is(OK));
         assertThat(resp.payloadBody(textDeserializer()), is(payload));
-        assertEmpty(errors);
+        assertNoAsyncErrors(errors);
     }
 
     private static StreamingHttpService asyncContextRequestHandler(final BlockingQueue<Throwable> errorQueue) {
@@ -154,23 +151,6 @@ public final class AsyncContextHttpFilterVerifier {
             AssertionError e = new AssertionError("unexpected value for " + key + ": " +
                     actualValue + ", expected: " + expectedValue);
             errorQueue.add(e);
-        }
-    }
-
-    private static void assertEmpty(Queue<Throwable> errorQueue) {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (PrintStream ps = new PrintStream(baos, true, UTF_8.name())) {
-            Throwable t;
-            while ((t = errorQueue.poll()) != null) {
-                t.printStackTrace(ps);
-                ps.println();
-            }
-            String data = new String(baos.toByteArray(), 0, baos.size(), UTF_8);
-            if (!data.isEmpty()) {
-                throw new AssertionError(data);
-            }
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
         }
     }
 

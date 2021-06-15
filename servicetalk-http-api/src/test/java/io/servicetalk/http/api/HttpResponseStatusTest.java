@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,29 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.netty.BufferAllocators;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static io.servicetalk.http.api.HttpResponseStatus.of;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HttpResponseStatusTest {
+class HttpResponseStatusTest {
 
     @Test
-    public void testGetResponseStatusReturnsConstant() {
-        assertSame(OK, HttpResponseStatus.of(200, "OK"));
-        assertSame(OK, HttpResponseStatus.of(200, ""));
+    void testGetResponseStatusReturnsConstant() {
+        assertSame(OK, of(200, "OK"));
+        assertSame(OK, of(200, ""));
     }
 
     @Test
-    public void testGetResponseStatusReturnsNewInstance() {
+    void testGetResponseStatusReturnsNewInstance() {
         final HttpResponseStatus newStatusObject =
                 HttpResponseStatus.of(200, "YES");
         assertNotSame(OK, newStatusObject);
@@ -46,7 +48,7 @@ public class HttpResponseStatusTest {
     }
 
     @Test
-    public void testConstant() {
+    void testConstant() {
         final HttpResponseStatus status = NO_CONTENT;
 
         assertEquals(204, status.code());
@@ -56,7 +58,7 @@ public class HttpResponseStatusTest {
     }
 
     @Test
-    public void testNewObject() {
+    void testNewObject() {
         final HttpResponseStatus status = HttpResponseStatus.of(590, "My Own Status Code");
 
         assertEquals(590, status.code());
@@ -71,13 +73,13 @@ public class HttpResponseStatusTest {
         assertEquals(DEFAULT_RO_ALLOCATOR.fromAscii(expected), buffer);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void test2DigitStatusCodeIsNotAllowed() {
-        HttpResponseStatus.of(99, "My Own Status Code");
+    @Test
+    void test2DigitStatusCodeIsNotAllowed() {
+        assertThrows(IllegalArgumentException.class, () -> HttpResponseStatus.of(99, "My Own Status Code"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void test4DigitStatusCodeIsNotAllowed() {
-        HttpResponseStatus.of(1000, "My Own Status Code");
+    @Test
+    void test4DigitStatusCodeIsNotAllowed() {
+        assertThrows(IllegalArgumentException.class, () -> HttpResponseStatus.of(1000, "My Own Status Code"));
     }
 }

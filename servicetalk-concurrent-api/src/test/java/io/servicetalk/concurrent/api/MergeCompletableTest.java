@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class MergeCompletableTest {
+class MergeCompletableTest {
 
     private final CompletableHolder holder = new CompletableHolder() {
         @Override
@@ -47,21 +47,21 @@ public class MergeCompletableTest {
     };
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(0).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCompletion() {
+    void testCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCompletionFew() {
+    void testCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -70,7 +70,7 @@ public class MergeCompletableTest {
     }
 
     @Test
-    public void testFail() {
+    void testFail() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -78,7 +78,7 @@ public class MergeCompletableTest {
     }
 
     @Test
-    public void testMergeWithOne() {
+    void testMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();

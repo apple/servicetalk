@@ -31,7 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ConcatWithCompletableTest {
+class ConcatWithCompletableTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
@@ -39,7 +39,7 @@ public class ConcatWithCompletableTest {
     private LegacyTestCompletable completable = new LegacyTestCompletable();
 
     @Test
-    public void concatWaitsForCompletableSuccess() {
+    void concatWaitsForCompletableSuccess() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
         assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -48,7 +48,7 @@ public class ConcatWithCompletableTest {
     }
 
     @Test
-    public void concatPropagatesCompletableFailure() {
+    void concatPropagatesCompletableFailure() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
         assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -57,7 +57,7 @@ public class ConcatWithCompletableTest {
     }
 
     @Test
-    public void concatPropagatesSingleFailure() {
+    void concatPropagatesSingleFailure() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onError(DELIBERATE_EXCEPTION);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));

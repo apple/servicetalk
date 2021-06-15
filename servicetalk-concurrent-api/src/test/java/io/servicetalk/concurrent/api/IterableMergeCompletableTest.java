@@ -32,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class IterableMergeCompletableTest {
+class IterableMergeCompletableTest {
     private final CompletableHolder collectionHolder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
@@ -49,14 +49,14 @@ public class IterableMergeCompletableTest {
     };
 
     @Test
-    public void testCollectionCompletion() {
+    void testCollectionCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCollectionCompletionFew() {
+    void testCollectionCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -65,7 +65,7 @@ public class IterableMergeCompletableTest {
     }
 
     @Test
-    public void testCollectionFail() {
+    void testCollectionFail() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -73,21 +73,21 @@ public class IterableMergeCompletableTest {
     }
 
     @Test
-    public void testCollectionMergeWithOne() {
+    void testCollectionMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testIterableCompletion() {
+    void testIterableCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testIterableCompletionFew() {
+    void testIterableCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -96,7 +96,7 @@ public class IterableMergeCompletableTest {
     }
 
     @Test
-    public void testIterableFail() {
+    void testIterableFail() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -104,28 +104,28 @@ public class IterableMergeCompletableTest {
     }
 
     @Test
-    public void testIterableMergeWithOne() {
+    void testIterableMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void arrayMergeMultipleCompleted() {
+    void arrayMergeMultipleCompleted() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(completed(), completed(), completed())).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void collectionMergeMultipleCompleted() {
+    void collectionMergeMultipleCompleted() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(asList(completed(), completed(), completed()))).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void iterableMergeMultipleCompleted() {
+    void iterableMergeMultipleCompleted() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(() -> asList(completed(), completed(), completed()).iterator()))
                 .subscribe(subscriber);
@@ -133,21 +133,21 @@ public class IterableMergeCompletableTest {
     }
 
     @Test
-    public void mergeEmptyArray() {
+    void mergeEmptyArray() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(new Completable[0])).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void mergeEmptyIterable() {
+    void mergeEmptyIterable() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(() -> Collections.emptyIterator())).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void mergeEmptyCollection() {
+    void mergeEmptyCollection() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completed().merge(Collections.emptyList())).subscribe(subscriber);
         subscriber.awaitOnComplete();

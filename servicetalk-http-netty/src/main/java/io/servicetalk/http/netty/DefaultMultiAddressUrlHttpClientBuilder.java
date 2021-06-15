@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -422,11 +422,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             final StreamingHttpClientFilterFactory function) {
-        if (clientFilterFactory == null) {
-            clientFilterFactory = function.asMultiAddressClientFilter();
-        } else {
-            clientFilterFactory = clientFilterFactory.append(function.asMultiAddressClientFilter());
-        }
+        clientFilterFactory = appendClientFilter(clientFilterFactory, function.asMultiAddressClientFilter());
         return this;
     }
 
@@ -466,13 +462,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             final MultiAddressHttpClientFilterFactory<HostAndPort> function) {
-        if (clientFilterFactory == null) {
-            clientFilterFactory = requireNonNull(function);
-        } else {
-            clientFilterFactory = clientFilterFactory.append(requireNonNull(function));
-        }
-        builderTemplate.appendToStrategyInfluencer(function);
+        clientFilterFactory = appendClientFilter(clientFilterFactory, function);
         return this;
+    }
+
+    private MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter(
+            @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> current,
+            final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
+        requireNonNull(next);
+        builderTemplate.appendToStrategyInfluencer(next);
+        return current == null ? next : (group, client) -> current.create(group, next.create(group, client));
     }
 
     @Override

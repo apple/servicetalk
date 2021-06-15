@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,10 +100,11 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * @return {@code this}
      */
     public GrpcServiceFactory<Filter, Service, FilterFactory> appendServiceFilter(FilterFactory before) {
+        requireNonNull(before);
         if (filterFactory == null) {
             filterFactory = before;
         } else {
-            this.filterFactory = appendServiceFilterFactory(filterFactory, requireNonNull(before));
+            this.filterFactory = appendServiceFilterFactory(filterFactory, before);
         }
         return this;
     }

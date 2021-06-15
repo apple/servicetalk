@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,11 @@ public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
      *
+     * @deprecated Use {@link GrpcServiceFactory#appendServiceFilter(GrpcServiceFilterFactory)}
      * @param before the factory to apply before this factory is applied.
      * @return a composed factory that first applies the {@code before} factory and then applies this factory.
      */
+    @Deprecated
     default GrpcServiceFilterFactory<Filter, Service> append(
             GrpcServiceFilterFactory<Filter, Service> before) {
         requireNonNull(before);

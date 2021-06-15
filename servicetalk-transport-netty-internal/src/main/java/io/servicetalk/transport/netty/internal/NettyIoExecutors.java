@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
 
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isEpollAvailable;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isKQueueAvailable;
 import static java.lang.Runtime.getRuntime;
 import static java.util.Objects.requireNonNull;
 
@@ -70,8 +70,8 @@ public final class NettyIoExecutors {
      */
     public static EventLoopGroup createEventLoopGroup(int ioThreads, ThreadFactory threadFactory) {
         validateIoThreads(ioThreads);
-        return Epoll.isAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
-                KQueue.isAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
+        return isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
+                isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
                         new NioEventLoopGroup(ioThreads, threadFactory);
     }
 

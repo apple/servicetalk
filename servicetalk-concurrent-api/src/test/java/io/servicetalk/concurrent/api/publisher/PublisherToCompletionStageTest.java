@@ -36,31 +36,31 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class PublisherToCompletionStageTest {
+class PublisherToCompletionStageTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private static ExecutorService jdkExecutor;
 
     @BeforeAll
-    public static void beforeClass() {
+    static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void afterClass() {
+    static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
     @Test
-    public void listenBeforeComplete() throws InterruptedException {
+    void listenBeforeComplete() throws InterruptedException {
         verifyComplete(false, false);
         verifyComplete(false, true);
     }
 
     @Test
-    public void completeBeforeListen() throws InterruptedException {
+    void completeBeforeListen() throws InterruptedException {
         verifyComplete(true, false);
         verifyComplete(true, true);
     }
@@ -97,13 +97,13 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void listenBeforeError() throws InterruptedException {
+    void listenBeforeError() throws InterruptedException {
         verifyError(false, true);
         verifyError(false, false);
     }
 
     @Test
-    public void errorBeforeListen() throws InterruptedException {
+    void errorBeforeListen() throws InterruptedException {
         verifyError(true, true);
         verifyError(true, false);
     }
@@ -138,14 +138,14 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureEmptyComplete() throws Exception {
+    void futureEmptyComplete() throws Exception {
         Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(publisher::onComplete);
         assertThat(f.get(), is(empty()));
     }
 
     @Test
-    public void futureComplete() throws Exception {
+    void futureComplete() throws Exception {
         Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");
@@ -155,7 +155,7 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureReduceComplete() throws Exception {
+    void futureReduceComplete() throws Exception {
         Future<StringBuilder> f = publisher.toFuture(StringBuilder::new, (sb, next) -> {
             sb.append(next);
             return sb;
@@ -168,7 +168,7 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureFail() {
+    void futureFail() {
         Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");

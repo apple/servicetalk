@@ -29,12 +29,12 @@ import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-public class SingleToCompletableTest {
+class SingleToCompletableTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws InterruptedException {
+    void subscribeOnOriginalIsPreserved() throws InterruptedException {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();

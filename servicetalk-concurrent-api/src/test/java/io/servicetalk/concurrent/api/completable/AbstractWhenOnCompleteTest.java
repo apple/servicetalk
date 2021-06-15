@@ -28,14 +28,14 @@ public abstract class AbstractWhenOnCompleteTest {
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         Runnable onComplete = mock(Runnable.class);
         toSource(doComplete(Completable.completed(), onComplete)).subscribe(listener);
         verify(onComplete).run();
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    abstract void testCallbackThrowsError();
 
     protected abstract Completable doComplete(Completable completable, Runnable runnable);
 }

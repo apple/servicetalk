@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class BeforeErrorTest extends AbstractWhenOnErrorTest {
+class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
     @Override
     protected <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
@@ -38,7 +38,7 @@ public class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
     @Override
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         this.<String>doError(Publisher.failed(srcEx), t1 -> {
             throw DELIBERATE_EXCEPTION;

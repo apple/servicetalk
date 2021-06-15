@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -62,21 +62,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-public class ConnectionFactoryFilterTest {
+class ConnectionFactoryFilterTest {
 
     private final ServerContext serverContext;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;
     @Nullable
     private BlockingHttpClient client;
 
-    public ConnectionFactoryFilterTest() throws Exception {
+    ConnectionFactoryFilterTest() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         clientBuilder = HttpClients.forSingleAddress(serverHostAndPort(serverContext));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         if (client != null) {
             closeable.append(client.asClient());
@@ -86,7 +86,7 @@ public class ConnectionFactoryFilterTest {
     }
 
     @Test
-    public void reserveConnection() throws Exception {
+    void reserveConnection() throws Exception {
         AtomicInteger activeConnections = new AtomicInteger();
         CountDownLatch doneLatch = new CountDownLatch(1);
         client = clientBuilder.appendConnectionFactoryFilter(
@@ -100,7 +100,7 @@ public class ConnectionFactoryFilterTest {
     }
 
     @Test
-    public void countConnections() throws Exception {
+    void countConnections() throws Exception {
         AtomicInteger activeConnections = new AtomicInteger();
         client = clientBuilder.appendConnectionFactoryFilter(
                 newConnectionFactoryFilter(connectionCounter(activeConnections, null)))
@@ -110,7 +110,7 @@ public class ConnectionFactoryFilterTest {
     }
 
     @Test
-    public void wrapConnection() throws Exception {
+    void wrapConnection() throws Exception {
         client = clientBuilder.appendConnectionFactoryFilter(
                 newConnectionFactoryFilter(AddResponseHeaderConnectionFilter::new)).buildBlocking();
         HttpResponse response = sendRequest(client);
@@ -118,7 +118,7 @@ public class ConnectionFactoryFilterTest {
     }
 
     @Test
-    public void onClosingIsDelegated() throws Exception {
+    void onClosingIsDelegated() throws Exception {
         CompletableSource.Processor onClosing = newCompletableProcessor();
         client = clientBuilder.appendConnectionFactoryFilter(
                 newConnectionFactoryFilter(delegate ->

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,14 +30,15 @@ import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultHttpSetCookiesTest {
+class DefaultHttpSetCookiesTest {
     @Test
-    public void decodeDuplicateNames() {
+    void decodeDuplicateNames() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -47,7 +48,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeDuplicateNamesRO() {
+    void decodeDuplicateNamesRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT",
                 "set-cookie",
@@ -67,14 +68,14 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeSecureCookieNames() {
+    void decodeSecureCookieNames() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "__Secure-ID=123; Secure; Domain=example.com");
         decodeSecureCookieNames(headers);
     }
 
     @Test
-    public void decodeSecureCookieNamesRO() {
+    void decodeSecureCookieNamesRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "__Secure-ID=123; Secure; Domain=example.com");
         decodeSecureCookieNames(headers);
@@ -89,7 +90,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeDifferentCookieNames() {
+    void decodeDifferentCookieNames() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly",
                 "set-cookie",
@@ -98,7 +99,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeDifferentCookieNamesRO() {
+    void decodeDifferentCookieNamesRO() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly");
         headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
@@ -119,7 +120,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeSameSiteNotAtEnd() {
+    void decodeSameSiteNotAtEnd() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; SameSite=Lax; HttpOnly");
         headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; SameSite=None; Max-Age=3000");
@@ -128,7 +129,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void decodeSameSiteAtEnd() {
+    void decodeSameSiteAtEnd() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly; SameSite=Lax");
         headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000; SameSite=None");
@@ -161,7 +162,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void removeSingleCookie() {
+    void removeSingleCookie() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly");
         headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
@@ -180,7 +181,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void removeMultipleCookiesSameName() {
+    void removeMultipleCookiesSameName() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -192,7 +193,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void addMultipleCookiesSameName() {
+    void addMultipleCookiesSameName() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final TestSetCookie c1 = new TestSetCookie("qwerty", "12345", "/",
                 "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, null, false, false, false);
@@ -207,7 +208,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void addMultipleCookiesDifferentName() {
+    void addMultipleCookiesDifferentName() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final TestSetCookie fooCookie = new TestSetCookie("foo", "12345", "/", "somecompany.co.uk", null,
                 null, null, false, false, true);
@@ -224,14 +225,14 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getCookieNameDomainEmptyPath() {
+    void getCookieNameDomainEmptyPath() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=");
         getCookieNameDomainEmptyPath(headers);
     }
 
     @Test
-    public void getCookieNameDomainEmptyPathRO() {
+    void getCookieNameDomainEmptyPathRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=");
         getCookieNameDomainEmptyPath(headers);
@@ -249,7 +250,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAndRemoveCookiesNameDomainPath() {
+    void getAndRemoveCookiesNameDomainPath() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -281,7 +282,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAndRemoveCookiesNameSubDomainPath() {
+    void getAndRemoveCookiesNameSubDomainPath() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=foo.somecompany.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -293,7 +294,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAndRemoveCookiesNameSubDomainPathRO() {
+    void getAndRemoveCookiesNameSubDomainPathRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=12345; Domain=foo.somecompany.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT",
                 "set-cookie", "qwerty=abcd; Domain=bar.somecompany.co.uk; Path=/2",
@@ -328,7 +329,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAllCookies() {
+    void getAllCookies() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=foo.somecompany.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -341,7 +342,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAllCookiesRO() {
+    void getAllCookiesRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=12345; Domain=foo.somecompany.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT",
                 "set-cookie", "qwerty=abcd; Domain=bar.somecompany.co.uk; Path=/2",
@@ -375,7 +376,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAndRemoveCookiesNameDomainSubPath() {
+    void getAndRemoveCookiesNameDomainSubPath() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=foo/bar; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -387,7 +388,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getAndRemoveCookiesNameDomainSubPathRO() {
+    void getAndRemoveCookiesNameDomainSubPathRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=12345; Domain=somecompany.co.uk; Path=foo/bar; Expires=Wed, 30 Aug 2019 00:00:00 GMT",
                 "set-cookie", "qwerty=abcd; Domain=somecompany.co.uk; Path=/foo/bar/",
@@ -402,7 +403,7 @@ public class DefaultHttpSetCookiesTest {
                 "/foo/bar");
         assertTrue(cookieItr.hasNext());
         assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "foo/bar",
-                "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, null, false, false, false),
+                        "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, null, false, false, false),
                 cookieItr.next()));
         assertTrue(cookieItr.hasNext());
         assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/foo/bar/", "somecompany.co.uk", null,
@@ -423,14 +424,14 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void percentEncodedValueCanBeDecoded() {
+    void percentEncodedValueCanBeDecoded() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty=%x21%x23");
         percentEncodedValueCanBeDecoded(headers);
     }
 
     @Test
-    public void percentEncodedValueCanBeDecodedRO() {
+    void percentEncodedValueCanBeDecodedRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty=%x21%x23");
         percentEncodedValueCanBeDecoded(headers);
     }
@@ -449,14 +450,14 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void percentEncodedNameCanBeDecoded() {
+    void percentEncodedNameCanBeDecoded() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "%x21=foo");
         percentEncodedNameCanBeDecoded(headers);
     }
 
     @Test
-    public void percentEncodedNameCanBeDecodedRO() {
+    void percentEncodedNameCanBeDecodedRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "%x21=foo");
         percentEncodedNameCanBeDecoded(headers);
     }
@@ -476,7 +477,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void quotesInValuePreserved() {
+    void quotesInValuePreserved() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty=\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -484,7 +485,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void quotesInValuePreservedRO() {
+    void quotesInValuePreservedRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty=\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         quotesInValuePreserved(headers);
@@ -509,7 +510,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void getCookiesIteratorRemove() {
+    void getCookiesIteratorRemove() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=bar");
         headers.add("set-cookie",
@@ -541,7 +542,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void overallIteratorRemoveFirstAndLast() {
+    void overallIteratorRemoveFirstAndLast() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=bar");
         headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; " +
@@ -591,7 +592,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void overallIteratorRemoveMiddle() {
+    void overallIteratorRemoveMiddle() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("cookie", "foo=bar");
         headers.add("cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -634,7 +635,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void overallIteratorRemoveAll() {
+    void overallIteratorRemoveAll() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=bar");
         headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; " +
@@ -668,7 +669,7 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void noEqualsButQuotedValueReturnsNull() {
+    void noEqualsButQuotedValueReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -676,14 +677,14 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void noEqualsButQuotedValueReturnsNullRO() {
+    void noEqualsButQuotedValueReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         assertNull(headers.getSetCookie("qwerty\"12345\""));
     }
 
     @Test
-    public void noEqualsValueWithAttributesReturnsNull() {
+    void noEqualsValueWithAttributesReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
@@ -691,75 +692,75 @@ public class DefaultHttpSetCookiesTest {
     }
 
     @Test
-    public void noEqualsValueWithAttributesReturnsNullRO() {
+    void noEqualsValueWithAttributesReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         assertNull(headers.getSetCookie("qwerty12345"));
     }
 
     @Test
-    public void noEqualsValueReturnsNull() {
+    void noEqualsValueReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty12345");
         assertNull(headers.getSetCookie("qwerty12345"));
     }
 
     @Test
-    public void noEqualsValueReturnsNullRO() {
+    void noEqualsValueReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty12345");
         assertNull(headers.getSetCookie("qwerty12345"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void trailingSemiColon() {
+    @Test
+    void trailingSemiColon() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty=12345;");
-        headers.getSetCookie("qwerty");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void trailingSemiColonRO() {
-        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty=12345;");
-        headers.getSetCookie("qwerty");
+        assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("qwerty"));
     }
 
     @Test
-    public void invalidCookieNameReturnsNull() {
+    void trailingSemiColonRO() {
+        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty=12345;");
+        assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("qwerty"));
+    }
+
+    @Test
+    void invalidCookieNameReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "q@werty=12345");
         assertNotNull(headers.getSetCookie("q@werty"));
     }
 
     @Test
-    public void invalidCookieNameReturnsNullRO() {
+    void invalidCookieNameReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "q@werty=12345");
         assertNotNull(headers.getSetCookie("q@werty"));
     }
 
     @Test
-    public void invalidCookieNameNoThrowIfNoValidate() {
+    void invalidCookieNameNoThrowIfNoValidate() {
         final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false).newHeaders();
         headers.add("set-cookie", "q@werty=12345");
         headers.getSetCookie("q@werty");
     }
 
     @Test
-    public void invalidCookieNameNoThrowIfNoValidateRO() {
+    void invalidCookieNameNoThrowIfNoValidateRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders(false, "set-cookie", "q@werty=12345");
         headers.getSetCookie("q@werty");
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void valueIteratorThrowsIfNoNextCall() {
+    @Test
+    void valueIteratorThrowsIfNoNextCall() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty=12345");
-        valueIteratorThrowsIfNoNextCall(headers);
+        assertThrows(IllegalStateException.class, () -> valueIteratorThrowsIfNoNextCall(headers));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void valueIteratorThrowsIfNoNextCallRO() {
+    @Test
+    void valueIteratorThrowsIfNoNextCallRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty=12345");
-        valueIteratorThrowsIfNoNextCall(headers);
+        assertThrows(UnsupportedOperationException.class, () -> valueIteratorThrowsIfNoNextCall(headers));
     }
 
     private static void valueIteratorThrowsIfNoNextCall(HttpHeaders headers) {
@@ -768,17 +769,17 @@ public class DefaultHttpSetCookiesTest {
         itr.remove();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void entryIteratorThrowsIfDoubleRemove() {
+    @Test
+    void entryIteratorThrowsIfDoubleRemove() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty=12345");
-        entryIteratorThrowsIfDoubleRemove(headers);
+        assertThrows(IllegalStateException.class, () -> entryIteratorThrowsIfDoubleRemove(headers));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void entryIteratorThrowsIfDoubleRemoveRO() {
+    @Test
+    void entryIteratorThrowsIfDoubleRemoveRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty=12345");
-        entryIteratorThrowsIfDoubleRemove(headers);
+        assertThrows(UnsupportedOperationException.class, () -> entryIteratorThrowsIfDoubleRemove(headers));
     }
 
     private static void entryIteratorThrowsIfDoubleRemove(HttpHeaders headers) {

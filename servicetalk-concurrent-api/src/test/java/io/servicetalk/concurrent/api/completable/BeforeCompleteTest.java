@@ -24,14 +24,14 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
+class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
     @Override
     protected Completable doComplete(Completable completable, Runnable runnable) {
         return completable.beforeOnComplete(runnable);
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         toSource(doComplete(Completable.completed(), () -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);

@@ -30,46 +30,46 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-public class CompositeCancellableTest {
+class CompositeCancellableTest {
 
 
     @RegisterExtension
-    public final MockedCancellableHolder holder = new MockedCancellableHolder();
+    final MockedCancellableHolder holder = new MockedCancellableHolder();
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         assertThrows(IllegalArgumentException.class, () -> holder.init(0));
     }
 
     @Test
-    public void testOne() {
+    void testOne() {
         Cancellable composite = holder.init(1);
         assertThat("Composite of 1 must not create a new instance.", composite, is(holder.components[0]));
         composite.cancel();
     }
 
     @Test
-    public void testTwo() {
+    void testTwo() {
         holder.init(2).cancel();
     }
 
     @Test
-    public void testMany() {
+    void testMany() {
         holder.init(5).cancel();
     }
 
     @Test
-    public void cancelThrowsForTwo() {
+    void cancelThrowsForTwo() {
         testCancelThrows(holder.init(2));
     }
 
     @Test
-    public void cancelThrowsForMany() {
+    void cancelThrowsForMany() {
         testCancelThrows(holder.init(5));
     }
 
     @Test
-    public void cancellablesMayContainNull() {
+    void cancellablesMayContainNull() {
         Cancellable cancellable = holder.init(5);
         holder.components[3] = null;
         cancellable.cancel();

@@ -97,7 +97,7 @@ import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.netty.ContentCodings.gzipDefault;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
@@ -171,13 +171,13 @@ public class ProtocolCompatibilityTest {
     }
 
     @DataPoints("ssl")
-    public static boolean[] ssl = {false, true};
+    public static final boolean[] SSL = {false, true};
 
     @DataPoints("streaming")
-    public static boolean[] streaming = {false, true};
+    public static final boolean[] STREAMING = {false, true};
 
     @DataPoints("compression")
-    public static String[] compression = {"gzip", "identity", null};
+    public static final String[] COMPRESSION = {"gzip", "identity", null};
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

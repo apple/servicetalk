@@ -47,21 +47,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TimeoutSingleTest {
+class TimeoutSingleTest {
     @RegisterExtension
-    public final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
+    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
 
     private LegacyTestSingle<Integer> source = new LegacyTestSingle<>(false, false);
-    public final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+    final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
     private TestExecutor testExecutor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         testExecutor = executorExtension.executor();
     }
 
     @Test
-    public void executorScheduleThrows() {
+    void executorScheduleThrows() {
         toSource(source.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
@@ -76,7 +76,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void noDataOnCompletionNoTimeout() {
+    void noDataOnCompletionNoTimeout() {
         init();
 
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -88,7 +88,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void noDataOnErrorNoTimeout() {
+    void noDataOnErrorNoTimeout() {
         init();
 
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -100,7 +100,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void subscriptionCancelAlsoCancelsTimer() {
+    void subscriptionCancelAlsoCancelsTimer() {
         init();
 
         subscriber.awaitSubscription().cancel();
@@ -110,7 +110,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void noDataAndTimeout() {
+    void noDataAndTimeout() {
         init();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
@@ -122,7 +122,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void justSubscribeTimeout() {
+    void justSubscribeTimeout() {
         DelayedOnSubscribeSingle<Integer> delayedSingle = new DelayedOnSubscribeSingle<>();
 
         init(delayedSingle, false);

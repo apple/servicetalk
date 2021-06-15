@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import io.servicetalk.utils.internal.IllegalCharacterException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -53,14 +53,14 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class HttpObjectDecoderTest {
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             if (channel().isOpen()) {
                 channel().close().get();
@@ -219,11 +219,12 @@ abstract class HttpObjectDecoderTest {
 
     static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {
         Iterator<? extends CharSequence> itr = headers.valuesIterator(name);
-        assertTrue("Unable to find header name '" + name + "'", itr.hasNext());
+        assertTrue(itr.hasNext(), () -> "Unable to find header name '" + name + "'");
         CharSequence value = itr.next();
-        assertTrue(name + " expected value of '" + expectedValue + "' but got: '" + value + "'",
-                contentEquals(expectedValue, value));
-        assertFalse("Unexpected second value for header name '" + name + "'", itr.hasNext());
+        assertTrue(
+            contentEquals(expectedValue, value),
+                () -> name + " expected value of '" + expectedValue + "' but got: '" + value + "'");
+        assertFalse(itr.hasNext(), "Unexpected second value for header name '" + name + "'");
     }
 
     static void assertStandardHeaders(HttpHeaders headers) {
@@ -250,12 +251,12 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void startLineWithoutCR() {
+    void startLineWithoutCR() {
         assertDecoderException(startLine() + '\n', "Found LF (0x0a) but no CR (0x0d) before");
     }
 
     @Test
-    public void startLineWithoutCRSpecException() {
+    void startLineWithoutCRSpecException() {
         writeMsg(startLine() + "\n" + "\n", channelSpecException());
         assertStartLine(channelSpecException());
         assertEmptyTrailers(channelSpecException());
@@ -263,7 +264,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLine() {
+    void validStartLine() {
         validStartLine(true);
         validStartLine(false);
     }
@@ -278,7 +279,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineInThreeFrames() {
+    void validStartLineInThreeFrames() {
         validStartLineInThreeFrames(true);
         validStartLineInThreeFrames(false);
     }
@@ -295,7 +296,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineInFourFrames() {
+    void validStartLineInFourFrames() {
         validStartLineInFourFrames(true);
         validStartLineInFourFrames(false);
     }
@@ -313,7 +314,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineAfterPrefaceCRLF() {
+    void validStartLineAfterPrefaceCRLF() {
         validStartLineAfterPrefaceCRLF(true);
         validStartLineAfterPrefaceCRLF(false);
     }
@@ -328,7 +329,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineAfterPrefaceCRLFInSeparateFrame() {
+    void validStartLineAfterPrefaceCRLFInSeparateFrame() {
         validStartLineAfterPrefaceCRLFInSeparateFrame(true);
         validStartLineAfterPrefaceCRLFInSeparateFrame(false);
     }
@@ -344,7 +345,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void tooManyPrefaceCharacters() {
+    void tooManyPrefaceCharacters() {
         tooManyPrefaceCharacters(true);
         tooManyPrefaceCharacters(false);
     }
@@ -359,7 +360,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void whitespaceNotAllowedBeforeHeaderFieldName() {
+    void whitespaceNotAllowedBeforeHeaderFieldName() {
         whitespaceNotAllowedBeforeHeaderFieldName(true);
         whitespaceNotAllowedBeforeHeaderFieldName(false);
     }
@@ -372,7 +373,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void whitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
+    void whitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
         whitespaceNotAllowedBetweenHeaderFieldNameAndColon(true);
         whitespaceNotAllowedBetweenHeaderFieldNameAndColon(false);
     }
@@ -385,7 +386,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void controlCharNotAllowedBeforeHeaderFieldValue() {
+    void controlCharNotAllowedBeforeHeaderFieldValue() {
         controlCharNotAllowedBeforeHeaderFieldValue(true);
         controlCharNotAllowedBeforeHeaderFieldValue(false);
     }
@@ -398,7 +399,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void noEndOfHeaderName() {
+    void noEndOfHeaderName() {
         noEndOfHeaderName(true);
         noEndOfHeaderName(false);
     }
@@ -411,7 +412,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void emptyHeaderName() {
+    void emptyHeaderName() {
         emptyHeaderName(true);
         emptyHeaderName(false);
     }
@@ -424,7 +425,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void whitespaceHeaderName() {
+    void whitespaceHeaderName() {
         testBadHeaderName(" ");
         testBadHeaderName("  ");
         testBadHeaderName("\t");
@@ -432,13 +433,13 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void embededWhitespaceHeaderName() {
+    void embededWhitespaceHeaderName() {
         testBadHeaderName("content length");
         testBadHeaderName("content\tlength");
     }
 
     @Test
-    public void trailingWhitespaceHeaderName() {
+    void trailingWhitespaceHeaderName() {
         testBadHeaderName("content-length ");
         testBadHeaderName("content-length\t");
     }
@@ -456,7 +457,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headerNameWithControlChar() {
+    void headerNameWithControlChar() {
         headerNameWithControlChar(true);
         headerNameWithControlChar(false);
     }
@@ -469,7 +470,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headerNameWithObsText() {
+    void headerNameWithObsText() {
         headerNameWithObsText(true);
         headerNameWithObsText(false);
     }
@@ -482,14 +483,14 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headerFiledValueEmpty() {
+    void headerFiledValueEmpty() {
         testHeaderFiledValue("", "");
         testHeaderFiledValue(" ", "");
         testHeaderFiledValue("   ", "");
     }
 
     @Test
-    public void headerFiledValue() {
+    void headerFiledValue() {
         testHeaderFiledValue("servicetalk.io", "servicetalk.io");
         testHeaderFiledValue(" servicetalk.io", "servicetalk.io");
         testHeaderFiledValue("servicetalk.io ", "servicetalk.io");
@@ -500,7 +501,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headerFiledValueSingleCharacter() {
+    void headerFiledValueSingleCharacter() {
         testHeaderFiledValue("s", "s");
         testHeaderFiledValue(" s", "s");
         testHeaderFiledValue("s ", "s");
@@ -511,17 +512,17 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headerFiledValueCommaSeparated() {
+    void headerFiledValueCommaSeparated() {
         testHeaderFiledValue("first, second, third", "first, second, third");
     }
 
     @Test
-    public void headerFiledValueAllowsHTab() {
+    void headerFiledValueAllowsHTab() {
         testHeaderFiledValue("service\talk.io", "service\talk.io");
     }
 
     @Test
-    public void headerFiledValueAllowsObsText() {
+    void headerFiledValueAllowsObsText() {
         testHeaderFiledValue("sêrvicêtalk.io", "sêrvicêtalk.io");
     }
 
@@ -541,7 +542,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void multipleHeaderFiledValues() {
+    void multipleHeaderFiledValues() {
         multipleHeaderFiledValues(true);
         multipleHeaderFiledValues(false);
     }
@@ -566,7 +567,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void zeroContentLength() {
+    void zeroContentLength() {
         zeroContentLength(true);
         zeroContentLength(false);
     }
@@ -582,7 +583,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void contentLengthNoTrailers() {
+    void contentLengthNoTrailers() {
         contentLengthNoTrailers(true);
         contentLengthNoTrailers(false);
     }
@@ -600,13 +601,13 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersChunkSizeWithoutSemicolon() {
+    void chunkedNoTrailersChunkSizeWithoutSemicolon() {
         chunkedNoTrailers(false, true);
         chunkedNoTrailers(false, false);
     }
 
     @Test
-    public void chunkedNoTrailersChunkSizeWithSemicolon() {
+    void chunkedNoTrailersChunkSizeWithSemicolon() {
         chunkedNoTrailers(true, true);
         chunkedNoTrailers(true, false);
     }
@@ -627,7 +628,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedWithContentLength() {
+    void chunkedWithContentLength() {
         chunkedWithContentLength(true);
         chunkedWithContentLength(false);
     }
@@ -650,7 +651,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersMultipleLargeContent() {
+    void chunkedNoTrailersMultipleLargeContent() {
         chunkedNoTrailersMultipleLargeContent(true);
         chunkedNoTrailersMultipleLargeContent(false);
     }
@@ -672,7 +673,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersNoChunkSize() {
+    void chunkedNoTrailersNoChunkSize() {
         chunkedNoTrailersNoChunkSize(true);
         chunkedNoTrailersNoChunkSize(false);
     }
@@ -691,7 +692,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersInvalidChunkSize() {
+    void chunkedNoTrailersInvalidChunkSize() {
         chunkedNoTrailersInvalidChunkSize(true);
         chunkedNoTrailersInvalidChunkSize(false);
     }
@@ -710,7 +711,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersNoChunkCRLF() {
+    void chunkedNoTrailersNoChunkCRLF() {
         chunkedNoTrailersNoChunkCRLF(true);
         chunkedNoTrailersNoChunkCRLF(false);
     }
@@ -732,7 +733,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoContentWithTrailers() {
+    void chunkedNoContentWithTrailers() {
         chunkedNoContentWithTrailers(true);
         chunkedNoContentWithTrailers(false);
     }
@@ -750,7 +751,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedContentWithTrailers() {
+    void chunkedContentWithTrailers() {
         chunkedContentWithTrailers(true);
         chunkedContentWithTrailers(false);
     }
@@ -769,7 +770,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedNoContentNoTrailers() {
+    void chunkedNoContentNoTrailers() {
         chunkedNoContentNoTrailers(true);
         chunkedNoContentNoTrailers(false);
     }
@@ -790,7 +791,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void unexpectedTrailersAfterContentLength() {
+    void unexpectedTrailersAfterContentLength() {
         unexpectedTrailersAfterContentLength(true);
         unexpectedTrailersAfterContentLength(false);
     }
@@ -813,13 +814,13 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleBeforeZeroContentLengthHeader() {
+    void smuggleBeforeZeroContentLengthHeader() {
         smuggleZeroContentLength(true, false);
         smuggleZeroContentLength(true, true);
     }
 
     @Test
-    public void smuggleAfterZeroContentLengthHeader() {
+    void smuggleAfterZeroContentLengthHeader() {
         smuggleZeroContentLength(false, false);
         smuggleZeroContentLength(false, true);
     }
@@ -846,12 +847,12 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleAfterTransferEncodingHeader() {
+    void smuggleAfterTransferEncodingHeader() {
         smuggleTransferEncoding(false, false);
         smuggleTransferEncoding(false, true);
     }
 
-    protected void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding, boolean crlf) {
+    void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
@@ -871,13 +872,13 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleNameBeforeNonZeroContentLengthHeader() {
+    void smuggleNameBeforeNonZeroContentLengthHeader() {
         smuggleNameZeroContentLengthHeader(true, false);
         smuggleNameZeroContentLengthHeader(true, true);
     }
 
     @Test
-    public void smuggleNameAfterNonZeroContentLengthHeader() {
+    void smuggleNameAfterNonZeroContentLengthHeader() {
         smuggleNameZeroContentLengthHeader(false, false);
         smuggleNameZeroContentLengthHeader(false, true);
     }
@@ -894,7 +895,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void multipleContentLengthHeaders() {
+    void multipleContentLengthHeaders() {
         multipleContentLengthHeaders(true);
         multipleContentLengthHeaders(false);
     }
@@ -912,7 +913,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void multipleContentLengthHeaderValues() {
+    void multipleContentLengthHeaderValues() {
         multipleContentLengthHeaderValues(true);
         multipleContentLengthHeaderValues(false);
     }
@@ -929,36 +930,36 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void signedPositiveContentLengthHeaderValues() {
+    void signedPositiveContentLengthHeaderValues() {
         malformedContentLengthHeaderValue("+1", true);
         malformedContentLengthHeaderValue("+1", false);
     }
 
     @Test
-    public void signedNegativeContentLengthHeaderValues() {
+    void signedNegativeContentLengthHeaderValues() {
         malformedContentLengthHeaderValue("-1", true);
         malformedContentLengthHeaderValue("-1", false);
     }
 
     @Test
-    public void malformedContentLengthHeaderValueWithSP() {
+    void malformedContentLengthHeaderValueWithSP() {
         malformedContentLengthHeaderValue("1 2", true);
         malformedContentLengthHeaderValue("1 2", false);
     }
 
     @Test
-    public void malformedContentLengthHeaderValueWithLetter() {
+    void malformedContentLengthHeaderValueWithLetter() {
         malformedContentLengthHeaderValue("1a2", true);
         malformedContentLengthHeaderValue("1a2", false);
     }
 
     @Test
-    public void malformedContentLengthHeaderValueWithSymbol() {
+    void malformedContentLengthHeaderValueWithSymbol() {
         malformedContentLengthHeaderValue("1-2", true);
         malformedContentLengthHeaderValue("1-2", false);
     }
 
-    public void malformedContentLengthHeaderValue(String value, boolean crlf) {
+    void malformedContentLengthHeaderValue(String value, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +

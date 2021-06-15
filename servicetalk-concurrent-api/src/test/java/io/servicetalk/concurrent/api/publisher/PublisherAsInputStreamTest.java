@@ -35,12 +35,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class PublisherAsInputStreamTest {
+final class PublisherAsInputStreamTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
 
     @Test
-    public void streamEmitsAllDataInSingleRead() throws IOException {
+    void streamEmitsAllDataInSingleRead() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
@@ -51,7 +51,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void streamEmitsAllDataInMultipleReads() throws IOException {
+    void streamEmitsAllDataInMultipleReads() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[2];
@@ -69,7 +69,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void incrementallyFillAnArray() throws IOException {
+    void incrementallyFillAnArray() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
@@ -86,7 +86,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void readRequestMoreThanDataBuffer() throws IOException {
+    void readRequestMoreThanDataBuffer() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[16];
@@ -97,7 +97,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void readRequestLessThanDataBuffer() throws IOException {
+    void readRequestLessThanDataBuffer() throws IOException {
         String src = "1234";
         InputStream stream = from(src).toInputStream(str -> str.getBytes(US_ASCII));
         byte[] data = new byte[2];
@@ -107,7 +107,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void largerSizeItems() throws IOException {
+    void largerSizeItems() throws IOException {
         InputStream stream = from("123", "45678")
                 .toInputStream(str -> str.getBytes(US_ASCII));
         byte[] data = new byte[4];
@@ -118,7 +118,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void streamErrorShouldBeEmittedPostData() throws IOException {
+    void streamErrorShouldBeEmittedPostData() throws IOException {
         DeliberateException de = new DeliberateException();
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).concat(Completable.failed(de))
@@ -134,7 +134,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void closeThenReadShouldBeInvalid() throws IOException {
+    void closeThenReadShouldBeInvalid() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         stream.close();
@@ -142,7 +142,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void singleByteRead() throws IOException {
+    void singleByteRead() throws IOException {
         Character[] src = {'1'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         int read = stream.read();
@@ -151,7 +151,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void singleByteReadWithEmptyIterable() throws IOException {
+    void singleByteReadWithEmptyIterable() throws IOException {
         Character[] src = {'1'};
         InputStream stream = from(src).toInputStream(c -> new byte[0]);
         assertThat("Unexpected bytes read.", stream.read(), is(-1));
@@ -161,7 +161,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void readWithEmptyIterable() throws IOException {
+    void readWithEmptyIterable() throws IOException {
         Character[] src = {'1'};
         InputStream stream = from(src).toInputStream(c -> new byte[0]);
         byte[] r = new byte[1];
@@ -172,7 +172,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void zeroLengthReadShouldBeValid() throws IOException {
+    void zeroLengthReadShouldBeValid() throws IOException {
         Character[] src = {'1'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[0];
@@ -182,7 +182,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
+    void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
         TestPublisher<String> testPublisher = new TestPublisher<>();
         InputStream stream = testPublisher.toInputStream(str -> str.getBytes(US_ASCII));
         assertThat("Unexpected available return type.", stream.available(), is(0));
@@ -196,7 +196,7 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
+    void completionAndEmptyReadShouldIndicateEOF() throws IOException {
         InputStream stream = from(Publisher.empty()).toInputStream(obj -> new byte[0]);
         byte[] data = new byte[32];
         int read = stream.read(data, 0, 32);
@@ -204,12 +204,12 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
-    public void testEmptyIteratorValue() throws IOException {
+    void testEmptyIteratorValue() throws IOException {
         testNullAndEmptyIteratorValue(new byte[0]);
     }
 
     @Test
-    public void testNullIteratorValue() throws IOException {
+    void testNullIteratorValue() throws IOException {
         testNullAndEmptyIteratorValue(null);
     }
 

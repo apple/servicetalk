@@ -31,10 +31,10 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
+class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         List<Throwable> failures = new ArrayList<>();
         toSource(doSubscribe(from("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;

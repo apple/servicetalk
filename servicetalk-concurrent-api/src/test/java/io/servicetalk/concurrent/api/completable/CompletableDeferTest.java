@@ -32,12 +32,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class CompletableDeferTest {
+class CompletableDeferTest {
 
     private Supplier<Completable> factory;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         @SuppressWarnings("unchecked")
         Supplier<Completable> mock = mock(Supplier.class);
         when(mock.get()).thenReturn(completed());
@@ -45,7 +45,7 @@ public class CompletableDeferTest {
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() {
+    void testEverySubscribeCreatesNew() {
         Completable source = Completable.defer(factory);
         listenAndVerify(source);
         listenAndVerify(source);

@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class ReduceSingleTest {
+class ReduceSingleTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
@@ -48,7 +48,7 @@ public class ReduceSingleTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testSingleItem() {
+    void testSingleItem() {
         listen(publisher, listenerRule);
         publisher.onNext("Hello");
         publisher.onComplete();
@@ -56,14 +56,14 @@ public class ReduceSingleTest {
     }
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         listen(publisher, listenerRule);
         publisher.onComplete();
         assertThat(listenerRule.awaitOnSuccess(), is("")); // Empty string as exactly one item is required.
     }
 
     @Test
-    public void testMultipleItems() {
+    void testMultipleItems() {
         listen(publisher, listenerRule);
         publisher.onNext("Hello1", "Hello2", "Hello3");
         publisher.onComplete();
@@ -71,14 +71,14 @@ public class ReduceSingleTest {
     }
 
     @Test
-    public void testError() {
+    void testError() {
         listen(publisher, listenerRule);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testFactoryReturnsNull() {
+    void testFactoryReturnsNull() {
         toSource(publisher.<String>collect(() -> null, (o, s) -> o)).subscribe(listenerRule);
         publisher.onNext("foo");
         publisher.onComplete();
@@ -86,7 +86,7 @@ public class ReduceSingleTest {
     }
 
     @Test
-    public void testAggregatorReturnsNull() {
+    void testAggregatorReturnsNull() {
         toSource(publisher.collect(() -> "", (o, s) -> null)).subscribe(listenerRule);
         publisher.onNext("foo");
         publisher.onComplete();
@@ -94,7 +94,7 @@ public class ReduceSingleTest {
     }
 
     @Test
-    public void testReducerExceptionCleanup() {
+    void testReducerExceptionCleanup() {
         final RuntimeException testException = new RuntimeException("fake exception");
         toSource(publisher.collect(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
@@ -115,7 +115,7 @@ public class ReduceSingleTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();

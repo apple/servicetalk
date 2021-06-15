@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class DefaultPartitionAttributesBuilderTest {
+class DefaultPartitionAttributesBuilderTest {
     private static final Key<String> SHARD_KEY = Key.newKey("shard");
     private static final Key<String> DC_KEY = Key.newKey("dc");
     private static final Key<Boolean> MAIN_KEY = Key.newKey("main");
@@ -38,7 +38,7 @@ public class DefaultPartitionAttributesBuilderTest {
     private static final String DEFAULT_DC = "mydc";
 
     @Test
-    public void builderGrowsSize() {
+    void builderGrowsSize() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(0);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
@@ -50,7 +50,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void duplicateKeyDifferentValueThrowsAtAdd() {
+    void duplicateKeyDifferentValueThrowsAtAdd() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
@@ -65,7 +65,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void duplicateKeyDifferentValueThrowsAtBuild() {
+    void duplicateKeyDifferentValueThrowsAtBuild() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
@@ -82,7 +82,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void duplicateKeySameValueThrowsAtBuild() {
+    void duplicateKeySameValueThrowsAtBuild() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
@@ -99,7 +99,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void addFourItemsSortedCorrectlyA() {
+    void addFourItemsSortedCorrectlyA() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
@@ -114,7 +114,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void addFourItemsSortedCorrectlyB() {
+    void addFourItemsSortedCorrectlyB() {
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(4);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(MAIN_KEY, false);
@@ -129,7 +129,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void equalsAndHashCode() {
+    void equalsAndHashCode() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
@@ -155,7 +155,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void notEqualsSameKeysDifferentValues() {
+    void notEqualsSameKeysDifferentValues() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
@@ -180,7 +180,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void notEqualsDifferentKeys() {
+    void notEqualsDifferentKeys() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
@@ -207,7 +207,7 @@ public class DefaultPartitionAttributesBuilderTest {
     }
 
     @Test
-    public void notEqualsMissingKey() {
+    void notEqualsMissingKey() {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);

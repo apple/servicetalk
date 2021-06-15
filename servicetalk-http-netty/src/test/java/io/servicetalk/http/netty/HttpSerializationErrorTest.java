@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -27,13 +26,9 @@ import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 import java.util.Map;
@@ -47,37 +42,27 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
-public class HttpSerializationErrorTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
+class HttpSerializationErrorTest {
     private HttpExecutionStrategy serverExecutionStrategy;
 
-    public HttpSerializationErrorTest(HttpTestExecutionStrategy serverStrategy) {
-        this.serverExecutionStrategy = serverStrategy.executorSupplier.get();
-    }
-
-    @Parameterized.Parameters(name = "serverExecutor={0}")
-    public static Collection<HttpTestExecutionStrategy> executors() {
+    static Collection<HttpTestExecutionStrategy> executors() {
         return asList(NO_OFFLOAD, CACHED);
     }
 
-    @After
-    public void teardown() throws Exception {
+    @AfterEach
+    void teardown() throws Exception {
         Executor executor = serverExecutionStrategy.executor();
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
-    @Test
-    public void serializationMapThrowsPropagatesToClient() throws Exception {
+    @ParameterizedTest
+    @MethodSource("executors")
+    void serializationMapThrowsPropagatesToClient(HttpTestExecutionStrategy serverStrategy) throws Exception {
+        serverExecutionStrategy = serverStrategy.executorSupplier.get();
         HttpSerializationProvider jackson = jsonSerializer(new JacksonSerializationProvider());
         TypeHolder<Map<String, Object>> mapType = new TypeHolder<Map<String, Object>>() { };
         HttpSerializer<Map<String, Object>> serializer = jackson.serializerFor(mapType);
