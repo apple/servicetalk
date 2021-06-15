@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,10 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,13 +50,11 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.IMMEDIATE;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@RunWith(Parameterized.class)
-public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
+class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> completed()),
@@ -91,15 +90,13 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         }
     }
 
-    private final FilterMode filterMode;
     @Nullable
     private volatile SSLSession sslSession;
 
-    public NettyHttpServerConnectionAcceptorTest(final boolean enableSsl, final ExecutorSupplier clientExecutorSupplier,
-                                                 final ExecutorSupplier serverExecutorSupplier,
-                                                 final FilterMode filterMode) {
-        super(clientExecutorSupplier, serverExecutorSupplier);
-        this.filterMode = filterMode;
+    private void setUp(final boolean enableSsl,
+                       final ExecutorSupplier clientExecutorSupplier,
+                       final ExecutorSupplier serverExecutorSupplier,
+                       final FilterMode filterMode) {
         sslEnabled(enableSsl);
         if (enableSsl) {
             connectionAcceptor(ctx -> {
@@ -111,17 +108,17 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         } else {
             connectionAcceptor(filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()));
         }
+        super.setUp(clientExecutorSupplier, serverExecutorSupplier);
     }
 
-    @Parameterized.Parameters(name = "ssl={0} client={1} server={2} {3}")
-    public static Iterable<Object[]> getContextFilters() {
-        List<Object[]> parameters = new ArrayList<>();
+    @SuppressWarnings("unused")
+    private static Iterable<Arguments> getContextFilters() {
+        List<Arguments> parameters = new ArrayList<>();
         for (boolean ssl : Arrays.asList(false, true)) {
             for (ExecutorSupplier clientExecutorSupplier : Arrays.asList(IMMEDIATE, CACHED)) {
                 for (ExecutorSupplier serverExecutorSupplier : Arrays.asList(IMMEDIATE, CACHED)) {
                     for (FilterMode filtermode : FilterMode.values()) {
-                        parameters.add(new Object[]{
-                                ssl, clientExecutorSupplier, serverExecutorSupplier, filtermode});
+                        parameters.add(Arguments.of(ssl, clientExecutorSupplier, serverExecutorSupplier, filtermode));
                     }
                 }
             }
@@ -129,8 +126,13 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         return parameters;
     }
 
-    @Test
-    public void testAcceptConnection() throws Exception {
+    @ParameterizedTest(name = "ssl={0} client={1} server={2} {3}")
+    @MethodSource("getContextFilters")
+    void testAcceptConnection(final boolean enableSsl,
+                              final ExecutorSupplier clientExecutorSupplier,
+                              final ExecutorSupplier serverExecutorSupplier,
+                              final FilterMode filterMode) throws Exception {
+        setUp(enableSsl, clientExecutorSupplier, serverExecutorSupplier, filterMode);
         try {
             // Send a request, and wait for the response.
             // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
@@ -149,14 +151,14 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
             if (filterMode.expectAccept) {
                 throw new AssertionError("Unexpected exception while reading/writing request/response", e);
             }
-            assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
-                    instanceOf(MaxRequestLimitExceededException.class),
-                    instanceOf(NoAvailableHostException.class),
-                    instanceOf(ConnectionClosedException.class)));
+            MatcherAssert.assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
+                                                         instanceOf(MaxRequestLimitExceededException.class),
+                                                         instanceOf(NoAvailableHostException.class),
+                                                         instanceOf(ConnectionClosedException.class)));
         }
 
         if (isSslEnabled()) {
-            assertNotNull("SslSession was not set by the time filter executed", sslSession);
+            assertNotNull(sslSession, "SslSession was not set by the time filter executed");
         }
     }
 }

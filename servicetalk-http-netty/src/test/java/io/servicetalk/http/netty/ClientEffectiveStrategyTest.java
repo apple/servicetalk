@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -42,13 +41,9 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -72,30 +67,16 @@ import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
 
-@RunWith(Parameterized.class)
-public class ClientEffectiveStrategyTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class ClientEffectiveStrategyTest {
 
-    private final ParamsSupplier paramSupplier;
     private Params params;
 
-    public ClientEffectiveStrategyTest(final ParamsSupplier paramSupplier) {
-        this.paramSupplier = paramSupplier;
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        params = paramSupplier.newParams();
-    }
-
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         params.dispose();
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<ParamsSupplier> params() {
+    static Collection<ParamsSupplier> params() {
         List<ParamsSupplier> params = new ArrayList<>();
         params.add(wrap("noUserStrategyNoFilter", ClientEffectiveStrategyTest::noUserStrategyNoFilter));
         params.add(wrap("noUserStrategyWithFilter", ClientEffectiveStrategyTest::noUserStrategyWithFilter));
@@ -353,15 +334,19 @@ public class ClientEffectiveStrategyTest {
         return params;
     }
 
-    @Test
-    public void blocking() throws Exception {
+    @ParameterizedTest
+    @MethodSource("params")
+    void blocking(ParamsSupplier paramSupplier) throws Exception {
+        params = paramSupplier.newParams();
         BlockingHttpClient blockingClient = params.client().asBlockingClient();
         blockingClient.request(blockingClient.get("/"));
         params.verifyOffloads(ClientType.Blocking);
     }
 
-    @Test
-    public void blockingStreaming() throws Exception {
+    @ParameterizedTest
+    @MethodSource("params")
+    void blockingStreaming(ParamsSupplier paramSupplier) throws Exception {
+        params = paramSupplier.newParams();
         BlockingStreamingHttpClient blockingClient = params.client().asBlockingStreamingClient();
         BlockingIterator<Buffer> iter = blockingClient.request(blockingClient.get("/")).payloadBody().iterator();
         iter.forEachRemaining(__ -> { });
@@ -369,15 +354,19 @@ public class ClientEffectiveStrategyTest {
         params.verifyOffloads(ClientType.BlockingStreaming);
     }
 
-    @Test
-    public void streaming() throws Exception {
+    @ParameterizedTest
+    @MethodSource("params")
+    void streaming(ParamsSupplier paramSupplier) throws Exception {
+        params = paramSupplier.newParams();
         params.client().request(params.client().get("/"))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody).toFuture().get();
         params.verifyOffloads(ClientType.AsyncStreaming);
     }
 
-    @Test
-    public void async() throws Exception {
+    @ParameterizedTest
+    @MethodSource("params")
+    void async(ParamsSupplier paramSupplier) throws Exception {
+        params = paramSupplier.newParams();
         HttpClient httpClient = params.client().asClient();
         httpClient.request(httpClient.get("/")).toFuture().get();
         params.verifyOffloads(ClientType.Async);
@@ -390,7 +379,7 @@ public class ClientEffectiveStrategyTest {
             this.name = name;
         }
 
-        abstract Params newParams() throws Exception;
+        abstract Params newParams();
 
         @Override
         public String toString() {

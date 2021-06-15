@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.Supplier;
 
-public class AfterSubscriberTest extends AbstractWhenSubscriberTest {
+class AfterSubscriberTest extends AbstractWhenSubscriberTest {
     @Override
     protected <T> Publisher<T> doSubscriber(Publisher<T> publisher,
                                             Supplier<Subscriber<? super T>> subscriberSupplier) {

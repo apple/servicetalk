@@ -17,14 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.utils.RequestTargetDecoderHttpServiceFilter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 
-public class RequestTargetDecoderHttpServiceFilterTest {
+class RequestTargetDecoderHttpServiceFilterTest {
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(new RequestTargetDecoderHttpServiceFilter());
     }
 }

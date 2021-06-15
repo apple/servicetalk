@@ -19,9 +19,9 @@ import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -29,30 +29,30 @@ import org.slf4j.MDC;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ServiceTalkTracingThreadContextMapTest {
+class ServiceTalkTracingThreadContextMapTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTalkTracingThreadContextMapTest.class);
 
-    @Before
+    @BeforeEach
     public void setup() {
         LoggerStringWriter.reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         LoggerStringWriter.remove();
     }
 
     @Test
-    public void testNullValues() {
+    void testNullValues() {
         MDC.put("foo", null);
         assertNull(MDC.get("foo"));
     }
 
     @Test
-    public void tracingInfoDisplayedPresentInLogsViaMDC() throws Exception {
+    void tracingInfoDisplayedPresentInLogsViaMDC() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         InMemorySpan span = tracer.buildSpan("test").start();
         assertNotNull(span);

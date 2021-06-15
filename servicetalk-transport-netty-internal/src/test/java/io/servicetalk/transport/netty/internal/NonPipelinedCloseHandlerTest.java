@@ -26,9 +26,10 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.concurrent.EventExecutor;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
@@ -62,22 +63,21 @@ import static io.servicetalk.transport.netty.internal.NonPipelinedCloseHandlerTe
 import static java.util.Arrays.asList;
 import static java.util.Objects.hash;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class NonPipelinedCloseHandlerTest {
-    private final ChannelHandlerContext ctx;
-    private final Channel channel;
-    private final CloseHandler h;
+class NonPipelinedCloseHandlerTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NonPipelinedCloseHandlerTest.class);
+
+    private ChannelHandlerContext ctx;
+    private Channel channel;
+    private CloseHandler h;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final List<Events> events;
-    private final ExpectEvent expectEvent;
     @Nullable
     private CloseEvent observedEvent;
 
@@ -106,11 +106,8 @@ public class NonPipelinedCloseHandlerTest {
         }
     }
 
-    public NonPipelinedCloseHandlerTest(boolean client, final List<Events> events, final ExpectEvent expectEvent,
-                                        final String desc, final String location) {
+    void setUp(boolean client) {
         h = new NonPipelinedCloseHandler(client);
-        this.events = events;
-        this.expectEvent = expectEvent;
         ctx = mock(ChannelHandlerContext.class);
         channel = mock(SocketChannel.class, "[id: 0xmocked, L:mocked - R:mocked]");
         when(ctx.channel()).thenReturn(channel);
@@ -138,8 +135,8 @@ public class NonPipelinedCloseHandlerTest {
         });
     }
 
-    @Parameterized.Parameters(name = "{index}. {3} - {0} {1} = {2}")
-    public static Collection<Object[]> data() {
+    @SuppressWarnings("unused")
+    private static Collection<Object[]> data() {    // If inserting lines here, adjust the `offset` variable below
         StackTraceElement se = Thread.currentThread().getStackTrace()[1];
         List<Object[]> params = asList(new Object[][] {
                 {true, e(OB, OE, IB, IE), NIL, "sequential, no close"},
@@ -200,18 +197,24 @@ public class NonPipelinedCloseHandlerTest {
                 {false, e(IB, IE, OB, OE, OC), PCO, "protocol outbound close while idle"},
         });
         String fileName = se.getFileName();
-        int offset = se.getLineNumber() + 3; // Lines between `se` and first parameter
+        int offset = se.getLineNumber() + 2; // Lines between `se` and first parameter
         for (int i = 0; i < params.size(); i++) { // Appends param location as last entry
             Object[] o = params.get(i);
             params.set(i, new Object[]{o[0], o[1], o[2], o[3], fileName + ":" + (offset + i)});
         }
         Set<Integer> uniques = params.stream().map(objs -> hash(objs[0], objs[1], objs[2])).collect(toSet());
-        assertEquals("Duplicate test scenario?", uniques.size(), params.size());
+        assertEquals(uniques.size(), params.size(), "Duplicate test scenario?");
         return params;
     }
 
-    @Test
-    public void simulate() {
+    @ParameterizedTest(name = "{index}. {3}: client={0}, {1} = {2}, {4}")
+    @MethodSource("data")
+    void simulate(final boolean client, final List<Events> events, final ExpectEvent expectEvent,
+                  final String desc, final String location) {
+        setUp(client);
+        LOGGER.debug("Test.Params: ({})", location); // Intellij jump to parameter format, don't change!
+        LOGGER.debug("{}: client={}, {} = {}", desc, client, events, expectEvent);
+
         for (Events event : events) {
             switch (event) {
                 case IB:
@@ -264,7 +267,7 @@ public class NonPipelinedCloseHandlerTest {
     }
 
     private void assertNotClosed() {
-        assertFalse("Channel Closed - testcase invalid or bug?", closed.get());
+        assertFalse(closed.get(), "Channel Closed - testcase invalid or bug?");
     }
 
     private static List<Events> e(Events... args) {

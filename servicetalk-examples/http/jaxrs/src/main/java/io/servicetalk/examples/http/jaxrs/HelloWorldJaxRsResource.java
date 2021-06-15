@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,14 @@ package io.servicetalk.examples.http.jaxrs;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.glassfish.jersey.media.multipart.FormDataParam;
+
+import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,10 +40,12 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.accepted;
 import static javax.ws.rs.core.Response.ok;
@@ -143,6 +149,33 @@ public class HelloWorldJaxRsResource {
                 .addBuffer(allocator.fromAscii("hello, "))
                 .addBuffer(b)
                 .addBuffer(allocator.fromAscii("!")));
+    }
+
+    /**
+     * Resource that relies on multi-part file upload on the consume side, and {@link Publisher} with
+     * operators for processing it on the produce side.
+     * <p>
+     * Test with:
+     * <pre>
+     * echo "An empty file" > sample.txt && curl -vF "file=@sample.txt" \
+     * http://localhost:8080/greetings/multipart-hello
+     * </pre>
+     *
+     * @param ctx the {@link ConnectionContext}.
+     * @param file the multi-part file contents.
+     * @return greetings as a {@link Single} {@link Buffer}.
+     */
+    @POST
+    @Path("multipart-hello")
+    @Consumes(MULTIPART_FORM_DATA)
+    @Produces(TEXT_PLAIN)
+    public Single<Buffer> multipartHello(@Context final ConnectionContext ctx,
+                                         @FormDataParam("file") InputStream file) {
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return from(allocator.fromAscii("Hello multipart! Content: "))
+                .concat(fromInputStream(file).map(allocator::wrap))
+                .collect(allocator::newCompositeBuffer,
+                        (collector, item) -> ((CompositeBuffer) collector).addBuffer(item));
     }
 
     /**

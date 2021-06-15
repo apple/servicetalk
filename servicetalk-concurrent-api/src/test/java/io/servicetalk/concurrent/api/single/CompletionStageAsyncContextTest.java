@@ -39,7 +39,7 @@ import static io.servicetalk.concurrent.api.Single.fromStage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CompletionStageAsyncContextTest {
+class CompletionStageAsyncContextTest {
     private static final Key<Integer> K1 = newKey("k1");
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
@@ -50,26 +50,26 @@ public class CompletionStageAsyncContextTest {
     private LegacyTestSingle<String> source;
 
     @BeforeAll
-    public static void beforeClass() {
+    static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool(
                 r -> new Thread(r, JDK_THREAD_NAME_PREFIX + '-' + threadCount.incrementAndGet()));
     }
 
     @AfterAll
-    public static void afterClass() {
+    static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
     @BeforeEach
-    public void beforeTest() {
+    void beforeTest() {
         AsyncContext.clear();
         source = new LegacyTestSingle<>(executorExtension.executor(), true, true);
     }
 
     @Test
-    public void fromStagePreservesContext() throws InterruptedException {
+    void fromStagePreservesContext() throws InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         jdkExecutor.execute(() -> future.complete("foo"));
@@ -87,7 +87,7 @@ public class CompletionStageAsyncContextTest {
     }
 
     @Test
-    public void singleToCompletionStageHandle() throws InterruptedException {
+    void singleToCompletionStageHandle() throws InterruptedException {
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         AsyncContext.put(K1, expectedK1Value);
         AtomicReference<Integer> actualK1Value = new AtomicReference<>();
@@ -103,7 +103,7 @@ public class CompletionStageAsyncContextTest {
     }
 
     @Test
-    public void singleToCompletionToCompletableFuture() throws InterruptedException {
+    void singleToCompletionToCompletableFuture() throws InterruptedException {
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         AtomicReference<Integer> actualK1Value = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -119,7 +119,7 @@ public class CompletionStageAsyncContextTest {
     }
 
     @Test
-    public void singleOperatorAndMultipleCompletionListeners() throws InterruptedException {
+    void singleOperatorAndMultipleCompletionListeners() throws InterruptedException {
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         AsyncContext.put(K1, expectedK1Value);
         AtomicReference<Integer> actualK1Value1 = new AtomicReference<>();
@@ -149,7 +149,7 @@ public class CompletionStageAsyncContextTest {
     }
 
     @Test
-    public void directToCompletableFuture() throws InterruptedException {
+    void directToCompletableFuture() throws InterruptedException {
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         AtomicReference<Integer> actualK1Value = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);

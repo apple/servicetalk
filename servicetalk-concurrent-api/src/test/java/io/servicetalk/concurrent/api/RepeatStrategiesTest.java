@@ -35,10 +35,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class RepeatStrategiesTest extends RedoStrategiesTest {
+class RepeatStrategiesTest extends RedoStrategiesTest {
 
     @Test
-    public void testBackoff() throws Exception {
+    void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffDeltaJitter(2, backoff, ofNanos(1),
                 timerExecutor));
@@ -50,13 +50,13 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testBackoffMaxRepeats() throws Exception {
+    void testBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
         testMaxRepeats(repeatWithConstantBackoffFullJitter(1, backoff, timerExecutor), backoff);
     }
 
     @Test
-    public void testExpBackoff() throws Exception {
+    void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffFullJitter(2, initialDelay,
                 timerExecutor));
@@ -74,33 +74,33 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffMaxRepeats() throws Exception {
+    void testExpBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
         testMaxRepeats(repeatWithConstantBackoffFullJitter(1, backoff, timerExecutor), backoff);
     }
 
     @Test
-    public void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
+    void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
         testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofDays(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
+    void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
         testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofDays(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
+    void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
         testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
+    void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
         testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
-    public void testExpBackoffWithJitterMaxRepeats() throws Exception {
+    void testExpBackoffWithJitterMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
         Duration jitter = ofMillis(500);
         testMaxRepeats(repeatWithExponentialBackoffDeltaJitter(1, backoff, jitter, ofDays(10), timerExecutor),

@@ -42,14 +42,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class CompletableProcessorTest {
+class CompletableProcessorTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
     private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
     private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
 
     @Test
-    public void testCompleteBeforeListen() {
+    void testCompleteBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
         toSource(processor).subscribe(rule);
@@ -57,7 +57,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorBeforeListen() {
+    void testErrorBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
         toSource(processor).subscribe(rule);
@@ -65,7 +65,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testCompleteAfterListen() {
+    void testCompleteAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -74,7 +74,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorAfterListen() {
+    void testErrorAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -83,7 +83,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testCompleteThenError() {
+    void testCompleteThenError() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
         processor.onError(DELIBERATE_EXCEPTION);
@@ -92,7 +92,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorThenComplete() {
+    void testErrorThenComplete() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
         processor.onComplete();
@@ -101,7 +101,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
+    void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -114,7 +114,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void synchronousCancelStillAllowsForGC() throws InterruptedException {
+    void synchronousCancelStillAllowsForGC() throws InterruptedException {
         CompletableProcessor processor = new CompletableProcessor();
         ReferenceQueue<Subscriber> queue = new ReferenceQueue<>();
         WeakReference<Subscriber> subscriberRef =
@@ -145,12 +145,12 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesError() throws Exception {
+    void multiThreadedAddAlwaysTerminatesError() throws Exception {
         multiThreadedAddAlwaysTerminates(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesComplete() throws Exception {
+    void multiThreadedAddAlwaysTerminatesComplete() throws Exception {
         multiThreadedAddAlwaysTerminates(null);
     }
 

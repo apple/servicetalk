@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
@@ -24,10 +24,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
-public class DefaultHttpSetCookieTest {
+class DefaultHttpSetCookieTest {
 
     @Test
-    public void testEqual() {
+    void testEqual() {
         assertThat(new DefaultHttpSetCookie("foo", "bar"),
                 is(new DefaultHttpSetCookie("foo", "bar")));
         assertThat(new DefaultHttpSetCookie("foo", "bar").hashCode(),
@@ -48,7 +48,7 @@ public class DefaultHttpSetCookieTest {
     }
 
     @Test
-    public void testNotEqual() {
+    void testNotEqual() {
         // Name is case-sensitive:
         assertThat(new DefaultHttpSetCookie("foo", "bar"),
                 is(not(new DefaultHttpSetCookie("Foo", "bar"))));

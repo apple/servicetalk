@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.serialization.api.SerializationException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -33,20 +31,17 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FormUrlEncodedHttpDeserializerTest {
-
-    @Rule
-    public final ExpectedException expectedException = none();
+class FormUrlEncodedHttpDeserializerTest {
 
     @Test
-    public void formParametersAreDeserialized() {
+    void formParametersAreDeserialized() {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
@@ -55,20 +50,19 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
 
-        assertEquals("Unexpected parameter value.",
-                singletonList("and&this%"),
-                deserialized.get("escape&this="));
+        assertEquals(singletonList("and&this%"),
+                deserialized.get("escape&this="), "Unexpected parameter value.");
 
-        assertEquals("Unexpected parameter value count.", 2, deserialized.get("param2").size());
-        assertEquals("Unexpected parameter value.", "bar ", deserialized.get("param2").get(0));
-        assertEquals("Unexpected parameter value.", "foo ", deserialized.get("param2").get(1));
+        assertEquals(2, deserialized.get("param2").size(), "Unexpected parameter value count.");
+        assertEquals("bar ", deserialized.get("param2").get(0), "Unexpected parameter value.");
+        assertEquals("foo ", deserialized.get("param2").get(1), "Unexpected parameter value.");
 
-        assertEquals("Unexpected parameter value count.", 1, deserialized.get("emptyParam").size());
-        assertEquals("Unexpected parameter value.", "", deserialized.get("emptyParam").get(0));
+        assertEquals(1, deserialized.get("emptyParam").size(), "Unexpected parameter value count.");
+        assertEquals("", deserialized.get("emptyParam").get(0), "Unexpected parameter value.");
     }
 
     @Test
-    public void deserializeEmptyBuffer() {
+    void deserializeEmptyBuffer() {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
@@ -76,25 +70,24 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, EMPTY_BUFFER);
 
-        assertEquals("Unexpected parameter count", 0, deserialized.size());
+        assertEquals(0, deserialized.size(), "Unexpected parameter count");
     }
 
     @Test
-    public void invalidContentTypeThrows() {
+    void invalidContentTypeThrows() {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final String invalidContentType = "invalid/content/type";
         headers.set(CONTENT_TYPE, invalidContentType);
 
-        expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(containsString(invalidContentType));
-
-        deserializer.deserialize(headers, EMPTY_BUFFER);
+        SerializationException e = assertThrows(SerializationException.class,
+                                                () -> deserializer.deserialize(headers, EMPTY_BUFFER));
+        assertThat(e.getMessage(), containsString(invalidContentType));
     }
 
     @Test
-    public void invalidContentTypeThrowsAndMasksAdditionalHeadersValues() {
+    void invalidContentTypeThrowsAndMasksAdditionalHeadersValues() {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
@@ -103,27 +96,24 @@ public class FormUrlEncodedHttpDeserializerTest {
         headers.set(CONTENT_TYPE, invalidContentType);
         headers.set(HttpHeaderNames.HOST, someHost);
 
-        expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(containsString(invalidContentType));
-        expectedException.expectMessage(containsString("<filtered>"));
-        expectedException.expectMessage(not(containsString(someHost)));
-
-        deserializer.deserialize(headers, EMPTY_BUFFER);
+        SerializationException e = assertThrows(SerializationException.class,
+                                                () -> deserializer.deserialize(headers, EMPTY_BUFFER));
+        assertThat(e.getMessage(), containsString(invalidContentType));
+        assertThat(e.getMessage(), containsString("<filtered>"));
+        assertThat(e.getMessage(), not(containsString(someHost)));
     }
 
     @Test
-    public void missingContentTypeThrows() {
+    void missingContentTypeThrows() {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-
-        expectedException.expect(instanceOf(SerializationException.class));
-
-        deserializer.deserialize(headers, EMPTY_BUFFER);
+        assertThrows(SerializationException.class,
+                () -> deserializer.deserialize(headers, EMPTY_BUFFER));
     }
 
     @Test
-    public void iterableCloseIsPropagated() throws Exception {
+    void iterableCloseIsPropagated() throws Exception {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
@@ -161,7 +151,7 @@ public class FormUrlEncodedHttpDeserializerTest {
                 .deserialize(headers, formParametersIterable);
         deserialized.iterator().close();
 
-        assertTrue("BlockingIterable was not closed.", isClosed.get());
+        assertTrue(isClosed.get(), "BlockingIterable was not closed.");
     }
 
     private Buffer toBuffer(final String value) {

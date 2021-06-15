@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class AfterNextTest extends AbstractWhenOnNextTest {
+class AfterNextTest extends AbstractWhenOnNextTest {
     @Override
     protected <T> Publisher<T> doNext(Publisher<T> publisher, Consumer<T> consumer) {
         return publisher.afterOnNext(consumer);
@@ -35,7 +35,7 @@ public class AfterNextTest extends AbstractWhenOnNextTest {
 
     @Override
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         toSource(doNext(Publisher.from("Hello"), s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);

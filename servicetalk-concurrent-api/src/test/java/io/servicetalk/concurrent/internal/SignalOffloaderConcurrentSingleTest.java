@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-public class SignalOffloaderConcurrentSingleTest {
+class SignalOffloaderConcurrentSingleTest {
     private OffloaderHolder state;
 
     private enum OffloaderTestParam {
@@ -67,13 +67,13 @@ public class SignalOffloaderConcurrentSingleTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         state.shutdown();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void concurrentSignalsMultipleEntities(OffloaderTestParam offloader) throws Exception {
+    void concurrentSignalsMultipleEntities(OffloaderTestParam offloader) throws Exception {
         init(offloader);
         final int entityCount = 100;
         final OffloaderHolder.SubscriberCancellablePair[] pairs =

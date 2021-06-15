@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -46,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
-public class NoOffloadsStrategyTest {
+class NoOffloadsStrategyTest {
 
     private static final String IO_EXECUTOR_NAME = "io-executor";
     private final HttpServerBuilder serverBuilder;
@@ -56,13 +56,13 @@ public class NoOffloadsStrategyTest {
     @Nullable
     private BlockingHttpClient client;
 
-    public NoOffloadsStrategyTest() {
+    NoOffloadsStrategyTest() {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME, true, NORM_PRIORITY));
         serverBuilder = HttpServers.forAddress(localAddress(0)).ioExecutor(ioExecutor);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeables = newCompositeCloseable();
         if (client != null) {
             client.close();
@@ -74,7 +74,7 @@ public class NoOffloadsStrategyTest {
     }
 
     @Test
-    public void noOffloadsStillUsesAServerExecutor() throws Exception {
+    void noOffloadsStillUsesAServerExecutor() throws Exception {
         serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().build());
         StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
@@ -84,7 +84,7 @@ public class NoOffloadsStrategyTest {
     }
 
     @Test
-    public void turnOffAllExecutors() throws Exception {
+    void turnOffAllExecutors() throws Exception {
         serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
         StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);

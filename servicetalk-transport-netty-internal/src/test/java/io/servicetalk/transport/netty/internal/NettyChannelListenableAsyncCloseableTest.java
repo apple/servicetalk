@@ -19,12 +19,11 @@ import io.servicetalk.concurrent.Cancellable;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -32,10 +31,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NettyChannelListenableAsyncCloseableTest {
+@ExtendWith(MockitoExtension.class)
+class NettyChannelListenableAsyncCloseableTest {
 
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
     @Mock
     Channel channel;
     @Mock
@@ -43,14 +41,14 @@ public class NettyChannelListenableAsyncCloseableTest {
 
     NettyChannelListenableAsyncCloseable fixture;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         fixture = new NettyChannelListenableAsyncCloseable(channel, immediate());
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
     }
 
     @Test
-    public void cancellingOnCloseShouldNotCancelFuture() {
+    void cancellingOnCloseShouldNotCancelFuture() {
         fixture.onClose().afterOnSubscribe(Cancellable::cancel).subscribe();
         verify(channelCloseFuture, never()).cancel(anyBoolean());
     }

@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class SingleToPublisherTest {
+class SingleToPublisherTest {
 
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
@@ -49,7 +49,7 @@ public class SingleToPublisherTest {
     private final TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
     @Test
-    public void testSuccessBeforeRequest() {
+    void testSuccessBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.takeOnNext(), is("Hello"));
@@ -57,14 +57,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testFailureBeforeRequest() {
+    void testFailureBeforeRequest() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testSuccessAfterRequest() {
+    void testSuccessAfterRequest() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
@@ -74,14 +74,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testFailedFuture() {
+    void testFailedFuture() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelBeforeRequest() {
+    void testCancelBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription();
         assertThat(verifier.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -89,7 +89,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testCancelAfterRequest() {
+    void testCancelAfterRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.takeOnNext(), is("Hello"));
@@ -98,14 +98,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testInvalidRequestN() {
+    void testInvalidRequestN() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(-1);
         assertThat(verifier.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void testSuccessAfterInvalidRequestN() {
+    void testSuccessAfterInvalidRequestN() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(-1);
@@ -115,7 +115,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(Single.succeeded("Hello").toPublisher().afterOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
@@ -126,7 +126,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -149,7 +149,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
+    void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -166,7 +166,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
+    void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -181,7 +181,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnError() throws Exception {
+    void publishOnOriginalIsPreservedOnError() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber = new
                 io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -196,7 +196,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+    void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();

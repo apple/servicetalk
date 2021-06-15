@@ -16,24 +16,21 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.ByteBuf;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
@@ -42,15 +39,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 
-public class NettyChannelPublisherRefCountTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class NettyChannelPublisherRefCountTest {
 
     private final TestPublisherSubscriber<Object> subscriber = new TestPublisherSubscriber<>();
     private Publisher<Object> publisher;
     private EmbeddedDuplexChannel channel;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), x -> false,
@@ -59,7 +54,7 @@ public class NettyChannelPublisherRefCountTest {
                 .read();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (!channel.close().await(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Channel close not finished in 1 second.");
@@ -67,7 +62,7 @@ public class NettyChannelPublisherRefCountTest {
     }
 
     @Test
-    public void testRefCountedLeaked() {
+    void testRefCountedLeaked() {
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         ByteBuf buffer = channel.alloc().buffer();

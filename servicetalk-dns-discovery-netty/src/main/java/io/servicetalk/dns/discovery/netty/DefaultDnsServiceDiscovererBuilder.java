@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
         if (maxUdpPayloadSize <= 0) {
-            throw new IllegalArgumentException("maxUdpPayloadSize: " + minTTLSeconds + " (expected > 0)");
+            throw new IllegalArgumentException("maxUdpPayloadSize: " + maxUdpPayloadSize + " (expected > 0)");
         }
         this.maxUdpPayloadSize = maxUdpPayloadSize;
         return this;
@@ -252,8 +252,15 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}
      */
     DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
-        filterFactory = filterFactory == null ? requireNonNull(factory) : filterFactory.append(factory);
+        requireNonNull(factory);
+        filterFactory = appendFilter(filterFactory, factory);
         return this;
+    }
+
+    // Use another method to keep final references and avoid StackOverflowError
+    private static DnsClientFilterFactory appendFilter(@Nullable final DnsClientFilterFactory current,
+                                                       final DnsClientFilterFactory next) {
+        return current == null ? next : dnsClient -> current.create(next.create(dnsClient));
     }
 
     /**

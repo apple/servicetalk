@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(30)
-public final class PublisherGroupByConcurrencyTest {
+final class PublisherGroupByConcurrencyTest {
     private final TestPublisherSubscriber<Integer> groupsSubscriber = new TestPublisherSubscriber<>();
     private ConcurrentLinkedQueue<Integer> allItemsReceivedOnAllGroups;
     private TestPublisher<Integer> source;
@@ -57,7 +57,7 @@ public final class PublisherGroupByConcurrencyTest {
     private AtomicBoolean allWorkDone;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new TestPublisher<>();
         allItemsReceivedOnAllGroups = new ConcurrentLinkedQueue<>();
         executor = newCachedThreadPool();
@@ -65,13 +65,13 @@ public final class PublisherGroupByConcurrencyTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         executor.shutdown();
         allItemsReceivedOnAllGroups.clear();
     }
 
     @Test
-    public void testConcurrentEmissionAndGroupCancel() throws Exception {
+    void testConcurrentEmissionAndGroupCancel() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, true);
         Task cancels = drainGroupSubscribers(subs, GroupSubscriber::cancel).awaitStart();
@@ -81,7 +81,7 @@ public final class PublisherGroupByConcurrencyTest {
     }
 
     @Test
-    public void testConcurrentEmissionAndGroupRequestN() throws Exception {
+    void testConcurrentEmissionAndGroupRequestN() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         Task requestNs = requestAndDrainGroupSubscribers(subs).awaitStart();
@@ -91,7 +91,7 @@ public final class PublisherGroupByConcurrencyTest {
     }
 
     @Test
-    public void testConcurrentGroupsCancel() throws Exception {
+    void testConcurrentGroupsCancel() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         final TestSubscription subscription = new TestSubscription();

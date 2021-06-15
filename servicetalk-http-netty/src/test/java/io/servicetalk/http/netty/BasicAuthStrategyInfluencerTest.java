@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -40,13 +39,11 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,12 +67,9 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class BasicAuthStrategyInfluencerTest {
-    public static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+@ExtendWith(MockitoExtension.class)
+class BasicAuthStrategyInfluencerTest {
+    private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @Nullable
     private OffloadCheckingService service;
@@ -85,11 +79,11 @@ public class BasicAuthStrategyInfluencerTest {
     private ServerContext serverContext;
     @Nullable
     private BlockingHttpClient client;
-    @Mock
+    @Mock(lenient = true)
     private CredentialsVerifier<String> credentialsVerifier;
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeable = newCompositeCloseable();
         if (client != null) {
             client.close();
@@ -104,7 +98,7 @@ public class BasicAuthStrategyInfluencerTest {
     }
 
     @Test
-    public void defaultOffloads() throws Exception {
+    void defaultOffloads() throws Exception {
         BlockingHttpClient client = setup(false);
         assert service != null;
         HttpResponse response = makeRequest(client);
@@ -115,7 +109,7 @@ public class BasicAuthStrategyInfluencerTest {
     }
 
     @Test
-    public void noOffloadsInfluence() throws Exception {
+    void noOffloadsInfluence() throws Exception {
         BlockingHttpClient client = setup(true);
         assert service != null;
         HttpResponse response = makeRequest(client);
@@ -180,17 +174,17 @@ public class BasicAuthStrategyInfluencerTest {
             };
         }
 
-        public void assertHandleOffload(Matcher<String> threadNameMatcher) {
+        void assertHandleOffload(Matcher<String> threadNameMatcher) {
             assertThat("Unexpected thread invoked Service#handle",
                     invoker.get(OffloadPoint.ServiceHandle).getName(), threadNameMatcher);
         }
 
-        public void assertRequestOffload(Matcher<String> threadNameMatcher) {
+        void assertRequestOffload(Matcher<String> threadNameMatcher) {
             assertThat("Unexpected thread invoked request payload",
                     invoker.get(OffloadPoint.RequestPayload).getName(), threadNameMatcher);
         }
 
-        public void assertResponseOffload(Matcher<String> threadNameMatcher) {
+        void assertResponseOffload(Matcher<String> threadNameMatcher) {
             assertThat("Unexpected thread invoked response",
                     invoker.get(OffloadPoint.Response).getName(), threadNameMatcher);
         }

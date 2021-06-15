@@ -22,12 +22,12 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -53,8 +53,11 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -78,24 +81,18 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
@@ -108,6 +105,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -115,6 +113,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -140,17 +139,16 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -159,50 +157,45 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@RunWith(Parameterized.class)
-public class H2PriorKnowledgeFeatureParityTest {
+class H2PriorKnowledgeFeatureParityTest {
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
     private static final AsyncContextMap.Key<String> K1 = AsyncContextMap.Key.newKey("k1");
     private static final AsyncContextMap.Key<String> K2 = AsyncContextMap.Key.newKey("k2");
     private static final AsyncContextMap.Key<String> K3 = AsyncContextMap.Key.newKey("k3");
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final EventLoopGroup serverEventLoopGroup;
-    private final HttpExecutionStrategy clientExecutionStrategy;
-    private final boolean h2PriorKnowledge;
+    private EventLoopGroup serverEventLoopGroup;
+    private HttpExecutionStrategy clientExecutionStrategy;
+    private boolean h2PriorKnowledge;
     @Nullable
     private Channel serverAcceptorChannel;
     @Nullable
     private ServerContext h1ServerContext;
 
-    public H2PriorKnowledgeFeatureParityTest(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
+    private void setUp(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
         serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
         this.h2PriorKnowledge = h2PriorKnowledge;
     }
 
-    @Parameterized.Parameters(name = "client={0}, h2PriorKnowledge={1}")
-    public static Collection<Object[]> clientExecutors() {
-        return asList(new Object[]{NO_OFFLOAD, true},
-                new Object[]{NO_OFFLOAD, false},
-                new Object[]{CACHED, true},
-                new Object[]{CACHED, false});
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> clientExecutors() {
+        return Stream.of(Arguments.of(NO_OFFLOAD, true),
+                         Arguments.of(NO_OFFLOAD, false),
+                         Arguments.of(CACHED, true),
+                         Arguments.of(CACHED, false));
     }
 
-    @After
-    public void teardown() throws Exception {
+    @AfterEach
+    void teardown() throws Exception {
         if (serverAcceptorChannel != null) {
             serverAcceptorChannel.close().syncUninterruptibly();
         }
@@ -216,23 +209,33 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void multiplePostRequests() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void multiplePostRequests(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         multipleRequests(false, 10);
     }
 
-    @Test
-    public void multipleGetRequests() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void multipleGetRequests(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         multipleRequests(true, 10);
     }
 
-    @Test
-    public void queryParamsArePreservedForGet() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void queryParamsArePreservedForGet(HttpTestExecutionStrategy strategy,
+                                       boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         queryParams(GET);
     }
 
-    @Test
-    public void queryParamsArePreservedForPost() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void queryParamsArePreservedForPost(HttpTestExecutionStrategy strategy,
+                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         queryParams(POST);
     }
 
@@ -247,7 +250,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                         succeeded(responseFactory.badRequest()) :
                         super.handle(ctx, request, responseFactory);
             }
-        });
+        }, null);
         String responseBody = "hello world";
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -255,7 +258,7 @@ public class H2PriorKnowledgeFeatureParityTest {
             HttpResponse response = client.request(client.newRequest(method, "/p")
                     .addQueryParameters(qpName, "bar"))
                     .payloadBody(responseBody, textSerializer());
-            assertThat("Unexpexcted response status.", response.status(), equalTo(OK));
+            assertThat("Unexpected response status.", response.status(), equalTo(OK));
         }
     }
 
@@ -274,8 +277,10 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void cookiesRoundTrip() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -298,23 +303,34 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void serverAllowDropTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverAllowDropTrailers(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverAllowDropTrailers(true, false);
     }
 
-    @Test
-    public void serverDoNotAllowDropTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverDoNotAllowDropTrailers(HttpTestExecutionStrategy strategy,
+                                      boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverAllowDropTrailers(false, false);
     }
 
-    @Test
-    public void serverAllowDropTrailersClientTrailersHeader() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverAllowDropTrailersClientTrailersHeader(HttpTestExecutionStrategy strategy,
+                                                     boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverAllowDropTrailers(true, true);
     }
 
-    @Test
-    public void serverDoNotAllowDropTrailersClientTrailersHeader() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverDoNotAllowDropTrailersClientTrailersHeader(HttpTestExecutionStrategy strategy,
+                                                          boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverAllowDropTrailers(false, true);
     }
 
@@ -354,23 +370,35 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientAllowDropTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientAllowDropTrailers(HttpTestExecutionStrategy strategy,
+                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientAllowDropTrailers(true, false);
     }
 
-    @Test
-    public void clientDoNotAllowDropTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientDoNotAllowDropTrailers(HttpTestExecutionStrategy strategy,
+                                      boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientAllowDropTrailers(false, false);
     }
 
-    @Test
-    public void clientAllowDropTrailersServerTrailersHeader() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientAllowDropTrailersServerTrailersHeader(HttpTestExecutionStrategy strategy,
+                                                     boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientAllowDropTrailers(true, true);
     }
 
-    @Test
-    public void clientDoNotAllowDropTrailersServerTrailersHeader() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientDoNotAllowDropTrailersServerTrailersHeader(HttpTestExecutionStrategy strategy,
+                                                          boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientAllowDropTrailers(false, true);
     }
 
@@ -421,17 +449,20 @@ public class H2PriorKnowledgeFeatureParityTest {
                             return response;
                         });
             }
-        });
+        }, null);
     }
 
     private static void assertHeaderValue(HttpHeaders headers, String key, String value) {
         CharSequence v = headers.get(key);
-        assertThat(v, notNullValue());
+        assertNotNull(v);
         assertThat(v.toString(), is(value));
     }
 
-    @Test
-    public void serverHeaderCookieRemovalAndIteration() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverHeaderCookieRemovalAndIteration(HttpTestExecutionStrategy strategy,
+                                               boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
                 request -> headerCookieRemovalAndIteration(request.headers()));
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -442,97 +473,139 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientSendsLargerContentLength() throws Exception {
-        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsLargerContentLength(HttpTestExecutionStrategy strategy,
+                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        assumeTrue(h2PriorKnowledge, "HTTP/1.x will timeout waiting for more payload");
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
-    @Test
-    public void clientSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsLargerContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        assumeTrue(h2PriorKnowledge, "HTTP/1.x will timeout waiting for more payload");
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
-    @Test
-    public void clientSendsSmallerContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsSmallerContentLength(HttpTestExecutionStrategy strategy,
+                                         boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsSmallerContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsSmallerContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsMultipleContentLengthHeaders() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMultipleContentLengthHeaders(HttpTestExecutionStrategy strategy,
+                                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength))
                         .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsMultipleContentLengthHeadersTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMultipleContentLengthHeadersTrailers(HttpTestExecutionStrategy strategy,
+                                                         boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength))
                         .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsMultipleContentLengthValues() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMultipleContentLengthValues(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsMultipleContentLengthValuesTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMultipleContentLengthValuesTrailers(HttpTestExecutionStrategy strategy,
+                                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
     }
 
-    @Test
-    public void clientSendsSignedContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsSignedContentLength(HttpTestExecutionStrategy strategy,
+                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "+" + contentLength));
     }
 
-    @Test
-    public void clientSendsSignedContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsSignedContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "+" + contentLength));
     }
 
-    @Test
-    public void clientSendsNegativeContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsNegativeContentLength(HttpTestExecutionStrategy strategy,
+                                          boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "-" + contentLength));
     }
 
-    @Test
-    public void clientSendsNegativeContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsNegativeContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                  boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "-" + contentLength));
     }
 
-    @Test
-    public void clientSendsMalformedContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMalformedContentLength(HttpTestExecutionStrategy strategy,
+                                           boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
     }
 
-    @Test
-    public void clientSendsMalformedContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientSendsMalformedContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                   boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         clientSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
     }
 
     private void clientSendsInvalidContentLength(boolean addTrailers,
                                                  BiConsumer<HttpHeaders, Integer> headersModifier) throws Exception {
-        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
+        assumeFalse(!h2PriorKnowledge && addTrailers, "HTTP/1.1 does not support Content-Length with trailers");
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -567,97 +640,139 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void serverSendsLargerContentLength() throws Exception {
-        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsLargerContentLength(HttpTestExecutionStrategy strategy,
+                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        assumeTrue(h2PriorKnowledge, "HTTP/1.x will timeout waiting for more payload");
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
-    @Test
-    public void serverSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsLargerContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        assumeTrue(h2PriorKnowledge, "HTTP/1.x will timeout waiting for more payload");
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
-    @Test
-    public void serverSendsSmallerContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsSmallerContentLength(HttpTestExecutionStrategy strategy,
+                                         boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsSmallerContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsSmallerContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsMultipleContentLengthHeaders() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMultipleContentLengthHeaders(HttpTestExecutionStrategy strategy,
+                                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength))
                         .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsMultipleContentLengthHeadersTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMultipleContentLengthHeadersTrailers(HttpTestExecutionStrategy strategy,
+                                                         boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, valueOf(contentLength))
                         .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsMultipleContentLengthValues() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMultipleContentLengthValues(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsMultipleContentLengthValuesTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMultipleContentLengthValuesTrailers(HttpTestExecutionStrategy strategy,
+                                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
     }
 
-    @Test
-    public void serverSendsSignedContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsSignedContentLength(HttpTestExecutionStrategy strategy,
+                                        boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "+" + contentLength));
     }
 
-    @Test
-    public void serverSendsSignedContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsSignedContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "+" + contentLength));
     }
 
-    @Test
-    public void serverSendsNegativeContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsNegativeContentLength(HttpTestExecutionStrategy strategy,
+                                          boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "-" + contentLength));
     }
 
-    @Test
-    public void serverSendsNegativeContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsNegativeContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                  boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, "-" + contentLength));
     }
 
-    @Test
-    public void serverSendsMalformedContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMalformedContentLength(HttpTestExecutionStrategy strategy,
+                                           boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(false, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
     }
 
-    @Test
-    public void serverSendsMalformedContentLengthTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverSendsMalformedContentLengthTrailers(HttpTestExecutionStrategy strategy,
+                                                   boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         serverSendsInvalidContentLength(true, (headers, contentLength) ->
                 headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
     }
 
     private void serverSendsInvalidContentLength(boolean addTrailers,
                                                  BiConsumer<HttpHeaders, Integer> headersModifier) throws Exception {
-        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
+        assumeFalse(!h2PriorKnowledge && addTrailers, "HTTP/1.1 does not support Content-Length with trailers");
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -673,7 +788,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                             return aggResp.toStreamingResponse();
                         }));
             }
-        });
+        }, null);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
@@ -697,8 +812,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientHeaderCookieRemovalAndIteration() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientHeaderCookieRemovalAndIteration(HttpTestExecutionStrategy strategy,
+                                               boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -711,8 +829,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     private void headerCookieRemovalAndIteration(HttpHeaders headers) {
         // Single COOKIE header entry with duplicate cookie names.
         headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
-        assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
-        assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
+        assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
+        assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                 new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
@@ -736,11 +854,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         // Netty's value iterator does not preserve insertion order. This is a limitation of Netty's header
         // data structure and will not be fixed for 4.1.
         if (h2PriorKnowledge) {
-            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value3"));
+            assertEquals(new DefaultHttpCookiePair("name1", "value3"), headers.getCookie("name1"));
         } else {
-            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
+            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
         }
-        assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
+        assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                 new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
@@ -761,13 +879,13 @@ public class H2PriorKnowledgeFeatureParityTest {
         headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
         headers.add(COOKIE, "name2=value4; name1=value5; name3=value6");
         if (h2PriorKnowledge) {
-            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value5"));
-            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value4"));
-            assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
+            assertEquals(new DefaultHttpCookiePair("name1", "value5"), headers.getCookie("name1"));
+            assertEquals(new DefaultHttpCookiePair("name2", "value4"), headers.getCookie("name2"));
+            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
         } else {
-            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
-            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
-            assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
+            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
+            assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
+            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
         }
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
@@ -800,7 +918,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         // Test partial name matches don't inadvertently match.
         headers.add(COOKIE, "foo=bar");
 
-        assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+        assertEquals(new DefaultHttpCookiePair("foo", "bar"), headers.getCookie("foo"));
         assertNull(headers.getCookie("baz"));
         assertNull(headers.getCookie("foo="));
         assertNull(headers.getCookie("fo"));
@@ -809,7 +927,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertFalse(headers.removeCookies("foo="));
         assertFalse(headers.removeCookies("fo"));
         assertFalse(headers.removeCookies("f"));
-        assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+        assertEquals(new DefaultHttpCookiePair("foo", "bar"), headers.getCookie("foo"));
 
         assertEmptyIterator(headers.getCookiesIterator("foo="));
         assertEmptyIterator(headers.getCookiesIterator("fo"));
@@ -821,8 +939,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertEmptyIterator(headers.valuesIterator(COOKIE));
     }
 
-    @Test
-    public void serverHeaderSetCookieRemovalAndIteration() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverHeaderSetCookieRemovalAndIteration(HttpTestExecutionStrategy strategy,
+                                                  boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
                 request -> headerSetCookieRemovalAndIteration(request.headers()));
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -833,8 +954,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientHeaderSetCookieRemovalAndIteration() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientHeaderSetCookieRemovalAndIteration(HttpTestExecutionStrategy strategy,
+                                                  boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -886,8 +1010,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertEquals("Wed, 30 Aug 2019 00:00:00 GMT", setCookie.expires());
     }
 
-    @Test
-    public void clientReserveConnectionMultipleRequests() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientReserveConnectionMultipleRequests(HttpTestExecutionStrategy strategy,
+                                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         String responseBody1 = "1.hello world.1";
         String responseBody2 = "2.hello world.2";
         InetSocketAddress serverAddress = bindHttpEchoServer();
@@ -909,8 +1036,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void serverWriteTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverWriteTrailers(HttpTestExecutionStrategy strategy,
+                             boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         String payloadBody = "foo";
         String myTrailerName = "mytrailer";
         h1ServerContext = HttpServers.forAddress(localAddress(0))
@@ -925,7 +1055,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                                 .flatMap(contentSize ->
                                         succeeded(responseFactory.ok()
                                                 .transform(new ContentSizeTrailersTransformer(myTrailerName,
-                                                        contentSize)))))
+                                                                                              contentSize)))))
                 .toFuture().get();
 
         InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
@@ -941,8 +1071,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientWriteTrailers() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientWriteTrailers(HttpTestExecutionStrategy strategy,
+                             boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -960,8 +1093,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void clientFilterAsyncContext() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientFilterAsyncContext(HttpTestExecutionStrategy strategy,
+                                         boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -981,12 +1117,15 @@ public class H2PriorKnowledgeFeatureParityTest {
             HttpResponse response = client.request(client.post("/0")
                     .payloadBody(responseBody, textSerializer()));
             assertEquals(responseBody, response.payloadBody(textDeserializer()));
-            assertEmpty(errorQueue);
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
-    @Test
-    public void clientConnectionFilterAsyncContext() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientConnectionFilterAsyncContext(HttpTestExecutionStrategy strategy,
+                                            boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -1003,14 +1142,18 @@ public class H2PriorKnowledgeFeatureParityTest {
 
             final String responseBody = "foo";
             HttpResponse response = client.request(client.post("/0").payloadBody(responseBody, textSerializer()));
-            assertThat(response.payloadBody(textDeserializer()), equalTo(responseBody));
-            assertThat(errorQueue, empty());
+            assertEquals(responseBody, response.payloadBody(textDeserializer()));
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
-    @Test
-    public void serverGracefulClose() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverGracefulClose(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         CountDownLatch serverReceivedRequestLatch = new CountDownLatch(1);
+        CountDownLatch connectionOnClosingLatch = new CountDownLatch(1);
+
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -1019,7 +1162,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                 serverReceivedRequestLatch.countDown();
                 return delegate().handle(ctx, request, responseFactory);
             }
-        });
+        }, connectionOnClosingLatch);
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming();
@@ -1039,19 +1182,17 @@ public class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.onClose().subscribe(onServerCloseLatch::countDown);
         h1ServerContext.closeAsyncGracefully().subscribe();
 
+        assertTrue(connectionOnClosingLatch.await(300, MILLISECONDS));
+
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
-                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            try {
-                client2.request(client2.get("/"));
-                fail("server has initiated graceful close, subsequent connections/requests are expected to fail.");
-            } catch (Throwable cause) {
-                // expected
-            }
+            .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+            .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            assertThrows(Throwable.class, () -> client2.request(client2.get("/")),
+                         "server has initiated graceful close, subsequent connections/requests are expected to fail.");
         }
 
         // We expect this to timeout, because we have not completed the outstanding request.
-        assertFalse(onServerCloseLatch.await(300, MILLISECONDS));
+        assertFalse(onServerCloseLatch.await(30, MILLISECONDS));
 
         requestBody.onComplete();
 
@@ -1060,8 +1201,10 @@ public class H2PriorKnowledgeFeatureParityTest {
         onServerCloseLatch.await();
     }
 
-    @Test
-    public void clientGracefulClose() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientGracefulClose(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -1087,8 +1230,10 @@ public class H2PriorKnowledgeFeatureParityTest {
         onCloseLatch.await();
     }
 
-    @Test
-    public void fullDuplexMode() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void fullDuplexMode(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -1132,9 +1277,12 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertEquals(request2ToWrite, next.toString(UTF_8));
     }
 
-    @Test
-    public void clientRespectsSettingsFrame() throws Exception {
-        assumeTrue("Only HTTP/2 supports SETTINGS frames", h2PriorKnowledge);
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void clientRespectsSettingsFrame(HttpTestExecutionStrategy strategy,
+                                     boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        assumeTrue(h2PriorKnowledge, "Only HTTP/2 supports SETTINGS frames");
 
         int expectedMaxConcurrent = 1;
         BlockingQueue<FilterableStreamingHttpConnection> connectionQueue = new LinkedBlockingQueue<>();
@@ -1208,8 +1356,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void serverThrowsFromHandler() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void serverThrowsFromHandler(HttpTestExecutionStrategy strategy,
+                                 boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -1217,7 +1368,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 throw DELIBERATE_EXCEPTION;
             }
-        });
+        }, null);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
@@ -1227,8 +1378,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    public void trailersWithContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void trailersWithContentLength(HttpTestExecutionStrategy strategy,
+                                   boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         final String expectedPayload = "Hello World!";
         final String expectedPayloadLength = valueOf(expectedPayload.length());
         final String expectedTrailer = "foo";
@@ -1285,15 +1439,20 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertThat(trailer.toString(), is(expectedTrailerValue));
     }
 
-    @Ignore("100 continue is not yet supported")
-    @Test
-    public void continue100() throws Exception {
+    @Disabled("100 continue is not yet supported")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void continue100(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         continue100(false);
     }
 
-    @Ignore("100 continue is not yet supported")
-    @Test
-    public void continue100FailExpectation() throws Exception {
+    @Disabled("100 continue is not yet supported")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void continue100FailExpectation(HttpTestExecutionStrategy strategy,
+                                    boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
         continue100(true);
     }
 
@@ -1349,15 +1508,27 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private InetSocketAddress bindHttpEchoServer() throws Exception {
-        return bindHttpEchoServer(null);
+        return bindHttpEchoServer(null, null);
     }
 
-    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory)
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
+                                                 @Nullable CountDownLatch connectionOnClosingLatch)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default());
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
+        }
+
+        if (connectionOnClosingLatch != null) {
+            serverBuilder.appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
+                @Override
+                public Completable accept(final ConnectionContext context) {
+                    ((NettyConnectionContext) context).onClosing()
+                            .whenFinally(connectionOnClosingLatch::countDown).subscribe();
+                    return completed();
+                }
+            });
         }
         h1ServerContext = serverBuilder.listenStreaming(
                 (ctx, request, responseFactory) -> {
@@ -1498,23 +1669,6 @@ public class H2PriorKnowledgeFeatureParityTest {
                 });
             });
         });
-    }
-
-    private static void assertEmpty(Queue<Throwable> errorQueue) {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (PrintStream ps = new PrintStream(baos, true, UTF_8.name())) {
-            Throwable t;
-            while ((t = errorQueue.poll()) != null) {
-                t.printStackTrace(ps);
-                ps.println(' ');
-            }
-            String data = new String(baos.toByteArray(), UTF_8);
-            if (!data.isEmpty()) {
-                throw new AssertionError(data);
-            }
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static <T> void assertAsyncContext(AsyncContextMap.Key<T> key, T expectedValue,

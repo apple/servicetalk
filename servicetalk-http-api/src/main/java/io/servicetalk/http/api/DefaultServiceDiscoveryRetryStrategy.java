@@ -68,12 +68,12 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         return defer(() -> {
             EventsCache<ResolvedAddress, E> eventsCache = new EventsCache<>(flipAvailability);
             if (retainAddressesTillSuccess) {
-                return sdEvents.map(eventsCache::consume)
+                return sdEvents.map(eventsCache::consumeAndFilter)
                         .beforeOnError(__ -> eventsCache.errorSeen())
                         .retryWhen(retryStrategy);
             }
 
-            return sdEvents.map(eventsCache::consume)
+            return sdEvents.map(eventsCache::consumeAndFilter)
                     .onErrorResume(cause -> {
                         final Collection<E> events = eventsCache.errorSeen();
                         return events == null ? failed(cause) : Publisher.from(events.stream()
@@ -226,13 +226,13 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         Collection<E> errorSeen() {
             if (retainedAddresses == NONE_RETAINED) {
                 retainedAddresses = new HashMap<>(activeAddresses);
+                activeAddresses.clear();
+                return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
             }
-            activeAddresses.clear();
-            return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
+            return null;    // We already returned retainedAddresses for previous error, return null to avoid duplicates
         }
 
-        @Nullable
-        Collection<E> consume(final Collection<E> events) {
+        Collection<E> consumeAndFilter(final Collection<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
                 for (E e : events) {
                     if (e.isAvailable()) {
@@ -246,27 +246,25 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
 
             // we have seen an error, replace cache with new addresses and deactivate the ones which are not present
             // in the new list.
+            List<E> toReturn = new ArrayList<>(activeAddresses.size() + retainedAddresses.size());
             for (E event : events) {
                 final R address = event.address();
                 if (event.isAvailable()) {
                     activeAddresses.put(address, event);
-                } else {
-                    activeAddresses.remove(address);
+                    if (retainedAddresses.remove(address) == null) {
+                        toReturn.add(event);
+                    }
+                } else if (activeAddresses.remove(address) != null || retainedAddresses.remove(address) != null) {
+                    toReturn.add(event);
                 }
             }
 
-            List<E> toReturn = new ArrayList<>(activeAddresses.values());
-            for (R address : activeAddresses.keySet()) {
-                retainedAddresses.remove(address);
+            for (E event : retainedAddresses.values()) {
+                toReturn.add(flipAvailability.apply(event));
             }
 
-            if (!retainedAddresses.isEmpty()) {
-                for (E evt : retainedAddresses.values()) {
-                    toReturn.add(flipAvailability.apply(evt));
-                }
-            }
             retainedAddresses = noneRetained();
-            return toReturn.isEmpty() ? null : toReturn;
+            return toReturn;
         }
 
         @SuppressWarnings("unchecked")

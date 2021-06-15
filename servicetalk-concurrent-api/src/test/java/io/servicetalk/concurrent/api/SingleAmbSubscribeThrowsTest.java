@@ -31,7 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class SingleAmbSubscribeThrowsTest {
+class SingleAmbSubscribeThrowsTest {
 
     private volatile boolean throwFromFirst;
     private volatile boolean throwFromSecond;
@@ -80,7 +80,7 @@ public class SingleAmbSubscribeThrowsTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void firstSubscribeThrows(final AmbParam ambParam) {
+    void firstSubscribeThrows(final AmbParam ambParam) {
         init(ambParam);
         throwFromFirst = true;
         subscribeToAmbAndVerifyFail();
@@ -92,7 +92,7 @@ public class SingleAmbSubscribeThrowsTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void secondSubscribeThrows(final AmbParam ambParam) {
+    void secondSubscribeThrows(final AmbParam ambParam) {
         init(ambParam);
         throwFromSecond = true;
         subscribeToAmbAndVerifyFail();

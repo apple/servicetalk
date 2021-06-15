@@ -203,18 +203,20 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void channelInactive(ChannelHandlerContext ctx) {
-            if (hasSubscriber()) {
-                tryFailSubscriber(StacklessClosedChannelException.newInstance(
-                        H2ParentConnectionContext.class, "channelInactive(...)"));
-            }
-            parentContext.keepAliveManager.channelClosed();
+            doChannelClosed("channelInactive(...)");
         }
 
         @Override
         public final void handlerRemoved(ChannelHandlerContext ctx) {
+            doChannelClosed("handlerRemoved(...)");
+        }
+
+        private void doChannelClosed(final String method) {
+            // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+            parentContext.onClosing.onComplete();
+
             if (hasSubscriber()) {
-                tryFailSubscriber(StacklessClosedChannelException.newInstance(
-                        H2ParentConnectionContext.class, "handlerRemoved(...)"));
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
             }
             parentContext.keepAliveManager.channelClosed();
         }
@@ -251,7 +253,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             } else if (msg instanceof Http2GoAwayFrame) {
                 Http2GoAwayFrame goAwayFrame = (Http2GoAwayFrame) msg;
                 goAwayFrame.release();
-                parentContext.onClosing.onComplete();
 
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are

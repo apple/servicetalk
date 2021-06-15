@@ -31,7 +31,7 @@ public abstract class AbstractWhenOnErrorTest {
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
-    public void testError() {
+    void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
         toSource(doError(Completable.failed(DELIBERATE_EXCEPTION), onError)).subscribe(listener);
@@ -39,7 +39,7 @@ public abstract class AbstractWhenOnErrorTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    abstract void testCallbackThrowsError();
 
     protected abstract Completable doError(Completable completable, Consumer<Throwable> consumer);
 }

@@ -32,20 +32,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 
-public class CompletableToSingleTest {
+class CompletableToSingleTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private TestSingleSubscriber<Void> subscriber = new TestSingleSubscriber<>();
 
     @Test
-    public void noTerminalSucceeds() {
+    void noTerminalSucceeds() {
         toSource(Completable.completed().toSingle()).subscribe(subscriber);
         assertThat(subscriber.awaitOnSuccess(), nullValue());
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws InterruptedException {
+    void subscribeOnOriginalIsPreserved() throws InterruptedException {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();

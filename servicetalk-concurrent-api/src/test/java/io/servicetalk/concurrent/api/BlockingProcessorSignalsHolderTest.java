@@ -29,17 +29,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class BlockingProcessorSignalsHolderTest {
+class BlockingProcessorSignalsHolderTest {
     private final DefaultBlockingProcessorSignalsHolder<Integer> buffer;
     @SuppressWarnings("unchecked")
     private final ProcessorSignalsConsumer<Integer> consumer = mock(ProcessorSignalsConsumer.class);
 
-    public BlockingProcessorSignalsHolderTest() {
+    BlockingProcessorSignalsHolderTest() {
         buffer = new DefaultBlockingProcessorSignalsHolder<>(1);
     }
 
     @Test
-    public void consumeItem() throws Exception {
+    void consumeItem() throws Exception {
         buffer.add(1);
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeItem(1);
@@ -47,14 +47,14 @@ public class BlockingProcessorSignalsHolderTest {
     }
 
     @Test
-    public void consumeEmpty() {
+    void consumeEmpty() {
         assertThrows(TimeoutException.class,
                 () -> buffer.consume(consumer, 1, MILLISECONDS), "Unexpected consume when empty.");
         verifyZeroInteractions(consumer);
     }
 
     @Test
-    public void consumeTerminal() throws Exception {
+    void consumeTerminal() throws Exception {
         buffer.terminate();
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeTerminal();
@@ -62,7 +62,7 @@ public class BlockingProcessorSignalsHolderTest {
     }
 
     @Test
-    public void consumeTerminalError() throws Exception {
+    void consumeTerminalError() throws Exception {
         buffer.terminate(DELIBERATE_EXCEPTION);
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeTerminal(DELIBERATE_EXCEPTION);

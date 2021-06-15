@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-public class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
+class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
 
     @Override
     protected <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable) {

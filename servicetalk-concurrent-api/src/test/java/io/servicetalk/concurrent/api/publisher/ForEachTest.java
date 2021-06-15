@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public final class ForEachTest {
+final class ForEachTest {
 
     private TestPublisher<Integer> source;
     private Consumer<Integer> forEach;
@@ -39,7 +39,7 @@ public final class ForEachTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
         forEach = (Consumer<Integer>) mock(Consumer.class);
         cancellable = source.forEach(forEach);
@@ -47,7 +47,7 @@ public final class ForEachTest {
     }
 
     @Test
-    public void testRequestedMax() {
+    void testRequestedMax() {
         source.onNext(1, 2, 3); // Not requested explicitly
         verify(forEach).accept(1);
         verify(forEach).accept(2);
@@ -56,7 +56,7 @@ public final class ForEachTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         assertFalse(subscription.isCancelled());
         cancellable.cancel();
         assertTrue(subscription.isCancelled());

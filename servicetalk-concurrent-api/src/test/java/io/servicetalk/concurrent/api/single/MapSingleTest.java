@@ -26,11 +26,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class MapSingleTest {
+class MapSingleTest {
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);
@@ -38,7 +38,7 @@ public class MapSingleTest {
     }
 
     @Test
-    public void nullInTerminalSucceeds() {
+    void nullInTerminalSucceeds() {
         SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> null)).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is(nullValue()));
     }

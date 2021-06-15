@@ -32,7 +32,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.netty.Http2Exception.H2StreamResetException;
 import io.servicetalk.transport.api.TransportObserver;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -59,9 +59,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
+class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
 
     private static final String PARAM = "param";
 
@@ -73,8 +73,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
 
     private final AtomicInteger newConnectionsCounter = new AtomicInteger();
 
-    public H2ResponseCancelTest() {
-        super(CACHED, CACHED_SERVER);
+    H2ResponseCancelTest() {
         protocol(HTTP_2.config);
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
             @Override
@@ -109,10 +108,11 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                 });
             }
         });
+        setUp(CACHED, CACHED_SERVER);
     }
 
     @Test
-    public void testClient() throws Exception {
+    void testClient() throws Exception {
         // Release existing connection to avoid creating unexpected number of new h2 connections because of randomness
         // in RRLB (it may randomly pick the reserved connection until all attempts are taken).
         ((ReservedStreamingHttpConnection) streamingHttpConnection()).releaseAsync().toFuture().get();
@@ -125,7 +125,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void testConnection() throws Exception {
+    void testConnection() throws Exception {
         StreamingHttpConnection connection = streamingHttpConnection();
         AtomicBoolean connectionClosed = new AtomicBoolean();
         connection.onClose().whenFinally(() -> connectionClosed.set(true)).subscribe();
@@ -135,7 +135,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void testServerClosesStreamNotConnection() throws Exception {
+    void testServerClosesStreamNotConnection() throws Exception {
         StreamingHttpConnection connection = streamingHttpConnection();
         AtomicBoolean connectionClosed = new AtomicBoolean();
         connection.onClose().whenFinally(() -> connectionClosed.set(true)).subscribe();

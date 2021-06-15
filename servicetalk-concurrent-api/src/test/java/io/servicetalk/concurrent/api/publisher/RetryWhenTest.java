@@ -54,7 +54,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryWhenTest {
+class RetryWhenTest {
 
     private TestPublisher<Integer> source = new TestPublisher<>();
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -64,7 +64,7 @@ public class RetryWhenTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    public void setUp() {
+    void setUp() {
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
         when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
@@ -75,14 +75,14 @@ public class RetryWhenTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void publishOnWithRetry() {
+    void publishOnWithRetry() {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
@@ -101,7 +101,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
@@ -111,7 +111,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -124,7 +124,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testRequestAcrossRepeat() {
+    void testRequestAcrossRepeat() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -138,7 +138,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testTwoError() {
+    void testTwoError() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -157,7 +157,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -173,7 +173,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelPostErrorButBeforeRetryStart() {
+    void testCancelPostErrorButBeforeRetryStart() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -185,7 +185,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelBeforeRetry() {
+    void testCancelBeforeRetry() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
@@ -197,7 +197,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         subscriber = new TestPublisherSubscriber<>();
         source = new TestPublisher<>();
@@ -212,7 +212,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
         toSource(source.retryWhen((times1, cause1) -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);

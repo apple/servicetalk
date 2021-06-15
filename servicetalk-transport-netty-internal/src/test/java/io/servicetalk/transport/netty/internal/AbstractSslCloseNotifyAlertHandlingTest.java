@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
@@ -26,10 +25,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -48,9 +45,6 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
 
     protected static final String BEGIN = "MSG_BEGIN";
     protected static final String END = "MSG_END";
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     protected final EmbeddedDuplexChannel channel;
     protected final DefaultNettyConnection<String, String> conn;
@@ -86,7 +80,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                 .toFuture().get();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         try {
             // Make sure the connection and channel are closed after each test:
@@ -106,7 +100,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
     }
 
     @Test
-    public void neverUsedIdleConnection() {
+    void neverUsedIdleConnection() {
         closeNotifyAndVerifyClosing();
     }
 

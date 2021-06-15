@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -136,7 +136,7 @@ public class DelayedSubscriptionTest {
 
     private void doConcurrentRequestAndSwap() throws InterruptedException, ExecutionException {
         DelayedSubscription ds = new DelayedSubscription();
-        Subscription s = new CountingSubscription();
+        CountingSubscription s = new CountingSubscription();
         CyclicBarrier barrier = new CyclicBarrier(2);
         Future<Void> requester = executor.submit(() -> {
             for (int i = 0; i < 10_000; i++) {
@@ -154,7 +154,7 @@ public class DelayedSubscriptionTest {
         });
         swapper.get();
         requester.get();
-        assertThat("Unexpected items requested.", ((CountingSubscription) s).requested(), is(10_000));
+        assertThat("Unexpected items requested.", s.requested(), is(10_000));
     }
 
     private static class CountingSubscription implements Subscription {

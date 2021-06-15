@@ -35,7 +35,7 @@ public abstract class AbstractWhenCancelTest {
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void testCancelAfterSuccess() {
+    void testCancelAfterSuccess() {
         Runnable onCancel = Mockito.mock(Runnable.class);
         toSource(doCancel(Single.succeeded("Hello"), onCancel)).subscribe(listener);
         listener.awaitSubscription().cancel();
@@ -43,7 +43,7 @@ public abstract class AbstractWhenCancelTest {
     }
 
     @Test
-    public void testCancelNoEmissions() {
+    void testCancelNoEmissions() {
         Runnable onCancel = Mockito.mock(Runnable.class);
         toSource(doCancel(Single.<String>never(), onCancel)).subscribe(listener);
         listener.awaitSubscription().cancel();
@@ -51,7 +51,7 @@ public abstract class AbstractWhenCancelTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
 
         Exception e = assertThrows(DeliberateException.class, () -> {
