@@ -40,6 +40,7 @@ import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,7 +235,8 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 requestURI,
                 req.method().name(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
-                new MapPropertiesDelegate(), null);
+                new MapPropertiesDelegate(),
+                new ResourceConfig());
 
         req.headers().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
@@ -283,7 +285,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         private CloseSignalHandoffAbleContainerRequest(final URI baseUri, final URI requestUri, final String httpMethod,
                                                       final SecurityContext securityContext,
                                                       final PropertiesDelegate propertiesDelegate,
-                                                      @Nullable final Configuration configuration) {
+                                                      final Configuration configuration) {
             super(baseUri, requestUri, httpMethod, securityContext, propertiesDelegate, configuration);
         }
 
