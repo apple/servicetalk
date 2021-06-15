@@ -25,8 +25,8 @@ final class WhenSubscriptionPublisher<T> extends AbstractSynchronousPublisherOpe
     private final boolean before;
 
     WhenSubscriptionPublisher(Publisher<T> original, Supplier<? extends Subscription> subscriptionSupplier,
-                              boolean before, Executor executor) {
-        super(original, executor);
+                              boolean before) {
+        super(original);
         this.subscriptionSupplier = requireNonNull(subscriptionSupplier);
         this.before = before;
     }

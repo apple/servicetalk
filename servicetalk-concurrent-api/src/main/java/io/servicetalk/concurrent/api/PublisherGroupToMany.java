@@ -28,25 +28,22 @@ import static java.util.Objects.requireNonNull;
  */
 final class PublisherGroupToMany<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<? super T, ? extends Iterator<? extends Key>> keySelector;
-    private final Executor executor;
 
     PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                         int groupQueueSize, Executor executor) {
-        super(original, groupQueueSize, executor);
+                         int groupQueueSize) {
+        super(original, groupQueueSize);
         this.keySelector = requireNonNull(keySelector);
-        this.executor = executor;
     }
 
     PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                         int groupQueueSize, int expectedGroupCountHint, Executor executor) {
-        super(original, groupQueueSize, expectedGroupCountHint, executor);
+                         int groupQueueSize, int expectedGroupCountHint) {
+        super(original, groupQueueSize, expectedGroupCountHint);
         this.keySelector = requireNonNull(keySelector);
-        this.executor = executor;
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super GroupedPublisher<Key, T>> subscriber) {
-        return new SourceSubscriber<>(executor, this, subscriber);
+        return new SourceSubscriber<>(executor(), this, subscriber);
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {

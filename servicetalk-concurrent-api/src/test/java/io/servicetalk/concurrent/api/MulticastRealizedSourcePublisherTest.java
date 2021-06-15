@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -176,7 +175,6 @@ class MulticastRealizedSourcePublisherTest {
         private final TerminalNotification terminalNotification;
 
         TerminateFromOnSubscribePublisher(TerminalNotification terminalNotification) {
-            super(immediate());
             this.terminalNotification = terminalNotification;
         }
 

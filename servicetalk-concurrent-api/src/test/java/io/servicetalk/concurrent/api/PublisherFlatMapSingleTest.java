@@ -39,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -514,7 +513,7 @@ class PublisherFlatMapSingleTest {
         }
         PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
                 value -> succeeded(Integer.toString(value)),
-                false, 1, immediate());
+                false, 1);
         toSource(pub).subscribe(new Subscriber<String>() {
             private Subscription subscription;
 

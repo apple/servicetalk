@@ -30,8 +30,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
     private final Key key;
 
-    GroupedPublisher(Executor executor, Key key) {
-        super(executor);
+    GroupedPublisher(Key key) {
         this.key = requireNonNull(key);
     }
 

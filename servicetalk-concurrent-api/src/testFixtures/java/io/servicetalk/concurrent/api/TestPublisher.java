@@ -49,6 +49,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<TestPublisher, Subscriber> subscriberUpdater =
             AtomicReferenceFieldUpdater.newUpdater(TestPublisher.class, Subscriber.class, "subscriber");
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;

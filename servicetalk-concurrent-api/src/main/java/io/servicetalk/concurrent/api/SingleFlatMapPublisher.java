@@ -32,9 +32,13 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
     private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
 
     SingleFlatMapPublisher(Single<T> original, Function<? super T, ? extends Publisher<? extends R>> nextFactory) {
-        super(original.executor());
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

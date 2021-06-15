@@ -25,8 +25,8 @@ import static java.util.Objects.requireNonNull;
 final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, T> {
     private final Publisher<? extends T> next;
 
-    ConcatPublisher(Publisher<T> original, Publisher<? extends T> next, Executor executor) {
-        super(original, executor);
+    ConcatPublisher(Publisher<T> original, Publisher<? extends T> next) {
+        super(original);
         this.next = requireNonNull(next);
     }
 

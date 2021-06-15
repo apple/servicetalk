@@ -64,18 +64,18 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
     private final int maxDelayedErrors;
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           boolean delayError, Executor executor) {
-        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
+                           boolean delayError) {
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY);
     }
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           boolean delayError, int maxConcurrency, Executor executor) {
-        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+                           boolean delayError, int maxConcurrency) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency);
     }
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           int maxDelayedErrors, int maxConcurrency, Executor executor) {
-        super(original, executor);
+                           int maxDelayedErrors, int maxConcurrency) {
+        super(original);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected > 0)");
         }

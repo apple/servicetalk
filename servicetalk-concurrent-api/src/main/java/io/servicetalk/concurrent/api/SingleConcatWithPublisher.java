@@ -31,9 +31,13 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
     private final Publisher<? extends T> next;
 
     SingleConcatWithPublisher(final Single<? extends T> original, Publisher<? extends T> next, Executor executor) {
-        super(executor);
         this.original = original;
         this.next = next;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

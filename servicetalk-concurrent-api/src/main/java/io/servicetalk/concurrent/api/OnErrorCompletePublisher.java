@@ -23,9 +23,8 @@ import static java.util.Objects.requireNonNull;
 final class OnErrorCompletePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private final Predicate<? super Throwable> predicate;
 
-    OnErrorCompletePublisher(final Publisher<T> original, Predicate<? super Throwable> predicate,
-                             final Executor executor) {
-        super(original, executor);
+    OnErrorCompletePublisher(final Publisher<T> original, Predicate<? super Throwable> predicate) {
+        super(original);
         this.predicate = requireNonNull(predicate);
     }
 

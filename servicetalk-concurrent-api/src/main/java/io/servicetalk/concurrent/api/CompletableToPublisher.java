@@ -34,9 +34,13 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Completable original;
 
-    CompletableToPublisher(Completable original, Executor executor) {
-        super(executor);
+    CompletableToPublisher(Completable original) {
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

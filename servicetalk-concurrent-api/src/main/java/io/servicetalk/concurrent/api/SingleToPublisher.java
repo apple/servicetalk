@@ -36,8 +36,12 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Single<T> original;
 
     SingleToPublisher(Single<T> original) {
-        super(original.executor());
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

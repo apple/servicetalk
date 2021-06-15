@@ -37,8 +37,8 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOperator<T, T> {
     private final Single<? extends T> next;
 
-    PublisherConcatWithSingle(Publisher<T> original, Single<? extends T> next, Executor executor) {
-        super(original, executor);
+    PublisherConcatWithSingle(Publisher<T> original, Single<? extends T> next) {
+        super(original);
         this.next = requireNonNull(next);
     }
 
