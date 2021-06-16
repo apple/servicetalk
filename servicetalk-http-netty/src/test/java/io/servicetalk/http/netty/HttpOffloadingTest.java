@@ -58,6 +58,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Long.MAX_VALUE;
@@ -196,21 +197,21 @@ class HttpOffloadingTest {
                 }
             });
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
     void serverCloseAsyncIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, serverContext.closeAsync());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
     void serverCloseAsyncGracefullyIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, serverContext.closeAsyncGracefully());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
@@ -218,7 +219,7 @@ class HttpOffloadingTest {
         serverContext.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, serverContext.onClose());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
@@ -228,21 +229,21 @@ class HttpOffloadingTest {
                     "Client settings stream: ");
         httpConnection.closeAsyncGracefully().toFuture().get();
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
     void clientCloseAsyncIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, httpConnection.closeAsync());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
     void clientCloseAsyncGracefullyIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, httpConnection.closeAsyncGracefully());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
@@ -250,7 +251,7 @@ class HttpOffloadingTest {
         httpConnection.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, httpConnection.onClose());
         terminated.await();
-        assertThat("Unexpected errors.", errors, is(empty()));
+        assertNoAsyncErrors(errors);
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {
