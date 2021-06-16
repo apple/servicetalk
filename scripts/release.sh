@@ -22,7 +22,7 @@ set -eu
 
 function usage() {
   echo "Usage: $0 next_version"
-  echo "nex_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
+  echo "next_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
 }
 
 if [ "$#" -ne "1" ]; then
