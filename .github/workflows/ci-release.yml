@@ -43,7 +43,7 @@ jobs:
           # Build arguments to feed to the single gradlew publish command
           if [ "${{ matrix.java }}" = "8" ]; then
             FIRST_GRADLE_TARGETS=" clean check"
-            SECOND_GRADLE_TARGETS=" publish"
+            SECOND_GRADLE_TARGETS=" --no-parallel publish"
           else
             FIRST_GRADLE_TARGETS=""
             SECOND_GRADLE_TARGETS=""
