@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
@@ -41,7 +40,7 @@ class MergeCompletableTest {
     private final CompletableHolder holder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return MergeCompletable.newInstance(false, completables[0], immediate(),
+            return MergeCompletable.newInstance(false, completables[0],
                     copyOfRange(completables, 1, completables.length));
         }
     };

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -31,7 +30,7 @@ class MergeCompletableDelayErrorTest {
     private final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return MergeCompletable.newInstance(true, completables[0], immediate(),
+            return MergeCompletable.newInstance(true, completables[0],
                     copyOfRange(completables, 1, completables.length));
         }
     };

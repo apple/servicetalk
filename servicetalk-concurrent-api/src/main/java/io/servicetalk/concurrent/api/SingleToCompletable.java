@@ -26,9 +26,13 @@ import static java.util.Objects.requireNonNull;
 final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Single<T> original;
 
-    SingleToCompletable(Single<T> original, Executor executor) {
-        super(executor);
+    SingleToCompletable(Single<T> original) {
         this.original = requireNonNull(original);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

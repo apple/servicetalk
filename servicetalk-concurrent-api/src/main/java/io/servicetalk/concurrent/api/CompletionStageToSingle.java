@@ -65,6 +65,7 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
             }
         }
 
+        // This may complete synchronously or asynchronously depending upon whether the stage is already complete
         stage.whenComplete((value, cause) -> {
             try {
                 if (cause != null) {

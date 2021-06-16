@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -38,7 +37,7 @@ class IterableMergeCompletableDelayErrorTest {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(true, completables[0],
-                    asList(completables).subList(1, completables.length), immediate());
+                    asList(completables).subList(1, completables.length));
         }
     };
 
@@ -46,7 +45,7 @@ class IterableMergeCompletableDelayErrorTest {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(true, completables[0],
-                    () -> asList(completables).subList(1, completables.length).iterator(), immediate());
+                    () -> asList(completables).subList(1, completables.length).iterator());
         }
     };
 

@@ -21,16 +21,16 @@ final class MergeCompletable extends AbstractMergeCompletableOperator<Completabl
     private final Completable[] others;
     private final boolean delayError;
 
-    private MergeCompletable(boolean delayError, Completable original, Executor executor, Completable... others) {
-        super(original, executor);
+    private MergeCompletable(boolean delayError, Completable original, Completable... others) {
+        super(original);
         this.delayError = delayError;
         this.others = requireNonNull(others);
     }
 
-    static Completable newInstance(boolean delayError, Completable original, Executor executor, Completable... others) {
+    static Completable newInstance(boolean delayError, Completable original, Completable... others) {
         return others.length == 0 ? original : others.length == 1 ?
-                new MergeOneCompletable(delayError, original, executor, others[0]) :
-                new MergeCompletable(delayError, original, executor, others);
+                new MergeOneCompletable(delayError, original, others[0]) :
+                new MergeCompletable(delayError, original, others);
     }
 
     @Override

@@ -15,77 +15,227 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableWithExecutor;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.internal.CaptureThreads;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.never;
-import static java.lang.Thread.currentThread;
+import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
-    static final int ORIGINAL_SUBSCRIBER_THREAD = 0;
-    static final int OFFLOADED_SUBSCRIBER_THREAD = 1;
+
+    protected static final String APP_EXECUTOR_PREFIX = "app";
+    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
+
+    static final int APP_THREAD = 0;
+    static final int ON_SUBSCRIBE_THREAD = 1;
+    static final int TERMINAL_THREAD = 2;
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule originalSourceExecutorRule = ExecutorRule.newRule();
+    public final ExecutorRule<Executor> app = ExecutorRule.withNamePrefix(APP_EXECUTOR_PREFIX);
+    protected Matcher<Thread> offloadExecutor = matchThreadNamePrefix(OFFLOAD_EXECUTOR_PREFIX);
+    Matcher<Thread> appExecutor = matchThreadNamePrefix(APP_EXECUTOR_PREFIX);
+    AtomicInteger offloadsStarted = new AtomicInteger();
+    AtomicInteger offloadsFinished = new AtomicInteger();
+    private volatile Runnable afterOffload;
+    private final ThreadPoolExecutor offloadExecutorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+            60L, TimeUnit.SECONDS,
+            new SynchronousQueue<Runnable>(),
+            new DefaultThreadFactory(OFFLOAD_EXECUTOR_PREFIX)) {
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
+        @Override
+        protected void beforeExecute(final Thread t, final Runnable r) {
+            super.beforeExecute(t, r);
+            offloadsStarted.getAndIncrement();
+        }
+
+        @Override
+        protected void afterExecute(final Runnable r, final Throwable t) {
+            offloadsFinished.getAndIncrement();
+            super.afterExecute(r, t);
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Runnable runnable, final T value) {
+            Runnable after = () -> {
+                try {
+                    runnable.run();
+                } finally {
+                    Runnable executeAfterOffload = afterOffload;
+                    if (null != executeAfterOffload) {
+                        executeAfterOffload.run();
+                    }
+                }
+            };
+            return super.newTaskFor(after, value);
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Callable<T> callable) {
+            Callable<T> after = () -> {
+                try {
+                    return callable.call();
+                } finally {
+                    Runnable executeAfterOffload = afterOffload;
+                    if (null != executeAfterOffload) {
+                        executeAfterOffload.run();
+                    }
+                }
+            };
+            return super.newTaskFor(after);
+        }
+    };
+    @Rule
+    public final ExecutorRule<Executor> offload = ExecutorRule.withExecutor(() -> from(offloadExecutorService));
+
+    CaptureThreads capturedThreads = new CaptureThreads(3) {
+        @Override
+        public Thread[] verify() {
+            Thread[] asArray = super.verify();
+
+            assertThat("Unexpected executor for app", asArray[APP_THREAD], appExecutor);
+
+            return asArray;
+        }
+    };
+
+    protected Thread[] setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
+            throws InterruptedException {
+        return setupAndSubscribe(-1, offloadingFunction);
+    }
+
+    protected Thread[] setupAndSubscribe(int offloadsExpected,
+                                                             Function<Completable, Completable> offloadingFunction)
+            throws InterruptedException {
+        TestCompletable original = new TestCompletable.Builder().singleSubscriber().build();
+        Completable offloaded = offloadingFunction.apply(original);
+        CountDownLatch subscribed = new CountDownLatch(1 + (offloadsExpected > 0 ? (offloadsExpected - 1) : 0));
+        CountDownLatch allDone = new CountDownLatch(1);
+
+        app.executor().execute(() -> {
+            capturedThreads.capture(APP_THREAD);
+
+            afterOffload = subscribed::countDown;
+
+            Cancellable cancel = offloaded.afterOnComplete(allDone::countDown)
+                    .afterOnSubscribe(cancellable -> {
+                        capturedThreads.capture(ON_SUBSCRIBE_THREAD);
+                    })
+                    .afterFinally(() -> capturedThreads.capture(TERMINAL_THREAD))
+                    .subscribe();
+            subscribed.countDown();
+            try {
+                // Still waiting for "afterOnSubscribe" to fire
+                subscribed.await();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
+            }
+            original.onComplete();
+            try {
+                // Waiting for "afterOnComplete" to fire
+                allDone.await();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
+            }
+            if (cancel.hashCode() != cancel.hashCode()) {
+                throw new RuntimeException("impossible, but keeps cancel alive.");
+            }
+        });
+        // Waiting for "afterOnComplete" to fire
+        allDone.await();
+        offloadExecutorService.shutdown();
+        boolean shutdown = offloadExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+        assertThat("Executor still active " + offloadExecutorService, shutdown, is(true));
+
+        assertThat("Started offloads != finished", offloadsFinished.intValue(), is(offloadsStarted.intValue()));
+        if (-1 != offloadsExpected) {
+            assertThat("Unexpected offloads", offloadsFinished.intValue(), is(offloadsExpected));
+        }
+
+        return capturedThreads.verify();
+    }
+
+    protected Thread[] setupAndCancel(Function<Completable, Completable> offloadingFunction)
+            throws InterruptedException {
+        return setupAndCancel(-1, offloadingFunction);
+    }
+
+    protected Thread[] setupAndCancel(int offloadsExpected,
+                                                          Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
-
-        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), completed())
-                .beforeOnComplete(() -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
-
+        TestCompletable original = new TestCompletable.Builder().singleSubscriber().build();
         Completable offloaded = offloadingFunction.apply(original);
+        CountDownLatch subscribed = new CountDownLatch(original == offloaded ? 1 : 2);
 
-        offloaded.afterFinally(allDone::countDown)
-                .beforeOnComplete(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
-                .subscribe();
+        app.executor().execute(() -> {
+            capturedThreads.capture(APP_THREAD);
+
+            afterOffload = subscribed::countDown;
+
+            Cancellable cancel = offloaded.afterOnSubscribe(cancellable -> {
+                capturedThreads.capture(ON_SUBSCRIBE_THREAD);
+                subscribed.countDown();
+            })
+                    .afterCancel(() -> {
+                        capturedThreads.capture(TERMINAL_THREAD);
+                        allDone.countDown();
+                    }).subscribe();
+            subscribed.countDown();
+            try {
+                // Still waiting for "afterOnSubscribe" to fire
+                subscribed.await();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
+            }
+            cancel.cancel();
+            try {
+                // Waiting for "afterOnComplete" to fire
+                allDone.await();
+            } catch (InterruptedException woken) {
+                Thread.interrupted();
+                return;
+            }
+            if (cancel.hashCode() != cancel.hashCode()) {
+                throw new RuntimeException("impossible, but keeps cancel alive.");
+            }
+        });
+        // Waiting for "afterOnComplete" to fire
         allDone.await();
+        offloadExecutorService.shutdown();
+        boolean shutdown = offloadExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+        assertThat("Executor still active " + offloadExecutorService, shutdown, is(true));
 
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
-    }
-
-    protected AtomicReferenceArray<Thread> setupForCancelAndSubscribe(
-            Function<Completable, Completable> offloadingFunction) throws InterruptedException {
-        CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
-
-        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), never())
-                .afterCancel(() -> {
-                    capturedThreads.set(0, currentThread());
-                    allDone.countDown();
-                });
-
-        Completable offloaded = offloadingFunction.apply(original);
-
-        offloaded.beforeCancel(() -> capturedThreads.set(1, currentThread()))
-                .subscribe().cancel();
-        allDone.await();
-
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
-    }
-
-    public static void verifyCapturedThreads(final AtomicReferenceArray<Thread> capturedThreads) {
-        for (int i = 0; i < capturedThreads.length(); i++) {
-            final Thread capturedThread = capturedThreads.get(i);
-            assertThat("Unexpected captured thread at index: " + i, capturedThread, notNullValue());
+        assertThat("Started offloads != finished", offloadsFinished.intValue(), is(offloadsStarted.intValue()));
+        if (-1 != offloadsExpected) {
+            assertThat("Unexpected offloads", offloadsFinished.intValue(), is(offloadsExpected));
         }
+
+        return capturedThreads.verify();
     }
 }

@@ -24,9 +24,8 @@ import static java.util.Objects.requireNonNull;
 final class BeforeSubscriberCompletable extends AbstractSynchronousCompletableOperator {
     private final Supplier<? extends Subscriber> subscriberSupplier;
 
-    BeforeSubscriberCompletable(Completable original, Supplier<? extends Subscriber> subscriberSupplier,
-                                Executor executor) {
-        super(original, executor);
+    BeforeSubscriberCompletable(Completable original, Supplier<? extends Subscriber> subscriberSupplier) {
+        super(original);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 

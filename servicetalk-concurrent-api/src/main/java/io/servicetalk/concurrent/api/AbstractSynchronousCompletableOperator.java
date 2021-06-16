@@ -35,8 +35,7 @@ abstract class AbstractSynchronousCompletableOperator extends AbstractNoHandleSu
 
     private final Completable original;
 
-    AbstractSynchronousCompletableOperator(Completable original, Executor executor) {
-        super(executor);
+    AbstractSynchronousCompletableOperator(Completable original) {
         this.original = requireNonNull(original);
     }
 
@@ -44,5 +43,10 @@ abstract class AbstractSynchronousCompletableOperator extends AbstractNoHandleSu
     final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(apply(subscriber), signalOffloader, contextMap, contextProvider);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 }

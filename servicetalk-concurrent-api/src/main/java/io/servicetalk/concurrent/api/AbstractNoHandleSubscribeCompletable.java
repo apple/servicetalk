@@ -26,17 +26,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  */
 abstract class AbstractNoHandleSubscribeCompletable extends Completable implements CompletableSource {
 
-    AbstractNoHandleSubscribeCompletable() {
-    }
-
-    AbstractNoHandleSubscribeCompletable(Executor executor) {
-        super(executor);
-    }
-
-    AbstractNoHandleSubscribeCompletable(final Executor executor, final boolean shareContextOnSubscribe) {
-        super(executor, shareContextOnSubscribe);
-    }
-
     @Override
     protected final void handleSubscribe(Subscriber subscriber) {
         deliverErrorFromSource(subscriber,
