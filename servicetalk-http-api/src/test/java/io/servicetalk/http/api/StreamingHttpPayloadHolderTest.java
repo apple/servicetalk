@@ -68,7 +68,8 @@ class StreamingHttpPayloadHolderTest {
         SetWithSerializer,
         Transform,
         TransformWithTrailer,
-        TransformWithSerializer
+        TransformWithSerializer,
+        TransformWithErrorInTrailer
     }
 
     private enum SourceType {
@@ -133,6 +134,7 @@ class StreamingHttpPayloadHolderTest {
             case Transform:
             case TransformWithTrailer:
             case TransformWithSerializer:
+            case TransformWithErrorInTrailer:
                 transformFunctions.setupFor(updateMode, payloadHolder, sourceTypeTrailers);
                 if (doubleTransform) {
                     secondTransformFunctions.setupFor(updateMode, payloadHolder, sourceTypeTrailers);
@@ -219,7 +221,10 @@ class StreamingHttpPayloadHolderTest {
                 (updateMode == UpdateMode.Set || updateMode == UpdateMode.SetWithSerializer)) {
             payloadSource.onComplete(); // Original source should complete for us to emit trailers
         }
-        getPayloadSource().onComplete();
+        if (updateMode != UpdateMode.TransformWithErrorInTrailer) {
+            getPayloadSource().onComplete();
+        }
+
         verifyTrailersReceived();
     }
 
@@ -315,7 +320,10 @@ class StreamingHttpPayloadHolderTest {
         if (sourceType == SourceType.Trailers) {
             assert payloadSource != null;
             payloadSource.onNext(mock(HttpHeaders.class));
-            payloadSource.onComplete();
+            if (updateMode != UpdateMode.TransformWithErrorInTrailer) {
+                // If trailers with error, the publisher is already terminated by the error
+                payloadSource.onComplete();
+            }
             tryCompletePayloadSource();
         } else {
             if (payloadSource != null) {
@@ -336,11 +344,15 @@ class StreamingHttpPayloadHolderTest {
     }
 
     private void verifyTrailersReceived() {
-        List<Object> items = payloadAndTrailersSubscriber.takeOnNext(1);
-        assertThat("Unexpected trailer", items, hasSize(1));
-        assertThat("Unexpected trailer", items.get(0), is(instanceOf(HttpHeaders.class)));
-        payloadAndTrailersSubscriber.awaitOnComplete();
-        if (updateMode == UpdateMode.TransformWithTrailer) {
+        if (updateMode == UpdateMode.TransformWithErrorInTrailer) {
+            payloadAndTrailersSubscriber.awaitOnError();
+        } else {
+            List<Object> items = payloadAndTrailersSubscriber.takeOnNext(1);
+            assertThat("Unexpected trailer", items, hasSize(1));
+            assertThat("Unexpected trailer", items.get(0), is(instanceOf(HttpHeaders.class)));
+            payloadAndTrailersSubscriber.awaitOnComplete();
+        }
+        if (updateMode == UpdateMode.TransformWithTrailer || updateMode == UpdateMode.TransformWithErrorInTrailer) {
             verify(transformFunctions.trailerTransformer).payloadComplete(any(), any());
         }
     }
@@ -349,14 +361,18 @@ class StreamingHttpPayloadHolderTest {
         if (canControlPayload()) {
             getPayloadSource().onComplete();
         }
-        if (updateMode == UpdateMode.TransformWithTrailer) {
+        if (updateMode == UpdateMode.TransformWithTrailer || updateMode == UpdateMode.TransformWithErrorInTrailer) {
             subscriber.awaitSubscription().request(1);
         }
         if (payloadSource != null && (updateMode == UpdateMode.Set || updateMode == UpdateMode.SetWithSerializer)) {
             // A set operation was done with a prior Publisher, we need to complete the prior Publisher.
             payloadSource.onComplete();
         }
-        subscriber.awaitOnComplete();
+        if (updateMode == UpdateMode.TransformWithErrorInTrailer) {
+            subscriber.awaitOnError();
+        } else {
+            subscriber.awaitOnComplete();
+        }
     }
 
     private TestPublisher<Object> getPayloadSource() {
@@ -438,6 +454,12 @@ class StreamingHttpPayloadHolderTest {
                     assertThat(payloadHolder.mayHaveTrailers(), is(true));
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(false));
                     break;
+                case TransformWithErrorInTrailer:
+                    when(trailerTransformer.payloadComplete(any(), any())).thenThrow(DELIBERATE_EXCEPTION);
+                    payloadHolder.transform(trailerTransformer);
+                    assertThat(payloadHolder.mayHaveTrailers(), is(true));
+                    assertThat(payloadHolder.isGenericTypeBuffer(), is(false));
+                    break;
                 case TransformWithSerializer:
                     payloadHolder.transformPayloadBody(stringTransformer, textSerializer());
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
@@ -455,6 +477,7 @@ class StreamingHttpPayloadHolderTest {
                     verify(transformer).apply(any());
                     break;
                 case TransformWithTrailer:
+                case TransformWithErrorInTrailer:
                     verify(trailerTransformer).newState();
                     if (canControlPayload) {
                         verify(trailerTransformer).accept(any(), any());

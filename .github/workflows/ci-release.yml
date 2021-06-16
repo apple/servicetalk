@@ -43,7 +43,7 @@ jobs:
           # Build arguments to feed to the single gradlew publish command
           if [ "${{ matrix.java }}" = "8" ]; then
             FIRST_GRADLE_TARGETS=" clean check"
-            SECOND_GRADLE_TARGETS=" publish"
+            SECOND_GRADLE_TARGETS=" --no-parallel publish"
           else
             FIRST_GRADLE_TARGETS=""
             SECOND_GRADLE_TARGETS=""
@@ -66,7 +66,7 @@ jobs:
           ./gradlew --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew -PreleaseBuild=true$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@9fb92762fe4c378b6c2d4210e24328bbd8ac9abb
+        uses: scacap/action-surefire-report@931cea1ce1cb7199a2fc6fe128bd1c392e92c92d
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
