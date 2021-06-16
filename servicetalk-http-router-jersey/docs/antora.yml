@@ -16,6 +16,6 @@
 
 name: servicetalk-http-router-jersey
 title: JAX-RS Router (Jersey)
-version: SNAPSHOT
+version: '0.41'
 nav:
   - modules/ROOT/nav.adoc
