@@ -37,9 +37,13 @@ abstract class AbstractSynchronousSingleOperator<T, R> extends AbstractNoHandleS
 
     private final Single<T> original;
 
-    AbstractSynchronousSingleOperator(Single<T> original, Executor executor) {
-        super(executor);
+    AbstractSynchronousSingleOperator(Single<T> original) {
         this.original = requireNonNull(original);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

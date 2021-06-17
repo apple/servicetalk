@@ -26,8 +26,8 @@ final class MapSingle<T, R> extends AbstractSynchronousSingleOperator<T, R> {
 
     private final Function<? super T, ? extends R> mapper;
 
-    MapSingle(Single<T> source, Function<? super T, ? extends R> mapper, Executor executor) {
-        super(source, executor);
+    MapSingle(Single<T> source, Function<? super T, ? extends R> mapper) {
+        super(source);
         this.mapper = requireNonNull(mapper);
     }
 

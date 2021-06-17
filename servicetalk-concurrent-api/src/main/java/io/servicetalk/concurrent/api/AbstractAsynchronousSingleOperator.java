@@ -35,9 +35,13 @@ abstract class AbstractAsynchronousSingleOperator<T, R> extends AbstractNoHandle
 
     private final Single<T> original;
 
-    AbstractAsynchronousSingleOperator(Single<T> original, Executor executor) {
-        super(executor);
+    AbstractAsynchronousSingleOperator(Single<T> original) {
         this.original = requireNonNull(original);
+    }
+
+    @Override
+    final Executor executor() {
+        return original.executor();
     }
 
     @Override

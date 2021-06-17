@@ -25,8 +25,8 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
 
     private final SingleTerminalSignalConsumer<? super T> doFinally;
 
-    AfterFinallySingle(Single<T> original, SingleTerminalSignalConsumer<? super T> doFinally, Executor executor) {
-        super(original, executor);
+    AfterFinallySingle(Single<T> original, SingleTerminalSignalConsumer<? super T> doFinally) {
+        super(original);
         this.doFinally = requireNonNull(doFinally);
     }
 
