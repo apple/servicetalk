@@ -57,6 +57,19 @@ class SingleConcatWithPublisherTest {
     }
 
     @Test
+    void onNextErrorPropagated() {
+        subscriber = new TestPublisherSubscriber<>();
+        source = new TestSingle<>();
+        toSource(source.concat(next).<Integer>map(x -> {
+            throw DELIBERATE_EXCEPTION;
+        })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        source.onSuccess(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertThat(next.isSubscribed(), is(false));
+    }
+
+    @Test
     void bothCompletion() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));

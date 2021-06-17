@@ -32,8 +32,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
 
     private final Completable original;
 
-    AbstractAsynchronousCompletableOperator(Completable original, Executor executor) {
-        super(executor);
+    AbstractAsynchronousCompletableOperator(Completable original) {
         this.original = requireNonNull(original);
     }
 
@@ -58,5 +57,10 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
         // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(apply(operatorSubscriber));
         original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    @Override
+    final Executor executor() {
+        return original.executor();
     }
 }

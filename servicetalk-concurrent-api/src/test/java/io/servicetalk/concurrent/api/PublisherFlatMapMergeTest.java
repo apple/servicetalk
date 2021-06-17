@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
@@ -48,6 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -100,6 +104,20 @@ class PublisherFlatMapMergeTest {
         if (executorService != null) {
             executorService.shutdown();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void singleToPublisherOnNextErrorPropagated(boolean delayError) {
+        Function<? super Integer, ? extends Publisher<? extends Integer>> func = x -> succeeded(x).toPublisher();
+        toSource((delayError ? publisher.flatMapMergeDelayError(func, 2) : publisher.flatMapMerge(func, 2))
+                .<Integer>map(y -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(2);
+        publisher.onNext(1, 2);
+        publisher.onComplete();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test

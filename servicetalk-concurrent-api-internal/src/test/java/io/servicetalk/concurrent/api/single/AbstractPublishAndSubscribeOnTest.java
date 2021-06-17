@@ -15,21 +15,20 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleWithExecutor;
+import io.servicetalk.concurrent.api.internal.CaptureThreads;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
-import static java.lang.Thread.currentThread;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -39,46 +38,43 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule originalSourceExecutorRule = ExecutorRule.newRule();
+    public final ExecutorRule<Executor> originalSourceExecutorRule = ExecutorRule.newRule();
+    CaptureThreads capturedThreads = new CaptureThreads(2);
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(
+    protected Thread[] setupAndSubscribe(
             Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), succeeded("Hello"))
-                .beforeOnSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
+                .beforeOnSuccess(__ -> capturedThreads.capture(ORIGINAL_SUBSCRIBER_THREAD));
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
         offloaded.afterFinally(allDone::countDown)
-                .beforeOnSuccess(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+                .beforeOnSuccess(__ -> capturedThreads.capture(OFFLOADED_SUBSCRIBER_THREAD))
                 .subscribe(val -> { });
         allDone.await();
 
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
+        return capturedThreads.verify();
     }
 
-    protected AtomicReferenceArray<Thread> setupForCancelAndSubscribe(
+    protected Thread[] setupForCancelAndSubscribe(
             Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(),
                 Single.<String>never())
                 .afterCancel(() -> {
-                    capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread());
+                    capturedThreads.capture(ORIGINAL_SUBSCRIBER_THREAD);
                     allDone.countDown();
                 });
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
-        offloaded.beforeCancel(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        offloaded.beforeCancel(() -> capturedThreads.capture(OFFLOADED_SUBSCRIBER_THREAD))
                 .subscribe(val -> { }).cancel();
         allDone.await();
 
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
+        return capturedThreads.verify();
     }
 }

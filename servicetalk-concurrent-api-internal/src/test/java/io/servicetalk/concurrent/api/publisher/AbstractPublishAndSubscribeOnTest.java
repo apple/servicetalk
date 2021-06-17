@@ -21,25 +21,23 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherWithExecutor;
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
+import io.servicetalk.concurrent.api.internal.CaptureThreads;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static java.lang.Long.MAX_VALUE;
-import static java.lang.Thread.currentThread;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
+
+    protected static final String SOURCE_EXECUTOR_PREFIX = "app";
+    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
 
     protected static final int ORIGINAL_SUBSCRIBER_THREAD = 0;
     protected static final int ORIGINAL_SUBSCRIPTION_THREAD = 1;
@@ -48,24 +46,24 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule originalSourceExecutorRule = ExecutorRule.withExecutor(
-            () -> new OffloaderAwareExecutor(newCachedThreadExecutor(), defaultOffloaderFactory()));
+    public final ExecutorRule originalSourceExecutorRule = ExecutorRule.withNamePrefix(SOURCE_EXECUTOR_PREFIX);
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(
+    CaptureThreads capturedThreads = new CaptureThreads(4);
+
+    protected Thread[] setupAndSubscribe(
             BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)
             throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.executor(),
                 from("Hello"))
-                .beforeOnNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
-                .beforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));
+                .beforeOnNext(__ -> capturedThreads.capture(ORIGINAL_SUBSCRIBER_THREAD))
+                .beforeRequest(__ -> capturedThreads.capture(ORIGINAL_SUBSCRIPTION_THREAD));
 
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        toSource(offloaded.beforeOnNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
-                .beforeRequest(__ -> capturedThreads.set(OFFLOADED_SUBSCRIPTION_THREAD, currentThread()))
+        toSource(offloaded.beforeOnNext(__ -> capturedThreads.capture(OFFLOADED_SUBSCRIBER_THREAD))
+                .beforeRequest(__ -> capturedThreads.capture(OFFLOADED_SUBSCRIPTION_THREAD))
                 .afterFinally(allDone::countDown))
                 .subscribe(new Subscriber<String>() {
                     @Override
@@ -92,8 +90,6 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 });
         allDone.await();
 
-        verifyCapturedThreads(capturedThreads);
-
-        return capturedThreads;
+        return capturedThreads.verify();
     }
 }

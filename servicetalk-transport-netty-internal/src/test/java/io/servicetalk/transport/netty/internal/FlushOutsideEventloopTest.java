@@ -22,7 +22,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.EventLoop;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
+class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> src;
@@ -49,7 +49,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     }
 
     @Test
-    public void testWriteAndFlushOutsideEventloop() throws Exception {
+    void testWriteAndFlushOutsideEventloop() throws Exception {
         EventLoop executor = getDifferentEventloopThanChannel();
         executor.submit(() -> src.onNext(1)).get();
         flushSender.flush();
@@ -59,7 +59,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     }
 
     @Test
-    public void testWriteFromOutsideEventloopThenWriteAndFlushOnEventloop() throws Exception {
+    void testWriteFromOutsideEventloopThenWriteAndFlushOnEventloop() throws Exception {
         EventLoop executor = getDifferentEventloopThanChannel();
         executor.submit(() -> src.onNext(1)).get();
         channel.eventLoop().submit(() -> {
@@ -71,7 +71,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     }
 
     @Test
-    public void testWriteInEventloopThenWriteAndFlushOutsideEventloop() throws Exception {
+    void testWriteInEventloopThenWriteAndFlushOutsideEventloop() throws Exception {
         EventLoop executor = getDifferentEventloopThanChannel();
         channel.eventLoop().submit(() -> src.onNext(1)).get();
         executor.submit(() -> {
@@ -83,7 +83,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     }
 
     @Test
-    public void testWriteFromEventloopAndFlushOutsideEventloop() throws Exception {
+    void testWriteFromEventloopAndFlushOutsideEventloop() throws Exception {
         EventLoop executor = getDifferentEventloopThanChannel();
         channel.eventLoop().submit(() -> src.onNext(1)).get();
         executor.submit(() -> flushSender.flush()).get();

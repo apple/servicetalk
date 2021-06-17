@@ -23,19 +23,19 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PowerSetPartitionMapTest {
+class PowerSetPartitionMapTest {
     private static final Key<Integer> DC_ID = Key.newKey("dc");
     private static final Key<String> APP_ID = Key.newKey("app");
     private static final Key<Integer> SHARD_ID = Key.newKey("shard");
@@ -62,7 +62,7 @@ public class PowerSetPartitionMapTest {
     };
 
     @Test
-    public void testDuplicatePutMakesNoChange() {
+    void testDuplicatePutMakesNoChange() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
         // Test duplicate put
         List<ListenableAsyncCloseable> result = map.add(host3Attributes());
@@ -72,7 +72,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testRemoveOfOverlappingAttributesPreservesValue() {
+    void testRemoveOfOverlappingAttributesPreservesValue() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
         // Test remove
         List<ListenableAsyncCloseable> result = map.remove(host3Attributes());
@@ -95,7 +95,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testWildCardResolveSingleElement() {
+    void testWildCardResolveSingleElement() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
 
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(1);
@@ -128,7 +128,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testWildCardResolveTwoElements() {
+    void testWildCardResolveTwoElements() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
 
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(2);
@@ -173,7 +173,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testWildCardResolveThreeElements() {
+    void testWildCardResolveThreeElements() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
 
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
@@ -208,7 +208,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testResolveFourElements() {
+    void testResolveFourElements() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
 
         assertEquals(VALUE, map.get(host1Attributes()));
@@ -227,7 +227,7 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testAddEmptyPartitionAttributesThrows() {
+    void testAddEmptyPartitionAttributesThrows() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         PartitionAttributes emptyAttributes = new DefaultPartitionAttributesBuilder(0).build();
         try {
@@ -239,18 +239,18 @@ public class PowerSetPartitionMapTest {
     }
 
     @Test
-    public void testAddDuplicationPartitions() {
+    void testAddDuplicationPartitions() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
-        assertTrue("New map is not empty.", map.isEmpty());
+        assertTrue(map.isEmpty(), "New map is not empty.");
         PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MAIN, true).add(SHARD_ID, 1)
                 .build();
         List<ListenableAsyncCloseable> added1 = map.add(partition);
         List<ListenableAsyncCloseable> added2 = map.add(partition);
-        assertEquals("Added partitions are not equal.", added1, added2);
-        assertEquals("Same partition added twice.", 1, map.size());
+        assertEquals(added1, added2, "Added partitions are not equal.");
+        assertEquals(1, map.size(), "Same partition added twice.");
 
         List<ListenableAsyncCloseable> removed = map.remove(partition);
-        assertEquals("Unexpected size of removed partitions.", removed.size(), added1.size());
+        assertEquals(removed.size(), added1.size(), "Unexpected size of removed partitions.");
     }
 
     private static void assertMapSize(PowerSetPartitionMap<ListenableAsyncCloseable> map, int size, int indexSize) {
