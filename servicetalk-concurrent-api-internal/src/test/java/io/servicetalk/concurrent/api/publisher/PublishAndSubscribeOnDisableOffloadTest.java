@@ -23,14 +23,20 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndSubscribeOnTest {
+public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublisherPublishAndSubscribeOnTest {
 
     @Test
     public void testPublishOnDisable() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(Publisher::publishOnOverride, immediate());
 
-        assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+        assertThat("Unexpected executor for subscribe",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for subscribe",
+                capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for complete",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], APP_EXECUTOR);
+        assertThat("Unexpected executor for subscribe",
+                capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], APP_EXECUTOR);
     }
 
     @Test

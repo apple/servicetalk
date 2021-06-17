@@ -48,7 +48,7 @@ public abstract class AbstractCompletablePublishAndSubscribeOnTest extends Abstr
         });
     }
 
-    protected Thread[] setupAndSubscribe(int offloadsExpected,
+   protected Thread[] setupAndSubscribe(int offloadsExpected,
                                          BiFunction<Completable, Executor, Completable> offloadingFunction,
                                          Executor executor)
             throws InterruptedException {

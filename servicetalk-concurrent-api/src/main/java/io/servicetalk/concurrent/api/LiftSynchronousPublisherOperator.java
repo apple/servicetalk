@@ -21,9 +21,8 @@ final class LiftSynchronousPublisherOperator<T, R> extends AbstractSynchronousPu
     private final PublisherOperator<? super T, ? extends R> customOperator;
 
     LiftSynchronousPublisherOperator(Publisher<T> original,
-                                     PublisherOperator<? super T, ? extends R> customOperator,
-                                     Executor executor) {
-        super(original, executor);
+                                     PublisherOperator<? super T, ? extends R> customOperator) {
+        super(original);
         this.customOperator = requireNonNull(customOperator);
     }
 

@@ -33,8 +33,8 @@ final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T>
 
     private final long numElements;
 
-    TakeNPublisher(Publisher<T> original, long numElements, Executor executor) {
-        super(original, executor);
+    TakeNPublisher(Publisher<T> original, long numElements) {
+        super(original);
         if (numElements <= 0) {
             throw new IllegalArgumentException("numElements: " + numElements + " (expected >= 0)");
         }

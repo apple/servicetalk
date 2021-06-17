@@ -1563,7 +1563,7 @@ public abstract class Completable {
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Publisher<T> toPublisher() {
-        return new CompletableToPublisher<>(this, executor());
+        return new CompletableToPublisher<>(this);
     }
 
     /**

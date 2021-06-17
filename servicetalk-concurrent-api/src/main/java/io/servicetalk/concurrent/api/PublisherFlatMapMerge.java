@@ -78,18 +78,18 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
     private final int maxDelayedErrors;
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          boolean delayError, Executor executor) {
-        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
+                          boolean delayError) {
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          boolean delayError, int maxConcurrency, Executor executor) {
-        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+                          boolean delayError, int maxConcurrency) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          int maxDelayedErrors, int maxConcurrency, Executor executor) {
-        super(original, executor);
+                          int maxDelayedErrors, int maxConcurrency) {
+        super(original);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
         }

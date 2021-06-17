@@ -92,12 +92,11 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     private final AtomicReferenceArray<Subscriber<? super T>> subscribers;
     private final Publisher<T> original;
 
-    MulticastPublisher(Publisher<T> original, int expectedSubscribers, Executor executor) {
-        this(original, expectedSubscribers, 10, executor);
+    MulticastPublisher(Publisher<T> original, int expectedSubscribers) {
+        this(original, expectedSubscribers, 10);
     }
 
-    MulticastPublisher(Publisher<T> original, int expectedSubscribers, int maxQueueSize, Executor executor) {
-        super(executor);
+    MulticastPublisher(Publisher<T> original, int expectedSubscribers, int maxQueueSize) {
         if (expectedSubscribers < 2) {
             throw new IllegalArgumentException("expectedSubscribers: " + expectedSubscribers + " (expected >=2)");
         }
