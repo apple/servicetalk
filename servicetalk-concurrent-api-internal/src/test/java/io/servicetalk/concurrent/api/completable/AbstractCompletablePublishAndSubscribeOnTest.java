@@ -48,12 +48,6 @@ public abstract class AbstractCompletablePublishAndSubscribeOnTest extends Abstr
         });
     }
 
-    protected Thread[] setupAndSubscribe(BiFunction<Completable, Executor, Completable> offloadingFunction,
-                                         Executor executor)
-            throws InterruptedException {
-        return setupAndSubscribe(-1, offloadingFunction, executor);
-    }
-
     protected Thread[] setupAndSubscribe(int offloadsExpected,
                                          BiFunction<Completable, Executor, Completable> offloadingFunction,
                                          Executor executor)
@@ -69,10 +63,9 @@ public abstract class AbstractCompletablePublishAndSubscribeOnTest extends Abstr
 
             Completable offloaded = offloadingFunction.apply(source, executor);
 
-            Cancellable cancel = offloaded
+            Cancellable cancel = offloaded.afterFinally(() -> allDone.countDown())
                     .afterOnSubscribe(__ -> capturedThreads.capture(ON_SUBSCRIBE_THREAD))
                     .afterOnComplete(() -> capturedThreads.capture(TERMINAL_SIGNAL_THREAD))
-                    .afterFinally(allDone::countDown)
                     .subscribe();
             subscribed.countDown();
             try {
@@ -106,12 +99,6 @@ public abstract class AbstractCompletablePublishAndSubscribeOnTest extends Abstr
         }
 
         return capturedThreads.verify();
-    }
-
-    protected Thread[] setupAndCancel(BiFunction<Completable, Executor, Completable> offloadingFunction,
-                                      Executor executor)
-            throws InterruptedException {
-        return setupAndCancel(-1, offloadingFunction, executor);
     }
 
     protected Thread[] setupAndCancel(int offloadsExpected,
