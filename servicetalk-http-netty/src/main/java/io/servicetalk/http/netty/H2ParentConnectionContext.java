@@ -104,7 +104,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     public final Completable onClosing() {
-        return fromSource(onClosing).publishOn(executionContext().executor());
+        return fromSource(onClosing);
     }
 
     @Override

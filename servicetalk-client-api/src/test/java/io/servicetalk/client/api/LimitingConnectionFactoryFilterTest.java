@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.ConnectException;
 import java.util.concurrent.BlockingQueue;
@@ -41,22 +38,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LimitingConnectionFactoryFilterTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class LimitingConnectionFactoryFilterTest {
 
     private final TestSingleSubscriber<ListenableAsyncCloseable> connectlistener = new TestSingleSubscriber<>();
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
     private BlockingQueue<Processor> connectionOnClose;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         original = newMockConnectionFactory();
         connectionOnClose = new LinkedBlockingQueue<>();
@@ -76,17 +70,16 @@ public class LimitingConnectionFactoryFilterTest {
     }
 
     @Test
-    public void enforceMaxConnections() throws Exception {
+    void enforceMaxConnections() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1", null).toFuture().get();
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(ConnectException.class));
-        cf.newConnection("c2", null).toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> cf.newConnection("c2", null).toFuture().get());
+        assertThat(e.getCause(), instanceOf(ConnectException.class));
     }
 
     @Test
-    public void onCloseReleasesPermit() throws Exception {
+    void onCloseReleasesPermit() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1", null).toFuture().get();
@@ -96,7 +89,7 @@ public class LimitingConnectionFactoryFilterTest {
     }
 
     @Test
-    public void cancelReleasesPermit() throws Exception {
+    void cancelReleasesPermit() throws Exception {
         ConnectionFactory<String, ListenableAsyncCloseable> o = newMockConnectionFactory();
         when(o.newConnection(any(), any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =

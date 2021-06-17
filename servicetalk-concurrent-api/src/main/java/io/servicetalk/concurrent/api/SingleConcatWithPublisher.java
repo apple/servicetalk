@@ -156,7 +156,12 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         }
 
         private void emitSingleSuccessToTarget(@Nullable final T result) {
-            target.onNext(result);
+            try {
+                target.onNext(result);
+            } catch (Throwable cause) {
+                target.onError(cause);
+                return;
+            }
             next.subscribeInternal(this);
         }
     }
