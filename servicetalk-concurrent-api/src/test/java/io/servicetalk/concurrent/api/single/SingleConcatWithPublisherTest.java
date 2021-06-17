@@ -15,17 +15,30 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -44,6 +57,10 @@ class SingleConcatWithPublisherTest {
     private TestSubscription subscription;
     private TestCancellable cancellable;
 
+    boolean deferSubscribe() {
+        return false;
+    }
+
     @BeforeEach
     void setUp() {
         subscriber = new TestPublisherSubscriber<>();
@@ -51,30 +68,44 @@ class SingleConcatWithPublisherTest {
         source = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build();
         next = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
         subscription = new TestSubscription();
-        toSource(source.concat(next)).subscribe(subscriber);
+        toSource(source.concat(next, deferSubscribe())).subscribe(subscriber);
         source.onSubscribe(cancellable);
         subscriber.awaitSubscription();
     }
 
-    @Test
-    void onNextErrorPropagated() {
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> onNextErrorPropagatedParams() {
+        return Stream.of(Arguments.of(1, false),
+                Arguments.of(1, true),
+                Arguments.of(2, false),
+                Arguments.of(2, true));
+    }
+
+    @ParameterizedTest(name = "requestN={0} singleCompletesFirst={1}")
+    @MethodSource("onNextErrorPropagatedParams")
+    void onNextErrorPropagated(long n, boolean singleCompletesFirst) {
         subscriber = new TestPublisherSubscriber<>();
         source = new TestSingle<>();
-        toSource(source.concat(next).<Integer>map(x -> {
+        toSource(source.concat(next, deferSubscribe()).<Integer>map(x -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
-        subscriber.awaitSubscription().request(1);
-        source.onSuccess(1);
+        if (singleCompletesFirst) {
+            source.onSuccess(1);
+        }
+        subscriber.awaitSubscription().request(n);
+        if (!singleCompletesFirst) {
+            source.onSuccess(1);
+        }
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertThat(next.isSubscribed(), is(false));
     }
 
     @Test
     void bothCompletion() {
-        triggerNextSubscribe();
+        long requested = triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(2);
-        assertThat("Unexpected items requested.", subscription.requested(), is(2L));
+        assertThat("Unexpected items requested.", subscription.requested(), is(requested - 1 + 2));
         next.onNext(2);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         next.onComplete();
@@ -109,7 +140,7 @@ class SingleConcatWithPublisherTest {
     @Test
     void invalidRequestNWithInlineSourceCompletion() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(Single.succeeded(1).concat(empty())).subscribe(subscriber);
+        toSource(succeeded(1).concat(empty(), deferSubscribe())).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
@@ -148,10 +179,12 @@ class SingleConcatWithPublisherTest {
     @Test
     void request0PropagatedAfterSuccess() {
         source.onSuccess(1);
-        subscriber.awaitSubscription().request(1); // get the success from the Single
+        subscriber.awaitSubscription().request(deferSubscribe() ? 2 : 1); // get the success from the Single
+        assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
         next.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(deferSubscribe() ? 1L : 0L));
         subscriber.awaitSubscription().request(0);
-        assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0),
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
                 is(true));
     }
 
@@ -192,14 +225,161 @@ class SingleConcatWithPublisherTest {
     void zeroIsNotRequestedOnTransitionToSubscription() {
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
-        next.onSubscribe(subscription);
-        assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0),
-                is(false));
+        if (deferSubscribe()) {
+            assertThat(next.isSubscribed(), is(false));
+            subscriber.awaitSubscription().request(1);
+            assertThat(next.isSubscribed(), is(true));
+            next.onSubscribe(subscription);
+            assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(1), is(true));
+        } else {
+            assertThat(next.isSubscribed(), is(true));
+            next.onSubscribe(subscription);
+            assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0), is(false));
+        }
     }
 
-    private void triggerNextSubscribe() {
-        subscriber.awaitSubscription().request(1);
+    @Test
+    void onErrorAfterInvalidRequestN() {
+        source.onSuccess(1);
+        subscriber.awaitSubscription().request(2L);
+        assertThat("Unexpected next element.", subscriber.takeOnNext(), is(1));
+        assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+        next.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(1L));
+        next.onNext(2);
+        assertThat("Unexpected next element.", subscriber.takeOnNext(), is(2));
+        subscriber.awaitSubscription().request(-1L);
+        assertThat("Invalid request-n not propagated.", subscription.requested(), is(-1L));
+        // TestSubscriber does not automatically propagate onError when there is invalid demand, we will do it manually
+        next.onError(new IllegalArgumentException());
+        assertThat("Unexpected next items.", subscriber.pollAllOnNext(), Matchers.empty());
+        assertThat("Unexpected terminal error.",
+                subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    void singleCompletesWithNull() {
+        source.onSuccess(null);
+        subscriber.awaitSubscription().request(2);
+        assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+        next.onSubscribe(subscription);
+        next.onComplete();
+        assertThat("Unexpected next element.", subscriber.takeOnNext(), is(nullValue()));
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    void demandAccumulatedBeforeSingleCompletes() {
+        subscriber.awaitSubscription().request(3L);
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        assertThat(subscription.requested(), is(0L));
+        subscriber.awaitSubscription().request(2L);
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        assertThat(subscription.requested(), is(0L));
+        source.onSuccess(1);
+        assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+        next.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(4L));
+        next.onNext(2);
+        assertThat(subscriber.pollAllOnNext(), contains(1, 2));
+        next.onComplete();
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    void requestOneThenMore() {
+        subscriber.awaitSubscription().request(1L);
+        subscriber.awaitSubscription().request(1L);
+        assertThat(subscription.requested(), is(0L));
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        source.onSuccess(1);
+        assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+        next.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(1L));
+        next.onNext(2);
+        assertThat(subscriber.pollAllOnNext(), contains(1, 2));
+        next.onComplete();
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    void reentryWithMoreDemand() {
+        List<Integer> emitted = new ArrayList<>();
+        boolean[] completed = {false};
+        toSource(succeeded(1).concat(from(2), deferSubscribe())).subscribe(new Subscriber<Integer>() {
+
+            @Nullable
+            private Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscription = s;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer v) {
+                emitted.add(v);
+                assert subscription != null;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        assertThat(emitted, contains(1, 2));
+        assertThat(completed[0], is(true));
+    }
+
+    @Test
+    void cancelledDuringFirstOnNext() {
+        List<Integer> emitted = new ArrayList<>();
+        boolean[] terminated = {false};
+        toSource(succeeded(1).concat(never(), deferSubscribe())).subscribe(new Subscriber<Integer>() {
+
+            @Nullable
+            private Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscription = s;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer v) {
+                emitted.add(v);
+                assert subscription != null;
+                subscription.cancel();
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                terminated[0] = true;
+            }
+
+            @Override
+            public void onComplete() {
+                terminated[0] = true;
+            }
+        });
+
+        assertThat(emitted, contains(1));
+        assertThat(terminated[0], is(false));
+    }
+
+    private long triggerNextSubscribe() {
+        final long n = deferSubscribe() ? 2 : 1;
+        subscriber.awaitSubscription().request(n);
         source.onSuccess(1);
         next.onSubscribe(subscription);
+        return n;
     }
 }
