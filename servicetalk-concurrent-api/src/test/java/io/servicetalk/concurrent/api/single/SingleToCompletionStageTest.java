@@ -61,14 +61,15 @@ class SingleToCompletionStageTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
 
-    private LegacyTestSingle<String> source;
+    private LegacyTestSingle testSingle;
+    private Single<String> source;
     private static ExecutorService jdkExecutor;
     private static final AtomicInteger threadCount = new AtomicInteger();
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
     private static final String COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX = "Thread-";
-    private static final String JUNIT_THREAD_PREFIX = "Test worker";
+    private static final String JUNIT_THREAD_PREFIX = Thread.currentThread().getName();
 
     @BeforeAll
     static void beforeClass() {
@@ -85,7 +86,8 @@ class SingleToCompletionStageTest {
 
     @BeforeEach
     void beforeTest() {
-        source = new LegacyTestSingle<>(executorExtension.executor(), true, true);
+        testSingle = new LegacyTestSingle<>(true, true);
+        source = testSingle.publishAndSubscribeOn(executorExtension.executor());
     }
 
     @Test
@@ -145,7 +147,7 @@ class SingleToCompletionStageTest {
 
     private void thenApply(CompletionStage<Integer> stage, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
         assertEquals(strLen(expected), stage.toCompletableFuture().get().intValue());
     }
 
@@ -154,7 +156,7 @@ class SingleToCompletionStageTest {
         String expected1 = "one";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
         assertEquals(expected1, stage1.toCompletableFuture().get());
 
         String expected2 = "one two";
@@ -175,7 +177,7 @@ class SingleToCompletionStageTest {
         String expected1 = "one";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
         assertEquals(expected1, stage1.toCompletableFuture().get());
 
         String expected2 = "one two";
@@ -199,7 +201,7 @@ class SingleToCompletionStageTest {
         String expected1 = "foo";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
         assertEquals(expected1, stage1.toCompletableFuture().get());
 
         CompletionStage<Integer> stage2 = fn.apply(stage1);
@@ -215,14 +217,13 @@ class SingleToCompletionStageTest {
         CompletionStage<Integer> stage2 = stage1.thenApply(SingleToCompletionStageTest::strLenStThread);
         CompletionStage<Integer> stage3 = stage1.thenApply(SingleToCompletionStageTest::strLenStThread);
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
 
         Integer stage2Result = stage2.toCompletableFuture().get();
         assertNotNull(stage2Result);
         Integer stage3Result = stage3.toCompletableFuture().get();
         assertNotNull(stage3Result);
         assertEquals(expected1.length() * 2, stage2Result + stage3Result);
-        source.verifyListenCalled(1);
     }
 
     @Test
@@ -253,7 +254,7 @@ class SingleToCompletionStageTest {
 
     private void thenAccept(CompletionStage<Void> stage, AtomicReference<String> stringRef, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertNull(stage.toCompletableFuture().get());
         assertEquals(expected, stringRef.get());
@@ -276,7 +277,7 @@ class SingleToCompletionStageTest {
         String expected1 = "foo";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
         assertEquals(expected1, stage1.toCompletableFuture().get());
 
         CompletionStage<Void> stage2 = fn.apply(stage1, consumeRef);
@@ -305,7 +306,7 @@ class SingleToCompletionStageTest {
 
     private void thenRun(CompletionStage<Void> stage, AtomicBoolean aBoolean, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertNull(stage.toCompletableFuture().get());
         assertTrue(aBoolean.get());
@@ -328,7 +329,7 @@ class SingleToCompletionStageTest {
         String expected1 = "foo";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
-        jdkExecutor.execute(() -> source.onSuccess(expected1));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected1));
         assertEquals(expected1, stage1.toCompletableFuture().get());
 
         CompletionStage<Void> stage2 = fn.apply(stage1, consumeRef);
@@ -366,7 +367,7 @@ class SingleToCompletionStageTest {
                              @Nullable String expectedS, double expectedD)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(expectedD));
-        jdkExecutor.execute(() -> source.onSuccess(expectedS));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expectedS));
         assertEquals((int) (strLen(expectedS) + expectedD), result.toCompletableFuture().get().intValue());
     }
 
@@ -423,7 +424,7 @@ class SingleToCompletionStageTest {
                                 AtomicReference<String> strRef, AtomicReference<Long> lngRef)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(expectedL));
-        jdkExecutor.execute(() -> source.onSuccess(expectedS));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expectedS));
 
         assertNull(result.toCompletableFuture().get());
         assertEquals(expectedS, strRef.get());
@@ -462,7 +463,7 @@ class SingleToCompletionStageTest {
                               @Nullable String expectedS, long expectedL)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(expectedL));
-        jdkExecutor.execute(() -> source.onSuccess(expectedS));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expectedS));
 
         assertNull(result.toCompletableFuture().get());
     }
@@ -499,7 +500,7 @@ class SingleToCompletionStageTest {
                                @Nullable String expected, @Nullable String otherExpected)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(otherExpected));
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertThat(result.toCompletableFuture().get(), isOneOf(strLen(otherExpected), strLen(expected)));
     }
@@ -540,7 +541,7 @@ class SingleToCompletionStageTest {
                               @Nullable String expected, @Nullable String otherExpected)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(otherExpected));
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertNull(result.toCompletableFuture().get());
         assertThat(strRef.get(), isOneOf(otherExpected, expected));
@@ -578,7 +579,7 @@ class SingleToCompletionStageTest {
                                 @Nullable String expected, @Nullable String otherExpected)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(otherExpected));
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertNull(result.toCompletableFuture().get());
     }
@@ -632,7 +633,7 @@ class SingleToCompletionStageTest {
                              @Nullable String expected, @Nullable Integer otherExpected)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(otherExpected));
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertEquals(otherExpected, result.toCompletableFuture().get());
         assertEquals(expected, strRef.get());
@@ -651,7 +652,7 @@ class SingleToCompletionStageTest {
 
     private void exceptionally(CompletionStage<String> result, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        source.onError(DELIBERATE_EXCEPTION);
+        testSingle.onError(DELIBERATE_EXCEPTION);
         assertEquals(expected, result.toCompletableFuture().get());
     }
 
@@ -694,7 +695,7 @@ class SingleToCompletionStageTest {
     private void whenComplete(CompletionStage<String> result, @Nullable String expected,
                               AtomicReference<String> strRef)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertEquals(expected, result.toCompletableFuture().get());
         assertEquals(expected, strRef.get());
@@ -743,7 +744,7 @@ class SingleToCompletionStageTest {
     private void handle(CompletionStage<Integer> result, @Nullable String expected,
                         AtomicReference<String> strRef)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
 
         assertEquals(strLen(expected), result.toCompletableFuture().get().intValue());
         assertEquals(expected, strRef.get());
@@ -857,7 +858,7 @@ class SingleToCompletionStageTest {
         String expected = "done";
         CompletableFuture<String> future = source.whenCancel(cancelCount::incrementAndGet)
                 .toCompletionStage().toCompletableFuture();
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
         assertThat(future.join(), is(expected));
         assertThat(cancelCount.get(), is(0));
     }
@@ -884,7 +885,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetAsync(Future<String> stage, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onSuccess(expected));
+        jdkExecutor.execute(() -> testSingle.onSuccess(expected));
         assertEquals(expected, stage.get());
     }
 
@@ -910,7 +911,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetSync(Future<String> stage, @Nullable String expected)
             throws ExecutionException, InterruptedException {
-        source.onSuccess(expected);
+        testSingle.onSuccess(expected);
         assertEquals(expected, stage.get());
     }
 
@@ -926,7 +927,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetAsyncError(Future<String> stage) {
         Exception e = assertThrows(ExecutionException.class, () -> {
-            jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
+            jdkExecutor.execute(() -> testSingle.onError(DELIBERATE_EXCEPTION));
             stage.get();
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
@@ -944,7 +945,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetSyncError(Future<String> stage) {
         Exception e = assertThrows(ExecutionException.class, () -> {
-            source.onError(DELIBERATE_EXCEPTION);
+            testSingle.onError(DELIBERATE_EXCEPTION);
             stage.get();
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
@@ -978,7 +979,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetTimeoutSuccess(Future<String> stage)
             throws InterruptedException, ExecutionException, TimeoutException {
-        jdkExecutor.execute(() -> source.onSuccess("foo"));
+        jdkExecutor.execute(() -> testSingle.onSuccess("foo"));
         assertEquals("foo", stage.get(1, MINUTES));
     }
 
@@ -994,7 +995,7 @@ class SingleToCompletionStageTest {
 
     private void blockingGetTimeoutError(Future<String> stage) {
         Exception e = assertThrows(ExecutionException.class, () -> {
-            jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
+            jdkExecutor.execute(() -> testSingle.onError(DELIBERATE_EXCEPTION));
             stage.get(1, MINUTES);
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
@@ -1009,7 +1010,7 @@ class SingleToCompletionStageTest {
                 result.complete(null);
             } else {
                 result.completeExceptionally(
-                        new IllegalStateException("unexpected thread: " + currentThread()));
+                        new AssertionError("unexpected thread: " + currentThread()));
             }
             return result;
         }).toCompletableFuture().get();
@@ -1017,13 +1018,13 @@ class SingleToCompletionStageTest {
 
     private static void verifyInJdkExecutorThread() {
         if (!currentThread().getName().startsWith(JDK_THREAD_NAME_PREFIX)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 
     private static void verifyInStExecutorThread() {
         if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 
@@ -1032,20 +1033,20 @@ class SingleToCompletionStageTest {
         if (!currentThread.getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX) &&
             // CompletableFuture may use a ThreadPerTaskExecutor executor if available processors is low (e.g. 1).
             !currentThread.getName().startsWith(COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 
     private static void verifyInJUnitThread() {
         if (!currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 
     private static void verifyInStOrJdkThread() {
         if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME) &&
                 !currentThread().getName().startsWith(JDK_THREAD_NAME_PREFIX)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 

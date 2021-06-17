@@ -24,9 +24,8 @@ import static java.util.Objects.requireNonNull;
 final class AfterSubscriberSingle<T> extends AbstractSynchronousSingleOperator<T, T> {
     private final Supplier<? extends Subscriber<? super T>> subscriberSupplier;
 
-    AfterSubscriberSingle(Single<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier,
-                          Executor executor) {
-        super(original, executor);
+    AfterSubscriberSingle(Single<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+        super(original);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 

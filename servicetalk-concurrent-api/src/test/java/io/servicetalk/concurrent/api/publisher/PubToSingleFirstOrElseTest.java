@@ -36,9 +36,9 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -132,7 +132,7 @@ class PubToSingleFirstOrElseTest {
             throw new NoSuchElementException();
         }).toFuture().get();
         analyzed.await();
-        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertNoAsyncErrors(errors);
     }
 
     private void listen(Publisher<String> src) {

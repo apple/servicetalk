@@ -1572,7 +1572,7 @@ public abstract class Completable {
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
     public final Single<Void> toSingle() {
-        return new CompletableToSingle<>(this, executor());
+        return new CompletableToSingle<>(this);
     }
 
     /**

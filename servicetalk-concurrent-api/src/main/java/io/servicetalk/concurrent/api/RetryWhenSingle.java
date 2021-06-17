@@ -34,11 +34,14 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
     private final BiIntFunction<Throwable, ? extends Completable> shouldRetry;
 
-    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, ? extends Completable> shouldRetry,
-                    Executor executor) {
-        super(executor);
+    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, ? extends Completable> shouldRetry) {
         this.original = original;
         this.shouldRetry = shouldRetry;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override
