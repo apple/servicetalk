@@ -36,29 +36,9 @@ public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribe
     }
 
     @Test
-    public void testPublishOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishOnOverride, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
     public void testSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(1, // subscribe
                 Single::subscribeOn, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[TERMINAL_SIGNAL_THREAD], APP_EXECUTOR);
-    }
-
-    @Test
-    public void testSubscribeOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::subscribeOnOverride, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,
                 capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
@@ -77,29 +57,8 @@ public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribe
     }
 
     @Test
-    public void testOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishAndSubscribeOnOverride, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
     public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
         Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOn, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
-    public void testOverrideWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOnOverride,
-                offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,
                 capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);

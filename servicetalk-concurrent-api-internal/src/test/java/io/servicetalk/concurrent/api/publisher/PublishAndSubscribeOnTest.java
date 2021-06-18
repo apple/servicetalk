@@ -38,32 +38,8 @@ public class PublishAndSubscribeOnTest extends AbstractPublisherPublishAndSubscr
     }
 
     @Test
-    public void testPublishOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishOnOverride, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
     public void testSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(Publisher::subscribeOn, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
-    public void testSubscribeOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Publisher::subscribeOnOverride, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,
                 capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
@@ -81,18 +57,6 @@ public class PublishAndSubscribeOnTest extends AbstractPublisherPublishAndSubscr
                 capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
         assertThat("Unexpected threads for offloaded source " + threads,
                 capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
-    public void testOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishAndSubscribeOnOverride, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], APP_EXECUTOR);
         assertThat("Unexpected threads for offloaded source " + threads,
                 capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
     }
