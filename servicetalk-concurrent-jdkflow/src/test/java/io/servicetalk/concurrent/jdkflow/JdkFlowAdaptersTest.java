@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.ExecutionException;
@@ -40,10 +38,10 @@ import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCR
 import static io.servicetalk.concurrent.jdkflow.JdkFlowAdapters.fromFlowPublisher;
 import static io.servicetalk.concurrent.jdkflow.JdkFlowAdapters.toFlowPublisher;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -51,13 +49,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class JdkFlowAdaptersTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class JdkFlowAdaptersTest {
 
     @Test
-    public void fromFlowSuccess() throws Exception {
+    void fromFlowSuccess() throws Exception {
         Publisher<Integer> flowPublisher = newMockFlowPublisher((subscriber, __) -> {
             subscriber.onNext(1);
             subscriber.onComplete();
@@ -67,17 +62,16 @@ public class JdkFlowAdaptersTest {
     }
 
     @Test
-    public void fromFlowError() throws Exception {
+    void fromFlowError() {
         Publisher<Integer> flowPublisher = newMockFlowPublisher((subscriber, __) ->
                 subscriber.onError(DELIBERATE_EXCEPTION));
         Future<Integer> future = fromFlowPublisher(flowPublisher).firstOrElse(() -> null).toFuture();
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        future.get();
+        ExecutionException ex = assertThrows(ExecutionException.class, future::get);
+        assertThat(ex.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void fromFlowCancel() {
+    void fromFlowCancel() {
         AtomicReference<Subscription> receivedSubscription = new AtomicReference<>();
         Publisher<Integer> flowPublisher = newMockFlowPublisher((__, subscription) ->
                 receivedSubscription.set(subscription));
@@ -88,12 +82,12 @@ public class JdkFlowAdaptersTest {
     }
 
     @Test
-    public void toFlowSuccess() {
+    void toFlowSuccess() {
         verifyFlowSuccess(toFlowPublisherAndSubscribe(from(1)));
     }
 
     @Test
-    public void toFlowFromSourceSuccess() {
+    void toFlowFromSourceSuccess() {
         PublisherSource<Integer> source = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
         verifyFlowSuccess(toFlowPublisherFromSourceAndSubscribe(source));
     }
@@ -106,12 +100,12 @@ public class JdkFlowAdaptersTest {
     }
 
     @Test
-    public void toFlowError() {
+    void toFlowError() {
         verifyFlowError(toFlowPublisherAndSubscribe(failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void toFlowFromSourceError() {
+    void toFlowFromSourceError() {
         PublisherSource<Integer> source = s -> {
             s.onSubscribe(EMPTY_SUBSCRIPTION);
             s.onError(DELIBERATE_EXCEPTION);
@@ -126,7 +120,7 @@ public class JdkFlowAdaptersTest {
     }
 
     @Test
-    public void toFlowCancel() {
+    void toFlowCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
         Subscriber<Integer> subscriber = toFlowPublisherAndSubscribe(stPublisher);
         TestSubscription subscription = new TestSubscription();
@@ -139,7 +133,7 @@ public class JdkFlowAdaptersTest {
     }
 
     @Test
-    public void toFlowFromSourceCancel() {
+    void toFlowFromSourceCancel() {
         PublisherSource.Subscription srcSubscription = mock(PublisherSource.Subscription.class);
         PublisherSource<Integer> source = s -> s.onSubscribe(srcSubscription);
         Subscriber<Integer> subscriber = toFlowPublisherFromSourceAndSubscribe(source);
