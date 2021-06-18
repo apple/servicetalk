@@ -44,8 +44,7 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
     private final class TwoValueSubscription implements Subscription {
         private static final byte INIT = 0;
         private static final byte DELIVERED_V1 = 1;
-        private static final byte CANCELLED = 2;
-        private static final byte TERMINATED = 3;
+        private static final byte TERMINATED = 2;
         private byte state;
         private final Subscriber<? super T> subscriber;
 
@@ -55,9 +54,7 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
 
         @Override
         public void cancel() {
-            if (state != TERMINATED) {
-                state = CANCELLED;
-            }
+            state = TERMINATED;
         }
 
         @Override
@@ -80,7 +77,7 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
                     return;
                 }
                 // We could check CANCELLED here and return, but it isn't required.
-                if (n > 1) {
+                if (n > 1 && state == DELIVERED_V1) {
                     deliverV2();
                 }
             } else if (state == DELIVERED_V1) {

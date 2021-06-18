@@ -17,9 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Math.min;
 
 final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
     @Nullable
@@ -45,12 +47,9 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
     }
 
     private final class ThreeValueSubscription implements Subscription {
-        private static final byte INIT = 0;
-        private static final byte DELIVERED_V1 = 1;
-        private static final byte DELIVERED_V2 = 2;
-        private static final byte CANCELLED = 3;
-        private static final byte TERMINATED = 4;
-        private byte state;
+        private final int TERMINATED = -1;
+        private long requested;
+        private int state;
         private final Subscriber<? super T> subscriber;
 
         private ThreeValueSubscription(final Subscriber<? super T> subscriber) {
@@ -59,9 +58,7 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
 
         @Override
         public void cancel() {
-            if (state != TERMINATED) {
-                state = CANCELLED;
-            }
+            state = TERMINATED;
         }
 
         @Override
@@ -74,60 +71,36 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
-            if (state == INIT) {
-                state = DELIVERED_V1;
-                try {
-                    subscriber.onNext(v1);
-                } catch (Throwable cause) {
-                    state = TERMINATED;
-                    subscriber.onError(cause);
-                    return;
-                }
-                // We could check CANCELLED here and return, but it isn't required.
-                if (n > 2) {
-                    deliverV2V3();
-                } else if (n == 2) {
-                    deliverV2();
-                }
-            } else if (state == DELIVERED_V1) {
-                if (n > 1) {
-                    deliverV2V3();
-                } else {
-                    deliverV2();
-                }
-            } else if (state == DELIVERED_V2) {
-                state = TERMINATED;
-                try {
-                    subscriber.onNext(v3);
-                } catch (Throwable cause) {
-                    subscriber.onError(cause);
-                    return;
-                }
-                subscriber.onComplete();
-            }
-        }
-
-        private void deliverV2() {
-            state = DELIVERED_V2;
-            try {
-                subscriber.onNext(v2);
-            } catch (Throwable cause) {
-                state = TERMINATED;
-                subscriber.onError(cause);
-            }
-        }
-
-        private void deliverV2V3() {
-            state = TERMINATED;
-            try {
-                subscriber.onNext(v2);
-                // We could check CANCELLED here and return, but it isn't required.
-                subscriber.onNext(v3);
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
+            if (requested == 3) {
                 return;
             }
-            subscriber.onComplete();
+            requested = min(3, addWithOverflowProtection(requested, n));
+            while (state < requested) {
+                if (state == 0) {
+                    deliver(v1, 1);
+                } else if (state == 1) {
+                    deliver(v2, 2);
+                } else if (state == 2) {
+                    if (deliver(v3, 3)) {
+                        subscriber.onComplete();
+                    }
+                } else {
+                    // Cancelled
+                    break;
+                }
+            }
+        }
+
+        private boolean deliver(@Nullable T value, int newState) {
+            state = newState;
+            try {
+                subscriber.onNext(value);
+                return true;
+            } catch (Throwable cause) {
+                state = TERMINATED;
+                subscriber.onError(cause);
+            }
+            return false;
         }
     }
 }
