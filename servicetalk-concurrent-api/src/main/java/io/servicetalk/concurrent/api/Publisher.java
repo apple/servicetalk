@@ -2725,7 +2725,7 @@ public abstract class Publisher<T> {
      * methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
@@ -2736,23 +2736,6 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishOn(Executor)} can be used.
-     * @deprecated This method will be removed in a future release. Consider switching to {@link #publishOn(Executor)}
-     * and/or using {@link Executor#execute(Runnable)} for offloading.
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber} both for the returned {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    @Deprecated
-    public final Publisher<T> publishOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOnOverride(this, executor);
-    }
-
-    /**
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
@@ -2760,7 +2743,7 @@ public abstract class Publisher<T> {
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
@@ -2773,34 +2756,13 @@ public abstract class Publisher<T> {
     /**
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
-     * @deprecated This method will be removed in a future release. Consider switching to {@link #subscribeOn(Executor)}
-     * and/or using {@link Executor#execute(Runnable)} for offloading.
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the returned
-     * {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    @Deprecated
-    public final Publisher<T> subscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOnOverride(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
@@ -2808,28 +2770,6 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
-     * @deprecated This method will be removed in a future release. Consider switching to
-     * {@link #publishAndSubscribeOn(Executor)} and/or using {@link Executor#execute(Runnable)} for offloading.
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the
-     * returned {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    @Deprecated
-    public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
     }
 
     /**
