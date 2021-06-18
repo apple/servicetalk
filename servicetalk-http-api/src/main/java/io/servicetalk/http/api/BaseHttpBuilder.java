@@ -73,16 +73,6 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
 
     /**
      * Enables wire-logging for connections created by this builder.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName);
-
-    /**
-     * Enables wire-logging for connections created by this builder.
      *
      * @param loggerName The name of the logger to log wire events.
      * @param logLevel The level to log at.

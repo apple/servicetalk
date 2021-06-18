@@ -127,13 +127,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
-    @Deprecated
-    @Override
-    public GrpcServerBuilder enableWireLogging(final String loggerName) {
-        httpServerBuilder.enableWireLogging(loggerName);
-        return this;
-    }
-
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {

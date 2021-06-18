@@ -370,13 +370,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return this;
     }
 
-    @Deprecated
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName) {
-        builderTemplate.enableWireLogging(loggerName);
-        return this;
-    }
-
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(
             final String loggerName, final LogLevel logLevel, final BooleanSupplier logUserData) {

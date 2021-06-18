@@ -51,7 +51,6 @@ import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -147,20 +146,6 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         public Builder executor(Executor executor) {
             this.executor = executor;
             return this;
-        }
-
-        /**
-         * Enables wire-logging for UDP packets sent.
-         * <p>
-         * All wire events will be logged at {@link LogLevel#TRACE TRACE} level.
-         *
-         * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-         * @param loggerName The name of the logger to log wire events.
-         * @return {@code this}
-         */
-        @Deprecated
-        public Builder enableWireLogging(String loggerName) {
-            return enableWireLogging(loggerName, TRACE, () -> false);
         }
 
         /**

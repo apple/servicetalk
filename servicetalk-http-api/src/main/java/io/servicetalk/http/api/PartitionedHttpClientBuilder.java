@@ -117,10 +117,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     @Override
     public abstract <T> PartitionedHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
-
     /**
      * {@inheritDoc}
      * @deprecated {@link #initializer(SingleAddressInitializer)} and
