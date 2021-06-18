@@ -29,9 +29,8 @@ import static java.util.Objects.requireNonNull;
 final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator<T, R> {
     private final Function<? super T, ? extends Single<? extends R>> nextFactory;
 
-    SingleFlatMapSingle(Single<T> first, Function<? super T, ? extends Single<? extends R>> nextFactory,
-                        Executor executor) {
-        super(first, executor);
+    SingleFlatMapSingle(Single<T> first, Function<? super T, ? extends Single<? extends R>> nextFactory) {
+        super(first);
         this.nextFactory = requireNonNull(nextFactory);
     }
 

@@ -32,8 +32,8 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublisherOperator<T, T> {
     private final Completable next;
 
-    PublisherConcatWithCompletable(Publisher<T> original, Completable next, Executor executor) {
-        super(original, executor);
+    PublisherConcatWithCompletable(Publisher<T> original, Completable next) {
+        super(original);
         this.next = requireNonNull(next);
     }
 

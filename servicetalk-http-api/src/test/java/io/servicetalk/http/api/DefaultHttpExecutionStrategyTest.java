@@ -48,9 +48,9 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS_NO_EXECUTOR;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 class DefaultHttpExecutionStrategyTest {
@@ -421,7 +421,7 @@ class DefaultHttpExecutionStrategyTest {
         }
 
         void verifyNoErrors() {
-            assertThat("Unexpected errors found: " + errors, errors, hasSize(0));
+            assertNoAsyncErrors(errors);
         }
 
         private void addError(final String msg) {

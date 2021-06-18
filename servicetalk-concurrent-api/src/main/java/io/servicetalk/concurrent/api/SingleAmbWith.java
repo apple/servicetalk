@@ -26,10 +26,14 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
     private final Single<T> ambWith;
 
-    SingleAmbWith(final Executor executor, final Single<T> original, final Single<T> ambWith) {
-        super(executor);
+    SingleAmbWith(final Single<T> original, final Single<T> ambWith) {
         this.original = requireNonNull(original);
         this.ambWith = requireNonNull(ambWith);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

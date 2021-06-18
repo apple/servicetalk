@@ -35,9 +35,13 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
 
     private final Publisher<T> original;
 
-    AbstractAsynchronousPublisherOperator(Publisher<T> original, Executor executor) {
-        super(executor);
+    AbstractAsynchronousPublisherOperator(Publisher<T> original) {
         this.original = requireNonNull(original);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override
