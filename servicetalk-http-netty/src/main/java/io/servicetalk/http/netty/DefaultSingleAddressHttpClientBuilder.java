@@ -435,13 +435,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
-    @Deprecated
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
-        config.tcpConfig().enableWireLogging(loggerName);
-        return this;
-    }
-
     @Override
     public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {

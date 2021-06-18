@@ -27,12 +27,10 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import io.servicetalk.http.netty.H2KeepAlivePolicies;
 import io.servicetalk.http.netty.H2ProtocolConfig;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
@@ -45,19 +43,21 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.whenIdleFor;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.time.Duration.ofSeconds;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.fail;
@@ -78,18 +78,17 @@ public class KeepAliveTest {
     private final long idleTimeoutMillis;
 
     public KeepAliveTest(final boolean keepAlivesFromClient,
-                         final Function<String, H2ProtocolConfig> protocolConfigSupplier,
-                         final long idleTimeoutMillis) throws Exception {
-        this.idleTimeoutMillis = idleTimeoutMillis;
+                         final Duration keepAliveIdleFor,
+                         final Duration idleTimeout) throws Exception {
+        this.idleTimeoutMillis = idleTimeout.toMillis();
         GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()));
         if (!keepAlivesFromClient) {
-            serverBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-wire-logger"));
+            serverBuilder.protocols(h2Config(keepAliveIdleFor));
         } else {
-            serverBuilder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMillis)
-                    .protocols(HttpProtocolConfigs.h2()
-                            .enableFrameLogging("servicetalk-tests-h2-frame-logger").build());
+            serverBuilder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
+                    .protocols(h2Config(null));
         }
         ctx = serverBuilder.listenAndAwait(new ServiceFactory(new InfiniteStreamsService()));
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
@@ -97,29 +96,27 @@ public class KeepAliveTest {
                         .ioExecutor(CLIENT_CTX.ioExecutor())
                         .executionStrategy(defaultStrategy(CLIENT_CTX.executor()));
         if (keepAlivesFromClient) {
-            clientBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-wire-logger"));
+            clientBuilder.protocols(h2Config(keepAliveIdleFor));
         } else {
-            clientBuilder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMillis)
-                    .protocols(HttpProtocolConfigs.h2()
-                            .enableFrameLogging("servicetalk-tests-h2-frame-logger").build());
+            clientBuilder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
+                    .protocols(h2Config(null));
         }
         client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "keepAlivesFromClient? {0}, idleTimeout: {2}")
-    public static Collection<Object[]> data() {
-        return asList(newParam(true, ofSeconds(1), ofSeconds(2)),
-                newParam(false, ofSeconds(1), ofSeconds(2)));
+    @Parameterized.Parameters(name = "keepAlivesFromClient? {0}, keepAliveIdleFor: {1}, idleTimeout: {2}")
+    public static Object[][] data() {
+        return new Object[][] {
+                new Object[] {true, ofSeconds(1), ofSeconds(2)},
+                new Object[] {false, ofSeconds(1), ofSeconds(2)},
+        };
     }
 
-    private static Object[] newParam(final boolean keepAlivesFromClient, final Duration keepAliveIdleDuration,
-                                     final Duration idleTimeoutDuration) {
-        return new Object[] {keepAlivesFromClient,
-                (Function<String, H2ProtocolConfig>) frameLogger ->
-                        HttpProtocolConfigs.h2()
-                                .keepAlivePolicy(H2KeepAlivePolicies.whenIdleFor(keepAliveIdleDuration))
-                                .enableFrameLogging(frameLogger).build(),
-                idleTimeoutDuration.toMillis()};
+    private static H2ProtocolConfig h2Config(@Nullable final Duration keepAliveIdleFor) {
+        return HttpProtocolConfigs.h2()
+                .enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
+                .keepAlivePolicy(keepAliveIdleFor == null ? disabled() : whenIdleFor(keepAliveIdleFor))
+                .build();
     }
 
     @After

@@ -130,16 +130,6 @@ public abstract class GrpcServerBuilder {
     public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
 
     /**
-     * Enable wire-logging for this server.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract GrpcServerBuilder enableWireLogging(String loggerName);
-
-    /**
      * Enables wire-logging for connections created by this builder.
      *
      * @param loggerName The name of the logger to log wire events.
