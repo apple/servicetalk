@@ -20,6 +20,11 @@
     <Source name="~.*Benchmark\.java"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
+  <!-- SpotBugs does not understand that method is invoked multiple times -->
+  <Match>
+    <Source name="~.*Benchmark\.java"/>
+    <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+  </Match>
   <!-- SpotBugs does not understand that subscription field will be initialized -->
   <Match>
     <Class name="io.servicetalk.benchmark.concurrent.ConnectableBufferOutputStreamBenchmark"/>

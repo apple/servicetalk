@@ -20,4 +20,9 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
+  <!-- SpotBugs incorrectly detects number of usages in a loop -->
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+  </Match>
 </FindBugsFilter>
