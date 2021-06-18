@@ -15,19 +15,24 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslConfig;
+
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
 import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A factory for creating {@link SslContext}s.
@@ -42,12 +47,10 @@ public final class SslContextFactory {
      * A new context for a client using the passed {@code config}.
      *
      * @param config SSL config.
-     * @param supportedAlpnProtocols the list of supported ALPN protocols.
      * @return A new {@link SslContext} for a client.
      */
-    public static SslContext forClient(ReadOnlyClientSecurityConfig config, List<String> supportedAlpnProtocols) {
-        requireNonNull(config);
-        SslContextBuilder builder = SslContextBuilder.forClient()
+    public static SslContext forClient(ClientSslConfig config) {
+        final SslContextBuilder builder = SslContextBuilder.forClient()
                 .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
         configureTrustManager(config, builder);
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
@@ -57,8 +60,8 @@ public final class SslContextFactory {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.keyCertChainSupplier().get();
-                keySupplier = config.keySupplier().get();
+                keyCertChainSupplier = supplierNullSafe(config.keyCertChainSupplier());
+                keySupplier = supplierNullSafe(config.keySupplier());
                 builder.keyManager(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
@@ -68,11 +71,12 @@ public final class SslContextFactory {
                 }
             }
         }
-        builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
+        List<String> alpnProtocols = config.alpnProtocols();
+        builder.sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()));
 
-        builder.protocols(config.protocols());
+        builder.protocols(config.sslProtocols());
         builder.ciphers(config.ciphers());
-        builder.applicationProtocolConfig(nettyApplicationProtocol(supportedAlpnProtocols));
+        builder.applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
         try {
             return builder.build();
         } catch (SSLException e) {
@@ -84,13 +88,10 @@ public final class SslContextFactory {
      * A new context for a server using the passed {@code config}.
      *
      * @param config SSL config.
-     * @param supportedAlpnProtocols the list of supported ALPN protocols.
      * @return A new {@link SslContext} for a server.
      */
-    public static SslContext forServer(ReadOnlyServerSecurityConfig config, List<String> supportedAlpnProtocols) {
-        requireNonNull(config);
-        SslContextBuilder builder;
-
+    public static SslContext forServer(ServerSslConfig config) {
+        final SslContextBuilder builder;
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
             builder = SslContextBuilder.forServer(keyManagerFactory);
@@ -98,8 +99,8 @@ public final class SslContextFactory {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.keyCertChainSupplier().get();
-                keySupplier = config.keySupplier().get();
+                keyCertChainSupplier = supplierNullSafe(config.keyCertChainSupplier());
+                keySupplier = supplierNullSafe(config.keySupplier());
                 builder = SslContextBuilder.forServer(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
@@ -110,10 +111,11 @@ public final class SslContextFactory {
             }
         }
 
+        List<String> alpnProtocols = config.alpnProtocols();
         builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
-                .applicationProtocolConfig(nettyApplicationProtocol(supportedAlpnProtocols));
+                .applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
 
-        switch (config.clientAuth()) {
+        switch (config.clientAuthMode()) {
             case NONE:
                 builder.clientAuth(ClientAuth.NONE);
                 break;
@@ -124,13 +126,13 @@ public final class SslContextFactory {
                 builder.clientAuth(ClientAuth.REQUIRE);
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported ClientAuth value: " + config.clientAuth());
+                throw new IllegalArgumentException("Unsupported: " + config.clientAuthMode());
         }
         configureTrustManager(config, builder);
-        builder.protocols(config.protocols());
+        builder.protocols(config.sslProtocols());
         builder.ciphers(config.ciphers());
 
-        builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
+        builder.sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()));
         try {
             return builder.build();
         } catch (SSLException e) {
@@ -138,16 +140,21 @@ public final class SslContextFactory {
         }
     }
 
-    private static void configureTrustManager(ReadOnlySecurityConfig config, SslContextBuilder builder) {
+    private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
         if (config.trustManagerFactory() != null) {
             builder.trustManager(config.trustManagerFactory());
         } else {
-            InputStream trustManagerStream = config.trustCertChainSupplier().get();
+            InputStream trustManagerStream = supplierNullSafe(config.trustCertChainSupplier());
             try {
                 builder.trustManager(trustManagerStream);
             } finally {
                 closeAndRethrowUnchecked(trustManagerStream);
             }
         }
+    }
+
+    @Nullable
+    private static <T> T supplierNullSafe(@Nullable Supplier<T> supplier) {
+        return supplier == null ? null : supplier.get();
     }
 }

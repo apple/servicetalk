@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,9 +40,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class FromInMemoryPublisherAbstractTest {
 
@@ -51,7 +51,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     protected abstract InMemorySource newPublisher(Executor executor, String[] values);
 
     @Test
-    public void testRequestAllValues() {
+    void testRequestAllValues() {
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(source.values().length);
@@ -60,7 +60,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testRequestInChunks() {
+    void testRequestInChunks() {
         InMemorySource source = newSource(10);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -70,7 +70,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testNullAsValue() {
+    void testNullAsValue() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
         toSource(source.publisher()).subscribe(subscriber);
@@ -80,7 +80,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testRequestPostComplete() {
+    void testRequestPostComplete() {
         // Due to race between on* and request-n, request-n may arrive after onComplete/onError.
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
@@ -91,7 +91,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testRequestPostError() {
+    void testRequestPostError() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
         toSource(source.publisher().afterOnNext(n -> {
@@ -107,7 +107,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testReentrant() {
+    void testReentrant() {
         InMemorySource source = newSource(6);
         Publisher<String> p = source.publisher().beforeOnNext(s -> subscriber.awaitSubscription().request(5));
         toSource(p).subscribe(subscriber);
@@ -116,7 +116,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testReactiveStreams2_13() {
+    void testReactiveStreams2_13() {
         InMemorySource source = newSource(6);
         Publisher<String> p = source.publisher().beforeOnNext(s -> {
             throw DELIBERATE_EXCEPTION;
@@ -127,13 +127,13 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testIncompleteRequest() {
+    void testIncompleteRequest() {
         InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
         subscriber.awaitSubscription().cancel();
@@ -145,7 +145,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testCancelFromInOnNext() {
+    void testCancelFromInOnNext() {
         InMemorySource source = newSource(2);
         toSource(source.publisher().afterOnNext(n -> {
             subscriber.awaitSubscription().cancel();
@@ -158,7 +158,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testReentrantInvalidRequestN() throws InterruptedException {
+    void testReentrantInvalidRequestN() throws InterruptedException {
         InMemorySource source = newSource(2);
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
@@ -206,7 +206,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testInvalidRequestNZeroLengthArrayNoMultipleTerminal() {
+    void testInvalidRequestNZeroLengthArrayNoMultipleTerminal() {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
@@ -215,7 +215,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testInvalidRequestAfterCompleteDoesNotDeliverOnError() {
+    void testInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -225,7 +225,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     @Test
-    public void testOnNextThrows() {
+    void testOnNextThrows() {
         final AtomicReference<AssertionError> assertErrorRef = new AtomicReference<>();
         final AtomicBoolean onErrorCalled = new AtomicBoolean();
 

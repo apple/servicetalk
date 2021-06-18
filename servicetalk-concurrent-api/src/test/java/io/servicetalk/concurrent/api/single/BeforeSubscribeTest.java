@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,9 +31,9 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
+class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         List<Throwable> failures = new ArrayList<>();
         toSource(doSubscribe(Single.succeeded("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;

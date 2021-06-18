@@ -80,7 +80,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                     return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                             .flatMap(response -> handleConnectResponse(c, response))
                             // Close recently created connection in case of any error while it connects to the proxy:
-                            .recoverWith(t -> c.closeAsync().concat(failed(t)));
+                            .onErrorResume(t -> c.closeAsync().concat(failed(t)));
                 } catch (Throwable t) {
                     return c.closeAsync().concat(failed(t));
                 }

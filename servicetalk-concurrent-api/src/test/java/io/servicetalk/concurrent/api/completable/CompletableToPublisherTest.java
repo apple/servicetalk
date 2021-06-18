@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -38,16 +37,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class CompletableToPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+class CompletableToPublisherTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void invalidRequestNCancelsCompletable() {
+    void invalidRequestNCancelsCompletable() {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         toSource(completable.<String>toPublisher()).subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
@@ -58,14 +55,14 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void noTerminalSucceeds() {
+    void noTerminalSucceeds() {
         toSource(Completable.completed().<String>toPublisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -78,7 +75,7 @@ public class CompletableToPublisherTest {
             }
         })
                 .afterCancel(analyzed::countDown)
-                .subscribeOn(executorRule.executor())
+                .subscribeOn(executorExtension.executor())
                 .<String>toPublisher())
                 .subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
@@ -91,7 +88,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnComplete() throws Exception {
+    void publishOnOriginalIsPreservedOnComplete() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
@@ -103,7 +100,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnError() throws Exception {
+    void publishOnOriginalIsPreservedOnError() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
@@ -116,7 +113,7 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+    void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
@@ -134,7 +131,7 @@ public class CompletableToPublisherTest {
         final Thread testThread = currentThread();
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
-        toSource(completable.publishOn(executorRule.executor())
+        toSource(completable.publishOn(executorExtension.executor())
                 .beforeOnComplete(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onComplete " +

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,11 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -37,17 +34,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class PublisherBufferTest {
+class PublisherBufferTest {
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
-    public static final int BUFFER_SIZE_HINT = 8;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+    static final int BUFFER_SIZE_HINT = 8;
     private final TestPublisher<Integer> original = new TestPublisher<>();
     private final TestPublisher<SumAccumulator> boundaries = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
 
-    public PublisherBufferTest() {
+    PublisherBufferTest() {
         toSource(original.buffer(new BufferStrategy<Integer, SumAccumulator, Integer>() {
             @Override
             public Publisher<SumAccumulator> boundaries() {
@@ -65,7 +59,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void invalidBufferSizeHint() {
+    void invalidBufferSizeHint() {
         TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
         toSource(Publisher.<Integer>empty()
                 .buffer(new BufferStrategy<Integer, Accumulator<Integer, Integer>, Integer>() {
@@ -84,7 +78,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void emptyBuffer() {
+    void emptyBuffer() {
         bufferSubscriber.awaitSubscription().request(1);
         verifyNoBuffersNoTerminal();
 
@@ -94,7 +88,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void originalCompleteBeforeBufferRequested() {
+    void originalCompleteBeforeBufferRequested() {
         verifyNoBuffersNoTerminal();
 
         original.onComplete();
@@ -106,7 +100,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void originalFailedBeforeBufferRequested() {
+    void originalFailedBeforeBufferRequested() {
         verifyNoBuffersNoTerminal();
 
         original.onError(DELIBERATE_EXCEPTION);
@@ -118,7 +112,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void bufferContainsItemsBeforeBoundaryClose() {
+    void bufferContainsItemsBeforeBoundaryClose() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -129,7 +123,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void itemCompletionCancelsBoundaries() {
+    void itemCompletionCancelsBoundaries() {
         verifyNoBuffersNoTerminal();
         original.onComplete();
         emitBoundary();
@@ -139,7 +133,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void itemFailureCancelsBoundaries() {
+    void itemFailureCancelsBoundaries() {
         verifyNoBuffersNoTerminal();
         original.onError(DELIBERATE_EXCEPTION);
         emitBoundary();
@@ -149,7 +143,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void multipleBoundaries() {
+    void multipleBoundaries() {
         verifyNoBuffersNoTerminal();
         bufferSubscriber.awaitSubscription().request(2);
 
@@ -165,14 +159,14 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void bufferSubCancel() {
+    void bufferSubCancel() {
         bufferSubscriber.awaitSubscription().cancel();
         verifyCancelled(original);
         verifyCancelled(boundaries);
     }
 
     @Test
-    public void itemsBufferedTillBoundariesRequested() {
+    void itemsBufferedTillBoundariesRequested() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -182,7 +176,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void itemsAndCompletionBufferedTillBoundariesRequested() {
+    void itemsAndCompletionBufferedTillBoundariesRequested() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -195,7 +189,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void itemsAndFailureBufferedTillBoundariesRequested() {
+    void itemsAndFailureBufferedTillBoundariesRequested() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -208,7 +202,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void boundariesCompletion() {
+    void boundariesCompletion() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -219,7 +213,7 @@ public class PublisherBufferTest {
     }
 
     @Test
-    public void boundariesFailure() {
+    void boundariesFailure() {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
@@ -228,9 +222,9 @@ public class PublisherBufferTest {
         verifyCancelled(original);
     }
 
-    @Ignore("Accumulator will not emit boundary ATM")
+    @Disabled("Accumulator will not emit boundary ATM")
     @Test
-    public void accumulateEmitsBoundary() {
+    void accumulateEmitsBoundary() {
         bufferSubscriber.awaitSubscription().request(1);
         boundaries.onNext(new SumAccumulator(boundaries, true));
         verifyEmptyBufferReceived();

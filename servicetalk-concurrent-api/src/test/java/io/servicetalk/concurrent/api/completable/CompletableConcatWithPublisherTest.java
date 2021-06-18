@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,10 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -34,21 +31,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CompletableConcatWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class CompletableConcatWithPublisherTest {
     private TestPublisherSubscriber<Integer> subscriber;
     private TestCompletable source;
     private TestPublisher<Integer> next;
     private TestSubscription subscription;
     private TestCancellable cancellable;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         subscriber = new TestPublisherSubscriber<>();
         cancellable = new TestCancellable();
         source = new TestCompletable.Builder().disableAutoOnSubscribe().build();
@@ -60,7 +54,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void bothCompletion() {
+    void bothCompletion() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
@@ -72,7 +66,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void sourceCompletionNextError() {
+    void sourceCompletionNextError() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
@@ -80,7 +74,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribe() {
+    void invalidRequestBeforeNextSubscribe() {
         subscriber.awaitSubscription().request(-1);
         triggerNextSubscribe();
         assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
@@ -88,7 +82,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestAfterNextSubscribe() {
+    void invalidRequestAfterNextSubscribe() {
         triggerNextSubscribe();
         subscriber.awaitSubscription().request(-1);
         assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
@@ -96,7 +90,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void multipleInvalidRequest() {
+    void multipleInvalidRequest() {
         subscriber.awaitSubscription().request(-1);
         triggerNextSubscribe();
         subscriber.awaitSubscription().request(-10);
@@ -105,7 +99,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidThenValidRequest() {
+    void invalidThenValidRequest() {
         subscriber.awaitSubscription().request(-1);
         subscriber.awaitSubscription().request(10);
         triggerNextSubscribe();
@@ -114,7 +108,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void request0Propagated() {
+    void request0Propagated() {
         subscriber.awaitSubscription().request(0);
         triggerNextSubscribe();
         assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
@@ -122,7 +116,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void request0PropagatedAfterComplete() {
+    void request0PropagatedAfterComplete() {
         source.onComplete();
         subscriber.awaitSubscription().request(0);
         next.onSubscribe(subscription);
@@ -131,7 +125,7 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidThenValidRequestAcrossNext() {
+    void invalidThenValidRequestAcrossNext() {
         subscriber.awaitSubscription().request(-1);
         triggerNextSubscribe();
         subscriber.awaitSubscription().request(10);
@@ -140,38 +134,38 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
-    public void sourceError() {
+    void sourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
     }
 
     @Test
-    public void cancelSource() {
+    void cancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
-        assertTrue("Original completable not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertTrue(cancellable.isCancelled(), "Original completable not cancelled.");
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
         triggerNextSubscribe();
-        assertTrue("Next source not cancelled.", subscription.isCancelled());
+        assertTrue(subscription.isCancelled(), "Next source not cancelled.");
     }
 
     @Test
-    public void cancelSourcePostRequest() {
+    void cancelSourcePostRequest() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
-        assertTrue("Original completable not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertTrue(cancellable.isCancelled(), "Original completable not cancelled.");
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
     }
 
     @Test
-    public void cancelNext() {
+    void cancelNext() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
-        assertFalse("Original completable cancelled unexpectedly.", cancellable.isCancelled());
-        assertTrue("Next source not cancelled.", subscription.isCancelled());
+        assertFalse(cancellable.isCancelled(), "Original completable cancelled unexpectedly.");
+        assertTrue(subscription.isCancelled(), "Next source not cancelled.");
     }
 
     private void triggerNextSubscribe() {

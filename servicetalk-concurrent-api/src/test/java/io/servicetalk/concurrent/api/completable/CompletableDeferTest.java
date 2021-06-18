@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -32,12 +32,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class CompletableDeferTest {
+class CompletableDeferTest {
 
     private Supplier<Completable> factory;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         @SuppressWarnings("unchecked")
         Supplier<Completable> mock = mock(Supplier.class);
         when(mock.get()).thenReturn(completed());
@@ -45,7 +45,7 @@ public class CompletableDeferTest {
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() throws Exception {
+    void testEverySubscribeCreatesNew() {
         Completable source = Completable.defer(factory);
         listenAndVerify(source);
         listenAndVerify(source);

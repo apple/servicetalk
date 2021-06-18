@@ -15,13 +15,15 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import javax.annotation.Nullable;
+import io.servicetalk.transport.api.ClientSslConfig;
 
-import static java.util.Objects.requireNonNull;
+import javax.annotation.Nullable;
 
 /**
  * Read-only security config for clients.
+ * @deprecated Use {@link ClientSslConfig}.
  */
+@Deprecated
 public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
     @Nullable
     protected String hostnameVerificationAlgorithm = "HTTPS";
@@ -34,16 +36,7 @@ public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
     @Nullable
     protected String sniHostname;
 
-    /**
-     * Creates new instance.
-     *
-     * @param serverHostname Hostname for the server.
-     * @param serverPort Port for the server.
-     */
-    protected ReadOnlyClientSecurityConfig(final String serverHostname, final int serverPort) {
-        hostNameVerificationHost = requireNonNull(serverHostname);
-        hostNameVerificationPort = serverPort;
-        sniHostname = serverHostname;
+    protected ReadOnlyClientSecurityConfig() {
     }
 
     /**

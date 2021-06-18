@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
@@ -36,20 +34,17 @@ import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnSubscribeTest {
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private Consumer<Subscription> doOnSubscribe;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         doOnSubscribe = mock(Consumer.class);
     }
 
     @Test
-    public void testOnSubscribe() {
+    void testOnSubscribe() {
         toSource(doSubscribe(from("Hello"), doOnSubscribe)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is("Hello"));

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -98,8 +97,8 @@ final class GrpcRouter {
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
-        final StreamingHttpResponse response = newResponse(responseFactory, null, STATUS_UNIMPLEMENTED,
-                ctx.executionContext().bufferAllocator());
+        final StreamingHttpResponse response = newErrorResponse(responseFactory, null, STATUS_UNIMPLEMENTED,
+                null, ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);
     };
@@ -265,10 +264,10 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .recoverWith(cause -> succeeded(newErrorResponse(responseFactory,
-                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator())));
+                                        .onErrorReturn(cause -> newErrorResponse(responseFactory, finalServiceContext,
+                                                null, cause, ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
-                                return succeeded(newErrorResponse(responseFactory, serviceContext, t,
+                                return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator()));
                             }
                         }
@@ -321,7 +320,7 @@ final class GrpcRouter {
                                     serializationProvider.serializerFor(responseEncoding, responseClass),
                                     ctx.executionContext().bufferAllocator()));
                         } catch (Throwable t) {
-                            return succeeded(newErrorResponse(responseFactory, serviceContext, t,
+                            return succeeded(newErrorResponse(responseFactory, serviceContext, null, t,
                                     ctx.executionContext().bufferAllocator()));
                         }
                     }
@@ -402,16 +401,16 @@ final class GrpcRouter {
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
                             return request.firstOrError()
-                                    .recoverWith(t -> {
+                                    .onErrorMap(t -> {
                                         if (t instanceof NoSuchElementException) {
-                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
                                                     SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
-                                                    .asException());
+                                                    .asException();
                                         } else if (t instanceof IllegalArgumentException) {
-                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
-                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException());
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
+                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
                                         } else {
-                                            return failed(t);
+                                            return t;
                                         }
                                     })
                                     .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
@@ -466,7 +465,7 @@ final class GrpcRouter {
                                         ctx.executionContext().bufferAllocator()).payloadBody(response,
                                                 serializationProvider.serializerFor(responseEncoding, responseClass));
                             } catch (Throwable t) {
-                                return newErrorResponse(responseFactory, serviceContext, t,
+                                return newErrorResponse(responseFactory, serviceContext, null, t,
                                         ctx.executionContext().bufferAllocator());
                             }
                         }

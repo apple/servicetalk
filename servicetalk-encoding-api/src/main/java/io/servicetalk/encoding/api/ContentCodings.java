@@ -20,10 +20,12 @@ import io.servicetalk.encoding.api.DefaultContentCodecBuilder.GzipContentCodecBu
 
 /**
  * Common available encoding implementations.
+ * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings}
  */
+@Deprecated
 public final class ContentCodings {
 
-    private static final ContentCodec IDENTITY = IdentityContentCodec.INSTANCE;
+    private static final ContentCodec IDENTITY = Identity.identity();
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 

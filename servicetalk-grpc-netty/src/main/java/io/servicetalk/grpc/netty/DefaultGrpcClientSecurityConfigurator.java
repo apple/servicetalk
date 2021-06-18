@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+@Deprecated
 final class DefaultGrpcClientSecurityConfigurator<U, R> implements GrpcClientSecurityConfigurator<U, R> {
     private final SingleAddressHttpClientSecurityConfigurator<U, R> delegate;
     private final GrpcClientBuilder<U, R> original;

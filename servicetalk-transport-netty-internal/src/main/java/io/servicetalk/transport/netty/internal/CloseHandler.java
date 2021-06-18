@@ -22,6 +22,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.ssl.SslCloseCompletionEvent;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
@@ -128,6 +129,16 @@ public abstract class CloseHandler {
      * @param ctx {@link ChannelHandlerContext}
      */
     abstract void channelClosedOutbound(ChannelHandlerContext ctx);
+
+    /**
+     * Signal {@link Channel} observed {@link SslCloseCompletionEvent#SUCCESS}.
+     * <p>
+     * Received <a href="https://tools.ietf.org/html/rfc5246#section-7.2.1">close_notify</a> alert from the peer.
+     * This message notifies that the sender will not send any more messages on this connection.
+     *
+     * @param ctx {@link ChannelHandlerContext}
+     */
+    abstract void channelCloseNotify(ChannelHandlerContext ctx);
 
     /**
      * Request {@link Channel} inbound close, to be emitted from the {@link EventLoop} for the channel.
@@ -248,6 +259,10 @@ public abstract class CloseHandler {
 
         @Override
         void channelClosedOutbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        void channelCloseNotify(final ChannelHandlerContext ctx) {
         }
 
         @Override

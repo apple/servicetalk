@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class BeforeErrorTest extends AbstractWhenOnErrorTest {
+class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
     @Override
     protected <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
@@ -38,7 +38,7 @@ public class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
     @Override
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         this.<String>doError(Publisher.failed(srcEx), t1 -> {
             throw DELIBERATE_EXCEPTION;

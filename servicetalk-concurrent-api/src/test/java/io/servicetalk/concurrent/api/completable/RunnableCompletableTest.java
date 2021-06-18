@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -33,18 +33,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class RunnableCompletableTest {
+class RunnableCompletableTest {
     private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Runnable factory;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         factory = mock(Runnable.class);
     }
 
     @Test
-    public void testEverySubscribeRuns() {
+    void testEverySubscribeRuns() {
         Completable source = Completable.fromRunnable(factory);
         listenAndVerify(source);
         listenAndVerify(source);
@@ -60,7 +60,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void testOnError() {
+    void testOnError() {
         doThrow(IllegalArgumentException.class).when(factory).run();
         Completable source = Completable.fromRunnable(factory);
         listenAndVerifyError(source);
@@ -76,7 +76,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void cancelInterrupts() throws Exception {
+    void cancelInterrupts() throws Exception {
         final Completable source = Completable.fromRunnable(factory);
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -111,7 +111,7 @@ public class RunnableCompletableTest {
     }
 
     @Test
-    public void onSubscribeThrows() {
+    void onSubscribeThrows() {
         final Completable source = Completable.fromRunnable(factory);
 
         final CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);

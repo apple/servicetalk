@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -52,16 +49,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class MulticastPublisherTest {
+@Timeout(60)
+class MulticastPublisherTest {
 
     private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private TestSubscription subscription = new TestSubscription();
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(60, SECONDS);
-
     @Test
-    public void emitItemsAndThenError() {
+    void emitItemsAndThenError() {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
@@ -82,13 +77,13 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void duplicateOnSubscribeIsInvalid() {
-        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>(immediate()) {
+    void duplicateOnSubscribeIsInvalid() {
+        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Integer> subscriber) {
                 // noop
             }
-        }, 2, immediate());
+        }, 2);
         source.forEach(t -> {
             //ignore
         });
@@ -105,7 +100,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void sourceSubscribeAfter() {
+    void sourceSubscribeAfter() {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
@@ -127,7 +122,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void sourceSubscribeBefore() {
+    void sourceSubscribeBefore() {
         source = new TestPublisher<>(); // With auto-on-subscribe enabled
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -147,7 +142,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void concurrentRequestN() throws InterruptedException {
+    void concurrentRequestN() throws InterruptedException {
         final int expectedSubscribers = 50;
         Publisher<Integer> multicast = source.multicastToExactly(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
@@ -187,7 +182,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void concurrentRequestNAndOnNext() throws BrokenBarrierException, InterruptedException {
+    void concurrentRequestNAndOnNext() throws BrokenBarrierException, InterruptedException {
         final int expectedSubscribers = 400;
         Publisher<Integer> multicast = source.multicastToExactly(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
@@ -247,17 +242,17 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void reentryFirstSubscriberRequestCountIsCorrect() {
+    void reentryFirstSubscriberRequestCountIsCorrect() {
         reentrySubscriberRequestCountIsCorrect(true);
     }
 
     @Test
-    public void reentrySecondSubscriberRequestCountIsCorrect() {
+    void reentrySecondSubscriberRequestCountIsCorrect() {
         reentrySubscriberRequestCountIsCorrect(false);
     }
 
     @Test
-    public void reentryBothSubscriberRequestCountIsCorrect() {
+    void reentryBothSubscriberRequestCountIsCorrect() {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
@@ -318,7 +313,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void reentryAndMultiQueueSupportsNull() {
+    void reentryAndMultiQueueSupportsNull() {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
@@ -351,7 +346,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void requestLongMax() {
+    void requestLongMax() {
         final int maxQueueSize = 1000;
         Publisher<Integer> multicast = source.multicastToExactly(2, maxQueueSize);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -374,7 +369,7 @@ public class MulticastPublisherTest {
     }
 
     @Test
-    public void longMaxForAllSubs() throws Exception {
+    void longMaxForAllSubs() throws Exception {
         Publisher<Integer> original = range(1, 10);
         ArrayList<Integer> items = original.collect((Supplier<ArrayList<Integer>>) ArrayList::new, (list, integer) -> {
             list.add(integer);

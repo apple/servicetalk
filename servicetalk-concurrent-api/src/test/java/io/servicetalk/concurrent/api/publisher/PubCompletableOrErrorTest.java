@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,9 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -30,34 +27,32 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PubCompletableOrErrorTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class PubCompletableOrErrorTest {
     private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
 
     @Test
-    public void noElementsCompleted() {
+    void noElementsCompleted() {
         toSource(empty().completableOrError()).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void noElementsError() {
+    void noElementsError() {
         toSource(failed(DELIBERATE_EXCEPTION).completableOrError()).subscribe(subscriber);
         assertSame(DELIBERATE_EXCEPTION, subscriber.awaitOnError());
     }
 
     @Test
-    public void oneElementsAlwaysFails() {
+    void oneElementsAlwaysFails() {
         toSource(from("foo").completableOrError()).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void twoElementsAlwaysFails() {
+    void twoElementsAlwaysFails() {
         // Use TestPublisher to force deliver two items, and verify the operator doesn't duplicate terminate.
         TestPublisher<String> publisher = new TestPublisher<>();
         toSource(publisher.completableOrError()).subscribe(subscriber);

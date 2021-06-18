@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,11 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,6 +52,7 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
  */
 public abstract class GrpcClientBuilder<U, R>
         implements SingleAddressGrpcClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
     private boolean appendedCatchAllFilter;
 
     @Override
@@ -72,6 +75,9 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     @Override
+    public abstract GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
+
+    @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
@@ -82,8 +88,12 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
 
+    @Deprecated
     @Override
     public abstract GrpcClientSecurityConfigurator<U, R> secure();
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     @Override
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
@@ -270,7 +280,7 @@ public abstract class GrpcClientBuilder<U, R>
                     } catch (Throwable t) {
                         return failed(toGrpcException(t));
                     }
-                    return resp.recoverWith(t -> failed(toGrpcException(t)));
+                    return resp.onErrorMap(GrpcClientBuilder::toGrpcException);
                 }
             });
             appendedCatchAllFilter = true;

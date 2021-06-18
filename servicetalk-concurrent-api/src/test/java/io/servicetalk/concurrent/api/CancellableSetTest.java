@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet> {
+class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet> {
     @Override
     protected CancellableSet newCompositeCancellable() {
         return new CancellableSet();
@@ -37,7 +37,7 @@ public class CancellableSetTest extends AbstractCompositeCancellableTest<Cancell
     }
 
     @Test
-    public void testAddAndRemove() {
+    void testAddAndRemove() {
         CancellableSet c = newCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
         add(c, cancellable);
@@ -47,7 +47,7 @@ public class CancellableSetTest extends AbstractCompositeCancellableTest<Cancell
     }
 
     @Test
-    public void duplicateAddDoesNotCancel() {
+    void duplicateAddDoesNotCancel() {
         CancellableSet c = newCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
         int addCount = 0;

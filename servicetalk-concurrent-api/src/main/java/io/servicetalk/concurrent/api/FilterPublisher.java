@@ -31,8 +31,8 @@ import static java.util.Objects.requireNonNull;
 final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private final Predicate<? super T> predicate;
 
-    FilterPublisher(Publisher<T> source, Predicate<? super T> predicate, Executor executor) {
-        super(source, executor);
+    FilterPublisher(Publisher<T> source, Predicate<? super T> predicate) {
+        super(source);
         this.predicate = requireNonNull(predicate);
     }
 

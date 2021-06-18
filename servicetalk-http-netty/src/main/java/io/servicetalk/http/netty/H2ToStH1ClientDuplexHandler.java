@@ -27,29 +27,27 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpScheme;
-import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
+import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
-import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
-import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
+import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -87,7 +85,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2Headers.scheme(scheme.name());
                 h2Headers.path(metaData.requestTarget());
             }
-            ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
+            writeMetaData(ctx, metaData, h2Headers, promise);
         } else if (msg instanceof Buffer) {
             writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {
@@ -110,7 +108,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
                 }
                 httpStatus = HttpResponseStatus.of(status);
-                if (httpStatus.statusClass().equals(INFORMATIONAL_1XX)) {
+                if (httpStatus.statusClass() == INFORMATIONAL_1XX) {
                     // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
                     // "real" response.
                     //
@@ -136,14 +134,6 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 if (httpStatus != null) {
                     fireFullResponse(ctx, h2Headers, httpStatus);
                 } else {
-                    if (!HEAD.equals(method)) {
-                        // https://tools.ietf.org/html/rfc7230#section-3.3
-                        // Responses to the HEAD request method (Section 4.3.2 of [RFC7231]) never include a message
-                        // body because the associated response header fields (e.g., Transfer-Encoding, Content-Length,
-                        // etc.), if present, indicate only what their values would have been if the request method had
-                        // been GET (Section 4.3.1 of [RFC7231]).
-                        validateContentLengthMatch();
-                    }
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null, false));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
@@ -175,21 +165,18 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         h2HeadersSanitizeForH1(h2Headers);
         if (httpStatus != null) {
             final int statusCode = httpStatus.code();
-            final long contentLength = contentLength(h2Headers);
-            if (contentLength < 0) {
-                if (fullResponse) {
-                    if (shouldAddZeroContentLength(httpStatus.code(), method)) {
+            if (!h2Headers.contains(CONTENT_LENGTH)) {
+                if (serverMaySendPayloadBodyFor(statusCode, method)) {
+                    if (fullResponse) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
+                    } else {
+                        h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
-                } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {
-                    h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
                 }
-            } else if (!shouldAddZeroContentLength(statusCode, method)) {
-                throw new IllegalArgumentException("content-length (" + contentLength +
+            } else if (!responseMayHaveContent(statusCode, method)) {
+                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");
-            } else if (fullResponse && contentLength > 0 && !HEAD.equals(method)) {
-                handleUnexpectedContentLength();
             }
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());

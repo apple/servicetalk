@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,31 +18,28 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
-    public void testForCancel() {
+    void testForCancel() {
         toSource(doFinally(Completable.never(), doFinally)).subscribe(listener);
         listener.awaitSubscription().cancel();
         verify(doFinally).cancel();
@@ -50,7 +47,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostSuccess() {
+    void testForCancelPostSuccess() {
         toSource(doFinally(Completable.completed(), doFinally)).subscribe(listener);
         listener.awaitSubscription().cancel();
         verify(doFinally).onComplete();
@@ -58,15 +55,15 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostError() {
-        toSource(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+    void testForCancelPostError() {
+        toSource(doFinally(Completable.failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
         listener.awaitSubscription().cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
-    public void testForSuccess() {
+    void testForSuccess() {
         toSource(doFinally(Completable.completed(), doFinally)).subscribe(listener);
         listener.awaitOnComplete();
         listener.awaitSubscription().cancel();
@@ -75,22 +72,21 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForError() {
-        toSource(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+    void testForError() {
+        toSource(doFinally(Completable.failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
-    public void testCallbackThrowsErrorWhenCancel() {
+    void testCallbackThrowsErrorWhenCancel() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
             toSource(doFinally(completable, mock)).subscribe(listener);
-            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            listener.awaitSubscription().cancel();
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> listener.awaitSubscription().cancel());
+            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             completable.verifyCancelled();
             verify(mock).cancel();
@@ -99,10 +95,10 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsErrorOnComplete();
+    abstract void testCallbackThrowsErrorOnComplete();
 
     @Test
-    public abstract void testCallbackThrowsErrorOnError();
+    abstract void testCallbackThrowsErrorOnError();
 
     protected abstract Completable doFinally(Completable completable, TerminalSignalConsumer doFinally);
 

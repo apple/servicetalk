@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -47,78 +48,245 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class MultiAddressHttpClientBuilder<U, R>
         extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    /**
+     * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
+     * @param <U> The unresolved address type.
+     * @param <R> The resolved address type.
+     */
+    @FunctionalInterface
+    public interface SingleAddressInitializer<U, R> {
+        /**
+         * Configures the passed {@link SingleAddressHttpClientBuilder} for the given {@code scheme} and
+         * {@code address}.
+         * @param scheme The scheme parsed from the request URI.
+         * @param address The unresolved address.
+         * @param builder The builder to customize and build a {@link StreamingHttpClient}.
+         */
+        void initialize(String scheme, U address, SingleAddressHttpClientBuilder<U, R> builder);
+
+        /**
+         * Appends the passed {@link SingleAddressInitializer} to this {@link SingleAddressInitializer} such that this
+         * {@link SingleAddressInitializer} is applied first and then the passed {@link SingleAddressInitializer}.
+         *
+         * @param toAppend {@link SingleAddressInitializer} to append
+         * @return A composite {@link SingleAddressInitializer} after the append operation.
+         */
+        default SingleAddressInitializer<U, R> append(SingleAddressInitializer<U, R> toAppend) {
+            return (scheme, address, builder) -> {
+                initialize(scheme, address, builder);
+                toAppend.initialize(scheme, address, builder);
+            };
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#ioExecutor(IoExecutor)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#bufferAllocator(BufferAllocator)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#socketOption(SocketOption, Object)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)} on the last argument
+     * of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                           LogLevel logLevel,
                                                                           BooleanSupplier logUserData);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#protocols(HttpProtocolConfig...)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#allowDropResponseTrailers(boolean)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
-     *
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and create a
+     * {@link SingleAddressInitializer} that invokes {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
      * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
+    @Deprecated
     public abstract MultiAddressHttpClientBuilder<U, R> secure(
             BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction);
 
+    /**
+     * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
+     * @param initializer Initializes the {@link SingleAddressHttpClientBuilder} used to build new
+     * {@link StreamingHttpClient}s.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
+
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(Predicate, StreamingHttpConnectionFilterFactory)} on
+     * the last argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                       StreamingHttpConnectionFilterFactory factory) {
         return (MultiAddressHttpClientBuilder<U, R>) super.appendConnectionFilter(predicate, factory);
     }
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFactoryFilter(ConnectionFactoryFilter)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#loadBalancerFactory(HttpLoadBalancerFactory)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract
     MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)} on the
+     * last argument of {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public MultiAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                   final StreamingHttpClientFilterFactory factory) {

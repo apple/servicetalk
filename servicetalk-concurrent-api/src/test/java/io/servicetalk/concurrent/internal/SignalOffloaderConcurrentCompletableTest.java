@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,23 +21,17 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.slf4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -46,39 +40,42 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.slf4j.LoggerFactory.getLogger;
 
-@RunWith(Parameterized.class)
-public class SignalOffloaderConcurrentCompletableTest {
-    private static final Logger LOGGER = getLogger(SignalOffloaderConcurrentCompletableTest.class);
+class SignalOffloaderConcurrentCompletableTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private enum OffloaderTestParam {
+        THREAD_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(ThreadBasedSignalOffloader::new);
+            }
+        },
+        TASK_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(TaskBasedSignalOffloader::new);
+            }
+        };
 
-    public final OffloaderHolder state;
-
-    public SignalOffloaderConcurrentCompletableTest(Supplier<OffloaderHolder> state,
-                                                    @SuppressWarnings("unused") boolean supportsTermination) {
-        this.state = state.get();
+        abstract OffloaderHolder get();
     }
 
-    @Parameterized.Parameters(name = "{index} - thread based: {1}")
-    public static Collection<Object[]> offloaders() {
-        Collection<Object[]> offloaders = new ArrayList<>();
-        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
-        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(TaskBasedSignalOffloader::new), false});
-        return offloaders;
+    private OffloaderHolder state;
+
+    private void init(OffloaderTestParam offloader) {
+        this.state = offloader.get();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         state.shutdown();
     }
 
-    @Test
-    public void concurrentSignalsMultipleEntities() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    void concurrentSignalsMultipleEntities(OffloaderTestParam offloader)
+            throws Exception {
+        init(offloader);
         final int entityCount = 100;
         final OffloaderHolder.SubscriberCancellablePair[] pairs =
                 new OffloaderHolder.SubscriberCancellablePair[entityCount];
@@ -113,13 +110,9 @@ public class SignalOffloaderConcurrentCompletableTest {
             offloader = offloaderFactory.apply(executor);
         }
 
-        void shutdown() {
-            try {
-                executor.closeAsync().toFuture().get();
-                emitters.shutdownNow();
-            } catch (Exception e) {
-                LOGGER.warn("Failed to close the executor {}.", executor, e);
-            }
+        void shutdown() throws Exception {
+            executor.closeAsync().toFuture().get();
+            emitters.shutdownNow();
         }
 
         void awaitTermination() throws Exception {
@@ -138,13 +131,12 @@ public class SignalOffloaderConcurrentCompletableTest {
 
             final SubscriberImpl subscriber;
             final CancellableImpl cancellable;
-            private Subscriber offloadCancellable;
             private Subscriber offloadSubscriber;
 
             SubscriberCancellablePair(SubscriberImpl subscriber, CancellableImpl cancellable) {
                 this.subscriber = subscriber;
                 this.cancellable = cancellable;
-                offloadCancellable = offloader.offloadCancellable(this.subscriber);
+                Subscriber offloadCancellable = offloader.offloadCancellable(this.subscriber);
                 offloadSubscriber = offloader.offloadSubscriber(offloadCancellable);
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -35,7 +35,7 @@ public abstract class AbstractWhenOnCompleteTest {
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         Runnable onComplete = mock(Runnable.class);
         toSource(doComplete(publisher, onComplete)).subscribe(subscriber);
         publisher.onComplete();
@@ -44,7 +44,7 @@ public abstract class AbstractWhenOnCompleteTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         Publisher<String> src = doComplete(Publisher.failed(srcEx), () -> {
             throw DELIBERATE_EXCEPTION;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -46,13 +42,11 @@ import static org.hamcrest.core.Is.is;
  * Test for {@link MulticastPublisher} when the source terminates from within
  * {@link Subscriber#onSubscribe(Subscription)}.
  */
-public class MulticastRealizedSourcePublisherTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class MulticastRealizedSourcePublisherTest {
 
     @Test
-    public void testOnSubscribeErrors() throws InterruptedException {
+    void testOnSubscribeErrors() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION))
                 .multicastToExactly(2);
@@ -66,7 +60,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesNoItems() throws InterruptedException {
+    void testOnSubscribeCompletesNoItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
@@ -79,7 +73,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesWithItems() throws InterruptedException {
+    void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = from(1, 2).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
@@ -92,7 +86,7 @@ public class MulticastRealizedSourcePublisherTest {
     }
 
     @Test
-    public void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
+    void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = from(1).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
@@ -181,7 +175,6 @@ public class MulticastRealizedSourcePublisherTest {
         private final TerminalNotification terminalNotification;
 
         TerminateFromOnSubscribePublisher(TerminalNotification terminalNotification) {
-            super(immediate());
             this.terminalNotification = terminalNotification;
         }
 

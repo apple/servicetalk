@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ReadOnlyByteBufferTest {
+class ReadOnlyByteBufferTest {
     @Test
-    public void directFromString() {
+    void directFromString() {
         String expectedString = "testing";
         ByteBuffer expectedBuffer = allocateDirect(expectedString.length());
         expectedBuffer.put(expectedString.getBytes(US_ASCII));
@@ -46,7 +47,7 @@ public class ReadOnlyByteBufferTest {
     }
 
     @Test
-    public void getLong() {
+    void getLong() {
         ByteBuffer expectedBuffer = allocateDirect(8);
         expectedBuffer.putLong(Long.MAX_VALUE);
         expectedBuffer.flip();
@@ -55,37 +56,37 @@ public class ReadOnlyByteBufferTest {
     }
 
     @Test
-    public void copy() {
+    void copy() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
         assertEquals(buffer, buffer.copy());
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void setNegativeReaderIndex() {
+    @Test
+    void setNegativeReaderIndex() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
-        buffer.readerIndex(-1);
-    }
-
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void setReaderIndexHigherThanWriterIndex() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
-        buffer.readerIndex(buffer.writerIndex() + 1);
-    }
-
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void setWriterIndexLowerThanReaderIndex() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
-        buffer.writerIndex(buffer.readerIndex() - 1);
-    }
-
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void setWriterIndexHigherThanCapacity() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
-        buffer.writerIndex(buffer.capacity() + 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.readerIndex(-1));
     }
 
     @Test
-    public void testIndexOf() {
+    void setReaderIndexHigherThanWriterIndex() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.readerIndex(buffer.writerIndex() + 1));
+    }
+
+    @Test
+    void setWriterIndexLowerThanReaderIndex() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.writerIndex(buffer.readerIndex() - 1));
+    }
+
+    @Test
+    void setWriterIndexHigherThanCapacity() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.writerIndex(buffer.capacity() + 1));
+    }
+
+    @Test
+    void testIndexOf() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
 
         assertEquals(-1, buffer.indexOf(0, 4, (byte) 'a'));

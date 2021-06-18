@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -35,17 +35,17 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class PublisherProcessorConcurrencyTest {
+class PublisherProcessorConcurrencyTest {
 
     private final ExecutorService executorService = newCachedThreadPool();
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void concurrentEmissionAndConsumption() throws Exception {
+    void concurrentEmissionAndConsumption() throws Exception {
         final int items = 10_000;
         final Collection<Integer> expected = Publisher.range(0, items).toFuture().get();
         final CountDownLatch done = new CountDownLatch(1);

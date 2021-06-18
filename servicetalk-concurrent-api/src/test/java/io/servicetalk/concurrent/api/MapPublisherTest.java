@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-public class MapPublisherTest {
+class MapPublisherTest {
 
     private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
             .disableAutoOnSubscribe().build();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testMapFunctionReturnsNull() {
+    void testMapFunctionReturnsNull() {
         Publisher<String> map = source.map(v -> null);
 
         toSource(map).subscribe(subscriber);

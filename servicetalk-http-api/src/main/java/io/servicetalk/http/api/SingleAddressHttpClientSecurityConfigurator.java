@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
@@ -24,9 +25,11 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link ClientSecurityConfigurator} for {@link SingleAddressHttpClientBuilder}.
+ * @deprecated Use {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
+@Deprecated
 public interface SingleAddressHttpClientSecurityConfigurator<U, R> extends ClientSecurityConfigurator {
     /**
      * Commit configuring client security.

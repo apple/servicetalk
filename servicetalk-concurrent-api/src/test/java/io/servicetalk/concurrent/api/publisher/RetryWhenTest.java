@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,9 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -44,9 +42,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -55,10 +54,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryWhenTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class RetryWhenTest {
 
     private TestPublisher<Integer> source = new TestPublisher<>();
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -66,9 +62,9 @@ public class RetryWhenTest {
     private LegacyTestCompletable retrySignal;
     private Executor executor;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
-    public void setUp() {
+    void setUp() {
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
         when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
@@ -78,15 +74,15 @@ public class RetryWhenTest {
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriber);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void publishOnWithRetry() throws Exception {
+    void publishOnWithRetry() {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
@@ -99,13 +95,13 @@ public class RetryWhenTest {
                                 // terminate before we add another entity in the next subscribe. So, we return an
                                 // asynchronously completed Completable.
                                 executor.submit(() -> { }) : failed(t));
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        source.toFuture().get();
+
+        Exception e = assertThrows(ExecutionException.class, () -> source.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
@@ -115,7 +111,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -128,7 +124,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testRequestAcrossRepeat() {
+    void testRequestAcrossRepeat() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -142,7 +138,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testTwoError() {
+    void testTwoError() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -161,7 +157,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -177,7 +173,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelPostErrorButBeforeRetryStart() {
+    void testCancelPostErrorButBeforeRetryStart() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -189,7 +185,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelBeforeRetry() {
+    void testCancelBeforeRetry() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
@@ -201,7 +197,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         subscriber = new TestPublisherSubscriber<>();
         source = new TestPublisher<>();
@@ -216,7 +212,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
         toSource(source.retryWhen((times1, cause1) -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);

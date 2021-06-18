@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,10 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.QueueFullException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
@@ -52,68 +49,65 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class PublisherGroupByTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class PublisherGroupByTest {
     private TestPublisher<Integer> source;
     private TestPublisherSubscriber<Boolean> subscriber;
     private TestSubscription subscription = new TestSubscription();
     private List<TestPublisherSubscriber<Integer>> groupSubs = new ArrayList<>();
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         source = new TestPublisher<>();
         subscriber = new TestPublisherSubscriber<>();
     }
 
     @Test
-    public void testGroupOnNextAndCompleteWithGroupQueue() {
+    void testGroupOnNextAndCompleteWithGroupQueue() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         testGroupOnNextAndComplete(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndErrorWithGroupQueue() {
+    void testGroupOnNextAndErrorWithGroupQueue() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         testGroupOnNextAndError(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndCompleteNoQueue() {
+    void testGroupOnNextAndCompleteNoQueue() {
         toSource(subscribeToAllGroups(10, s -> s)).subscribe(subscriber);
         testGroupOnNextAndComplete(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndErrorNoQueue() {
+    void testGroupOnNextAndErrorNoQueue() {
         toSource(subscribeToAllGroups(10, s -> s)).subscribe(subscriber);
         testGroupOnNextAndError(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextThrowsNoQueue() {
+    void testGroupOnNextThrowsNoQueue() {
         testGroupOnNextThrows(1);
     }
 
     @Test
-    public void testGroupOnNextThrowsWithQueue() {
+    void testGroupOnNextThrowsWithQueue() {
         testGroupOnNextThrows(0);
     }
 
     @Test
-    public void testGroupSubscriberCancelNoQueue() {
+    void testGroupSubscriberCancelNoQueue() {
         testGroupSubscriberCancel(1);
     }
 
     @Test
-    public void testHighDemandWithQueue() {
+    void testHighDemandWithQueue() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -132,7 +126,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testIndividualGroupSubscriptionRequestQueuesGroups() {
+    void testIndividualGroupSubscriptionRequestQueuesGroups() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -154,7 +148,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void groupEnqueueOnComplete() {
+    void groupEnqueueOnComplete() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -184,7 +178,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void groupEnqueueOnError() {
+    void groupEnqueueOnError() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -213,7 +207,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testOnNextThrows() {
+    void testOnNextThrows() {
         toSource(subscribeToAllGroups(10, s -> s).afterOnNext(i -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -230,7 +224,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testIndividualGroupOnNextThrows() {
+    void testIndividualGroupOnNextThrows() {
         AtomicInteger subscriberCount = new AtomicInteger();
         AtomicBoolean failOnNext = new AtomicBoolean();
         toSource(subscribeToAllGroups(10, s -> {
@@ -271,7 +265,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testConcurrentDrain() throws Exception {
+    void testConcurrentDrain() throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final int totalData = 10000;
@@ -348,7 +342,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testGroupsSubscriberCancelled() {
+    void testGroupsSubscriberCancelled() {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         source.onNext(1, 3, 5, 7, 9);
@@ -362,7 +356,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testDelaySubscriptionToGroup() {
+    void testDelaySubscriptionToGroup() {
         List<GroupedPublisher<Boolean, Integer>> groups = subscribe(8);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -379,7 +373,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testGroupLevelQueueBreachWhenNotSubscribed() {
+    void testGroupLevelQueueBreachWhenNotSubscribed() {
         List<GroupedPublisher<Boolean, Integer>> groups = subscribe(16);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -399,7 +393,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testGroupLevelQueueBreachWhenNotRequested() {
+    void testGroupLevelQueueBreachWhenNotRequested() {
         toSource(subscribeToAllGroups(integer -> Boolean.TRUE, 16, s -> s)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -417,7 +411,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testKeySelectorThrowsWithQueue() {
+    void testKeySelectorThrowsWithQueue() {
         toSource(subscribeToAllGroups(integer -> {
             if (integer % 2 == 0) {
                 throw DELIBERATE_EXCEPTION;
@@ -437,7 +431,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testKeySelectorThrowsNoQueue() {
+    void testKeySelectorThrowsNoQueue() {
         toSource(subscribeToAllGroups(integer -> {
             if (integer % 2 == 0) {
                 throw DELIBERATE_EXCEPTION;
@@ -457,7 +451,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testPendingGroupsQueueBreach() {
+    void testPendingGroupsQueueBreach() {
         @SuppressWarnings("unchecked")
         Subscriber<GroupedPublisher<Integer, Integer>> subscriber = mock(Subscriber.class);
         toSource(source.groupBy(integer -> integer, 16)).subscribe(subscriber);
@@ -472,7 +466,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testMaxBufferRequestNAndThenRequestMore() {
+    void testMaxBufferRequestNAndThenRequestMore() {
         toSource(subscribeToAllGroups(2)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -491,7 +485,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void nullValueIsSupported() {
+    void nullValueIsSupported() {
         toSource(subscribeToAllGroups(2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1, null);

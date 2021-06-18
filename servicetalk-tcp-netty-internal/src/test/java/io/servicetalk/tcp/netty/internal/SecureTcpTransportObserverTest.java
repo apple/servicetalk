@@ -17,7 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Test;
@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -134,14 +134,14 @@ public class SecureTcpTransportObserverTest extends AbstractTransportObserverTes
     @Override
     TcpClientConfig getTcpClientConfig() {
         final TcpClientConfig config = super.getTcpClientConfig();
-        config.secure(defaultClientSecurityConfig(clientProvider));
+        config.sslConfig(defaultClientSslConfig(clientProvider));
         return config;
     }
 
     @Override
     TcpServerConfig getTcpServerConfig() {
         final TcpServerConfig config = super.getTcpServerConfig();
-        config.secure(defaultServerSecurityConfig(serverProvider));
+        config.sslConfig(defaultServerSslConfig(serverProvider));
         return config;
     }
 }

@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
@@ -508,7 +509,7 @@ public final class HttpResponseStatus {
      * @return a {@link HttpResponseStatus} representation of {@code statusCode}.
      */
     public static HttpResponseStatus of(final CharSequence statusCode) {
-        int statusCodeInt = Integer.parseInt(statusCode.toString());
+        int statusCodeInt = (int) parseLong(statusCode);
         final HttpResponseStatus cached = valueOf(statusCodeInt);
         return cached != null ? cached : new HttpResponseStatus(statusCodeInt, "unknown");
     }

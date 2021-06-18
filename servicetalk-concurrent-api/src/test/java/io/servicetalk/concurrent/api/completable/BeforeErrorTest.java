@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class BeforeErrorTest extends AbstractWhenOnErrorTest {
+class BeforeErrorTest extends AbstractWhenOnErrorTest {
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
         return completable.beforeOnError(consumer);
@@ -35,7 +35,7 @@ public class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
     @Test
     @Override
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
         toSource(doError(Completable.failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;

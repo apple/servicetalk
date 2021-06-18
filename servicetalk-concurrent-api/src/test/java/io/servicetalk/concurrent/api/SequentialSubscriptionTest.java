@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,13 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -34,8 +32,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension.DEFAULT_TIMEOUT_SECONDS;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Long.MIN_VALUE;
 import static java.lang.Math.min;
@@ -46,7 +44,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -55,50 +54,47 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public final class SequentialSubscriptionTest {
+final class SequentialSubscriptionTest {
     private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-
     private SequentialSubscription s;
     private Subscription s1;
     private Subscription s2;
     private ExecutorService executor;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         s1 = mock(Subscription.class);
         s = new SequentialSubscription(s1);
         s2 = mock(Subscription.class);
         executor = newCachedThreadPool();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         executor.shutdownNow();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @Test
-    public void testInvalidRequestNNegative1() {
+    void testInvalidRequestNNegative1() {
         s.request(-1);
         verify(s1).request(-1);
     }
 
     @Test
-    public void testInvalidRequestNZero() {
+    void testInvalidRequestNZero() {
         s.request(0);
         verify(s1).request(leq(0L));
     }
 
     @Test
-    public void testInvalidRequestNLongMin() {
+    void testInvalidRequestNLongMin() {
         s.request(MIN_VALUE);
         verify(s1).request(leq(0L));
     }
 
     @Test
-    public void testInvalidRequestNDefaultConstructorPropagatedAfterSwitch() {
+    void testInvalidRequestNDefaultConstructorPropagatedAfterSwitch() {
         s = new SequentialSubscription();
         s.request(-1);
         s.switchTo(s1);
@@ -108,7 +104,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testRequestNIncremental() {
+    void testRequestNIncremental() {
         s.request(1);
         verify(s1).request(1);
         verifyNoMoreInteractions(s1);
@@ -118,7 +114,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         s.cancel();
 
         verify(s1).cancel();
@@ -130,7 +126,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testPendingRequest() {
+    void testPendingRequest() {
         s.request(5);
         verify(s1).request(5);
         verifyNoMoreInteractions(s1);
@@ -143,18 +139,18 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testOldSubscriptionIsNotCancelled() {
+    void testOldSubscriptionIsNotCancelled() {
         s.switchTo(s2);
         verifyNoMoreInteractions(s1);
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testSwitchToNull() {
-        s.switchTo(null);
+    @Test
+    void testSwitchToNull() {
+        assertThrows(NullPointerException.class, () -> s.switchTo(null));
     }
 
     @Test
-    public void testCancelAfterRequest() {
+    void testCancelAfterRequest() {
         s.cancel();
         verify(s1).cancel();
         s.request(1);
@@ -162,7 +158,7 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testSubscriptionRequestThrows() {
+    void testSubscriptionRequestThrows() {
         doThrow(DELIBERATE_EXCEPTION).when(s1).request(anyLong());
         try {
             s.request(1);
@@ -182,43 +178,43 @@ public final class SequentialSubscriptionTest {
     }
 
     @Test
-    public void testConcurrentNoSwitch() throws Exception {
+    void testConcurrentNoSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1000, 1000);
     }
 
     @Test
-    public void testConcurrentWithSwitch() throws Exception {
+    void testConcurrentWithSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1000, 5);
     }
 
     @Test
-    public void testConcurrentLargeRequestedWithSwitch() throws Exception {
+    void testConcurrentLargeRequestedWithSwitch() throws Exception {
         testConcurrentRequestEmitAndSwitch(1_000_000, 10_000);
     }
 
     @Test
-    public void testRequestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void testRequestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             requestNAlwaysDirectedTowardSwitchedSubscription();
         }
     }
 
     @Test
-    public void requestNNegative1AlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNNegative1AlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(-1, matchValueOrCancelled(is(-1L)));
         }
     }
 
     @Test
-    public void requestNZeroAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNZeroAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(0, matchValueOrCancelled(lessThanOrEqualTo(0L)));
         }
     }
 
     @Test
-    public void requestNLongMinAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+    void requestNLongMinAlwaysDirectedTowardSwitchedSubscription() throws Exception {
         for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
             invalidRequestNAlwaysDirectedTowardSwitchedSubscription(MIN_VALUE, matchValueOrCancelled(is(MIN_VALUE)));
         }

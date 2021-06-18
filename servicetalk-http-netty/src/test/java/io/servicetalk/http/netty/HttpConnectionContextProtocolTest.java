@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -23,15 +22,13 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 
@@ -39,13 +36,13 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(Parameterized.class)
-public class HttpConnectionContextProtocolTest {
+class HttpConnectionContextProtocolTest {
 
     private enum Config {
 
@@ -69,22 +66,9 @@ public class HttpConnectionContextProtocolTest {
         }
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final Config config;
-
-    public HttpConnectionContextProtocolTest(Config config) {
-        this.config = config;
-    }
-
-    @Parameters(name = "config={0}")
-    public static Object[] data() {
-        return Config.values();
-    }
-
-    @Test
-    public void testProtocol() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Config.class)
+    void testProtocol(Config config) throws Exception {
         try (ServerContext serverContext = startServer(config);
              BlockingHttpClient client = newClient(serverContext, config);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
@@ -101,7 +85,8 @@ public class HttpConnectionContextProtocolTest {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config.protocols);
         if (config.secure) {
-            builder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            builder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).build());
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                 .payloadBody(ctx.protocol().name(), textSerializer()));
@@ -111,7 +96,8 @@ public class HttpConnectionContextProtocolTest {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext)).protocols(config.protocols);
         if (config.secure) {
-            builder.secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit();
+            builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .peerHost(serverPemHostname()).build());
         }
         return builder.buildBlocking();
     }

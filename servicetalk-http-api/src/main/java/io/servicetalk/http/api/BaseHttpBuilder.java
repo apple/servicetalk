@@ -87,8 +87,8 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     /**
      * Configurations of various HTTP protocol versions.
      * <p>
-     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
-     * secured.
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for
+     * <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> in case the connections use TLS.
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.

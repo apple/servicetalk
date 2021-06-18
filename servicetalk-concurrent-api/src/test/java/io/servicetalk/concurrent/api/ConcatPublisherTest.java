@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -25,14 +25,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class ConcatPublisherTest {
+class ConcatPublisherTest {
 
     private final TestPublisher<String> first = new TestPublisher<>();
     private final TestPublisher<String> second = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testEnoughRequests() {
+    void testEnoughRequests() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -46,7 +46,7 @@ public class ConcatPublisherTest {
     }
 
     @Test
-    public void testFirstEmitsError() {
+    void testFirstEmitsError() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -57,7 +57,7 @@ public class ConcatPublisherTest {
     }
 
     @Test
-    public void testSecondEmitsError() {
+    void testSecondEmitsError() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);

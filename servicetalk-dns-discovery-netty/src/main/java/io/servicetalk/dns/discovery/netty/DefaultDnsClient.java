@@ -242,7 +242,7 @@ final class DefaultDnsClient implements DnsClient {
                         return cause == SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED ||
                                 aRecordMap.remove(srvEvent.address().hostName()) == null ?
                                 Completable.failed(cause) : srvHostNameRepeater.apply(i);
-                    }).recoverWith(cause -> empty()); // retryWhen will propagate onError, but we don't want this.
+                    }).onErrorComplete(); // retryWhen will propagate onError, but we don't want this.
                 } else if (srvEvent instanceof SrvInactiveEvent) {
                     // Unwrap the list so we can use it in SrvInactiveCombinerOperator below.
                     return from(((SrvInactiveEvent<HostAndPort, InetSocketAddress>) srvEvent).aggregatedEvents);
@@ -755,7 +755,7 @@ final class DefaultDnsClient implements DnsClient {
 
     private static <T, A> Publisher<? extends Collection<ServiceDiscovererEvent<T>>> recoverWithInactiveEvents(
             AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
-        return pub.recoverWith(cause -> {
+        return pub.onErrorResume(cause -> {
             AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
             if (subscription != null) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();

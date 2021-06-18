@@ -21,7 +21,9 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.isAlwaysEmpty;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
@@ -57,6 +59,11 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
 
     @Override
     public Buffer payloadBody() {
+        if (payloadBody == EMPTY_BUFFER) {  // default value after aggregation,
+            // override with a new empty buffer to allow users expand it with more data:
+            payloadBody = original.payloadHolder().allocator().newBuffer(0, false);
+            // The correct DefaultPayloadInfo#setEmpty(...) flag will be set in toStreamingRequest()
+        }
         return payloadBody;
     }
 
@@ -76,15 +83,16 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        final DefaultPayloadInfo payloadInfo;
+        final boolean emptyPayloadBody = isAlwaysEmpty(payloadBody);
+        @Nullable
         final Publisher<Object> payload;
         if (trailers != null) {
-            payload = from(payloadBody, trailers);
-            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailersAndGenericTypeBuffer(true);
+            payload = emptyPayloadBody ? from(trailers) : from(payloadBody, trailers);
         } else {
-            payload = from(payloadBody);
-            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailersAndGenericTypeBuffer(false);
+            payload = emptyPayloadBody ? null : from(payloadBody);
         }
+        final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
+                .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpResponse(status(), version(), headers(), original.payloadHolder().allocator(),
                 payload, payloadInfo, original.payloadHolder().headersFactory());
     }

@@ -25,8 +25,7 @@ abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscr
 
     private final Completable original;
 
-    AbstractMergeCompletableOperator(Completable original, Executor executor) {
-        super(executor);
+    AbstractMergeCompletableOperator(Completable original) {
         this.original = requireNonNull(original);
     }
 
@@ -64,4 +63,9 @@ abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscr
      * @param subscriber {@link T} to be used to merge.
      */
     abstract void doMerge(T subscriber);
+
+    @Override
+    final Executor executor() {
+        return original.executor();
+    }
 }

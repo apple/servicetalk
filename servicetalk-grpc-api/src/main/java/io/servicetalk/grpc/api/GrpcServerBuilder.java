@@ -32,12 +32,15 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
@@ -49,13 +52,14 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
+
     private boolean appendedCatchAllFilter;
 
     /**
      * Configurations of various underlying protocol versions.
      * <p>
-     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
-     * {@link #secure() secured}.
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections use
+     * {@link #sslConfig(ServerSslConfig)}.
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
@@ -63,42 +67,54 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
+     * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
+
+    /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
+     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @param backlog the backlog to use when accepting connections.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder backlog(int backlog);
+    @Deprecated
+    public GrpcServerBuilder backlog(int backlog) {
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
+        return this;
+    }
 
     /**
      * Initiate security configuration for this server. Calling any {@code commit} method on the returned
      * {@link GrpcServerSecurityConfigurator} will commit the configuration.
-     * <p>
-     * Additionally use {@link #secure(String...)} to define configurations for specific
-     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames. If such configuration is additionally
-     * defined then configuration using this method is used as default if the hostname does not match any of the
-     * specified hostnames.
-     *
+     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
      * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
      * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
+    @Deprecated
     public abstract GrpcServerSecurityConfigurator secure();
 
     /**
-     * Initiate security configuration for this server for the passed {@code sniHostnames}.
-     * Calling any {@code commit} method on the returned {@link GrpcServerSecurityConfigurator} will commit the
-     * configuration.
-     * <p>
-     * When using this method, it is mandatory to also define the default configuration using {@link #secure()} which
-     * is used when the hostname does not match any of the specified {@code sniHostnames}.
-     *
-     * @param sniHostnames <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames for which this
-     * config is being defined.
-     * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
+     * Set the SSL/TLS configuration.
+     * @param config The configuration to use.
+     * @return {@code this}.
      */
-    public abstract GrpcServerSecurityConfigurator secure(String... sniHostnames);
+    public abstract GrpcServerBuilder sslConfig(ServerSslConfig config);
+
+    /**
+     * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
+     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
+     * SNI hostname doesn't match any values in {@code sniMap}.
+     * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
+     * to provide the corresponding {@link ServerSslConfig}.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
 
     /**
      * Add a {@link SocketOption} that is applied.
@@ -111,6 +127,17 @@ public abstract class GrpcServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value);
+
+    /**
+     * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
+     * @param <T> the type of the value.
+     * @param option the option to apply.
+     * @param value the value.
+     * @return this.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
+     */
+    public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
 
     /**
      * Enables wire-logging for connections created by this builder.
@@ -345,7 +372,7 @@ public abstract class GrpcServerBuilder {
         }
     }
 
-    private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
+    static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
         CatchAllHttpServiceFilter(final StreamingHttpService service) {
             super(service);
         }
@@ -358,16 +385,15 @@ public abstract class GrpcServerBuilder {
             try {
                 handle = delegate().handle(ctx, request, responseFactory);
             } catch (Throwable cause) {
-                return convertToGrpcErrorResponse(ctx, responseFactory, cause);
+                return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
             }
-            return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+            return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
         }
 
-        private static Single<StreamingHttpResponse> convertToGrpcErrorResponse(
+        private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return succeeded(newErrorResponse(responseFactory, null, cause,
-                    ctx.executionContext().bufferAllocator()));
+            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
         }
     }
 }

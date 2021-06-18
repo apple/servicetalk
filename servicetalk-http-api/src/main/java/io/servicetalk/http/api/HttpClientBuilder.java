@@ -155,12 +155,15 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
      * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
      * be used in the event of proxying.
-     *
+     * @deprecated Will be moved to {@link SingleAddressHttpClientBuilder} otherwise use
+     * {@link MultiAddressHttpClientBuilder.SingleAddressInitializer} or
+     * {@link PartitionedHttpClientBuilder.SingleAddressInitializer}.
      * @param unresolvedAddressToHostFunction invoked to convert the {@link U} unresolved address type into a
      * {@link CharSequence} suitable for use in
      * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
      * @return {@code this}
      */
+    @Deprecated
     public abstract HttpClientBuilder<U, R, SDE> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
@@ -195,6 +198,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
+     * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
     public abstract HttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, SDE> retryStrategy);

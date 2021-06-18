@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import javax.annotation.Nullable;
 
@@ -70,9 +72,15 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * A {@link HttpExecutionStrategy} that disables all offloads.
+     * A {@link HttpExecutionStrategy} that disables all offloads on the request-response path.
      *
-     * @return {@link HttpExecutionStrategy} that disables all offloads.
+     * <p>The default offloading executor will still be used inside {@link ExecutionContext} and for all places where
+     * it is referenced. To ensure that the default offloading executor is never used configure it with
+     * {@link Executors#immediate()} executor explicitly: <pre>
+     *     HttpExecutionStrategies.customStrategyBuilder().offloadNone().executor(immediate()).build()
+     * </pre>
+     *
+     * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
      */
     public static HttpExecutionStrategy noOffloadsStrategy() {
         return NO_OFFLOADS_NO_EXECUTOR;
@@ -228,8 +236,11 @@ public final class HttpExecutionStrategies {
          * Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
          * single thread per subscribe of a source.
          *
+         * @deprecated Use a single threaded executor with {@link #executor(Executor)} to ensure affinity.
+         *
          * @return {@code this}.
          */
+        @Deprecated
         public Builder offloadWithThreadAffinity() {
             threadAffinity = true;
             return this;

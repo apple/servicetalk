@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -28,12 +28,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class FromSingleItemPublisherTest {
+class FromSingleItemPublisherTest {
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(from("foo").afterOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -43,7 +43,7 @@ public class FromSingleItemPublisherTest {
     }
 
     @Test
-    public void nullInTerminalSucceeds() {
+    void nullInTerminalSucceeds() {
         toSource(Publisher.from((String) null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is(nullValue()));

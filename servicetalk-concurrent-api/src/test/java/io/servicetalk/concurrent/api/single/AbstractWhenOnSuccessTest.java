@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.function.Consumer;
@@ -32,7 +32,7 @@ public abstract class AbstractWhenOnSuccessTest {
     final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         @SuppressWarnings("unchecked")
         Consumer<String> onSuccess = Mockito.mock(Consumer.class);
         toSource(doSuccess(Single.succeeded("Hello"), onSuccess)).subscribe(listener);
@@ -41,7 +41,7 @@ public abstract class AbstractWhenOnSuccessTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsError() throws InterruptedException;
+    abstract void testCallbackThrowsError();
 
     protected abstract <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer);
 }

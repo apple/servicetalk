@@ -31,9 +31,13 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Publisher<T> source;
 
-    AbstractPubToSingle(final Executor executor, Publisher<T> source) {
-        super(executor);
+    AbstractPubToSingle(Publisher<T> source) {
         this.source = source;
+    }
+
+    @Override
+    final Executor executor() {
+        return source.executor();
     }
 
     @Override

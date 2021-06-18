@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
-import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
 
 import java.io.InputStream;
 import java.util.function.Function;
@@ -26,22 +26,21 @@ import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+@Deprecated
 final class DefaultSingleAddressHttpClientSecurityConfigurator<U, R>
         implements SingleAddressHttpClientSecurityConfigurator<U, R> {
-
     private final ClientSecurityConfig config;
-    private final Function<ReadOnlyClientSecurityConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer;
+    private final Function<ClientSslConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer;
 
     DefaultSingleAddressHttpClientSecurityConfigurator(
-            final String serverHostname, final int serverPort,
-            final Function<ReadOnlyClientSecurityConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer) {
-        config = new ClientSecurityConfig(serverHostname, serverPort);
+            final Function<ClientSslConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer) {
+        config = new ClientSecurityConfig();
         this.configConsumer = configConsumer;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> commit() {
-        return configConsumer.apply(config.asReadOnly());
+        return configConsumer.apply(config.asSslConfig());
     }
 
     @Override

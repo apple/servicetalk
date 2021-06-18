@@ -37,9 +37,13 @@ abstract class AbstractSynchronousPublisherOperator<T, R> extends AbstractNoHand
 
     private final Publisher<T> original;
 
-    AbstractSynchronousPublisherOperator(Publisher<T> original, Executor executor) {
-        super(executor);
+    AbstractSynchronousPublisherOperator(Publisher<T> original) {
         this.original = requireNonNull(original);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

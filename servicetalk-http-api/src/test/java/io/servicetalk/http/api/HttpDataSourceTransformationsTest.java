@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,9 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpBufferFilterIterable;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -36,21 +33,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HttpDataSourceTransformationsTest {
+class HttpDataSourceTransformationsTest {
 
-    public static final Buffer BUFFER_1 = DEFAULT_RO_ALLOCATOR.fromAscii("1");
+    private static final Buffer BUFFER_1 = DEFAULT_RO_ALLOCATOR.fromAscii("1");
 
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
 
     private final TestPublisher<Buffer> publisher = new TestPublisher<>();
 
     @Test
-    public void hasNextWithTimeout() throws Exception {
+    void hasNextWithTimeout() throws Exception {
         final HttpBufferFilterIterable filterIterable = new HttpBufferFilterIterable(publisher.toIterable());
         final BlockingIterator<Buffer> iterator = filterIterable.iterator();
         publisher.onNext(BUFFER_1);
@@ -61,16 +55,15 @@ public class HttpDataSourceTransformationsTest {
     }
 
     @Test
-    public void hasNextWithTimeoutTimesOut() throws Exception {
+    void hasNextWithTimeoutTimesOut() {
         final HttpBufferFilterIterable filterIterable = new HttpBufferFilterIterable(publisher.toIterable());
         final BlockingIterator<Buffer> iterator = filterIterable.iterator();
 
-        expected.expect(TimeoutException.class);
-        iterator.hasNext(1, MILLISECONDS);
+        assertThrows(TimeoutException.class, () -> iterator.hasNext(1, MILLISECONDS));
     }
 
     @Test
-    public void hasNext() {
+    void hasNext() {
         final HttpBufferFilterIterable filterIterable = new HttpBufferFilterIterable(publisher.toIterable());
         final BlockingIterator<Buffer> iterator = filterIterable.iterator();
         publisher.onNext(BUFFER_1);
@@ -81,7 +74,7 @@ public class HttpDataSourceTransformationsTest {
     }
 
     @Test
-    public void hasNextBlocks() throws Exception {
+    void hasNextBlocks() throws Exception {
         final HttpBufferFilterIterable filterIterable = new HttpBufferFilterIterable(publisher.toIterable());
         final BlockingIterator<Buffer> iterator = filterIterable.iterator();
 

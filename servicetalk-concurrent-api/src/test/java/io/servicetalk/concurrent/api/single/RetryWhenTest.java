@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -41,8 +39,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -51,10 +50,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryWhenTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class RetryWhenTest {
     private final TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
@@ -63,8 +59,8 @@ public class RetryWhenTest {
     private Executor executor;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
@@ -75,15 +71,15 @@ public class RetryWhenTest {
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriberRule);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void publishOnWithRetry() throws Exception {
+    void publishOnWithRetry() throws Exception {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
@@ -96,20 +92,19 @@ public class RetryWhenTest {
                                 // terminate before we add another entity in the next subscribe. So, we return an
                                 // asynchronously completed Completable.
                                 executor.submit(() -> { }) : failed(t));
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        source.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> source.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         source.onSuccess(1);
         assertThat(subscriberRule.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         DeliberateException fatal = new DeliberateException();
@@ -120,7 +115,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testTwoError() {
+    void testTwoError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
@@ -134,7 +129,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -146,7 +141,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelPostErrorButBeforeRetryStart() {
+    void testCancelPostErrorButBeforeRetryStart() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.verifyListenCalled();
         subscriberRule.awaitSubscription().cancel();
@@ -157,14 +152,14 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelBeforeRetry() {
+    void testCancelBeforeRetry() {
         subscriberRule.awaitSubscription().cancel();
         source.onSuccess(1);
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
 
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
@@ -179,7 +174,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);
         toSource(source.retryWhen((times, cause) -> null)).subscribe(subscriberRule);

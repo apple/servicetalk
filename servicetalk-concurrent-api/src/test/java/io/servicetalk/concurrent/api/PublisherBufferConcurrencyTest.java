@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -30,7 +28,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static io.servicetalk.concurrent.api.ExecutorRule.withNamePrefix;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofMillis;
@@ -41,25 +39,23 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PublisherBufferConcurrencyTest {
+class PublisherBufferConcurrencyTest {
     private static final String THREAD_NAME_PREFIX = "buffer-concurrency-test";
     private static final Key<Integer> CTX_KEY = Key.newKey("foo");
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = withNamePrefix(THREAD_NAME_PREFIX);
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = withCachedExecutor(THREAD_NAME_PREFIX);
 
     @Test
-    public void largeRun() throws Exception {
+    void largeRun() throws Exception {
         runTest(identity(), identity());
     }
 
     @Test
-    public void executorIsPreserved() throws Exception {
-        final Executor executor = executorRule.executor();
+    void executorIsPreserved() throws Exception {
+        final Executor executor = executorExtension.executor();
         runTest(beforeBuffer -> beforeBuffer.publishOn(executor),
                 afterBuffer -> afterBuffer.beforeOnNext(__ ->
                         assertThat("Unexpected thread in onNext.", Thread.currentThread().getName(),
@@ -71,7 +67,7 @@ public class PublisherBufferConcurrencyTest {
     }
 
     @Test
-    public void contextIsPreserved() throws Exception {
+    void contextIsPreserved() throws Exception {
         AsyncContext.put(CTX_KEY, 0);
         runTest(beforeBuffer -> beforeBuffer.beforeOnSubscribe(__ -> AsyncContext.put(CTX_KEY, 1)),
                 afterBuffer -> afterBuffer.beforeOnNext(__ ->
@@ -83,7 +79,7 @@ public class PublisherBufferConcurrencyTest {
     }
 
     @Test
-    public void addingAndBoundaryEmission() throws Exception {
+    void addingAndBoundaryEmission() throws Exception {
         TestPublisher<Integer> original = new TestPublisher<>();
         TestPublisher<Accumulator<Integer, Integer>> boundaries = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -126,7 +122,7 @@ public class PublisherBufferConcurrencyTest {
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
 
         CountDownLatch waitForOnNextReturn = new CountDownLatch(1);
-        executorRule.executor().submit(() -> original.onNext(1))
+        executorExtension.executor().submit(() -> original.onNext(1))
                 .beforeFinally(waitForOnNextReturn::countDown).subscribe();
         waitForAdd.await();
         subscriber.awaitSubscription().request(1);
@@ -148,7 +144,7 @@ public class PublisherBufferConcurrencyTest {
                          final UnaryOperator<Publisher<Iterable<Integer>>> afterBuffer) throws Exception {
         final int maxRange = 1000;
         final int repeatMax = 100;
-        final Executor executor = executorRule.executor();
+        final Executor executor = executorExtension.executor();
         Publisher<Integer> original = Publisher.range(0, maxRange)
                 .repeatWhen(count -> count == repeatMax ? failed(DELIBERATE_EXCEPTION) :
                         executor.timer(ofMillis(1)));

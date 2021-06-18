@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -61,26 +59,36 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+    private final EmbeddedChannel channel = newChannel(false);
+    private final EmbeddedChannel channelSpecException = newChannel(true);
+
+    private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
+                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
 
     @Override
-    protected EmbeddedChannel channel() {
+    EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channelSpecException() {
+        return channelSpecException;
     }
 
     @Override
@@ -89,8 +97,8 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLine() {
-        return assertResponseLine(HTTP_1_1, NO_CONTENT);
+    HttpMetaData assertStartLine(EmbeddedChannel channel) {
+        return assertResponseLine(HTTP_1_1, NO_CONTENT, channel);
     }
 
     @Override
@@ -99,104 +107,104 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLineForContent() {
-        return assertResponseLine(HTTP_1_1, OK);
+    HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
+        return assertResponseLine(HTTP_1_1, OK, channel);
     }
 
     @Test
-    public void illegalPrefaceCharacter() {
+    void illegalPrefaceCharacter() {
         assertDecoderExceptionWithCause(" HTTP/1.1 200 OK" + "\r\n", "Invalid preface character");
     }
 
     @Test
-    public void noVersion() {
+    void noVersion() {
         assertDecoderException("200 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void noStatusCode() {
+    void noStatusCode() {
         assertDecoderException("HTTP/1.1 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void noSpAfterStatusCode() {
+    void noSpAfterStatusCode() {
         assertDecoderException("HTTP/1.1 200" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidStartLineOrder() {
+    void invalidStartLineOrder() {
         assertDecoderException("HTTP/1.1 OK 200" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void onlyVersion() {
+    void onlyVersion() {
         assertDecoderException("HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidVersionPrefixOnly() {
+    void invalidVersionPrefixOnly() {
         assertDecoderExceptionWithCause("HttP", "Invalid start-line");
     }
 
     @Test
-    public void invalidVersionPrefix() {
+    void invalidVersionPrefix() {
         assertDecoderException("HttP/1.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionSlash() {
+    void invalidVersionSlash() {
         assertDecoderException("HTTP|1.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionMajor() {
+    void invalidVersionMajor() {
         assertDecoderException("HTTP/5.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionDelimiter() {
+    void invalidVersionDelimiter() {
         assertDecoderException("HTTP/1,1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionMinorNotNumber() {
+    void invalidVersionMinorNotNumber() {
         assertDecoderExceptionWithCause("HTTP/1.z 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void twoWsBetweenVersionAndStatusCode() {
+    void twoWsBetweenVersionAndStatusCode() {
         assertDecoderException("HTTP/1.1  200 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidStatusCodeLessThan3digitInteger() {
+    void invalidStatusCodeLessThan3digitInteger() {
         assertDecoderException("HTTP/1.1 20 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidStatusCodeMoreThan3digitInteger() {
+    void invalidStatusCodeMoreThan3digitInteger() {
         assertDecoderException("HTTP/1.1 2000 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidStatusCodeNonInteger() {
+    void invalidStatusCodeNonInteger() {
         assertDecoderExceptionWithCause("HTTP/1.1 20K OK" + "\r\n",
                 "Invalid start-line: HTTP status-code must contain only 3 digits");
     }
 
     @Test
-    public void invalidStatusCodeWithControlCharacter() {
+    void invalidStatusCodeWithControlCharacter() {
         assertDecoderExceptionWithCause("HTTP/1.1 20\0 OK" + "\r\n",
                 "Invalid start-line: HTTP status-code must contain only 3 digits");
     }
 
     @Test
-    public void invalidReasonPhraseWithControlCharacter() {
+    void invalidReasonPhraseWithControlCharacter() {
         assertDecoderExceptionWithCause("HTTP/1.1 200 O\fK" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void validStartLineWithCustomHttpVersion() {
+    void validStartLineWithCustomHttpVersion() {
         writeMsg("HTTP/1.9 204 No Content" + "\r\n" + "\r\n");
         assertResponseLine(HttpProtocolVersion.of(1, 9), NO_CONTENT);
         assertEmptyTrailers(channel);
@@ -204,37 +212,37 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void emptyReasonPhrase() {
+    void emptyReasonPhrase() {
         testReasonPhrase("");
     }
 
     @Test
-    public void emptyReasonPhraseWith3Ws() {
+    void emptyReasonPhraseWith3Ws() {
         testReasonPhrase("   ");
     }
 
     @Test
-    public void reasonPhraseWithLeadingWs() {
+    void reasonPhraseWithLeadingWs() {
         testReasonPhrase("   No Content");
     }
 
     @Test
-    public void reasonPhraseWithTrailingWs() {
+    void reasonPhraseWithTrailingWs() {
         testReasonPhrase("No Content   ");
     }
 
     @Test
-    public void reasonPhraseWithLeadingAndTrailingWs() {
+    void reasonPhraseWithLeadingAndTrailingWs() {
         testReasonPhrase("   No Content   ");
     }
 
     @Test
-    public void reasonPhraseWithHtab() {
+    void reasonPhraseWithHtab() {
         testReasonPhrase("No\tContent");
     }
 
     @Test
-    public void reasonPhraseWithObsText() {
+    void reasonPhraseWithObsText() {
         testReasonPhrase("Ñó Cóñtêñt");
     }
 
@@ -246,7 +254,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedWithTrailersSplitOnNetwork() {
+    void chunkedWithTrailersSplitOnNetwork() {
         int chunkSize = 128;
         List<String> beforeContent = new ArrayList<>();
         beforeContent.add("HTTP/");
@@ -294,7 +302,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void variableEmptyContent() {
+    void variableEmptyContent() {
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -309,7 +317,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void variableWithContent() {
+    void variableWithContent() {
         int contentLength = 128;
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -329,7 +337,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void variableWithChunkedContentAndTrailers() {
+    void variableWithChunkedContentAndTrailers() {
         int chunkSize = 128;
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -360,6 +368,11 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private HttpResponseMetaData assertResponseLine(HttpProtocolVersion expectedVersion,
                                                     HttpResponseStatus expectedStatus) {
+        return assertResponseLine(expectedVersion, expectedStatus, channel());
+    }
+
+    private static HttpResponseMetaData assertResponseLine(HttpProtocolVersion expectedVersion,
+                                                           HttpResponseStatus expectedStatus, EmbeddedChannel channel) {
         HttpResponseMetaData response = channel.readInbound();
         assertThat(response.version(), equalTo(expectedVersion));
         assertThat(response.status().code(), is(expectedStatus.code()));
@@ -368,7 +381,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleBeforeNonZeroContentLengthHeader() {
+    void smuggleBeforeNonZeroContentLengthHeader() {
         int contentLength = 128;
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -393,7 +406,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleBeforeTransferEncodingHeader() {
+    void smuggleBeforeTransferEncodingHeader() {
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 // Otherwise, this is a response message without a declared message
@@ -417,7 +430,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void successfulResponseToConnectRequest() {
+    void successfulResponseToConnectRequest() {
         methodQueue.add(CONNECT);
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -429,7 +442,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void successfulResponseToConnectRequestWithPayloadBodyFails() {
+    void successfulResponseToConnectRequestWithPayloadBodyFails() {
         methodQueue.add(CONNECT);
         String content = "content";
         writeMsg(startLineForContent() + "\r\n" +
@@ -446,7 +459,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void errorResponseToConnectRequestWithEmptyContent() {
+    void errorResponseToConnectRequestWithEmptyContent() {
         methodQueue.add(CONNECT);
         writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -458,7 +471,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void errorResponseToConnectRequestWithContent() {
+    void errorResponseToConnectRequestWithContent() {
         methodQueue.add(CONNECT);
         int contentLength = 128;
         writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +

@@ -15,21 +15,28 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Function;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.split;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CharSequencesTest {
+class CharSequencesTest {
 
     // Common strings
-    public static final String GZIP = "gzip";
-    public static final String DEFLATE = "deflate";
-    public static final String COMPRESS = "compress";
+    static final String GZIP = "gzip";
+    static final String DEFLATE = "deflate";
+    static final String COMPRESS = "compress";
 
     private static void splitNoTrim(Function<String, ? extends CharSequence> f) {
         assertThat(split(f.apply(" ,      "), ',', false),
@@ -134,22 +141,68 @@ public class CharSequencesTest {
     }
 
     @Test
-    public void splitStringNoTrim() {
+    void splitStringNoTrim() {
         splitNoTrim(identity());
     }
 
     @Test
-    public void splitStringWithTrim() {
+    void splitStringWithTrim() {
         splitWithTrim(identity());
     }
 
     @Test
-    public void splitAsciiNoTrim() {
+    void splitAsciiNoTrim() {
         splitNoTrim(CharSequences::newAsciiString);
     }
 
     @Test
-    public void splitAsciiWithTrim() {
+    void splitAsciiWithTrim() {
         splitWithTrim(CharSequences::newAsciiString);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { Long.MIN_VALUE, Long.MIN_VALUE + 1,
+            -101, -100, -99, -11, -10, -9, -1, 0, 1, 9, 10, 11, 99, 100, 101,
+            Long.MAX_VALUE - 1, Long.MAX_VALUE })
+    void parseLong(final long value) {
+        final String strValue = String.valueOf(value);
+        assertThat("Unexpected result for String representation", CharSequences.parseLong(strValue), is(value));
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(strValue)), is(value));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "-0", "+0", "+1", "+10", "000" })
+    void parseLongSigned(final String value) {
+        assertThat("Unexpected result for String representation",
+                CharSequences.parseLong(value), is(Long.parseLong(value)));
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(value)), is(Long.parseLong(value)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "", "-", "+", "a", "0+", "0-", "--0", "++0", "0a0" })
+    void parseLongFailure(final String value) {
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(value),
+                "Unexpected result for String representation");
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(newAsciiString(value)),
+                "Unexpected result for AsciiBuffer representation");
+    }
+
+    @Test
+    void parseLongFromSubSequence() {
+        String value = "text42text";
+        assertThat("Unexpected result for String representation",
+                CharSequences.parseLong(value.subSequence(4, 6)), is(42L));
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(value).subSequence(4, 6)), is(42L));
+    }
+
+    @Test
+    @Disabled("ReadOnlyByteBuffer#slice() does not account for the slice offset")
+    void parseLongFromSlice() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
     }
 }

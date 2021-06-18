@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,19 +34,17 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ConcurrentSubscriptionTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class ConcurrentSubscriptionTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void singleThreadSingleRequest() throws InterruptedException {
+    void singleThreadSingleRequest() throws InterruptedException {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final long demand = Long.MAX_VALUE;
         concurrent.request(demand);
@@ -57,7 +53,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadMultipleRequest() throws InterruptedException {
+    void singleThreadMultipleRequest() throws InterruptedException {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final int demand = 100;
         for (int i = 0; i < demand; ++i) {
@@ -68,14 +64,14 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadCancel() {
+    void singleThreadCancel() {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         concurrent.cancel();
         assertTrue(subscription.isCancelled());
     }
 
     @Test
-    public void singleThreadCancelDeliveredIfRequestThrows() throws InterruptedException {
+    void singleThreadCancelDeliveredIfRequestThrows() throws InterruptedException {
         CountDownLatch cancelledLatch = new CountDownLatch(1);
         Subscription concurrent = ConcurrentSubscription.wrap(new Subscription() {
             @Override
@@ -99,7 +95,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadReentrant() {
+    void singleThreadReentrant() {
         final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
         final Subscription concurrent = ConcurrentSubscription.wrap(reentrantSubscription);
         reentrantSubscription.outerSubscription(concurrent);
@@ -108,7 +104,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void singleThreadInvalidRequestN() {
+    void singleThreadInvalidRequestN() {
         Subscription concurrent = ConcurrentSubscription.wrap(subscription);
         final long invalidN = ThreadLocalRandom.current().nextLong(Long.MIN_VALUE, 1);
         concurrent.request(invalidN);
@@ -116,12 +112,12 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadRequest() throws ExecutionException, InterruptedException {
+    void multiThreadRequest() throws ExecutionException, InterruptedException {
         multiThread(300, false);
     }
 
     @Test
-    public void multiThreadCancel() throws ExecutionException, InterruptedException {
+    void multiThreadCancel() throws ExecutionException, InterruptedException {
         multiThread(250, true);
     }
 
@@ -161,7 +157,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadCancelNotDeliveredIfRequestThrows() throws Exception {
+    void multiThreadCancelNotDeliveredIfRequestThrows() throws Exception {
         ExecutorService executorService = newFixedThreadPool(1);
         try {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -205,7 +201,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadReentrant() throws Exception {
+    void multiThreadReentrant() throws Exception {
         ExecutorService executorService = newFixedThreadPool(1);
         try {
             final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
@@ -232,12 +228,12 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadInvalidRequestN() throws Exception {
+    void multiThreadInvalidRequestN() throws Exception {
         multiThreadInvalidRequestN(false);
     }
 
     @Test
-    public void multiThreadInvalidRequestNCancel() throws Exception {
+    void multiThreadInvalidRequestNCancel() throws Exception {
         multiThreadInvalidRequestN(true);
     }
 

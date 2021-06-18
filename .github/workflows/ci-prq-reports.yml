@@ -12,10 +12,11 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@8c96194455d424a24437ec57817e0aa1a1d72adb
+        uses: dawidd6/action-download-artifact@b9571484721e8187f1fd08147b497129f8972c74
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: checkstyle-results-${{ matrix.java }}
       - name: Publish Checkstyle Report
@@ -34,10 +35,11 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@8c96194455d424a24437ec57817e0aa1a1d72adb
+        uses: dawidd6/action-download-artifact@b9571484721e8187f1fd08147b497129f8972c74
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: pmd-results-${{ matrix.java }}
       - name: Publish PMD Report
@@ -56,10 +58,11 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@8c96194455d424a24437ec57817e0aa1a1d72adb
+        uses: dawidd6/action-download-artifact@b9571484721e8187f1fd08147b497129f8972c74
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: spotbugs-results-${{ matrix.java }}
       - name: Publish SpotBugs Report

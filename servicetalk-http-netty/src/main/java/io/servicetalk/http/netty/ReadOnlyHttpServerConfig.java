@@ -30,7 +30,7 @@ final class ReadOnlyHttpServerConfig {
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         final HttpConfig configs = from.httpConfig();
-        tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
+        tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();

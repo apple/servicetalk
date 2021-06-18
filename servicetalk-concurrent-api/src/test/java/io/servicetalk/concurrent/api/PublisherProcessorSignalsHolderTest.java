@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,13 +31,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class PublisherProcessorSignalsHolderTest {
+class PublisherProcessorSignalsHolderTest {
     private final List<Object> pastBufferSizeSignals;
     private final AbstractPublisherProcessorSignalsHolder<Integer, Queue<Object>> buffer;
     @SuppressWarnings("unchecked")
     private final ProcessorSignalsConsumer<Integer> consumer = mock(ProcessorSignalsConsumer.class);
 
-    public PublisherProcessorSignalsHolderTest() {
+    PublisherProcessorSignalsHolderTest() {
         pastBufferSizeSignals = new ArrayList<>();
         buffer = new AbstractPublisherProcessorSignalsHolder<Integer, Queue<Object>>(1, new ConcurrentLinkedQueue<>()) {
             @Override
@@ -48,7 +48,7 @@ public class PublisherProcessorSignalsHolderTest {
     }
 
     @Test
-    public void bufferOverflow() {
+    void bufferOverflow() {
         buffer.add(1);
         assertThat("Unexpected items overflow.", pastBufferSizeSignals, hasSize(0));
         buffer.add(2); // overflow
@@ -57,7 +57,7 @@ public class PublisherProcessorSignalsHolderTest {
     }
 
     @Test
-    public void consumeItem() {
+    void consumeItem() {
         buffer.add(1);
         assertThat("Item not consumed.", buffer.tryConsume(consumer), is(true));
         verify(consumer).consumeItem(1);
@@ -65,7 +65,7 @@ public class PublisherProcessorSignalsHolderTest {
     }
 
     @Test
-    public void addAfterOverflowAndConsume() {
+    void addAfterOverflowAndConsume() {
         buffer.add(1);
         assertThat("Unexpected items overflow.", pastBufferSizeSignals, hasSize(0));
         buffer.add(2); // overflow
@@ -84,13 +84,13 @@ public class PublisherProcessorSignalsHolderTest {
     }
 
     @Test
-    public void tryConsumeEmpty() {
+    void tryConsumeEmpty() {
         assertThat("Item consumed when empty.", buffer.tryConsume(consumer), is(false));
         verifyZeroInteractions(consumer);
     }
 
     @Test
-    public void consumeTerminal() {
+    void consumeTerminal() {
         buffer.add(1);
         buffer.terminate();
         assertThat("Item not consumed.", buffer.tryConsume(consumer), is(true));
@@ -101,7 +101,7 @@ public class PublisherProcessorSignalsHolderTest {
     }
 
     @Test
-    public void consumeTerminalError() {
+    void consumeTerminalError() {
         buffer.add(1);
         buffer.terminate(DELIBERATE_EXCEPTION);
         assertThat("Item not consumed.", buffer.tryConsume(consumer), is(true));

@@ -29,6 +29,12 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLeve
 import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
+import static org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.STARTED
+
 
 final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
@@ -161,15 +167,39 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   private static void configureTests(Project project) {
     project.configure(project) {
       test {
-        testLogging {
-          events "passed", "skipped", "failed"
-          showStandardStreams = true
-        }
+        useJUnitPlatform()
+        // expected format for timeout: <number>[ns|μs|ms|s|m|h|d])
+        def junit5DefaultTimeout = Boolean.valueOf(System.getenv("CI") ?: "false") ? "30s" : "10s"
+        def junit5TimeoutParamName = "junit.jupiter.execution.timeout.default"
+        def junit5Timeout = System.getProperty(junit5TimeoutParamName, "$junit5DefaultTimeout")
+        systemProperty junit5TimeoutParamName, "$junit5Timeout"
+        systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
+        testLogging {
+          events = [FAILED]
+          showStandardStreams = false
+          exceptionFormat = FULL
+
+          warn {
+            // Show more complete info when gradle run in --warn mode
+            events = [STARTED, PASSED, SKIPPED, FAILED]
+            showStandardStreams = true
+          }
+        }
+      
+        // if property is defined and true allow tests to continue running after first fail
+        ignoreFailures = Boolean.getBoolean("servicetalk.test.ignoreFailures")
+        
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
-            "-XX:+AggressiveOpts", "-XX:+TieredCompilation", "-XX:+UseBiasedLocking",
-                "-XX:+OptimizeStringConcat", "-XX:+HeapDumpOnOutOfMemoryError"
+                "-XX:+HeapDumpOnOutOfMemoryError"
       }
+
+      dependencies {
+        testRuntimeOnly("org.junit.vintage:junit-vintage-engine:$junit5Version") {
+          because 'allows JUnit 3 and JUnit 4 tests to run'
+        }
+      }
+
     }
   }
 

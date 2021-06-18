@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -35,19 +35,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class CallableSingleTest {
+class CallableSingleTest {
     private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Callable<Integer> factory;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         factory = mock(Callable.class);
     }
 
     @Test
-    public void testEverySubscribeCalls() throws Exception {
+    void testEverySubscribeCalls() throws Exception {
         when(factory.call()).thenReturn(1);
 
         final Single<Integer> source = Single.fromCallable(factory);
@@ -67,7 +67,7 @@ public class CallableSingleTest {
     }
 
     @Test
-    public void testOnError() throws Exception {
+    void testOnError() throws Exception {
         when(factory.call()).thenThrow(IllegalArgumentException.class);
 
         final Single<Integer> source = Single.fromCallable(factory);
@@ -85,7 +85,7 @@ public class CallableSingleTest {
     }
 
     @Test
-    public void cancelInterrupts() throws Exception {
+    void cancelInterrupts() throws Exception {
         final Single<Integer> source = Single.fromCallable(factory);
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -120,7 +120,7 @@ public class CallableSingleTest {
     }
 
     @Test
-    public void onSubscribeThrows() {
+    void onSubscribeThrows() {
         final Single<Integer> source = Single.fromCallable(factory);
 
         @SuppressWarnings("unchecked")

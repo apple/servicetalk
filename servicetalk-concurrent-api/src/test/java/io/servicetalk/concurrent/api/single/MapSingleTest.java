@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,18 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class MapSingleTest {
+class MapSingleTest {
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);
@@ -38,7 +38,7 @@ public class MapSingleTest {
     }
 
     @Test
-    public void nullInTerminalSucceeds() {
+    void nullInTerminalSucceeds() {
         SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> null)).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is(nullValue()));
     }

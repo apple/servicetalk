@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
@@ -88,6 +89,15 @@ interface BaseGrpcClientBuilder<U, R> {
      * @return {@code this}.
      */
     BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request metadata includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
+     * @return {@code this}.
+     */
+    BaseGrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

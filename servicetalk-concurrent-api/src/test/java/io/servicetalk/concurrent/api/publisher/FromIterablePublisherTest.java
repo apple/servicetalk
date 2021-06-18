@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static java.util.Arrays.asList;
 
-public class FromIterablePublisherTest extends FromInMemoryPublisherAbstractTest {
+class FromIterablePublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return new InMemorySource(values) {

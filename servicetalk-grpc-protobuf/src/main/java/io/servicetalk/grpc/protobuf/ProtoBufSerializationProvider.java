@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -158,7 +158,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                         Buffer buffer = toDeserialize;
                         int decodedLengthOfData = lengthOfData;
                         if (compressed) {
-                            buffer = codec.decode(toDeserialize, 0, lengthOfData, DEFAULT_ALLOCATOR);
+                            buffer = codec.decode(toDeserialize.readSlice(lengthOfData), DEFAULT_ALLOCATOR);
                             decodedLengthOfData = buffer.readableBytes();
                         }
 
@@ -172,7 +172,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                             // into it. Later, proto parser will copy data from this temporary ByteBuffer again.
                             // To avoid unnecessary copying, we use newCodedInputStream(buffers, lengthOfData).
                             final ByteBuffer[] buffers = buffer.toNioBuffers(buffer.readerIndex(),
-                                    buffer.readableBytes());
+                                    decodedLengthOfData);
 
                             in = buffers.length == 1 ?
                                     CodedInputStream.newInstance(buffers[0]) :
@@ -275,7 +275,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final ContentCodec codec) {
             this.codec = codec;
-            this.encode = codec != identity();
+            this.encode = !identity().equals(codec);
         }
 
         @Override
@@ -306,7 +306,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             Buffer serialized = DEFAULT_ALLOCATOR.newBuffer(size);
             serialize0(msg, serialized);
 
-            Buffer encoded = codec.encode(serialized, 0, serialized.readableBytes(), DEFAULT_ALLOCATOR);
+            Buffer encoded = codec.encode(serialized, DEFAULT_ALLOCATOR);
 
             destination.writeByte(FLAG_COMPRESSED);
             destination.writeInt(encoded.readableBytes());

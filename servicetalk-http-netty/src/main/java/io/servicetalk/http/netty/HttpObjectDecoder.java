@@ -66,6 +66,7 @@ import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
@@ -132,6 +133,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
     private final boolean allowPrematureClosureBeforePayloadBody;
+    /**
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.5>HTTP/1.x Message Parsing Robustness</a>
+     * <pre>
+     *   Although the line terminator for the start-line and header fields is
+     *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+     *   terminator and ignore any preceding CR.
+     * </pre>
+     */
+    private final boolean allowLFWithoutCR;
     @Nullable
     private T message;
     @Nullable
@@ -166,9 +176,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
-                                final int maxStartLineLength, final int maxHeaderFieldLength,
-                                final boolean allowPrematureClosureBeforePayloadBody, final CloseHandler closeHandler) {
+    HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
+                      final int maxStartLineLength, final int maxHeaderFieldLength,
+                      final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
+                      final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
         if (maxStartLineLength <= 0) {
@@ -181,6 +192,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.maxStartLineLength = maxStartLineLength;
         this.maxHeaderFieldLength = maxHeaderFieldLength;
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
+        this.allowLFWithoutCR = allowLFWithoutCR;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -231,8 +243,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 currentState = State.READ_INITIAL;
             }
             case READ_INITIAL: {
-                final int lfIndex = findCRLF(buffer, maxStartLineLength);
-                if (lfIndex < 0) {
+                final long longLFIndex = findCRLF(buffer, maxStartLineLength, allowLFWithoutCR);
+                if (longLFIndex < 0) {
                     handlePartialInitialLine(ctx, buffer);
                     return;
                 }
@@ -242,7 +254,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // request-line = method SP request-target SP HTTP-version CRLF
                 // https://tools.ietf.org/html/rfc7230#section-3.1.2
                 // status-line = HTTP-version SP status-code SP reason-phrase CRLF
-                final int nonControlIndex = lfIndex - 2;
+                final int lfIndex = crlfIndex(longLFIndex);
+                final int nonControlIndex = crlfBeforeIndex(longLFIndex);
                 final int aStart = buffer.readerIndex();    // We already skipped all preface control chars
                 // Look only for a WS, other checks will be done later by request/response decoder
                 final int aEnd = buffer.forEachByte(aStart + 1, nonControlIndex - aStart, FIND_WS);
@@ -375,10 +388,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             // everything else after this point takes care of reading chunked content. basically, read chunk size,
             // read chunk, read and ignore the CRLF and repeat until 0
             case READ_CHUNK_SIZE: {
-                int lfIndex = findCRLF(buffer, MAX_HEX_CHARS_FOR_LONG);
-                if (lfIndex < 0) {
+                final long longLFIndex = findCRLF(buffer, MAX_HEX_CHARS_FOR_LONG, false);
+                if (longLFIndex < 0) {
                     return;
                 }
+                final int lfIndex = crlfIndex(longLFIndex);
                 long chunkSize = getChunkSize(buffer, lfIndex);
                 consumeCRLF(buffer, lfIndex);
                 this.chunkSize = chunkSize;
@@ -409,11 +423,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             case READ_CHUNK_DELIMITER: {
                 // Read the chunk delimiter
-                int lfIndex = findCRLF(buffer, CHUNK_DELIMETER_SIZE);
-                if (lfIndex < 0) {
+                final long longLFIndex = findCRLF(buffer, CHUNK_DELIMETER_SIZE, false);
+                if (longLFIndex < 0) {
                     return;
                 }
-                consumeCRLF(buffer, lfIndex);
+                consumeCRLF(buffer, crlfIndex(longLFIndex));
                 currentState = State.READ_CHUNK_SIZE;
                 break;
             }
@@ -592,8 +606,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex)
-            throws DecoderException {
+    private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex,
+                                 final int nonControlIndex) throws DecoderException {
         // https://tools.ietf.org/html/rfc7230#section-3.2
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -613,7 +627,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         //    security vulnerabilities in request routing and response handling.
         // Additional checks will be done by header validator
 
-        final int nonControlIndex = lfIndex - 2;
         final int nameStart = buffer.readerIndex();
         final int nameEnd = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
         if (nameEnd < 0) {
@@ -665,13 +678,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Nullable
     private State readHeaders(final ByteBuf buffer) {
-        int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
-        if (lfIndex < 0) {
+        final long longLFIndex = findCRLF(buffer, maxHeaderFieldLength, allowLFWithoutCR);
+        if (longLFIndex < 0) {
             return null;
         }
         final T message = this.message;
         assert message != null;
-        if (!parseAllHeaders(buffer, message.headers(), lfIndex, maxHeaderFieldLength)) {
+        if (!parseAllHeaders(buffer, message.headers(), longLFIndex)) {
             return null;
         }
 
@@ -705,20 +718,20 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Nullable
     private HttpHeaders readTrailingHeaders(final ByteBuf buffer) {
-        final int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
-        if (lfIndex < 0) {
+        final long longLFIndex = findCRLF(buffer, maxHeaderFieldLength, allowLFWithoutCR);
+        if (longLFIndex < 0) {
             return null;
         }
-        if (lfIndex - 2 > buffer.readerIndex()) {
+        if (crlfBeforeIndex(longLFIndex) > buffer.readerIndex()) {
             HttpHeaders trailer = this.trailer;
             if (trailer == null) {
                 trailer = this.trailer = headersFactory.newTrailers();
             }
 
-            return parseAllHeaders(buffer, trailer, lfIndex, maxHeaderFieldLength) ? trailer : null;
+            return parseAllHeaders(buffer, trailer, longLFIndex) ? trailer : null;
         }
 
-        consumeCRLF(buffer, lfIndex);
+        consumeCRLF(buffer, crlfIndex(longLFIndex));
         // The RFC says the trailers are optional [1] so use an empty trailers instance from the headers factory.
         // [1] https://tools.ietf.org/html/rfc7230.html#section-4.1
         return trailer != null ? trailer : headersFactory.newEmptyTrailers();
@@ -729,29 +742,23 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      *
      * @param buffer source of the headers
      * @param headers destination for parsed headers
-     * @param lfIndex the end of the current line
-     * @param maxHeaderFieldLength limit to the length of the headers
+     * @param longLFIndex result of {@link #findCRLF(ByteBuf, int, int, int, boolean)}
      * @return true if complete headers were processed otherwise false indicates incomplete parsing or error.
      */
-    private boolean parseAllHeaders(final ByteBuf buffer, final HttpHeaders headers, int lfIndex,
-                                    final int maxHeaderFieldLength) {
+    private boolean parseAllHeaders(final ByteBuf buffer, final HttpHeaders headers, long longLFIndex) {
         for (;;) {
-            if (lfIndex - 1 == buffer.readerIndex()) {
+            final int lfIndex = crlfIndex(longLFIndex);
+            final int nonControlIndex = crlfBeforeIndex(longLFIndex);
+            if (nonControlIndex < buffer.readerIndex()) {
                 consumeCRLF(buffer, lfIndex);
                 return true;
             }
-            final int nextLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderFieldLength, parsingLine);
-            parseHeaderLine(headers, buffer, lfIndex);
-            if (nextLFIndex < 0) {
+            longLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderFieldLength, parsingLine, allowLFWithoutCR);
+            parseHeaderLine(headers, buffer, lfIndex, nonControlIndex);
+            if (longLFIndex < 0) {
                 return false;
             }
             ++parsingLine;
-            if (nextLFIndex - 2 == lfIndex) {
-                // CRLF followed by CRLF, we are done.
-                consumeCRLF(buffer, nextLFIndex);
-                return true;
-            }
-            lfIndex = nextLFIndex;
         }
     }
 
@@ -795,16 +802,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private int findCRLF(final ByteBuf buffer, final int maxLineSize) {
+    private long findCRLF(final ByteBuf buffer, final int maxLineSize, final boolean allowLFWithoutCR) {
         if (cumulationIndex < 0) {
             cumulationIndex = buffer.readerIndex();
         }
-        final int lfIndex = findCRLF(buffer, cumulationIndex, maxLineSize, parsingLine);
-        cumulationIndex = lfIndex < 0 ? min(buffer.writerIndex(), cumulationIndex + maxLineSize) : lfIndex;
-        if (lfIndex >= 0) {
+        final long longLFIndex = findCRLF(buffer, cumulationIndex, maxLineSize, parsingLine, allowLFWithoutCR);
+        if (longLFIndex < 0) {
+            cumulationIndex = min(buffer.writerIndex(), cumulationIndex + maxLineSize);
+        } else {
+            cumulationIndex = crlfIndex(longLFIndex);
             ++parsingLine;
         }
-        return lfIndex;
+        return longLFIndex;
     }
 
     /**
@@ -815,15 +824,23 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * @param startIndex initial scanning index
      * @param maxLineSize maximum length of a line
      * @param parsingLine line count for error messages.
-     * @return the offset of the CRLF or < 0 if no CRLF found
+     * @param allowLFWithoutCR allow a LF without a proceeding CR to signify "end of line".
+     * @return
+     * <ul>
+     *     <li>{@code <0} if no [CR]?LF found</li>
+     *     <li>Use {@link #crlfIndex(long)} to extract the offset of the [CR]?LF and {@link #crlfBeforeIndex(long)}
+     *     to get the index immediately preceding the [CR]?LF</li>
+     * </ul>
      * @throws DecoderException if no LF or found in buffer
      * @throws TooLongFrameException if the line exceeds the permitted maximum
      */
-    private static int findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize, final int parsingLine) {
-        final int maxToIndex = startIndex + maxLineSize;
+    private static long findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize, final int parsingLine,
+                                final boolean allowLFWithoutCR) {
+        final int maxToIndex = addWithOverflowProtection(startIndex, maxLineSize);
         for (;;) {
             final int toIndex = min(buffer.writerIndex(), maxToIndex);
             final int lfIndex = findLF(buffer, startIndex, toIndex);
+            final boolean foundCR;
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
                     throw new DecoderException("Could not find CRLF (0x0d0a) within " + maxLineSize +
@@ -831,10 +848,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
+                if (allowLFWithoutCR) {
+                    return ((long) lfIndex) << 32 | lfIndex;
+                }
                 buffer.skipBytes(1);
                 ++startIndex;
-            } else if (buffer.getByte(lfIndex - 1) == CR) {
-                return lfIndex;
+            } else if ((foundCR = buffer.getByte(lfIndex - 1) == CR) || allowLFWithoutCR) {
+                return foundCR ? ((long) lfIndex - 1) << 32 | lfIndex : ((long) lfIndex) << 32 | lfIndex;
             } else if (lfIndex != maxToIndex) {
                 throw new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line " +
                         parsingLine);
@@ -843,6 +863,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         " bytes");
             }
         }
+    }
+
+    private static int crlfIndex(long index) {
+        return (int) index;
+    }
+
+    private static int crlfBeforeIndex(long index) {
+        return ((int) (index >>> 32)) - 1;
     }
 
     private static int findLF(final ByteBuf buffer, final int fromIndex, final int toIndex) {
@@ -885,7 +913,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static long getContentLength(final HttpMetaData message) {
         final HttpHeaders headers = message.headers();
-        final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH), headers::values);
+        final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH));
         if (contentLength >= 0) {
             return contentLength;
         }

@@ -31,9 +31,13 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
     private final Publisher<? extends T> next;
 
     SingleConcatWithPublisher(final Single<? extends T> original, Publisher<? extends T> next, Executor executor) {
-        super(executor);
         this.original = original;
         this.next = next;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override
@@ -152,7 +156,12 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         }
 
         private void emitSingleSuccessToTarget(@Nullable final T result) {
-            target.onNext(result);
+            try {
+                target.onNext(result);
+            } catch (Throwable cause) {
+                target.onError(cause);
+                return;
+            }
             next.subscribeInternal(this);
         }
     }

@@ -15,16 +15,16 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class RandomDataUtilsTest {
+class RandomDataUtilsTest {
     @Test
-    public void charSequenceOfByteLength() {
+    void charSequenceOfByteLength() {
         for (int i = 0; i < 128; i++) {
             testRandomCharSequenceOfByteLength(i);
         }

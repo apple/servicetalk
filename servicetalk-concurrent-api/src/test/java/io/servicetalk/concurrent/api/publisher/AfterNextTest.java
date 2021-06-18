@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class AfterNextTest extends AbstractWhenOnNextTest {
+class AfterNextTest extends AbstractWhenOnNextTest {
     @Override
     protected <T> Publisher<T> doNext(Publisher<T> publisher, Consumer<T> consumer) {
         return publisher.afterOnNext(consumer);
@@ -35,7 +35,7 @@ public class AfterNextTest extends AbstractWhenOnNextTest {
 
     @Override
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         toSource(doNext(Publisher.from("Hello"), s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);

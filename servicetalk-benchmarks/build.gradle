@@ -15,8 +15,8 @@
  */
 
 plugins {
-  id "com.github.johnrengelman.shadow" version "6.1.0"
-  id "me.champeau.gradle.jmh" version "0.5.3"
+  id "com.github.johnrengelman.shadow" version "$jmhShadowPluginVersion"
+  id "me.champeau.jmh" version "$jmhPluginVersion"
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
@@ -43,11 +43,11 @@ dependencies {
 }
 
 jmh {
-  include = ".*Benchmark"
+  includes = [".*Benchmark"]
   jmhVersion = "$jmhCoreVersion"
-  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 " +
-                   "-Djmh.executor=CUSTOM " +
-                   "-Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"
+  jvmArgsPrepend = ["-Dio.netty.maxDirectMemory=9223372036854775807 " +
+                    "-Djmh.executor=CUSTOM " +
+                    "-Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"]
 }
 
 jmhJar {

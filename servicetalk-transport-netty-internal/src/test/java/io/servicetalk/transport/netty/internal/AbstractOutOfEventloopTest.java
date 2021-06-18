@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -25,31 +23,26 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 public abstract class AbstractOutOfEventloopTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     protected Channel channel;
-    protected EventLoopGroup eventLoopGroup;
+    private EventLoopGroup eventLoopGroup;
     protected BlockingQueue<Integer> pendingFlush;
     protected BlockingQueue<Integer> written;
 
-    @Before
+    @BeforeEach
     public void setUp() throws InterruptedException {
         eventLoopGroup = new DefaultEventLoopGroup(2);
         channel = new LocalChannel();
@@ -79,7 +72,7 @@ public abstract class AbstractOutOfEventloopTest {
 
     public abstract void setup0();
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         written.clear();
         channel.close().await(DEFAULT_TIMEOUT_SECONDS, SECONDS);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,7 @@ import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
-import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -48,11 +46,13 @@ import static java.util.function.Function.identity;
  * A holder of HTTP payload and associated information.
  */
 final class StreamingHttpPayloadHolder implements PayloadInfo {
+
+    private static final Publisher<Buffer> EMPTY = empty();
+
     private final HttpHeaders headers;
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
-    private final boolean h1TrailersSupported;
     @Nullable
     private Publisher<?> messageBody;
 
@@ -64,8 +64,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
-        this.h1TrailersSupported = h1TrailersSupported(version);
         this.messageBody = messageBody;
+        payloadInfo.setEmpty(messageBody == null || messageBody == empty());
     }
 
     @SuppressWarnings("unchecked")
@@ -80,6 +80,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     void payloadBody(final Publisher<Buffer> payloadBody) {
+        payloadInfo.setEmpty(payloadBody == EMPTY);
         if (messageBody == null) {
             messageBody = requireNonNull(payloadBody);
             payloadInfo.setGenericTypeBuffer(true);
@@ -99,6 +100,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     <T> void payloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
         payloadBody(serializer.serialize(headers, payloadBody, allocator));
+        // Because #serialize(...) method may apply operators, check the original payloadBody again:
+        payloadInfo.setEmpty(payloadBody == empty());
     }
 
     <T> void transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer, HttpSerializer<T> serializer) {
@@ -108,34 +111,35 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     void transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
         if (payloadInfo.mayHaveTrailers()) {
             assert messageBody != null;
+            payloadInfo.setEmpty(false);    // transformer may add payload content
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
-                Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                return merge(transformer.apply(oldMessageBody.liftSync(
-                        new PreserveTrailersBufferOperator(trailersProcessor))), fromSource(trailersProcessor))
-                        .subscribeShareContext();
+                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
+                final Publisher<Buffer> transformedPayloadBody = transformer.apply(oldMessageBody.liftSync(
+                        new PreserveTrailersBufferOperator(trailersProcessor)));
+                payloadInfo.setEmpty(transformedPayloadBody == EMPTY);
+                return merge(transformedPayloadBody, fromSource(trailersProcessor)).subscribeShareContext();
             });
         } else {
-            messageBody = requireNonNull(transformer.apply(payloadBody()));
-            payloadInfo.setGenericTypeBuffer(true);
+            final Publisher<Buffer> transformedPayloadBody = transformer.apply(payloadBody());
+            messageBody = requireNonNull(transformedPayloadBody);
+            payloadInfo.setEmpty(transformedPayloadBody == EMPTY).setGenericTypeBuffer(true);
         }
     }
 
     void transformMessageBody(UnaryOperator<Publisher<?>> transformer) {
         // The transformation does not support changing the presence of trailers in the message body or the type of
-        // Publisher (e.g. payloadInfo assumed not impacted).
+        // Publisher, or its content (e.g. payloadInfo assumed not impacted).
         messageBody = transformer.apply(messageBody());
     }
 
     <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
-        if (h1TrailersSupported) {
-            // This transform adds trailers, and for http/1.1 we need `transfer-encoding: chunked` not `content-length`.
-            addChunkedEncoding(headers);
-        }
         if (messageBody == null) {
-            messageBody = from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
-                    headersFactory.newEmptyTrailers()));
+            messageBody = defer(() ->
+                from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
+                        headersFactory.newEmptyTrailers())).subscribeShareContext());
         } else {
+            payloadInfo.setEmpty(false);    // transformer may add payload content
             messageBody = messageBody.scanWith(() -> new ScanWithMapper<Object, Object>() {
                 @Nullable
                 private final T state = trailersTransformer.newState();
@@ -177,7 +181,12 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     Single<PayloadAndTrailers> aggregate() {
         payloadInfo.setSafeToAggregate(true);
-        return aggregatePayloadAndTrailers(messageBody(), allocator);
+        return aggregatePayloadAndTrailers(payloadInfo, messageBody(), allocator);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return payloadInfo.isEmpty();
     }
 
     @Override

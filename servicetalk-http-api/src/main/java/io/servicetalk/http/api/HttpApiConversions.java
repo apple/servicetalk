@@ -19,8 +19,6 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
-import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
-
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
@@ -186,6 +184,16 @@ public final class HttpApiConversions {
     }
 
     /**
+     * Checks whether a request/response payload body is empty.
+     *
+     * @param metadata The request/response to check.
+     * @return {@code true} is the request/response payload body is empty, {@code false} otherwise.
+     */
+    public static boolean isPayloadEmpty(HttpMetaData metadata) {
+        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isEmpty();
+    }
+
+    /**
      * Checks whether a request/response payload is safe to aggregate, which may allow for writing a `content-length`
      * header.
      *
@@ -193,7 +201,7 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload is safe to aggregate, {@code false} otherwise.
      */
     public static boolean isSafeToAggregate(HttpMetaData metadata) {
-        return (metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isSafeToAggregate());
+        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isSafeToAggregate();
     }
 
     /**
@@ -203,8 +211,7 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload may have trailers, {@code false} otherwise.
      */
     public static boolean mayHaveTrailers(HttpMetaData metadata) {
-        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).mayHaveTrailers() ||
-                isTransferEncodingChunked(metadata.headers());
+        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).mayHaveTrailers();
     }
 
     /**

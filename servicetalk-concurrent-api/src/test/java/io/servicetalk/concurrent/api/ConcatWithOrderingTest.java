@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,17 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class ConcatWithOrderingTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class ConcatWithOrderingTest {
 
     protected final StringBuilder sb = new StringBuilder();
 
     @Test
-    public void completablesOnly() throws Exception {
+    void completablesOnly() throws Exception {
         completable(1)
                 .concat(completable(2))
                 .concat(completable(3))
@@ -44,7 +37,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void completableSingeCompletables() throws Exception {
+    void completableSingeCompletables() throws Exception {
         completable(1)
                 .concat(single(2))
                 .concat(completable(3))
@@ -56,7 +49,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void completableTwoSingesCompletables() throws Exception {
+    void completableTwoSingesCompletables() throws Exception {
         completable(1)
                 .concat(single(2))
                 .concat(single(3))
@@ -68,7 +61,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void completablePublisherCompletables() throws Exception {
+    void completablePublisherCompletables() throws Exception {
         completable(1)
                 .concat(publisher(2))
                 .concat(completable(3))
@@ -80,7 +73,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void singlesOnly() throws Exception {
+    void singlesOnly() throws Exception {
         single(1)
                 .concat(single(2))
                 .concat(single(3))
@@ -92,7 +85,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void singleCompletableSingles() throws Exception {
+    void singleCompletableSingles() throws Exception {
         single(1)
                 .concat(completable(2))
                 .concat(single(3))
@@ -104,7 +97,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void singleTwoCompletablesSingles() throws Exception {
+    void singleTwoCompletablesSingles() throws Exception {
         single(1)
                 .concat(completable(2))
                 .concat(completable(3))
@@ -116,7 +109,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void singlePublisherSingles() throws Exception {
+    void singlePublisherSingles() throws Exception {
         single(1)
                 .concat(publisher(2))
                 .concat(single(3))
@@ -128,7 +121,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void publishersOnly() throws Exception {
+    void publishersOnly() throws Exception {
         publisher(1)
                 .concat(publisher(2))
                 .concat(publisher(3))
@@ -140,7 +133,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void publisherCompletablePublishers() throws Exception {
+    void publisherCompletablePublishers() throws Exception {
         publisher(1)
                 .concat(completable(2))
                 .concat(publisher(3))
@@ -152,7 +145,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void publisherSinglePublishers() throws Exception {
+    void publisherSinglePublishers() throws Exception {
         publisher(1)
                 .concat(single(2))
                 .concat(publisher(3))
@@ -164,7 +157,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void completableSinglePublisherSingleCompletable() throws Exception {
+    void completableSinglePublisherSingleCompletable() throws Exception {
         completable(1)
                 .concat(single(2))
                 .concat(publisher(3))
@@ -176,7 +169,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void publisherSingleCompletableSinglePublisher() throws Exception {
+    void publisherSingleCompletableSinglePublisher() throws Exception {
         publisher(1)
                 .concat(single(2))
                 .concat(completable(3))

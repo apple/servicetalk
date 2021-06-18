@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,22 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.GreeterService;
-import io.grpc.examples.helloworld.Greeter.ServiceFactory;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
+/**
+ * Implementation of the
+ * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
+ * using async ServiceTalk APIS.
+ * <p/>
+ * Start this server first and then run the {@link HelloWorldClient}.
+ */
 public class HelloWorldServer {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 .listenAndAwait(new MyGreeterService())
                 .awaitShutdown();

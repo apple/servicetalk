@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -25,16 +25,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TakeWhilePublisherTest {
+class TakeWhilePublisherTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testWhile() {
+    void testWhile() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -46,7 +46,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testWhileError() {
+    void testWhileError() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -57,7 +57,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testWhileComplete() {
+    void testWhileComplete() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -67,7 +67,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testSubCancelled() {
+    void testSubCancelled() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);

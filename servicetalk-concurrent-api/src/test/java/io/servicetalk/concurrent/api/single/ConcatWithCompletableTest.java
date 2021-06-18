@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -32,17 +31,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ConcatWithCompletableTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+class ConcatWithCompletableTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
     private LegacyTestSingle<String> single = new LegacyTestSingle<>();
     private LegacyTestCompletable completable = new LegacyTestCompletable();
 
     @Test
-    public void concatWaitsForCompletableSuccess() {
+    void concatWaitsForCompletableSuccess() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
         assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -51,7 +48,7 @@ public class ConcatWithCompletableTest {
     }
 
     @Test
-    public void concatPropagatesCompletableFailure() {
+    void concatPropagatesCompletableFailure() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
         assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -60,7 +57,7 @@ public class ConcatWithCompletableTest {
     }
 
     @Test
-    public void concatPropagatesSingleFailure() {
+    void concatPropagatesSingleFailure() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onError(DELIBERATE_EXCEPTION);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));

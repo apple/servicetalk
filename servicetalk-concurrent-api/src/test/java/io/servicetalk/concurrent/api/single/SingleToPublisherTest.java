@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,14 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -43,17 +41,15 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class SingleToPublisherTest {
+class SingleToPublisherTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = ExecutorRule.newRule();
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
     @Test
-    public void testSuccessBeforeRequest() {
+    void testSuccessBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.takeOnNext(), is("Hello"));
@@ -61,14 +57,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testFailureBeforeRequest() {
+    void testFailureBeforeRequest() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testSuccessAfterRequest() {
+    void testSuccessAfterRequest() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
@@ -78,14 +74,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testFailedFuture() {
+    void testFailedFuture() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelBeforeRequest() {
+    void testCancelBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription();
         assertThat(verifier.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -93,7 +89,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testCancelAfterRequest() {
+    void testCancelAfterRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(1);
         assertThat(verifier.takeOnNext(), is("Hello"));
@@ -102,14 +98,14 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void testInvalidRequestN() {
+    void testInvalidRequestN() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(-1);
         assertThat(verifier.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void testSuccessAfterInvalidRequestN() {
+    void testSuccessAfterInvalidRequestN() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
         verifier.awaitSubscription().request(-1);
@@ -119,7 +115,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(Single.succeeded("Hello").toPublisher().afterOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
@@ -130,7 +126,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -141,7 +137,8 @@ public class SingleToPublisherTest {
                 errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                         currentThread()));
             }
-        }).afterCancel(analyzed::countDown).subscribeOn(executorRule.executor()).toPublisher()).subscribe(subscriber);
+        }).afterCancel(analyzed::countDown).subscribeOn(executorExtension.executor()).toPublisher())
+                .subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable); // waits till subscribed.
         assertThat("Single not subscribed.", single.isSubscribed(), is(true));
@@ -152,7 +149,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
+    void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -169,7 +166,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
+    void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -184,7 +181,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnError() throws Exception {
+    void publishOnOriginalIsPreservedOnError() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber = new
                 io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -199,7 +196,7 @@ public class SingleToPublisherTest {
     }
 
     @Test
-    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+    void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
@@ -221,7 +218,7 @@ public class SingleToPublisherTest {
         final Thread testThread = currentThread();
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
-        toSource(single.publishOn(executorRule.executor())
+        toSource(single.publishOn(executorExtension.executor())
                 .beforeOnSuccess(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onSuccess " +

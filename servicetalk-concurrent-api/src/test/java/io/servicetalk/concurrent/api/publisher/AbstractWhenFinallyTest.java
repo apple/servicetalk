@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,28 +20,24 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
 
     final TestPublisher<String> publisher = new TestPublisher<>();
     final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
@@ -50,7 +46,7 @@ abstract class AbstractWhenFinallyTest {
     private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
-    public void testForCancelPostEmissions() {
+    void testForCancelPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -63,7 +59,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelNoEmissions() {
+    void testForCancelNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().cancel();
@@ -73,7 +69,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostError() {
+    void testForCancelPostError() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -84,7 +80,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCancelPostComplete() {
+    void testForCancelPostComplete() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertFalse(subscription.isCancelled());
@@ -96,7 +92,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCompletePostEmissions() {
+    void testForCompletePostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -111,7 +107,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForCompleteNoEmissions() {
+    void testForCompleteNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -124,7 +120,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForErrorPostEmissions() {
+    void testForErrorPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -138,7 +134,7 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testForErrorNoEmissions() {
+    void testForErrorNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -150,14 +146,13 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public void testCallbackThrowsErrorOnCancel() {
+    void testCallbackThrowsErrorOnCancel() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             publisher.onSubscribe(subscription);
-            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            subscriber.awaitSubscription().cancel();
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> subscriber.awaitSubscription().cancel());
+            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             verify(mock).cancel();
             verifyNoMoreInteractions(mock);
@@ -166,10 +161,10 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsErrorOnComplete();
+    abstract void testCallbackThrowsErrorOnComplete();
 
     @Test
-    public abstract void testCallbackThrowsErrorOnError();
+    abstract void testCallbackThrowsErrorOnError();
 
     protected abstract <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer);
 

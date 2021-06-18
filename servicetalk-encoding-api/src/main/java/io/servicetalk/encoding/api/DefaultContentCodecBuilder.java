@@ -15,6 +15,7 @@
  */
 package io.servicetalk.encoding.api;
 
+@Deprecated
 abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB

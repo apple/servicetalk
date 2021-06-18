@@ -23,10 +23,10 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -37,24 +37,26 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,19 +74,22 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class AbstractNettyHttpServerTest {
 
     enum ExecutorSupplier {
@@ -101,21 +106,16 @@ public abstract class AbstractNettyHttpServerTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
 
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule().silent();
-
     @Mock
     Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier;
 
     private static IoExecutor clientIoExecutor;
     private static IoExecutor serverIoExecutor;
 
-    private final Executor clientExecutor;
-    private final Executor serverExecutor;
-    private final ExecutorSupplier clientExecutorSupplier;
-    private final ExecutorSupplier serverExecutorSupplier;
+    private Executor clientExecutor;
+    private Executor serverExecutor;
+    private ExecutorSupplier clientExecutorSupplier;
+    private ExecutorSupplier serverExecutorSupplier;
     private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private boolean sslEnabled;
     private ServerContext serverContext;
@@ -130,21 +130,25 @@ public abstract class AbstractNettyHttpServerTest {
     private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
     private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
 
-    AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
+    void setUp(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
         this.serverExecutorSupplier = serverExecutorSupplier;
         this.clientExecutor = clientExecutorSupplier.executorSupplier.get();
         this.serverExecutor = serverExecutorSupplier.executorSupplier.get();
+        try {
+            startServer();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
-    @BeforeClass
-    public static void createIoExecutors() {
+    @BeforeAll
+    static void createIoExecutors() {
         clientIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io-executor"));
         serverIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("server-io-executor"));
     }
 
-    @Before
-    public void startServer() throws Exception {
+    private void startServer() throws Exception {
         final InetSocketAddress bindAddress = localAddress(0);
         service(new TestServiceStreaming(publisherSupplier));
 
@@ -158,8 +162,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         if (sslEnabled) {
-            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey);
+            serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).build());
         }
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);
@@ -171,8 +175,8 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            clientBuilder.secure().disableHostnameVerification()
-                    .trustManager(DefaultTestCerts::loadServerCAPem).commit();
+            clientBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .peerHost(serverPemHostname()).build());
         }
         if (connectionFactoryFilter != null) {
             clientBuilder.appendConnectionFactoryFilter(connectionFactoryFilter);
@@ -189,7 +193,7 @@ public abstract class AbstractNettyHttpServerTest {
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
 
-    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         return HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
     }
 
@@ -197,14 +201,14 @@ public abstract class AbstractNettyHttpServerTest {
         return builder.listenStreaming(service);
     }
 
-    protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
-        assumeThat("Ignored flaky test",
-                parseBoolean(System.getenv("CI")) &&
+    void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
+        assumeFalse(parseBoolean(System.getenv("CI")) &&
                         this.clientExecutorSupplier == clientExecutorSupplier &&
-                        this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
+                        this.serverExecutorSupplier == serverExecutorSupplier,
+                   "Ignored flaky test");
     }
 
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         this.service = service;
     }
 
@@ -217,14 +221,14 @@ public abstract class AbstractNettyHttpServerTest {
         this.connectionFactoryFilter = connectionFactoryFilter;
     }
 
-    @After
-    public void stopServer() throws Exception {
+    @AfterEach
+    void stopServer() throws Exception {
         newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverContext, serverExecutor)
                 .close();
     }
 
-    @AfterClass
-    public static void shutdownClientIoExecutor() throws Exception {
+    @AfterAll
+    static void shutdownClientIoExecutor() throws Exception {
         newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).close();
     }
 
@@ -266,7 +270,7 @@ public abstract class AbstractNettyHttpServerTest {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+    void assertResponse(final HttpResponseMetaData response, final HttpProtocolVersion version,
                         final HttpResponseStatus status) {
         assertEquals(status, response.status());
         assertEquals(version, response.version());

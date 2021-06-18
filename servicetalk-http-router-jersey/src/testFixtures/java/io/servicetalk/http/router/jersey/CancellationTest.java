@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,6 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -206,7 +205,10 @@ public class CancellationTest {
 
         cancelledLatch.await();
 
-        assertThat(errorRef.get(), is(nullValue()));
+        final Throwable error = errorRef.get();
+        if (error != null) {
+            throw new AssertionError(error);
+        }
     }
 
     private void testCancelResponseSingle(final StreamingHttpRequest req) throws Exception {
@@ -224,7 +226,12 @@ public class CancellationTest {
             Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
-                    .beforeOnError(errorRef::set)
+                    .beforeOnError((err) -> {
+                        // Ignore racy cancellation, it's ordered safely.
+                        if (!(err instanceof IllegalStateException)) {
+                            errorRef.compareAndSet(null, err);
+                        }
+                    })
                     .afterCancel(cancelledLatch::countDown);
 
             toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
@@ -245,7 +252,10 @@ public class CancellationTest {
 
                 @Override
                 public void onError(final Throwable t) {
-                    errorRef.compareAndSet(null, t);
+                    // Ignore racy cancellation, it's ordered safely.
+                    if (!(t instanceof IllegalStateException)) {
+                        errorRef.compareAndSet(null, t);
+                    }
                     cancelledLatch.countDown();
                 }
             });
@@ -258,7 +268,10 @@ public class CancellationTest {
 
         cancelledLatch.await();
 
-        assertThat(errorRef.get(), is(nullValue()));
+        final Throwable error = errorRef.get();
+        if (error != null) {
+            throw new AssertionError(error);
+        }
     }
 
     private static StreamingHttpRequest get(final String resourcePath) {

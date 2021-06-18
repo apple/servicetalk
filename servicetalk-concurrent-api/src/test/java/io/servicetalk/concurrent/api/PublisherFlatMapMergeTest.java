@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
@@ -50,9 +51,11 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
@@ -67,19 +70,18 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-public class PublisherFlatMapMergeTest {
+class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Nullable
     private static ExecutorService executorService;
     @Nullable
@@ -88,14 +90,14 @@ public class PublisherFlatMapMergeTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> publisher = new TestPublisher<>();
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         executorService = java.util.concurrent.Executors.newFixedThreadPool(10);
         executor = io.servicetalk.concurrent.api.Executors.from(executorService);
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception {
+    @AfterAll
+    static void afterClass() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
@@ -104,8 +106,22 @@ public class PublisherFlatMapMergeTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void singleToPublisherOnNextErrorPropagated(boolean delayError) {
+        Function<? super Integer, ? extends Publisher<? extends Integer>> func = x -> succeeded(x).toPublisher();
+        toSource((delayError ? publisher.flatMapMergeDelayError(func, 2) : publisher.flatMapMerge(func, 2))
+                .<Integer>map(y -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(2);
+        publisher.onNext(1, 2);
+        publisher.onComplete();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
     @Test
-    public void mappedRecoverMakesProgress() throws Exception {
+    void mappedRecoverMakesProgress() throws Exception {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
@@ -129,7 +145,7 @@ public class PublisherFlatMapMergeTest {
         }).when(mockSubscriber).onNext(any());
 
         Processor<Integer, Integer> processor = newPublisherProcessor();
-        toSource(fromSource(processor).flatMapMergeDelayError(i -> from(i + 10).recoverWith(cause ->
+        toSource(fromSource(processor).flatMapMergeDelayError(i -> from(i + 10).onErrorResume(cause ->
                 from(i + 20).concat(failed(cause))))).subscribe(mockSubscriber);
 
         latchOnSubscribe.await();
@@ -144,22 +160,22 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleConcurrencyComplete() {
+    void singleConcurrencyComplete() {
         singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1), 1));
     }
 
     @Test
-    public void defaultConcurrencyComplete() {
+    void defaultConcurrencyComplete() {
         singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1)));
     }
 
     @Test
-    public void singleConcurrencyDelayErrorComplete() {
+    void singleConcurrencyDelayErrorComplete() {
         singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1), 1));
     }
 
     @Test
-    public void defaultConcurrencyDelayErrorComplete() {
+    void defaultConcurrencyDelayErrorComplete() {
         singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1)));
     }
 
@@ -175,7 +191,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleConcurrencyNullComplete() {
+    void singleConcurrencyNullComplete() {
         toSource(publisher.flatMapMerge(i -> from((Integer) null), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -186,7 +202,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemSourceCompleteFirst() {
+    void singleItemSourceCompleteFirst() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -205,7 +221,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedCompleteFirst() {
+    void singleItemMappedCompleteFirst() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -224,7 +240,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedError() {
+    void singleItemMappedError() {
         toSource(publisher.flatMapMerge(i -> Publisher.<Integer>failed(DELIBERATE_EXCEPTION), 1))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -233,7 +249,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedErrorPostSourceComplete() {
+    void singleItemMappedErrorPostSourceComplete() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -250,7 +266,24 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
+    void testDuplicateTerminal() {
+        PublisherSource<Integer> mappedPublisher = subscriber -> {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onComplete();
+            // intentionally violate the RS spec to verify the operator's behavior.
+            // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7
+            subscriber.onComplete();
+        };
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
+        toSource(publisher.flatMapMerge(i -> fromSource(mappedPublisher), 1)).subscribe(mockSubscriber);
+        publisher.onNext(1);
+        publisher.onComplete();
+        verify(mockSubscriber).onComplete();
+    }
+
+    @Test
+    void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
         CountDownLatch cancelledLatch = new CountDownLatch(1);
         publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(new Subscription() {
@@ -286,7 +319,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorNoOnNext() {
+    void sourceEmitsErrorNoOnNext() {
         toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription();
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -294,7 +327,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorPostOnNexts() {
+    void sourceEmitsErrorPostOnNexts() {
         toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -307,7 +340,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorPostOnNextsMappedNotCompleted() {
+    void sourceEmitsErrorPostOnNextsMappedNotCompleted() {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
@@ -322,7 +355,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceCancelAlsoCancelMapped() {
+    void sourceCancelAlsoCancelMapped() {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
@@ -337,12 +370,12 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mappedCompletePostCancel() {
+    void mappedCompletePostCancel() {
         mappedTerminalPostCancel(false);
     }
 
     @Test
-    public void mappedErrorPostCancel() {
+    void mappedErrorPostCancel() {
         mappedTerminalPostCancel(true);
     }
 
@@ -372,7 +405,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void errorDeliveredWithoutDrainingOptimisticDemand() throws InterruptedException {
+    void errorDeliveredWithoutDrainingOptimisticDemand() throws InterruptedException {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -393,7 +426,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void errorFromMappedSubscriberIsSequencedWithOnNextSignals() throws InterruptedException {
+    void errorFromMappedSubscriberIsSequencedWithOnNextSignals() throws InterruptedException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -437,7 +470,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mapperThrows() {
+    void mapperThrows() {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -455,7 +488,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mixedOrderMappedEmission() throws InterruptedException {
+    void mixedOrderMappedEmission() throws InterruptedException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -517,7 +550,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestLongMaxMultipleTimes() throws InterruptedException {
+    void requestLongMaxMultipleTimes() throws InterruptedException {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -540,12 +573,12 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void accumulateToLongMax() throws InterruptedException {
+    void accumulateToLongMax() throws InterruptedException {
         accumulateToMax(Long.MAX_VALUE);
     }
 
     @Test
-    public void accumulateToIntMax() throws InterruptedException {
+    void accumulateToIntMax() throws InterruptedException {
         accumulateToMax(Integer.MAX_VALUE);
     }
 
@@ -568,7 +601,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestAfterMappedError() throws InterruptedException {
+    void requestAfterMappedError() throws InterruptedException {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -586,7 +619,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestMultipleTimes() throws InterruptedException {
+    void requestMultipleTimes() throws InterruptedException {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -614,7 +647,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestMultipleTimesBreachMaxConcurrency() throws InterruptedException {
+    void requestMultipleTimesBreachMaxConcurrency() throws InterruptedException {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -638,7 +671,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void multipleMappedErrors() {
+    void multipleMappedErrors() {
         Queue<DeliberateException> errors = new ArrayDeque<>();
         toSource(publisher.<Integer>flatMapMergeDelayError(i -> {
             DeliberateException de = new DeliberateException();
@@ -657,7 +690,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void subscriptionReentry() throws InterruptedException {
+    void subscriptionReentry() throws InterruptedException {
         Queue<Integer> resultsQueue = new ConcurrentLinkedQueue<>();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -702,7 +735,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void emitFromExecutor() throws InterruptedException, ExecutionException {
+    void emitFromExecutor() throws InterruptedException, ExecutionException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -749,7 +782,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestAndEmitConcurrency() throws Exception {
+    void requestAndEmitConcurrency() throws Exception {
         int totalToRequest = 1000;
         List<Integer> received = new ArrayList<>(totalToRequest);
         CountDownLatch requestingStarting = new CountDownLatch(1);
@@ -783,7 +816,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentMappedAndPublisherTermination() throws Exception {
+    void concurrentMappedAndPublisherTermination() throws Exception {
         assert executor != null;
         Single<List<Integer>> single = range(0, 1000)
                 .flatMapMerge(i -> executor.submit(() -> i).toPublisher(), 1024)
@@ -798,7 +831,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentMappedDeliveryOrderPreserved() {
+    void concurrentMappedDeliveryOrderPreserved() {
         assert executor != null;
         final int upstreamItems = 10000;
         final int mappedItems = 5;
@@ -828,7 +861,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentSkipQueueDoesNotDeadlock() throws Throwable {
+    void concurrentSkipQueueDoesNotDeadlock() throws Throwable {
         assert executorService != null;
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         CountDownLatch onNextLatch = new CountDownLatch(1);
@@ -927,7 +960,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentMappedErrorAndPublisherTermination() throws Exception {
+    void concurrentMappedErrorAndPublisherTermination() throws Exception {
         assert executor != null;
         AtomicReference<Throwable> error = new AtomicReference<>();
         Single<List<Integer>> single = range(0, 1000)
@@ -937,7 +970,7 @@ public class PublisherFlatMapMergeTest {
                     }
                     throw new DeliberateException();
                 }).toPublisher(), 1024, 500)
-                .recoverWith(t -> {
+                .onErrorResume(t -> {
                     error.set(t);
                     return Publisher.empty();
                 }).collect(ArrayList::new, (ints, s) -> {
@@ -956,7 +989,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mappedQuotaIsRenewedAfterSingleMappedPublisherCompletes() throws InterruptedException {
+    void mappedQuotaIsRenewedAfterSingleMappedPublisherCompletes() throws InterruptedException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -1004,7 +1037,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mappedQuotaIsRenewedAfterExhausted() throws InterruptedException {
+    void mappedQuotaIsRenewedAfterExhausted() throws InterruptedException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -1046,7 +1079,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void lastActiveMappedPublisherCanDeliverData() throws Throwable {
+    void lastActiveMappedPublisherCanDeliverData() throws Throwable {
         final int mappedRangeBegin = 5;
         final int mappedRangeEnd = 10;
         CountDownLatch latch = new CountDownLatch(mappedRangeEnd - mappedRangeBegin);
@@ -1096,7 +1129,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void internalQueueSizeIsBoundedByDownstreamDemand() throws Throwable {
+    void internalQueueSizeIsBoundedByDownstreamDemand() throws Throwable {
         // We only expect 1 signal, and if we get 2 then the test has failed. The goal is to only request 1 onNext and
         // verify the operator bounds the amount of memory behind the scenes.
         final AtomicReference<Throwable> throwableRef = new AtomicReference<>();
@@ -1137,7 +1170,7 @@ public class PublisherFlatMapMergeTest {
         if (cause != null) {
             throw cause;
         }
-        assertFalse("The countDownLatch didn't timeout, and there was also no exception?!", timedOut);
+        assertFalse(timedOut, "The countDownLatch didn't timeout, and there was also no exception?!");
     }
 
     private static final class TestSubscriptionPublisherPair<T> {

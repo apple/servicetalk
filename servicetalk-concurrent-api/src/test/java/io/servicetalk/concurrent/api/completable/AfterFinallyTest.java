@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class AfterFinallyTest extends AbstractWhenFinallyTest {
+class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
     protected Completable doFinally(Completable completable, TerminalSignalConsumer doFinally) {
         return completable.afterFinally(doFinally);
@@ -36,7 +36,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnComplete() {
+    void testCallbackThrowsErrorOnComplete() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         toSource(doFinally(Completable.completed(), mock)).subscribe(listener);
         listener.awaitOnComplete();
@@ -46,7 +46,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnError() {
+    void testCallbackThrowsErrorOnError() {
         TerminalSignalConsumer mock = throwableMock(new DeliberateException());
         toSource(doFinally(Completable.failed(DELIBERATE_EXCEPTION), mock)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));

@@ -13,6 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Copyright 2014 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 package io.servicetalk.buffer.api;
 
 import java.util.ArrayList;
@@ -23,6 +38,7 @@ import static io.servicetalk.buffer.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.buffer.api.AsciiBuffer.hashCodeAscii;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.lang.Character.toUpperCase;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -32,6 +48,9 @@ import static java.util.Objects.requireNonNull;
  */
 public final class CharSequences {
 
+    private static final int RADIX_10 = 10;
+    private static final long PARSE_LONG_MIN = Long.MIN_VALUE / RADIX_10;
+
     private CharSequences() {
         // No instances
     }
@@ -40,10 +59,21 @@ public final class CharSequences {
      * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
      * with a case-insensitive {@code hashCode}.
      *
-     * @param input a string containing only 8-bit ASCII characters.
+     * @param input a character sequence containing only 8-bit ASCII characters.
      * @return a {@link CharSequence}
      */
     public static CharSequence newAsciiString(final String input) {
+        return newAsciiString((CharSequence) input);
+    }
+
+    /**
+     * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
+     * with a case-insensitive {@code hashCode}.
+     *
+     * @param input a character sequence containing only 8-bit ASCII characters.
+     * @return a {@link CharSequence}
+     */
+    public static CharSequence newAsciiString(final CharSequence input) {
         return newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(input));
     }
 
@@ -70,11 +100,14 @@ public final class CharSequences {
 
     /**
      * Check if the provided {@link CharSequence} is an AsciiString,
-     * result of a call to {@link #newAsciiString(String)}.
+     * result of a call to {@link #newAsciiString(CharSequence)}.
      *
      * @param sequence The {@link CharSequence} to check.
      * @return {@code true} if the check passes.
+     * @deprecated Internal implementation detail that will be removed in follow-up releases. Please rely on API inside
+     * {@link CharSequences} to manipulated ascii strings.
      */
+    @Deprecated
     public static boolean isAsciiString(final CharSequence sequence) {
         return sequence.getClass() == AsciiBuffer.class;
     }
@@ -169,10 +202,10 @@ public final class CharSequences {
      * @return The index of {@code c} or {@code -1} otherwise.
      */
     public static int indexOf(final CharSequence sequence, char c, int fromIndex) {
-        if (sequence instanceof String) {
-            return ((String) sequence).indexOf(c, fromIndex);
-        } else if (isAsciiString(sequence)) {
+        if (isAsciiString(sequence)) {
             return asciiStringIndexOf(sequence, c, fromIndex);
+        } else if (sequence instanceof String) {
+            return ((String) sequence).indexOf(c, fromIndex);
         }
         for (int i = fromIndex; i < sequence.length(); ++i) {
             if (sequence.charAt(i) == c) {
@@ -416,5 +449,126 @@ public final class CharSequences {
             }
         }
         return true;
+    }
+
+    /**
+     * Parses the {@link CharSequence} argument as a signed decimal {@code long}.
+     *
+     * <p> This is the equivalent of {@link Long#parseLong(String)} that does not require to
+     * {@link CharSequence#toString()} conversion.
+     *
+     * @param cs a {@code CharSequence} containing the {@code long} value to be parsed
+     * @return {code long} representation of the passed {@link CharSequence}
+     * @throws NumberFormatException if the passed {@link CharSequence} cannot be parsed into {@code long}
+     */
+    public static long parseLong(final CharSequence cs) throws NumberFormatException {
+        final int length = cs.length();
+        if (length <= 0) {
+            throw new NumberFormatException("Illegal length of the CharSequence: " + length + " (expected > 0)");
+        }
+
+        if (isAsciiString(cs)) {
+            return parseLong(((AsciiBuffer) cs).unwrap());
+        }
+
+        return parseLong(cs, length);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static long parseLong(final CharSequence cs, final int length) {
+        int i = 0;
+        final char firstCh = cs.charAt(i);
+        final boolean negative = firstCh == '-';
+        if ((negative || firstCh == '+') && ++i == length) {
+            throw illegalInput(cs);
+        }
+
+        long result = 0;
+        while (i < length) {
+            final int digit = Character.digit(cs.charAt(i++), RADIX_10);
+            if (digit < 0) {
+                throw illegalInput(cs);
+            }
+            if (PARSE_LONG_MIN > result) {
+                throw illegalInput(cs);
+            }
+            long next = result * RADIX_10 - digit;
+            if (next > result) {
+                throw illegalInput(cs);
+            }
+            result = next;
+        }
+        if (!negative) {
+            result = -result;
+            if (result < 0) {
+                throw illegalInput(cs);
+            }
+        }
+        return result;
+    }
+
+    private static long parseLong(final Buffer buffer) {
+        final ParseLongByteProcessor bp = new ParseLongByteProcessor(buffer);
+        buffer.forEachByte(bp);
+        return bp.result();
+    }
+
+    private static final class ParseLongByteProcessor implements ByteProcessor {
+
+        private final Buffer buffer;
+        private long result;
+        private boolean negative;
+        private boolean sign;
+
+        ParseLongByteProcessor(final Buffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean process(final byte value) {
+            if (!sign) {
+                sign = true;
+                negative = value == '-';
+                if ((negative || value == '+')) {
+                    if (buffer.readableBytes() == 1) {
+                        throw illegalInput(buffer);
+                    } else {
+                        return true;
+                    }
+                }
+            }
+
+            final int digit = value - '0';
+            if (digit < 0 || digit > 9) {
+                throw illegalInput(buffer);
+            }
+            if (PARSE_LONG_MIN > result) {
+                throw illegalInput(buffer);
+            }
+            long next = result * RADIX_10 - digit;
+            if (next > result) {
+                throw illegalInput(buffer);
+            }
+            result = next;
+            return true;
+        }
+
+        long result() {
+            if (!negative) {
+                result = -result;
+                if (result < 0) {
+                    throw illegalInput(buffer);
+                }
+            }
+            return result;
+        }
+    }
+
+    private static NumberFormatException illegalInput(final CharSequence cs) {
+        return new NumberFormatException("Illegal input: \"" + cs + "\"");
+    }
+
+    private static NumberFormatException illegalInput(final Buffer buffer) {
+        return new NumberFormatException("Illegal input: \"" + buffer.toString(US_ASCII) + "\"");
     }
 }

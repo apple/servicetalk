@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,20 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class AsyncContextDisableTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class AsyncContextDisableTest {
     private static final Key<String> K1 = Key.newKey("k1");
 
     @Test
-    public void testDisableAsyncContext() throws Exception {
+    void testDisableAsyncContext() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             Executor executor = Executors.newCachedThreadExecutor();
             Executor executor2 = null;
@@ -77,7 +72,7 @@ public class AsyncContextDisableTest {
     }
 
     @Test
-    public void testAutoEnableDoesNotOverrideDisable() throws Exception {
+    void testAutoEnableDoesNotOverrideDisable() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             AsyncContext.disable();
             try {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -131,7 +132,8 @@ public class RedirectingHttpRequesterFilterTest {
                     }
                 };
 
-        return from(reqRespFactory, mock(HttpExecutionContext.class), customFilter.append(mockResponse));
+        return from(reqRespFactory, mock(HttpExecutionContext.class),
+                appendClientFilterFactory(customFilter, mockResponse));
     }
 
     @Test

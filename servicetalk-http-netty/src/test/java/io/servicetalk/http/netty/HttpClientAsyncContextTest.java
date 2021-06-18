@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -33,9 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -51,22 +48,20 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HttpClientAsyncContextTest {
+class HttpClientAsyncContextTest {
     private static final AsyncContextMap.Key<CharSequence> K1 = AsyncContextMap.Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Test
-    public void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
+    void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
         contextPreservedOverFilterBoundaries(false);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
+    void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
         contextPreservedOverFilterBoundaries(true);
     }
 

@@ -178,6 +178,10 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
             builder.kind(Span.Kind.SERVER);
         } else if (Tags.SPAN_KIND_CLIENT.equals(type)) {
             builder.kind(Span.Kind.CLIENT);
+        } else if (Tags.SPAN_KIND_PRODUCER.equals(type)) {
+            builder.kind(Span.Kind.PRODUCER);
+        } else if (Tags.SPAN_KIND_CONSUMER.equals(type)) {
+            builder.kind(Span.Kind.CONSUMER);
         }
 
         Span s = builder.build();

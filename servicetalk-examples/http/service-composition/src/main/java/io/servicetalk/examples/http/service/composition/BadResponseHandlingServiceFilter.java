@@ -41,7 +41,7 @@ final class BadResponseHandlingServiceFilter implements StreamingHttpServiceFilt
             @Override
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
-                return super.handle(ctx, request, responseFactory).recoverWith(cause -> {
+                return super.handle(ctx, request, responseFactory).onErrorResume(cause -> {
                     if (cause instanceof BadResponseStatusException) {
                         // It's useful to include the exception message in the payload for demonstration purposes, but
                         // this is not recommended in production as it may leak internal information.

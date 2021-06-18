@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,9 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -38,14 +35,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenSubscriberTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     @SuppressWarnings("unchecked")
     private final Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
     private final TestPublisherSubscriber<String> finalSubscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testOnWithOnComplete() {
+    void testOnWithOnComplete() {
         toSource(doSubscriber(from("Hello"), () -> subscriber)).subscribe(finalSubscriber);
         finalSubscriber.awaitSubscription().request(1);
         assertThat(finalSubscriber.takeOnNext(), is("Hello"));
@@ -55,7 +50,7 @@ public abstract class AbstractWhenSubscriberTest {
     }
 
     @Test
-    public void testOnWithOnError() {
+    void testOnWithOnError() {
         toSource(doSubscriber(Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
                 .subscribe(finalSubscriber);
         assertThat(finalSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));

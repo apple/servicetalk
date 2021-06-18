@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,39 +42,36 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class PublisherGroupByConcurrencyTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
-
+@Timeout(30)
+final class PublisherGroupByConcurrencyTest {
     private final TestPublisherSubscriber<Integer> groupsSubscriber = new TestPublisherSubscriber<>();
     private ConcurrentLinkedQueue<Integer> allItemsReceivedOnAllGroups;
     private TestPublisher<Integer> source;
     private ExecutorService executor;
     private AtomicBoolean allWorkDone;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         source = new TestPublisher<>();
         allItemsReceivedOnAllGroups = new ConcurrentLinkedQueue<>();
         executor = newCachedThreadPool();
         allWorkDone = new AtomicBoolean();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() {
         executor.shutdown();
         allItemsReceivedOnAllGroups.clear();
     }
 
     @Test
-    public void testConcurrentEmissionAndGroupCancel() throws Exception {
+    void testConcurrentEmissionAndGroupCancel() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, true);
         Task cancels = drainGroupSubscribers(subs, GroupSubscriber::cancel).awaitStart();
@@ -86,7 +81,7 @@ public final class PublisherGroupByConcurrencyTest {
     }
 
     @Test
-    public void testConcurrentEmissionAndGroupRequestN() throws Exception {
+    void testConcurrentEmissionAndGroupRequestN() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         Task requestNs = requestAndDrainGroupSubscribers(subs).awaitStart();
@@ -96,7 +91,7 @@ public final class PublisherGroupByConcurrencyTest {
     }
 
     @Test
-    public void testConcurrentGroupsCancel() throws Exception {
+    void testConcurrentGroupsCancel() throws Exception {
         int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         final TestSubscription subscription = new TestSubscription();

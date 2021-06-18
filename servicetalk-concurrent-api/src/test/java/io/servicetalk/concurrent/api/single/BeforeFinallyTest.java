@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class BeforeFinallyTest extends AbstractWhenFinallyTest {
+class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
     protected <T> Single<T> doFinally(Single<T> single, SingleTerminalSignalConsumer<T> doFinally) {
         return single.beforeFinally(doFinally);
@@ -36,7 +36,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnSuccess() {
+    void testCallbackThrowsErrorOnSuccess() {
         SingleTerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
         String result = "Hello";
         toSource(doFinally(Single.succeeded(result), mock)).subscribe(listener);
@@ -47,7 +47,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnError() {
+    void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         SingleTerminalSignalConsumer<String> mock = throwableMock(exception);
         toSource(doFinally(Single.failed(DELIBERATE_EXCEPTION), mock)).subscribe(listener);

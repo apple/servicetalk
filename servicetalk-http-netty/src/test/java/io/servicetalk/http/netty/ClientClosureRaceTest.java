@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,17 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,33 +48,30 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ClientClosureRaceTest {
-
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout(90, SECONDS);
+@Timeout(90)
+class ClientClosureRaceTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientClosureRaceTest.class);
-    public static final int ITERATIONS = 600;
+    private static final int ITERATIONS = 600;
     @Nullable
     private static ExecutorService executor;
     private ServerSocket serverSocket;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         if (executor != null) {
             executor.shutdownNow();
         }
     }
 
-    @Before
-    public void startServer() throws Exception {
+    @BeforeEach
+    void startServer() throws Exception {
         assert executor != null;
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
 
@@ -116,13 +112,13 @@ public class ClientClosureRaceTest {
         });
     }
 
-    @After
-    public void stopServer() throws Exception {
+    @AfterEach
+    void stopServer() throws Exception {
         serverSocket.close();
     }
 
     @Test
-    public void testSequential() throws Exception {
+    void testSequential() throws Exception {
         try (HttpClient client = newClientBuilder().build()) {
             runIterations(() -> client.request(client.get("/foo")).flatMap(
                     response -> client.request(client.get("/bar"))));
@@ -130,7 +126,7 @@ public class ClientClosureRaceTest {
     }
 
     @Test
-    public void testSequentialPosts() throws Exception {
+    void testSequentialPosts() throws Exception {
         try (HttpClient client = newClientBuilder().build()) {
             runIterations(() ->
                     client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
@@ -139,7 +135,7 @@ public class ClientClosureRaceTest {
     }
 
     @Test
-    public void testPipelined() throws Exception {
+    void testPipelined() throws Exception {
         try (HttpClient client = newClientBuilder()
                 .protocols(h1().maxPipelinedRequests(2).build())
                 .build()) {
@@ -149,7 +145,7 @@ public class ClientClosureRaceTest {
     }
 
     @Test
-    public void testPipelinedPosts() throws Exception {
+    void testPipelinedPosts() throws Exception {
         try (HttpClient client = newClientBuilder()
                 .protocols(h1().maxPipelinedRequests(2).build())
                 .build()) {

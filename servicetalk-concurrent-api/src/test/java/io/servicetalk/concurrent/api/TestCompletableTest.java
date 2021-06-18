@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,17 +27,16 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestCompletableTest {
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
+class TestCompletableTest {
 
     private final TestCompletableSubscriber subscriber1 = new TestCompletableSubscriber();
     private final TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
 
     @Test
-    public void testNonResubscribeableCompletable() {
+    void testNonResubscribeableCompletable() {
         TestCompletable source = new TestCompletable.Builder()
                 .singleSubscriber()
                 .build();
@@ -51,15 +48,15 @@ public class TestCompletableTest {
         subscriber1.awaitOnComplete();
 
         source.subscribe(subscriber2);
-        expected.expect(RuntimeException.class);
-        expected.expectMessage("Unexpected exception(s) encountered");
-        expected.expectCause(allOf(instanceOf(IllegalStateException.class), hasProperty("message",
-                startsWith("Duplicate subscriber"))));
-        source.onComplete();
+
+        Exception e = assertThrows(RuntimeException.class, () -> source.onComplete());
+        assertEquals("Unexpected exception(s) encountered", e.getMessage());
+        assertThat(e.getCause(), allOf(instanceOf(IllegalStateException.class),
+                hasProperty("message", startsWith("Duplicate subscriber"))));
     }
 
     @Test
-    public void testSequentialSubscribeCompletable() {
+    void testSequentialSubscribeCompletable() {
         TestCompletable source = new TestCompletable.Builder()
                 .build();
 
@@ -74,7 +71,7 @@ public class TestCompletableTest {
     }
 
     @Test
-    public void testConcurrentSubscribeCompletable() {
+    void testConcurrentSubscribeCompletable() {
         TestCompletable source = new TestCompletable.Builder()
                 .concurrentSubscribers()
                 .build();

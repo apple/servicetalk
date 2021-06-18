@@ -21,8 +21,8 @@ final class MergeOneCompletable extends AbstractMergeCompletableOperator<Complet
     private final Completable onlyOther;
     private final boolean delayError;
 
-    MergeOneCompletable(boolean delayError, Completable original, Executor executor, Completable other) {
-        super(original, executor);
+    MergeOneCompletable(boolean delayError, Completable original, Completable other) {
+        super(original);
         this.delayError = delayError;
         onlyOther = requireNonNull(other);
     }

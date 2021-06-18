@@ -17,7 +17,7 @@ package io.servicetalk.encoding.api.internal;
 
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.Identity;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +25,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.split;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -43,13 +43,13 @@ public final class HeaderUtils {
      * <p>
      * If no supported encodings are configured then the result is always {@code null}
      * If no accepted encodings are present in the request then the result is always {@code null}
-     * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
+     * In all other cases, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * otherwise {@code null} is returned.
      *
      * @param acceptEncodingHeaderValue The accept encoding header value.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
-     * null if none found or matched to {@link ContentCodings#identity()}
+     * null if none found or matched to {@link Identity#identity()}
      */
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(@Nullable final CharSequence acceptEncodingHeaderValue,
@@ -71,13 +71,13 @@ public final class HeaderUtils {
      * on the server side and the incoming header on the request.
      * <p>
      * If no supported encodings are passed then the result is always {@code null}
-     * Otherwise, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
+     * Otherwise, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * or {@code null} is returned.
      *
      * @param clientSupportedEncodings The client supported codings as found in the HTTP header.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
-     * null if none found or matched to {@link ContentCodings#identity()}
+     * null if none found or matched to {@link Identity#identity()}
      */
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
@@ -89,7 +89,7 @@ public final class HeaderUtils {
         }
 
         for (ContentCodec encoding : serverSupportedEncodings) {
-            if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
+            if (!identity().equals(encoding) && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }
@@ -120,7 +120,7 @@ public final class HeaderUtils {
      * Returns the {@link ContentCodec} that matches the {@code name} within the {@code allowedList}.
      * if {@code name} is {@code null} or empty it results in {@code null} .
      * If {@code name} is {@code 'identity'} this will always result in
-     * {@link ContentCodings#identity()} regardless of its presence in the {@code allowedList}.
+     * {@link Identity#identity()} regardless of its presence in the {@code allowedList}.
      *
      * @param allowedList the source list to find a matching codec from.
      * @param name the codec name used for the equality predicate.

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -30,52 +30,52 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public final class SingleFlatMapSingleTest {
+final class SingleFlatMapSingleTest {
 
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<String> first;
     private LegacyTestSingle<String> second;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         first = new LegacyTestSingle<>();
         second = new LegacyTestSingle<>();
     }
 
     @Test
-    public void testFirstAndSecondPropagate() {
+    void testFirstAndSecondPropagate() {
         toSource(succeeded(1).flatMap(s -> succeeded("Hello" + s))).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello1"));
     }
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         toSource(succeeded(1).flatMap(s -> succeeded("Hello"))).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
-    public void testFirstEmitsError() {
+    void testFirstEmitsError() {
         toSource(failed(DELIBERATE_EXCEPTION).flatMap(s -> succeeded("Hello"))).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testSecondEmitsError() {
+    void testSecondEmitsError() {
         SourceAdapters.<String>toSource(succeeded(1).flatMap(s -> failed(DELIBERATE_EXCEPTION))).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelBeforeFirst() {
+    void testCancelBeforeFirst() {
         toSource(first.flatMap(s -> second)).subscribe(listener);
         listener.awaitSubscription().cancel();
         first.verifyCancelled();
     }
 
     @Test
-    public void testCancelBeforeSecond() {
+    void testCancelBeforeSecond() {
         toSource(first.flatMap(s -> second)).subscribe(listener);
         first.onSuccess("Hello");
         listener.awaitSubscription().cancel();
@@ -84,7 +84,7 @@ public final class SingleFlatMapSingleTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(first.flatMap(s -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);
@@ -93,7 +93,7 @@ public final class SingleFlatMapSingleTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         SourceAdapters.<String>toSource(first.flatMap(s -> null)).subscribe(listener);
         first.onSuccess("Hello");
         assertThat(listener.awaitOnError(), instanceOf(NullPointerException.class));

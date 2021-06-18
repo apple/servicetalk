@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,46 +18,36 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SubscribeThrowsTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = none();
+class SubscribeThrowsTest {
 
     @Test
-    public void publisherSubscriberThrows() throws Exception {
+    void publisherSubscriberThrows() {
         Publisher<String> p = new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        p.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> p.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void publisherSubscriberWithOffloaderThrows() {
+    void publisherSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
@@ -73,20 +63,19 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void singleSubscriberThrows() throws Exception {
+    void singleSubscriberThrows() {
         Single<String> s = new Single<String>() {
             @Override
             protected void handleSubscribe(final SingleSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        s.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> s.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void singleSubscriberWithOffloaderThrows() {
+    void singleSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         SingleSource.Subscriber<String> subscriber =
@@ -103,20 +92,19 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void completableSubscriberThrows() throws Exception {
+    void completableSubscriberThrows() {
         Completable c = new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        c.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> c.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void completableSubscriberWithOffloaderThrows() {
+    void completableSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
         Completable c = new Completable() {

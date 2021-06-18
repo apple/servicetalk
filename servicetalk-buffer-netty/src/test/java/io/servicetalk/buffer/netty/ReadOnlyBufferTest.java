@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +17,30 @@ package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ReadOnlyBufferTest {
+class ReadOnlyBufferTest {
 
     @Test
-    public void capacity() {
+    void capacity() {
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.capacity(), readOnly.capacity());
     }
 
     @Test
-    public void maxCapacity() {
+    void maxCapacity() {
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.maxCapacity(), readOnly.maxCapacity());
     }
 
     @Test
-    public void changeReaderIndexViaReadOnlyView() {
+    void changeReaderIndexViaReadOnlyView() {
         Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.readerIndex(), readOnly.readerIndex());
@@ -50,7 +50,7 @@ public class ReadOnlyBufferTest {
     }
 
     @Test
-    public void changeWriterIndexViaReadOnlyView() {
+    void changeWriterIndexViaReadOnlyView() {
         Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());

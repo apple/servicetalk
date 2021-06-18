@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -30,27 +26,24 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
-public class SchedulerOffloadTest {
+class SchedulerOffloadTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    public static final String EXPECTED_THREAD_PREFIX = "jdk-executor";
+    static final String EXPECTED_THREAD_PREFIX = "jdk-executor";
     @Nullable
     private Executor executor;
 
-    public SchedulerOffloadTest() {
+    SchedulerOffloadTest() {
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void userSchedulerInvokesUserCode() throws InterruptedException {
+    void userSchedulerInvokesUserCode() throws InterruptedException {
         verifyInvokerThread(
                 from(java.util.concurrent.Executors.newCachedThreadPool(new DefaultThreadFactory("foo")),
                         java.util.concurrent.Executors.newScheduledThreadPool(1,
@@ -58,7 +51,7 @@ public class SchedulerOffloadTest {
     }
 
     @Test
-    public void globalSchedulerDoesNotInvokeUserCode() throws InterruptedException {
+    void globalSchedulerDoesNotInvokeUserCode() throws InterruptedException {
         verifyInvokerThread(from(java.util.concurrent.Executors.newFixedThreadPool(1,
                 new DefaultThreadFactory(EXPECTED_THREAD_PREFIX))));
     }

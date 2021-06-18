@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.AbstractToFutureTest;
 import io.servicetalk.concurrent.api.TestSingle;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Future;
 
@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
+class SingleToFutureTest extends AbstractToFutureTest<Integer> {
 
     private final TestSingle<Integer> source = new TestSingle.Builder<Integer>().build(subscriber -> {
         subscriber.onSubscribe(mockCancellable);
@@ -63,7 +63,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
     }
 
     @Test
-    public void testSucceededNull() throws Exception {
+    void testSucceededNull() throws Exception {
         Future<Integer> future = toFuture();
         exec.executor().schedule(() -> source.onSuccess(null), 10, MILLISECONDS);
         assertThat(future.get(), is(nullValue()));
@@ -73,7 +73,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
     }
 
     @Test
-    public void testSucceededThrowable() throws Exception {
+    void testSucceededThrowable() throws Exception {
         TestSingle<Throwable> throwableSingle = new TestSingle<>();
         Future<Throwable> future = throwableSingle.toFuture();
         exec.executor().schedule(() -> throwableSingle.onSuccess(DELIBERATE_EXCEPTION), 10, MILLISECONDS);

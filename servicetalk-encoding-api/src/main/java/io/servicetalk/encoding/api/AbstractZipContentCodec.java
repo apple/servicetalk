@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
+@Deprecated
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
@@ -63,6 +64,11 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     abstract DeflaterOutputStream newDeflaterOutputStream(OutputStream out) throws IOException;
 
     abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
+
+    @Override
+    public Buffer encode(final Buffer src, final BufferAllocator allocator) {
+        return encode(src, 0, src.readableBytes(), allocator);
+    }
 
     @Override
     public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
@@ -184,6 +190,11 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                         subscriber.onComplete();
                     }
                 });
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final BufferAllocator allocator) {
+        return decode(src, 0, src.readableBytes(), allocator);
     }
 
     @Override

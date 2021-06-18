@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.ExecutionException;
@@ -41,19 +39,17 @@ import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCR
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class SourceAdaptersTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class SourceAdaptersTest {
 
     @Test
-    public void publisherToSourceSuccess() {
+    void publisherToSourceSuccess() {
         PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(from(1));
         verify(subscriber).onNext(1);
         verify(subscriber).onComplete();
@@ -61,14 +57,14 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void publisherToSourceError() {
+    void publisherToSourceError() {
         PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Publisher.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
-    public void publisherToSourceCancel() {
+    void publisherToSourceCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
         PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(stPublisher);
         TestSubscription subscription = new TestSubscription();
@@ -81,21 +77,21 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void singleToSourceSuccess() {
+    void singleToSourceSuccess() {
         SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(succeeded(1));
         verify(subscriber).onSuccess(1);
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
-    public void singleToSourceError() {
+    void singleToSourceError() {
         SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Single.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
-    public void singleToSourceCancel() {
+    void singleToSourceCancel() {
         LegacyTestSingle<Integer> stSingle = new LegacyTestSingle<>();
         SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(stSingle);
         stSingle.verifyListenCalled();
@@ -106,21 +102,21 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void completableToSourceSuccess() {
+    void completableToSourceSuccess() {
         CompletableSource.Subscriber subscriber = toSourceAndSubscribe(completed());
         verify(subscriber).onComplete();
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
-    public void completableToSourceError() {
+    void completableToSourceError() {
         CompletableSource.Subscriber subscriber = toSourceAndSubscribe(Completable.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
-    public void completableToSourceCancel() {
+    void completableToSourceCancel() {
         LegacyTestCompletable stCompletable = new LegacyTestCompletable();
         CompletableSource.Subscriber subscriber = toSourceAndSubscribe(stCompletable);
         stCompletable.verifyListenCalled();
@@ -131,27 +127,26 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void publisherFromSourceSuccess() throws Exception {
+    void publisherFromSourceSuccess() throws Exception {
         PublisherSource<Integer> src = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
         Integer result = fromSource(src).firstOrElse(() -> null).toFuture().get();
         assertThat("Unexpected result.", result, is(1));
     }
 
     @Test
-    public void publisherFromSourceError() throws Exception {
+    void publisherFromSourceError() {
         PublisherSource<Integer> src = s -> {
             s.onSubscribe(EMPTY_SUBSCRIPTION);
             s.onError(DELIBERATE_EXCEPTION);
         };
 
         Future<Integer> future = fromSource(src).firstOrElse(() -> null).toFuture();
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        future.get();
+        Exception e = assertThrows(ExecutionException.class, () -> future.get());
+        assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void publisherFromSourceCancel() {
+    void publisherFromSourceCancel() {
         PublisherSource.Subscription srcSubscription = mock(PublisherSource.Subscription.class);
         PublisherSource<Integer> source = s -> s.onSubscribe(srcSubscription);
 
@@ -160,7 +155,7 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void singleFromSourceSuccess() throws Exception {
+    void singleFromSourceSuccess() throws Exception {
         SingleSource<Integer> src = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onSuccess(1);
@@ -170,20 +165,19 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void singleFromSourceError() throws Exception {
+    void singleFromSourceError() {
         SingleSource<Integer> src = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onError(DELIBERATE_EXCEPTION);
         };
 
         Future<Integer> future = fromSource(src).toFuture();
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        future.get();
+        Exception e = assertThrows(ExecutionException.class, () -> future.get());
+        assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void singleFromSourceCancel() {
+    void singleFromSourceCancel() {
         Cancellable srcCancellable = mock(Cancellable.class);
         SingleSource<Integer> source = s -> s.onSubscribe(srcCancellable);
 
@@ -192,7 +186,7 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void completableFromSourceSuccess() throws Exception {
+    void completableFromSourceSuccess() throws Exception {
         CompletableSource src = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onComplete();
@@ -201,20 +195,19 @@ public class SourceAdaptersTest {
     }
 
     @Test
-    public void completableFromSourceError() throws Exception {
+    void completableFromSourceError() {
         CompletableSource src = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onError(DELIBERATE_EXCEPTION);
         };
 
         Future<Void> future = fromSource(src).toFuture();
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        future.get();
+        Exception e = assertThrows(ExecutionException.class, () -> future.get());
+        assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void completableFromSourceCancel() {
+    void completableFromSourceCancel() {
         Cancellable srcCancellable = mock(Cancellable.class);
         CompletableSource source = s -> s.onSubscribe(srcCancellable);
 

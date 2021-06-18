@@ -18,16 +18,16 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.channel.ChannelOption;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
@@ -39,10 +39,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * Common configuration for TCP based clients and servers.
  *
- * @param <SecurityConfig> type of security configuration
- * @param <ReadOnlyView> type of read-only view
+ * @param <SslConfigType> type of {@link SslConfig}.
  */
-abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
+abstract class AbstractTcpConfig<SslConfigType> {
 
     @Nullable
     @SuppressWarnings("rawtypes")
@@ -53,17 +52,17 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     private UserDataLoggerConfig wireLoggerConfig;
     @Nullable
-    private SecurityConfig securityConfig;
+    private SslConfigType sslConfig;
 
     protected AbstractTcpConfig() {
     }
 
-    protected AbstractTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from) {
+    protected AbstractTcpConfig(final AbstractTcpConfig<SslConfigType> from) {
         options = from.options;
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
         wireLoggerConfig = from.wireLoggerConfig;
-        securityConfig = from.securityConfig;
+        sslConfig = from.sslConfig;
     }
 
     @Nullable
@@ -87,8 +86,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     }
 
     @Nullable
-    final SecurityConfig securityConfig() {
-        return securityConfig;
+    public final SslConfigType sslConfig() {
+        return sslConfig;
     }
 
     /**
@@ -138,19 +137,11 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     }
 
     /**
-     * Add security related config.
+     * Add SSL/TLS related config.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} to use
+     * @param sslConfig the {@link ServerSslConfig}.
      */
-    public final void secure(final SecurityConfig securityConfig) {
-        this.securityConfig = requireNonNull(securityConfig);
+    public final void sslConfig(final SslConfigType sslConfig) {
+        this.sslConfig = requireNonNull(sslConfig);
     }
-
-    /**
-     * Returns an immutable view of this config, any changes to this config will not alter the returned view.
-     *
-     * @param supportedAlpnProtocols a list of supported protocols for ALPN configuration
-     * @return an immutable view of this config
-     */
-    public abstract ReadOnlyView asReadOnly(List<String> supportedAlpnProtocols);
 }

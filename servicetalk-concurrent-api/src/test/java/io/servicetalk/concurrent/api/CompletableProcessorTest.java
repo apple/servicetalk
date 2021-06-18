@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -41,20 +38,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class CompletableProcessorTest {
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class CompletableProcessorTest {
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
     private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
     private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
 
     @Test
-    public void testCompleteBeforeListen() {
+    void testCompleteBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
         toSource(processor).subscribe(rule);
@@ -62,7 +57,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorBeforeListen() {
+    void testErrorBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
         toSource(processor).subscribe(rule);
@@ -70,7 +65,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testCompleteAfterListen() {
+    void testCompleteAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -79,7 +74,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorAfterListen() {
+    void testErrorAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -88,7 +83,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testCompleteThenError() {
+    void testCompleteThenError() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
         processor.onError(DELIBERATE_EXCEPTION);
@@ -97,7 +92,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void testErrorThenComplete() {
+    void testErrorThenComplete() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
         processor.onComplete();
@@ -106,7 +101,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
+    void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
         assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -119,7 +114,7 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void synchronousCancelStillAllowsForGC() throws InterruptedException {
+    void synchronousCancelStillAllowsForGC() throws InterruptedException {
         CompletableProcessor processor = new CompletableProcessor();
         ReferenceQueue<Subscriber> queue = new ReferenceQueue<>();
         WeakReference<Subscriber> subscriberRef =
@@ -150,12 +145,12 @@ public class CompletableProcessorTest {
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesError() throws Exception {
+    void multiThreadedAddAlwaysTerminatesError() throws Exception {
         multiThreadedAddAlwaysTerminates(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void multiThreadedAddAlwaysTerminatesComplete() throws Exception {
+    void multiThreadedAddAlwaysTerminatesComplete() throws Exception {
         multiThreadedAddAlwaysTerminates(null);
     }
 

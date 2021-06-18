@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -39,13 +39,13 @@ public abstract class AbstractWhenSubscriberTest {
     private SingleSource.Subscriber<String> subscriber;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         subscriber = mock(SingleSource.Subscriber.class);
     }
 
     @Test
-    public void testOnWithOnSuccess() {
+    void testOnWithOnSuccess() {
         toSource(doSubscriber(Single.succeeded("Hello"), () -> subscriber)).subscribe(listener);
         assertThat(listener.awaitOnSuccess(), is("Hello"));
         verify(subscriber).onSubscribe(any());
@@ -53,7 +53,7 @@ public abstract class AbstractWhenSubscriberTest {
     }
 
     @Test
-    public void testOnWithOnError() {
+    void testOnWithOnError() {
         toSource(doSubscriber(Single.failed(DELIBERATE_EXCEPTION), () -> subscriber)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(subscriber).onSubscribe(any());

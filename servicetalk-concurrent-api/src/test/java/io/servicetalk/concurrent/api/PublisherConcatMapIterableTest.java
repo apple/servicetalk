@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,10 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,20 +51,17 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class PublisherConcatMapIterableTest {
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class PublisherConcatMapIterableTest {
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<List<String>> publisher = new TestPublisher<>();
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();
@@ -76,7 +69,7 @@ public class PublisherConcatMapIterableTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void upstreamRecoverWithMakesProgress() throws Exception {
+    void upstreamRecoverWithMakesProgress() throws Exception {
         @SuppressWarnings("unchecked")
         Subscriber<String> mockSubscriber = mock(Subscriber.class);
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
@@ -104,7 +97,7 @@ public class PublisherConcatMapIterableTest {
         }).when(mockSubscriber).onNext(any());
 
         Processor<List<String>, List<String>> processor = newPublisherProcessor();
-        toSource(fromSource(processor).recoverWith(cause -> {
+        toSource(fromSource(processor).onErrorResume(cause -> {
             if (cause != DELIBERATE_EXCEPTION) { // recover!
                 return from(singletonList("two"));
             }
@@ -119,7 +112,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void cancellableIterableIsCancelled() {
+    void cancellableIterableIsCancelled() {
         toSource(cancellablePublisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         cancellablePublisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -134,7 +127,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void justComplete() {
+    void justComplete() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription();
@@ -142,7 +135,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void justFail() {
+    void justFail() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription();
@@ -150,12 +143,12 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void singleElementSingleValueThenSuccess() {
+    void singleElementSingleValueThenSuccess() {
         singleElementSingleValue(true);
     }
 
     @Test
-    public void singleElementSingleValueThenFail() {
+    void singleElementSingleValueThenFail() {
         singleElementSingleValue(false);
     }
 
@@ -172,12 +165,12 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void singleElementMultipleValuesDelayedRequestThenSuccess() {
+    void singleElementMultipleValuesDelayedRequestThenSuccess() {
         singleElementMultipleValuesDelayedRequest(true);
     }
 
     @Test
-    public void singleElementMultipleValuesDelayedRequestThenFail() {
+    void singleElementMultipleValuesDelayedRequestThenFail() {
         singleElementMultipleValuesDelayedRequest(false);
     }
 
@@ -206,12 +199,12 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void multipleElementsSingleValueThenSuccess() {
+    void multipleElementsSingleValueThenSuccess() {
         multipleElementsSingleValue(true);
     }
 
     @Test
-    public void multipleElementsSingleValueThenFail() {
+    void multipleElementsSingleValueThenFail() {
         multipleElementsSingleValue(false);
     }
 
@@ -230,12 +223,12 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void multipleElementsMultipleValuesThenSuccess() {
+    void multipleElementsMultipleValuesThenSuccess() {
         multipleElementsMultipleValues(true);
     }
 
     @Test
-    public void multipleElementsMultipleValuesThenFail() {
+    void multipleElementsMultipleValuesThenFail() {
         multipleElementsMultipleValues(false);
     }
 
@@ -260,7 +253,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void cancelIsPropagated() {
+    void cancelIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -271,12 +264,12 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void requestWithEmptyIterableThenSuccess() {
+    void requestWithEmptyIterableThenSuccess() {
         requestWithEmptyIterable(true);
     }
 
     @Test
-    public void requestWithEmptyIterableThenFail() {
+    void requestWithEmptyIterableThenFail() {
         requestWithEmptyIterable(false);
     }
 
@@ -298,18 +291,19 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void exceptionFromOnErrorIsPropagated() {
+    void exceptionFromOnErrorIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .afterOnError(t -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         subscriber.awaitSubscription();
-        expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.onError(DELIBERATE_EXCEPTION);
+        DeliberateException exception = assertThrows(DeliberateException.class,
+                                                  () -> publisher.onError(DELIBERATE_EXCEPTION));
+        assertThat(exception, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testExceptionFromBufferedOnNextThenTerminalIsPropagated() {
+    void testExceptionFromBufferedOnNextThenTerminalIsPropagated() {
         final DeliberateException ex2 = new DeliberateException();
         final AtomicBoolean errored = new AtomicBoolean();
         toSource(publisher.flatMapConcatIterable(identity())
@@ -325,18 +319,19 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void exceptionFromOnCompleteIsPropagated() {
+    void exceptionFromOnCompleteIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .afterOnComplete(() -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         subscriber.awaitSubscription();
-        expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.onComplete();
+        DeliberateException exception = assertThrows(DeliberateException.class,
+                                                     () -> publisher.onComplete());
+        assertThat(exception, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void exceptionInsideOnNextWhenOnCompleteRacesRequestNIsPropagated() throws Exception {
+    void exceptionInsideOnNextWhenOnCompleteRacesRequestNIsPropagated() throws Exception {
         CyclicBarrier barrier = new CyclicBarrier(2);
         toSource(publisher.flatMapConcatIterable(identity())
                 .map(new Function<String, String>() {
@@ -369,7 +364,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void exceptionFromOnNextIsPropagated() {
+    void exceptionFromOnNextIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .map((Function<String, String>) s -> {
                     throw DELIBERATE_EXCEPTION;
@@ -380,7 +375,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void exceptionFromOnNextIsPropagatedAndDoesNotCancel() {
+    void exceptionFromOnNextIsPropagatedAndDoesNotCancel() {
         TestPublisher<List<String>> localPublisher = new TestPublisher.Builder<List<String>>().disableAutoOnSubscribe()
                 .build(subscriber1 -> {
                     subscriber1.onSubscribe(subscription);
@@ -398,7 +393,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
-    public void exceptionFromSubscriptionRequestNIsPropagated() {
+    void exceptionFromSubscriptionRequestNIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .map((Function<String, String>) s -> {
                     throw DELIBERATE_EXCEPTION;

@@ -27,10 +27,13 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
@@ -50,31 +53,51 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         return this;
     }
 
+    /**
+     * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
+     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
+     *
+     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
+     * @param backlog the backlog to use when accepting connections.
+     * @return {@code this}.
+     */
+    @Deprecated
+    public HttpServerBuilder backlog(int backlog) {
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
+        return this;
+    }
+
+    @Deprecated
     @Override
-    public HttpServerBuilder backlog(final int backlog) {
-        config.tcpConfig().backlog(backlog);
+    public HttpServerSecurityConfigurator secure() {
+        return new DefaultHttpServerSecurityConfigurator(config -> {
+            this.config.tcpConfig().sslConfig(config);
+            return DefaultHttpServerBuilder.this;
+        });
+    }
+
+    @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig config) {
+        this.config.tcpConfig().sslConfig(config);
         return this;
     }
 
     @Override
-    public HttpServerSecurityConfigurator secure() {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig);
-            return DefaultHttpServerBuilder.this;
-        });
-    }
-
-    @Override
-    public HttpServerSecurityConfigurator secure(final String... sniHostnames) {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig, sniHostnames);
-            return DefaultHttpServerBuilder.this;
-        });
+    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
+        this.config.tcpConfig().sslConfig(defaultConfig, sniMap);
+        return this;
     }
 
     @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
         config.tcpConfig().socketOption(option, value);
+        return this;
+    }
+
+    @Override
+    public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+        config.tcpConfig().listenSocketOption(option, value);
         return this;
     }
 

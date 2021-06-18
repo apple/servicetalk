@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,74 +19,82 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import io.netty.buffer.ByteBuf;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-public class BufferAllocatorsTest {
+class BufferAllocatorsTest {
 
-    private final BufferAllocator allocator;
+    private static final String TEST_NAME_FORMAT = "{index}: allocator = {0}";
 
-    public BufferAllocatorsTest(BufferAllocator allocator) {
-        this.allocator = allocator;
+    @SuppressWarnings("unused")
+    private static Collection<BufferAllocator> allocators() {
+        return asList(DEFAULT_ALLOCATOR, PREFER_DIRECT_ALLOCATOR, PREFER_HEAP_ALLOCATOR);
     }
 
-    @Parameterized.Parameters(name = "{index}: allocators = {0}")
-    public static Collection<Object> data() {
-        return Arrays.asList(DEFAULT_ALLOCATOR, PREFER_DIRECT_ALLOCATOR, PREFER_HEAP_ALLOCATOR);
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewBuffer(BufferAllocator allocator) {
+        assertBuffer(allocator, allocator.newBuffer());
     }
 
-    @Test
-    public void testNewBuffer() {
-        assertBuffer(allocator.newBuffer());
-    }
-
-    @Test
-    public void testNewBufferDirect() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewBufferDirect(BufferAllocator allocator) {
         assertBuffer(allocator.newBuffer(true), true);
     }
 
-    @Test
-    public void testNewBufferHeap() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewBufferHeap(BufferAllocator allocator) {
         assertBuffer(allocator.newBuffer(false), false);
     }
 
-    @Test
-    public void testNewCompositeBuffer() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewCompositeBuffer(BufferAllocator allocator) {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer());
     }
 
-    @Test
-    public void testNewCompositeBufferWithSingleComponent() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testReadOnlyDirectBuffer(BufferAllocator allocator) {
+        assertBuffer(allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer()), true);
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewCompositeBufferWithSingleComponent(BufferAllocator allocator) {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer()
                 .addBuffer(allocator.fromAscii("test")));
     }
 
-    @Test
-    public void testNewCompositeBufferWithMultipleComponents() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewCompositeBufferWithMultipleComponents(BufferAllocator allocator) {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer()
                 .addBuffer(allocator.fromAscii("test1"))
                 .addBuffer(allocator.fromAscii("test2"))
                 .addBuffer(allocator.fromAscii("test3")));
     }
 
-    @Test
-    public void testNewConsolidatedCompositeBufferWithMultipleComponents() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testNewConsolidatedCompositeBufferWithMultipleComponents(BufferAllocator allocator) {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer()
                 .addBuffer(allocator.fromAscii("test1"))
                 .addBuffer(allocator.fromAscii("test2"))
@@ -94,52 +102,61 @@ public class BufferAllocatorsTest {
                 .consolidate());
     }
 
-    @Test
-    public void testFromAscii() {
-        assertBuffer(allocator.fromAscii("test"));
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromAscii(BufferAllocator allocator) {
+        assertBuffer(allocator, allocator.fromAscii("test"));
     }
 
-    @Test
-    public void testFromAsciiDirect() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromAsciiDirect(BufferAllocator allocator) {
         assertBuffer(allocator.fromAscii("test", true), true);
     }
 
-    @Test
-    public void testFromAsciiHeap() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromAsciiHeap(BufferAllocator allocator) {
         assertBuffer(allocator.fromAscii("test", false), false);
     }
 
-    @Test
-    public void testFromUtf8() {
-        assertBuffer(allocator.fromUtf8("test"));
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromUtf8(BufferAllocator allocator) {
+        assertBuffer(allocator, allocator.fromUtf8("test"));
     }
 
-    @Test
-    public void testFromUtf8Direct() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromUtf8Direct(BufferAllocator allocator) {
         assertBuffer(allocator.fromUtf8("test", true), true);
     }
 
-    @Test
-    public void testFromUtf8Heap() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromUtf8Heap(BufferAllocator allocator) {
         assertBuffer(allocator.fromUtf8("test", false), false);
     }
 
-    @Test
-    public void testFromSequence() {
-        assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII));
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromSequence(BufferAllocator allocator) {
+        assertBuffer(allocator, allocator.fromSequence("test", StandardCharsets.US_ASCII));
     }
 
-    @Test
-    public void testFromSequenceDirect() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromSequenceDirect(BufferAllocator allocator) {
         assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII, true), true);
     }
 
-    @Test
-    public void testFromSequenceHeap() {
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testFromSequenceHeap(BufferAllocator allocator) {
         assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII, false), false);
     }
 
-    private void assertBuffer(Buffer buffer) {
+    private void assertBuffer(BufferAllocator allocator, Buffer buffer) {
         assertBuffer(buffer, allocator != PREFER_HEAP_ALLOCATOR);
     }
 

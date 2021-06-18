@@ -15,40 +15,47 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
-import io.netty.util.NetUtil;
+import io.netty.channel.ChannelOption;
 
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers.
  */
-public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
+public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
 
+    @Nullable
+    @SuppressWarnings("rawtypes")
+    private Map<ChannelOption, Object> listenOptions;
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
-    private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
-    private int backlog = NetUtil.SOMAXCONN;
+    private Map<String, ServerSslConfig> sniConfig;
 
     TransportObserver transportObserver() {
         return transportObserver;
     }
 
     @Nullable
-    Map<String, ReadOnlyServerSecurityConfig> sniConfigs() {
-        return sniConfigs;
+    public Map<String, ServerSslConfig> sniConfig() {
+        return sniConfig;
     }
 
-    int backlog() {
-        return backlog;
+    @Nullable
+    @SuppressWarnings("rawtypes")
+    Map<ChannelOption, Object> listenOptions() {
+        return listenOptions;
     }
 
     /**
@@ -61,41 +68,58 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
     }
 
     /**
-     * Add security related config.
+     * Add SSL/TLS and SNI related config.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames
-     * @param sniHostnames SNI hostnames for which this config is defined
+     * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
+     * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
+     * found the corresponding {@link ServerSslConfig} is used.
      * @return {@code this}
      */
-    public TcpServerConfig secure(final ReadOnlyServerSecurityConfig securityConfig, final String... sniHostnames) {
-        requireNonNull(securityConfig);
-        requireNonNull(sniHostnames);
-        if (sniConfigs == null) {
-            sniConfigs = new HashMap<>();
-        }
-        for (String sniHostname : sniHostnames) {
-            sniConfigs.put(sniHostname, securityConfig);
-        }
+    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig) {
+        sslConfig(defaultSslConfig);
+        this.sniConfig = requireNonNull(sniConfig);
         return this;
+    }
+
+    /**
+     * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
+     *
+     * @param <T> the type of the value
+     * @param option the option to apply
+     * @param value the value
+     * @throws IllegalArgumentException if the {@link SocketOption} is not supported
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
+     */
+    public <T> void listenSocketOption(final SocketOption<T> option, T value) {
+        if (listenOptions == null) {
+            listenOptions = new HashMap<>();
+        }
+        addOption(listenOptions, option, value);
     }
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
+     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @param backlog the backlog to use when accepting connections
      * @return {@code this}
      */
+    @Deprecated
     public TcpServerConfig backlog(final int backlog) {
         if (backlog < 0) {
             throw new IllegalArgumentException("backlog must be >= 0");
         }
-        this.backlog = backlog;
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
         return this;
     }
 
-    @Override
-    public ReadOnlyTcpServerConfig asReadOnly(final List<String> supportedAlpnProtocols) {
-        return new ReadOnlyTcpServerConfig(this, supportedAlpnProtocols);
+    /**
+     * Create a read only view of this object.
+     * @return a read only view of this object.
+     */
+    public ReadOnlyTcpServerConfig asReadOnly() {
+        return new ReadOnlyTcpServerConfig(this);
     }
 }

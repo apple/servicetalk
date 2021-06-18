@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -29,25 +29,25 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class RangeIntPublisherTest {
+class RangeIntPublisherTest {
     final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void zeroElements() {
+    void zeroElements() {
         toSource(range(Integer.MAX_VALUE, Integer.MAX_VALUE)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void zeroElementsStride() {
+    void zeroElementsStride() {
         toSource(range(-1, -1, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void singleElement() {
+    void singleElement() {
         toSource(range(-1, 0)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is(-1));
@@ -55,7 +55,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void singleElementStride() {
+    void singleElementStride() {
         toSource(range(0, 1, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is(0));
@@ -63,7 +63,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void multipleElements() {
+    void multipleElements() {
         toSource(range(0, 5)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         assertThat(subscriber.takeOnNext(5), contains(0, 1, 2, 3, 4));
@@ -71,7 +71,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void multipleElementsStride() {
+    void multipleElementsStride() {
         toSource(range(0, 10, 3)).subscribe(subscriber);
         subscriber.awaitSubscription().request(4);
         assertThat(subscriber.takeOnNext(4), contains(0, 3, 6, 9));
@@ -79,7 +79,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void overflowStride() {
+    void overflowStride() {
         int begin = Integer.MAX_VALUE - 1;
         toSource(range(begin, Integer.MAX_VALUE, 10)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -88,7 +88,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void negativeToPositive() {
+    void negativeToPositive() {
         toSource(range(-2, 3)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         assertThat(subscriber.takeOnNext(5), contains(-2, -1, 0, 1, 2));
@@ -96,7 +96,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void negativeToPositiveStride() {
+    void negativeToPositiveStride() {
         toSource(range(-1, Integer.MAX_VALUE, Integer.MAX_VALUE)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         assertThat(subscriber.takeOnNext(2), contains(-1, Integer.MAX_VALUE - 1));
@@ -104,7 +104,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void allNegative() {
+    void allNegative() {
         toSource(range(-10, -5)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         assertThat(subscriber.takeOnNext(5), contains(-10, -9, -8, -7, -6));
@@ -112,7 +112,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void allNegativeStride() {
+    void allNegativeStride() {
         toSource(range(-20, -10, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         assertThat(subscriber.takeOnNext(5), contains(-20, -18, -16, -14, -12));
@@ -120,12 +120,12 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void thrownExceptionTerminatesOnError() {
+    void thrownExceptionTerminatesOnError() {
         thrownExceptionTerminatesOnError(false);
     }
 
     @Test
-    public void thrownExceptionTerminatesOnErrorStride() {
+    void thrownExceptionTerminatesOnErrorStride() {
         thrownExceptionTerminatesOnError(true);
     }
 
@@ -138,7 +138,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void reentrantDeliversInOrder() {
+    void reentrantDeliversInOrder() {
         toSource(range(0, 5).whenOnNext(n -> subscriber.awaitSubscription().request(1))).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(5), contains(0, 1, 2, 3, 4));
@@ -146,7 +146,7 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void reentrantDeliversInOrderStride() {
+    void reentrantDeliversInOrderStride() {
         toSource(range(5, 15, 4).whenOnNext(n -> subscriber.awaitSubscription().request(1))).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(3), contains(5, 9, 13));
@@ -154,12 +154,12 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void reentrantCancelStopsDelivery() {
+    void reentrantCancelStopsDelivery() {
         reentrantCancelStopsDelivery(true);
     }
 
     @Test
-    public void reentrantCancelStopsDeliveryStride() {
+    void reentrantCancelStopsDeliveryStride() {
         reentrantCancelStopsDelivery(false);
     }
 
@@ -175,12 +175,12 @@ public class RangeIntPublisherTest {
     }
 
     @Test
-    public void requestNAfterCancelIsNoop() {
+    void requestNAfterCancelIsNoop() {
         requestNAfterCancelIsNoop(false);
     }
 
     @Test
-    public void requestNAfterCancelIsNoopStride() {
+    void requestNAfterCancelIsNoopStride() {
         requestNAfterCancelIsNoop(true);
     }
 

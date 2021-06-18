@@ -25,6 +25,8 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

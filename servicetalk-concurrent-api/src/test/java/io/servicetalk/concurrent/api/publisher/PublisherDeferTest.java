@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -32,19 +32,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class PublisherDeferTest {
+class PublisherDeferTest {
 
     private Supplier<Publisher<Integer>> factory;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         factory = mock(Supplier.class);
         when(factory.get()).thenReturn(empty());
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() throws Exception {
+    void testEverySubscribeCreatesNew() {
         Publisher<Integer> source = Publisher.defer(factory);
         subscribeAndVerify(source);
         subscribeAndVerify(source);

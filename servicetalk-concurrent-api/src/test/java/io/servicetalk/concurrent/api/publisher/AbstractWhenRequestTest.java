@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.LongConsumer;
 
@@ -32,20 +31,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenRequestTest {
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testSingleRequest() {
+    void testSingleRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -57,7 +54,7 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testMultiRequest() {
+    void testMultiRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -71,7 +68,7 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testRequestNoEmissions() {
+    void testRequestNoEmissions() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
@@ -82,13 +79,13 @@ public abstract class AbstractWhenRequestTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
+    void testCallbackThrowsError() {
         doRequest(Publisher.from("Hello"), n -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
-        subscriber.awaitSubscription().request(1);
+
+        Exception e = assertThrows(DeliberateException.class, () -> subscriber.awaitSubscription().request(1));
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     protected abstract <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer);

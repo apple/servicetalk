@@ -22,9 +22,8 @@ import static java.util.Objects.requireNonNull;
 final class BeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private final Supplier<? extends Subscriber<? super T>> subscriberSupplier;
 
-    BeforeSubscriberPublisher(Publisher<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier,
-                              Executor executor) {
-        super(original, executor);
+    BeforeSubscriberPublisher(Publisher<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+        super(original);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 

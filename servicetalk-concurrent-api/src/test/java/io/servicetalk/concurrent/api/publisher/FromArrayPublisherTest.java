@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
+final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return new InMemorySource(values) {
@@ -35,11 +36,11 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
         };
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
+    @Test
+    void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(0);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitOnComplete();
-        subscriber.awaitSubscription().request(-1);
+        assertThrows(IllegalArgumentException.class, () -> subscriber.awaitSubscription().request(-1));
     }
 }

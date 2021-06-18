@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,10 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -40,18 +37,15 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class SingleConcatWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class SingleConcatWithPublisherTest {
     private TestPublisherSubscriber<Integer> subscriber;
     private TestSingle<Integer> source;
     private TestPublisher<Integer> next;
     private TestSubscription subscription;
     private TestCancellable cancellable;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         subscriber = new TestPublisherSubscriber<>();
         cancellable = new TestCancellable();
         source = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build();
@@ -63,7 +57,20 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void bothCompletion() {
+    void onNextErrorPropagated() {
+        subscriber = new TestPublisherSubscriber<>();
+        source = new TestSingle<>();
+        toSource(source.concat(next).<Integer>map(x -> {
+            throw DELIBERATE_EXCEPTION;
+        })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        source.onSuccess(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertThat(next.isSubscribed(), is(false));
+    }
+
+    @Test
+    void bothCompletion() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(2);
@@ -75,7 +82,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void sourceCompletionNextError() {
+    void sourceCompletionNextError() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
@@ -84,12 +91,12 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribeNegative1() {
+    void invalidRequestBeforeNextSubscribeNegative1() {
         invalidRequestBeforeNextSubscribe(-1);
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribeZero() {
+    void invalidRequestBeforeNextSubscribeZero() {
         invalidRequestBeforeNextSubscribe(0);
     }
 
@@ -100,7 +107,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestNWithInlineSourceCompletion() {
+    void invalidRequestNWithInlineSourceCompletion() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(Single.succeeded(1).concat(empty())).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
@@ -108,26 +115,26 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestAfterNextSubscribe() {
+    void invalidRequestAfterNextSubscribe() {
         triggerNextSubscribe();
         subscriber.awaitSubscription().request(-1);
         assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
     }
 
     @Test
-    public void multipleInvalidRequest() {
+    void multipleInvalidRequest() {
         subscriber.awaitSubscription().request(-1);
         subscriber.awaitSubscription().request(-10);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void invalidThenValidRequestNegative1() {
+    void invalidThenValidRequestNegative1() {
         invalidThenValidRequest(-1);
     }
 
     @Test
-    public void invalidThenValidRequestZero() {
+    void invalidThenValidRequestZero() {
         invalidThenValidRequest(0);
     }
 
@@ -139,7 +146,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void request0PropagatedAfterSuccess() {
+    void request0PropagatedAfterSuccess() {
         source.onSuccess(1);
         subscriber.awaitSubscription().request(1); // get the success from the Single
         subscriber.awaitSubscription().request(0);
@@ -149,14 +156,14 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void sourceError() {
+    void sourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat("Unexpected subscriber termination.", subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
     @Test
-    public void cancelSource() {
+    void cancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
@@ -164,7 +171,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void cancelSourcePostRequest() {
+    void cancelSourcePostRequest() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
@@ -173,7 +180,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void cancelNext() {
+    void cancelNext() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
@@ -182,7 +189,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void zeroIsNotRequestedOnTransitionToSubscription() {
+    void zeroIsNotRequestedOnTransitionToSubscription() {
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
         next.onSubscribe(subscription);

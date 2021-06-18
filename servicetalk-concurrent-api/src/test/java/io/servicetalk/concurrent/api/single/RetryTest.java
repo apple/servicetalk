@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -29,8 +29,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryTest {
+class RetryTest {
 
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
 
@@ -48,8 +48,8 @@ public class RetryTest {
     private boolean shouldRetryValue;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         setUp(subscriber);
     }
 
@@ -61,14 +61,14 @@ public class RetryTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         source.onSuccess(1);
         assertThat(subscriber.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
@@ -76,7 +76,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testTwoFailures() {
+    void testTwoFailures() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -88,7 +88,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -100,14 +100,14 @@ public class RetryTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         subscriber.awaitSubscription().cancel();
         source.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);

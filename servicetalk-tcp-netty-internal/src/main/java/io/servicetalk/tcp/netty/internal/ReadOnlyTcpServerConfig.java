@@ -15,16 +15,19 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainNameMapping;
-import io.netty.util.DomainNameMappingBuilder;
+import io.netty.util.DomainWildcardMappingBuilder;
+import io.netty.util.Mapping;
 
-import java.util.List;
+import java.net.SocketOption;
 import java.util.Map;
+import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
@@ -33,46 +36,58 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forServe
 /**
  * Read only view of {@link TcpServerConfig}.
  */
-public final class ReadOnlyTcpServerConfig
-        extends AbstractReadOnlyTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
-
+public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<ServerSslConfig> {
+    @SuppressWarnings("rawtypes")
+    private final Map<ChannelOption, Object> listenOptions;
     private final TransportObserver transportObserver;
     @Nullable
     private final SslContext sslContext;
     @Nullable
-    private final DomainNameMapping<SslContext> mappings;
-    private final int backlog;
+    private final Mapping<String, SslContext> sniMapping;
+    private final boolean alpnConfigured;
 
-    /**
-     * Copy constructor.
-     *
-     * @param from Source to copy from.
-     */
-    ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
-        super(from, supportedAlpnProtocols.isEmpty() ? null : supportedAlpnProtocols.get(0));
+    ReadOnlyTcpServerConfig(final TcpServerConfig from) {
+        super(from);
+        listenOptions = nonNullOptions(from.listenOptions());
         final TransportObserver transportObserver = from.transportObserver();
         this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
                 asSafeObserver(transportObserver);
-        final ReadOnlyServerSecurityConfig securityConfig = from.securityConfig();
-        if (from.sniConfigs() != null) {
-            if (securityConfig == null) {
+        final ServerSslConfig sslConfig = from.sslConfig();
+        final Map<String, ServerSslConfig> sniMap = from.sniConfig();
+        if (sniMap != null) {
+            if (sslConfig == null) {
                 throw new IllegalStateException("No default security config defined but found SNI config mappings");
             }
-            sslContext = forServer(securityConfig, supportedAlpnProtocols);
-            final DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
-            for (Map.Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : from.sniConfigs().entrySet()) {
-                mappingBuilder.add(sniConfigEntries.getKey(),
-                        forServer(sniConfigEntries.getValue(), supportedAlpnProtocols));
+            sslContext = forServer(sslConfig);
+            boolean foundAlpn = !sslContext.applicationProtocolNegotiator().protocols().isEmpty();
+            DomainWildcardMappingBuilder<SslContext> mappingBuilder = new DomainWildcardMappingBuilder<>(sslContext);
+            for (Entry<String, ServerSslConfig> sniConfigEntry : sniMap.entrySet()) {
+                SslContext sniContext = forServer(sniConfigEntry.getValue());
+                foundAlpn |= !sniContext.applicationProtocolNegotiator().protocols().isEmpty();
+                mappingBuilder.add(sniConfigEntry.getKey(), sniContext);
             }
-            mappings = mappingBuilder.build();
-        } else if (securityConfig != null) {
-            sslContext = forServer(securityConfig, supportedAlpnProtocols);
-            mappings = null;
+            sniMapping = mappingBuilder.build();
+            alpnConfigured = foundAlpn;
+        } else if (sslConfig != null) {
+            sslContext = forServer(sslConfig);
+            sniMapping = null;
+            alpnConfigured = !sslContext.applicationProtocolNegotiator().protocols().isEmpty();
         } else {
             sslContext = null;
-            mappings = null;
+            sniMapping = null;
+            alpnConfigured = false;
         }
-        backlog = from.backlog();
+    }
+
+    /**
+     * Returns {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
+     * configured on either default or any of the SNI configurations.
+     *
+     * @return {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
+     * configured on either default or any of the SNI configurations.
+     */
+    public boolean isAlpnConfigured() {
+        return alpnConfigured;
     }
 
     /**
@@ -91,21 +106,34 @@ public final class ReadOnlyTcpServerConfig
     }
 
     /**
-     * Gets {@link DomainNameMapping}, if any.
+     * Gets the {@link Mapping} for SNI.
      *
-     * @return Configured mapping, {@code null} if none configured
+     * @return the {@link Mapping} for SNI, {@code null} if SNI isn't enabled.
      */
     @Nullable
-    public DomainNameMapping<SslContext> domainNameMapping() {
-        return mappings;
+    public Mapping<String, SslContext> sniMapping() {
+        return sniMapping;
+    }
+
+    /**
+     * Returns the {@link SocketOption}s that are applied to the server socket channel which listens/accepts socket
+     * channels.
+     *
+     * @return Unmodifiable map of options
+     */
+    @SuppressWarnings("rawtypes")
+    public Map<ChannelOption, Object> listenOptions() {
+        return listenOptions;
     }
 
     /**
      * Returns the maximum queue length for incoming connection indications (a request to connect).
-     *
+     * @deprecated Use {@link #listenOptions()} with key {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @return backlog
      */
+    @Deprecated
     public int backlog() {
-        return backlog;
+        final Integer i = (Integer) listenOptions.get(ChannelOption.SO_BACKLOG);
+        return i == null ? 0 : i;
     }
 }

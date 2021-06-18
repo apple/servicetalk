@@ -30,6 +30,7 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
+  implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-oio-api-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"

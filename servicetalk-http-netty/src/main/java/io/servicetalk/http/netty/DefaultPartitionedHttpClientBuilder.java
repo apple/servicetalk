@@ -80,6 +80,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     private ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
+    @Nullable
+    private SingleAddressInitializer<U, R> clientInitializer;
     private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
@@ -109,6 +111,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
             builder.serviceDiscoverer(sd);
             clientFilterFunction.configureForPartition(pa, builder);
+            if (clientInitializer != null) {
+                clientInitializer.initialize(pa, builder);
+            }
             return builder.buildStreaming();
         };
 
@@ -351,6 +356,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
+    @Deprecated
     @Override
     public PartitionedHttpClientSecurityConfigurator<U, R> secure() {
         return new DefaultPartitionedHttpClientSecurityConfigurator<>(builderTemplate.secure(), this);
@@ -368,10 +374,17 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
+    @Deprecated
     @Override
     public PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
             final PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction) {
         this.clientFilterFunction = this.clientFilterFunction.append(clientFilterFunction);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> initializer(final SingleAddressInitializer<U, R> initializer) {
+        this.clientInitializer = requireNonNull(initializer);
         return this;
     }
 

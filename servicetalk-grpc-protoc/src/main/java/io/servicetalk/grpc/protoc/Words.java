@@ -41,6 +41,7 @@ final class Words {
     static final String service = "service";
     static final String strategy = "strategy";
     static final String requestEncoding = "requestEncoding";
+    static final String timeout = "timeout";
     static final String supportedMessageCodings = "supportedMessageCodings";
     static final String strategyFactory = strategy + "Factory";
     static final String Service = "Service";

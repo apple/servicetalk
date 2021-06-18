@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
@@ -35,20 +35,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SupplierSingleTest {
+class SupplierSingleTest {
     private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Supplier<Integer> factory;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() {
         factory = mock(Supplier.class);
         when(factory.get()).thenReturn(1);
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() {
+    void testEverySubscribeCreatesNew() {
         final Single<Integer> source = Single.fromSupplier(factory);
         listenAndVerify(source);
         listenAndVerify(source);
@@ -65,7 +65,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void testOnError() {
+    void testOnError() {
         when(factory.get()).thenThrow(IllegalArgumentException.class);
 
         final Single<Integer> source = Single.fromSupplier(factory);
@@ -83,7 +83,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void cancelInterrupts() throws Exception {
+    void cancelInterrupts() throws Exception {
         final Single<Integer> source = Single.fromSupplier(factory);
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -118,7 +118,7 @@ public class SupplierSingleTest {
     }
 
     @Test
-    public void onSubscribeThrows() {
+    void onSubscribeThrows() {
         final Single<Integer> source = Single.fromSupplier(factory);
 
         @SuppressWarnings("unchecked")

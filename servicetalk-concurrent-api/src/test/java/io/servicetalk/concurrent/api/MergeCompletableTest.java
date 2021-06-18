@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,10 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
@@ -36,32 +35,32 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class MergeCompletableTest {
+class MergeCompletableTest {
 
     private final CompletableHolder holder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return MergeCompletable.newInstance(false, completables[0], immediate(),
+            return MergeCompletable.newInstance(false, completables[0],
                     copyOfRange(completables, 1, completables.length));
         }
     };
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(0).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCompletion() {
+    void testCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCompletionFew() {
+    void testCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -70,7 +69,7 @@ public class MergeCompletableTest {
     }
 
     @Test
-    public void testFail() {
+    void testFail() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -78,7 +77,7 @@ public class MergeCompletableTest {
     }
 
     @Test
-    public void testMergeWithOne() {
+    void testMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();

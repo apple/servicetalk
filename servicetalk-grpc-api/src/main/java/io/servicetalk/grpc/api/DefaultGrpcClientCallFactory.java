@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.ContentCodec;
@@ -30,23 +31,31 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
+import java.time.Duration;
 import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
+import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
+
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
+    @Nullable
+    private final Duration defaultTimeout;
 
-    DefaultGrpcClientCallFactory(final StreamingHttpClient streamingHttpClient) {
+    DefaultGrpcClientCallFactory(final StreamingHttpClient streamingHttpClient,
+                                 @Nullable final Duration defaultTimeout) {
         this.streamingHttpClient = requireNonNull(streamingHttpClient);
         executionContext = new DefaultGrpcExecutionContext(streamingHttpClient.executionContext());
+        this.defaultTimeout = defaultTimeout;
     }
 
     @Override
@@ -59,13 +68,15 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final HttpClient client = streamingHttpClient.asClient();
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
+            Duration timeout = timeoutForRequest(metadata.timeout());
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, supportedCodings, requestClass);
+                    serializationProvider, supportedCodings, timeout, requestClass);
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? client.request(httpRequest) : client.request(strategy, httpRequest))
                     .map(response -> validateResponseAndGetPayload(response, serializationProvider.deserializerFor(
-                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)));
+                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)))
+                    .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
@@ -79,7 +90,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
-            initRequest(httpRequest, supportedCodings);
+            Duration timeout = timeoutForRequest(metadata.timeout());
+            initRequest(httpRequest, supportedCodings, timeout);
             httpRequest.payloadBody(request.map(GrpcUtils::uncheckedCast),
                     serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
@@ -88,7 +100,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     streamingHttpClient.request(strategy, httpRequest))
                     .flatMapPublisher(response -> validateResponseAndGetPayload(response,
                             serializationProvider.deserializerFor(
-                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)));
+                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)))
+                    .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
@@ -120,15 +133,20 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
         return (metadata, request) -> {
+            Duration timeout = timeoutForRequest(metadata.timeout());
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, supportedCodings, requestClass);
+                    serializationProvider, supportedCodings, timeout, requestClass);
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
-            final HttpResponse response = strategy == null ? client.request(httpRequest) :
-                    client.request(strategy, httpRequest);
-            return validateResponseAndGetPayload(response,
-                    serializationProvider.deserializerFor(
-                            readGrpcMessageEncoding(response, supportedCodings), responseClass));
+            try {
+                final HttpResponse response = strategy == null ? client.request(httpRequest) :
+                        client.request(strategy, httpRequest);
+                return validateResponseAndGetPayload(response,
+                        serializationProvider.deserializerFor(
+                                readGrpcMessageEncoding(response, supportedCodings), responseClass));
+            } catch (Exception all) {
+                throw toGrpcException(all);
+            }
         };
     }
 
@@ -143,16 +161,22 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
-            initRequest(httpRequest, supportedCodings);
+            Duration timeout = timeoutForRequest(metadata.timeout());
+            initRequest(httpRequest, supportedCodings, timeout);
             httpRequest.payloadBody(request, serializationProvider
                     .serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
-            final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
-                    client.request(strategy, httpRequest);
-            return validateResponseAndGetPayload(response.toStreamingResponse(),
-                    serializationProvider.deserializerFor(
-                            readGrpcMessageEncoding(response, supportedCodings), responseClass)).toIterable();
+            try {
+                final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
+                        client.request(strategy, httpRequest);
+                return validateResponseAndGetPayload(response.toStreamingResponse(),
+                        serializationProvider.deserializerFor(
+                                readGrpcMessageEncoding(response, supportedCodings), responseClass))
+                        .onErrorMap(GrpcUtils::toGrpcException).toIterable();
+            } catch (Exception all) {
+                throw toGrpcException(all);
+            }
         };
     }
 
@@ -204,14 +228,36 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return streamingHttpClient.onClose();
     }
 
-    private static <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
-                                                          final HttpRequestFactory requestFactory,
-                                                          final GrpcSerializationProvider serializationProvider,
-                                                          final List<ContentCodec> supportedCodings,
-                                                          final Class<Req> requestClass) {
+    private <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
+                                                   final HttpRequestFactory requestFactory,
+                                                   final GrpcSerializationProvider serializationProvider,
+                                                   final List<ContentCodec> supportedCodings,
+                                                   final Duration timeout, final Class<Req> requestClass) {
         final HttpRequest httpRequest = requestFactory.post(metadata.path());
-        initRequest(httpRequest, supportedCodings);
+        initRequest(httpRequest, supportedCodings, timeout);
         return httpRequest.payloadBody(uncheckedCast(rawReq),
                 serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
+    }
+
+    /**
+     * Determines the timeout for a new request using three potential sources; the deadline in the async context, the
+     * request timeout, and the client default. The timeout will be the lesser of the context and request timeouts or if
+     * neither are present, the default timeout.
+     *
+     * @param metaDataTimeout the timeout specified in client metadata or null for no timeout
+     * @return The timeout {@link Duration}, potentially negative or null if no timeout.
+     */
+    private @Nullable Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
+        Long deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
+        @Nullable
+        Duration contextTimeout = null != deadline ? Duration.ofNanos(deadline - System.nanoTime()) : null;
+
+        @Nullable
+        Duration timeout = null != contextTimeout ?
+            null == metaDataTimeout || contextTimeout.compareTo(metaDataTimeout) <= 0 ?
+                contextTimeout : metaDataTimeout
+                : metaDataTimeout;
+
+        return null != timeout ? timeout : defaultTimeout;
     }
 }

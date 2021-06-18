@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,19 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -35,18 +35,16 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HttpsProxyTest {
-
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+class HttpsProxyTest {
 
     private final ProxyTunnel proxyTunnel = new ProxyTunnel();
 
@@ -61,15 +59,15 @@ public class HttpsProxyTest {
     @Nullable
     private BlockingHttpClient client;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         proxyAddress = proxyTunnel.startProxy();
         startServer();
         createClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             safeClose(client);
             safeClose(serverContext);
@@ -91,25 +89,27 @@ public class HttpsProxyTest {
         }
     }
 
-    public void startServer() throws Exception {
+    void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverIoExecutor = createIoExecutor(new IoThreadFactory("server-io-executor")))
-                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).build())
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    public void createClient() {
+    void createClient() {
         assert serverAddress != null && proxyAddress != null;
         client = HttpClients
                 .forSingleAddressViaProxy(serverAddress, proxyAddress)
-                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit()
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
                 .buildBlocking();
     }
 
     @Test
-    public void testRequest() throws Exception {
+    void testRequest() throws Exception {
         assert client != null;
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
@@ -118,7 +118,7 @@ public class HttpsProxyTest {
     }
 
     @Test
-    public void testBadProxyResponse() {
+    void testBadProxyResponse() {
         proxyTunnel.badResponseProxy();
         assert client != null;
         assertThrows(ProxyResponseException.class, () -> client.request(client.get("/path")));

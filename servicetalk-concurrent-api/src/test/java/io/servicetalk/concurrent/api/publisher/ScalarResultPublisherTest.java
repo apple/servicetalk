@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -29,12 +29,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class ScalarResultPublisherTest {
+class ScalarResultPublisherTest {
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testJust() {
+    void testJust() {
         toSource(from("Hello")).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is("Hello"));
@@ -42,19 +42,19 @@ public class ScalarResultPublisherTest {
     }
 
     @Test
-    public void testError() {
+    void testError() {
         toSource(Publisher.<String>failed(DELIBERATE_EXCEPTION)).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         toSource(Publisher.<String>empty()).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testNever() {
+    void testNever() {
         toSource(Publisher.<String>never()).subscribe(subscriber);
         subscriber.awaitSubscription();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));

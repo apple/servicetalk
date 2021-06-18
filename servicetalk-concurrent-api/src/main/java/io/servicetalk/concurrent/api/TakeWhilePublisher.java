@@ -29,8 +29,8 @@ final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T
 
     private final Predicate<? super T> predicate;
 
-    TakeWhilePublisher(Publisher<T> original, Predicate<? super T> predicate, Executor executor) {
-        super(original, executor);
+    TakeWhilePublisher(Publisher<T> original, Predicate<? super T> predicate) {
+        super(original);
         this.predicate = requireNonNull(predicate);
     }
 

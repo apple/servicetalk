@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,17 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -45,14 +44,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class SingleFlatMapPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+final class SingleFlatMapPublisherTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
@@ -61,7 +58,7 @@ public final class SingleFlatMapPublisherTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testFirstAndSecondPropagate() {
+    void testFirstAndSecondPropagate() {
         toSource(succeeded(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -70,7 +67,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         publisher.onNext("Hello1", "Hello2");
@@ -80,7 +77,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testPublisherEmitsError() {
+    void testPublisherEmitsError() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -88,7 +85,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testSingleEmitsError() {
+    void testSingleEmitsError() {
         toSource(failed(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertFalse(publisher.isSubscribed());
@@ -96,7 +93,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeNextPublisher() {
+    void testCancelBeforeNextPublisher() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         subscriber.awaitSubscription().cancel();
@@ -104,7 +101,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelNoRequest() {
+    void testCancelNoRequest() {
         toSource(single.flatMapPublisher(s -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().cancel();
         subscriber.awaitSubscription().request(1);
@@ -112,7 +109,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeOnSubscribe() {
+    void testCancelBeforeOnSubscribe() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
@@ -125,7 +122,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelPostOnSubscribe() {
+    void testCancelPostOnSubscribe() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         publisher.onSubscribe(subscription);
@@ -134,7 +131,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -144,7 +141,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
@@ -152,7 +149,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -164,7 +161,7 @@ public final class SingleFlatMapPublisherTest {
                     }
                     analyzed.countDown();
                 })
-                .subscribeOn(executorRule.executor())
+                .subscribeOn(executorExtension.executor())
                 .flatMapPublisher(t -> Publisher.never())
                 .forEach(__ -> { }).cancel();
         analyzed.await();

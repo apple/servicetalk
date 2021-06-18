@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.serialization.api.StreamingDeserializer;
 
 import com.google.protobuf.Parser;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.grpc.protobuf.test.TestProtos.DummyMessage;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -99,6 +100,18 @@ public class ProtoDeserializerTest {
         }
         List<String> deserialized = deserialize(buffers.toArray(new Buffer[0]));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
+    }
+
+    @Test
+    public void multipleMessagesInCompositeBuffer() throws IOException {
+        final CompositeBuffer composite = DEFAULT_ALLOCATOR.newCompositeBuffer();
+        Buffer msg = grpcBufferFor("Hello");
+        while (msg.readableBytes() > 0) {
+            composite.addBuffer(msg.readSlice(1));
+        }
+        composite.addBuffer(grpcBufferFor("Hello1"));
+        List<String> deserialized = deserialize(composite);
+        assertThat("Unexpected messages deserialized.", deserialized, contains("Hello", "Hello1"));
     }
 
     private List<String> deserialize(Buffer buffer) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,19 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class AfterFinallyTest extends AbstractWhenFinallyTest {
+class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
     protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer) {
         return toSource(publisher.afterFinally(signalConsumer));
@@ -40,14 +40,13 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Override
     @Test
-    public void testCallbackThrowsErrorOnComplete() {
+    void testCallbackThrowsErrorOnComplete() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             assertFalse(subscription.isCancelled());
-            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            publisher.onComplete();
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> publisher.onComplete());
+            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             subscriber.awaitOnComplete();
             verify(mock).onComplete();
@@ -58,14 +57,13 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Override
     @Test
-    public void testCallbackThrowsErrorOnError() {
+    void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         TerminalSignalConsumer mock = throwableMock(exception);
         try {
             doFinally(publisher, mock).subscribe(subscriber);
-            thrown.expect(is(sameInstance(exception)));
-            publisher.onError(DELIBERATE_EXCEPTION);
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> publisher.onError(DELIBERATE_EXCEPTION));
+            assertThat(e, is(sameInstance(exception)));
         } finally {
             assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
             verify(mock).onError(DELIBERATE_EXCEPTION);

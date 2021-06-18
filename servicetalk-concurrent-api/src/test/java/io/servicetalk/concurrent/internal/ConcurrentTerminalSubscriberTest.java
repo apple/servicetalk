@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -34,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -44,73 +43,71 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class ConcurrentTerminalSubscriberTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = ExecutorRule.newRule();
+class ConcurrentTerminalSubscriberTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<Integer> publisher =
             new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void concurrentOnSubscribeWithOnNextAndOnComplete() throws Exception {
+    void concurrentOnSubscribeWithOnNextAndOnComplete() throws Exception {
         concurrentOnSubscribe(true, true);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnComplete() throws Exception {
+    void concurrentOnSubscribeWithOnComplete() throws Exception {
         concurrentOnSubscribe(true, false);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnNextAndOnError() throws Exception {
+    void concurrentOnSubscribeWithOnNextAndOnError() throws Exception {
         concurrentOnSubscribe(false, true);
     }
 
     @Test
-    public void concurrentOnSubscribeWithOnError() throws Exception {
+    void concurrentOnSubscribeWithOnError() throws Exception {
         concurrentOnSubscribe(false, false);
     }
 
     @Test
-    public void concurrentOnNextWithOnComplete() throws Exception {
+    void concurrentOnNextWithOnComplete() throws Exception {
         concurrentOnNext(true);
     }
 
     @Test
-    public void concurrentOnNextWithOnError() throws Exception {
+    void concurrentOnNextWithOnError() throws Exception {
         concurrentOnNext(false);
     }
 
     @Test
-    public void concurrentOnCompleteWithOnComplete() throws Exception {
+    void concurrentOnCompleteWithOnComplete() throws Exception {
         concurrentOnComplete(true, true);
     }
 
     @Test
-    public void concurrentOnCompleteWithOnError() throws Exception {
+    void concurrentOnCompleteWithOnError() throws Exception {
         concurrentOnComplete(true, false);
     }
 
     @Test
-    public void concurrentOnErrorWithOnComplete() throws Exception {
+    void concurrentOnErrorWithOnComplete() throws Exception {
         concurrentOnComplete(false, true);
     }
 
     @Test
-    public void concurrentOnErrorWithOnError() throws Exception {
+    void concurrentOnErrorWithOnError() throws Exception {
         concurrentOnComplete(false, false);
     }
 
     @Test
-    public void reentrySynchronousOnNextAllowedOnComplete() {
+    void reentrySynchronousOnNextAllowedOnComplete() {
         reentrySynchronousOnNextAllowed(true);
     }
 
     @Test
-    public void reentrySynchronousOnNextAllowedOnError() {
+    void reentrySynchronousOnNextAllowedOnError() {
         reentrySynchronousOnNextAllowed(false);
     }
 
@@ -190,7 +187,7 @@ public class ConcurrentTerminalSubscriberTest {
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        executorRule.executor().execute(() -> {
+        executorExtension.executor().execute(() -> {
             if (firstOnComplete) {
                 publisher.onComplete();
             } else {
@@ -253,7 +250,7 @@ public class ConcurrentTerminalSubscriberTest {
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscription.awaitRequestN(1);
-        executorRule.executor().execute(() -> publisher.onNext(1));
+        executorExtension.executor().execute(() -> publisher.onNext(1));
         onNextEnterBarrier.await();
         if (onComplete) {
             publisher.onComplete();
@@ -299,7 +296,7 @@ public class ConcurrentTerminalSubscriberTest {
 
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
-        executorRule.executor().execute(() -> publisher.onSubscribe(subscription));
+        executorExtension.executor().execute(() -> publisher.onSubscribe(subscription));
         subscription.awaitRequestN(1);
         if (onNext) {
             publisher.onNext(1);

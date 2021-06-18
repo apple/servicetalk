@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,40 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+
 /**
- * NOOP Message encoding codec.
+ * Default, always supported NOOP 'identity' {@link ContentCodec}.
  */
-final class IdentityContentCodec extends AbstractContentCodec {
+final class IdentityContentCodec implements ContentCodec {
 
-    private static final CharSequence NAME = "identity";
+    private static final CharSequence NAME = newAsciiString("identity");
+    private static final int HASH_CODE = caseInsensitiveHashCode(NAME);
 
-    public static final ContentCodec INSTANCE = new IdentityContentCodec();
+    @Override
+    public CharSequence name() {
+        return NAME;
+    }
 
-    private IdentityContentCodec() {
-        super(NAME);
+    @Override
+    public Buffer encode(final Buffer src, final BufferAllocator allocator) {
+        return src;
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final BufferAllocator allocator) {
+        return src;
     }
 
     @Override
     public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        return src;
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         return src;
     }
 
@@ -43,12 +62,26 @@ final class IdentityContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        return src;
+    public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
+        return from;
     }
 
     @Override
-    public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
-        return from;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof ContentCodec)) {
+            return false;
+        }
+
+        final ContentCodec that = (ContentCodec) o;
+        return contentEqualsIgnoreCase(name(), that.name());
+    }
+
+    @Override
+    public int hashCode() {
+        return HASH_CODE;
     }
 }

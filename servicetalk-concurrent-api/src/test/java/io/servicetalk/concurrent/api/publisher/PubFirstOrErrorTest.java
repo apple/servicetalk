@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.NoSuchElementException;
 
@@ -35,30 +34,28 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PubFirstOrErrorTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+class PubFirstOrErrorTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
 
     @Test
-    public void syncSingleItemCompleted() {
+    void syncSingleItemCompleted() {
         toSource(from("hello").firstOrError()).subscribe(listenerRule);
         assertThat(listenerRule.awaitOnSuccess(), is("hello"));
     }
 
     @Test
-    public void syncMultipleItemCompleted() {
+    void syncMultipleItemCompleted() {
         toSource(from("foo", "bar").firstOrError()).subscribe(listenerRule);
         assertThat(listenerRule.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void asyncSingleItemCompleted() throws Exception {
+    void asyncSingleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
-        executorRule.executor().submit(() -> {
+        executorExtension.executor().submit(() -> {
             publisher.onNext("hello");
             publisher.onComplete();
         }).toFuture().get();
@@ -66,9 +63,9 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void asyncMultipleItemCompleted() throws Exception {
+    void asyncMultipleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
-        executorRule.executor().submit(() -> {
+        executorExtension.executor().submit(() -> {
             publisher.onNext("foo", "bar");
             publisher.onComplete();
         }).toFuture().get();
@@ -76,14 +73,14 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void singleItemNoComplete() {
+    void singleItemNoComplete() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("hello");
         assertThat(listenerRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
-    public void singleItemErrorPropagates() {
+    void singleItemErrorPropagates() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("hello");
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -91,21 +88,21 @@ public class PubFirstOrErrorTest {
     }
 
     @Test
-    public void noItemsFails() {
+    void noItemsFails() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onComplete();
         assertThat(listenerRule.awaitOnError(), instanceOf(NoSuchElementException.class));
     }
 
     @Test
-    public void noItemErrorPropagates() {
+    void noItemErrorPropagates() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void multipleItemsFails() {
+    void multipleItemsFails() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("foo", "bar");
         publisher.onComplete();

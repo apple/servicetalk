@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -37,42 +36,40 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PubToSingleFirstOrElseTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+class PubToSingleFirstOrElseTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         listen(from("Hello"));
         assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
-    public void testError() {
+    void testError() {
         listen(Publisher.failed(DELIBERATE_EXCEPTION));
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         listen(Publisher.empty());
         assertThat(listenerRule.awaitOnError(), instanceOf(NoSuchElementException.class));
     }
 
     @Test
-    public void testCancelled() {
+    void testCancelled() {
         listen(publisher);
         publisher.onSubscribe(subscription);
         publisher.onNext("Hello");
@@ -81,7 +78,7 @@ public class PubToSingleFirstOrElseTest {
     }
 
     @Test
-    public void testErrorPostEmit() {
+    void testErrorPostEmit() {
         listen(publisher);
         publisher.onSubscribe(subscription);
         publisher.onNext("Hello");
@@ -90,7 +87,7 @@ public class PubToSingleFirstOrElseTest {
     }
 
     @Test
-    public void testCompletePostEmit() {
+    void testCompletePostEmit() {
         listen(publisher);
         publisher.onNext("Hello");
         assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
@@ -98,7 +95,7 @@ public class PubToSingleFirstOrElseTest {
     }
 
     @Test
-    public void testEmptyFromRequestN() {
+    void testEmptyFromRequestN() {
         listen(new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -109,7 +106,7 @@ public class PubToSingleFirstOrElseTest {
     }
 
     @Test
-    public void testErrorFromRequestN() {
+    void testErrorFromRequestN() {
         listen(new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -121,7 +118,7 @@ public class PubToSingleFirstOrElseTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -131,11 +128,11 @@ public class PubToSingleFirstOrElseTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).firstOrElse(() -> {
+        }).subscribeOn(executorExtension.executor()).firstOrElse(() -> {
             throw new NoSuchElementException();
         }).toFuture().get();
         analyzed.await();
-        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertNoAsyncErrors(errors);
     }
 
     private void listen(Publisher<String> src) {

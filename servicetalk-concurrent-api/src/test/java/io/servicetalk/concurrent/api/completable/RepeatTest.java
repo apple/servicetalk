@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.function.Function;
@@ -26,10 +26,10 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class RepeatTest {
+class RepeatTest {
 
     @Test
-    public void repeatValueSupplier() throws Exception {
+    void repeatValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeat(count -> count < 2).map(new Function<Object, Integer>() {
             private int count;
 
@@ -42,7 +42,7 @@ public class RepeatTest {
     }
 
     @Test
-    public void repeatWhenValueSupplier() throws Exception {
+    void repeatWhenValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeatWhen(count ->
                         count < 2 ? completed() : failed(DELIBERATE_EXCEPTION)).map(
             new Function<Object, Integer>() {

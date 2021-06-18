@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -30,46 +29,89 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
-import javax.annotation.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 /**
- * A filter to enable timeouts for HTTP requests.
+ * A filter to enable timeouts for HTTP requests on the client-side.
+ *
+ * <p>The timeout applies either the response metadata (headers) completion or the complete reception of the response
+ * payload body and optional trailers.
+ *
+ * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
+ * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
+ * timeout per retry.
  */
-public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                         StreamingHttpConnectionFilterFactory,
-                                                         HttpExecutionStrategyInfluencer {
-    private final Duration duration;
-    @Nullable
-    private final Executor timeoutExecutor;
+public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     /**
-     * Creates a new instance.
+     * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
      * @param duration the timeout {@link Duration}
      */
     public TimeoutHttpRequesterFilter(final Duration duration) {
-        this.duration = duration;
-        this.timeoutExecutor = null;
+        this(new FixedDuration(duration), false);
     }
 
     /**
-     * Creates a new instance.
+     * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
      * @param duration the timeout {@link Duration}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpRequesterFilter(final Duration duration, final Executor timeoutExecutor) {
-        this.duration = duration;
-        this.timeoutExecutor = requireNonNull(timeoutExecutor);
+        this(new FixedDuration(duration), false, timeoutExecutor);
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
-                                                  final StreamingHttpRequest request) {
-        return timeoutExecutor != null ? delegate.request(strategy, request).idleTimeout(duration, timeoutExecutor) :
-                delegate.request(strategy, request).idleTimeout(duration);
+    /**
+     * Creates a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     */
+    public TimeoutHttpRequesterFilter(final Duration duration, final boolean fullRequestResponse) {
+        this(new FixedDuration(duration), fullRequestResponse);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
+    public TimeoutHttpRequesterFilter(final Duration duration,
+                                      final boolean fullRequestResponse,
+                                      final Executor timeoutExecutor) {
+        this(new FixedDuration(duration), fullRequestResponse, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     */
+    public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
+        super(timeoutForRequest, fullRequestResponse);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
+    public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
+                                      final boolean fullRequestResponse,
+                                      final Executor timeoutExecutor) {
+        super(timeoutForRequest, fullRequestResponse, timeoutExecutor);
     }
 
     @Override
@@ -79,9 +121,9 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
+                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate.request(strategy, r));
             }
-       };
+        };
     }
 
     @Override
@@ -89,15 +131,9 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.request(delegate(), strategy, request);
+                                                         final StreamingHttpRequest request) {
+                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate().request(strategy, r));
             }
         };
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence since we do not block.
-        return strategy;
     }
 }

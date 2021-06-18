@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,17 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -44,28 +43,26 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TimeoutCompletableTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
+class TimeoutCompletableTest {
+    @RegisterExtension
+    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
     private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TestSingle<Integer> source = new TestSingle<>();
     private TestExecutor testExecutor;
 
-    @Before
-    public void setup() {
-        testExecutor = executorRule.executor();
+    @BeforeEach
+    void setup() {
+        testExecutor = executorExtension.executor();
     }
 
     @Test
-    public void executorScheduleThrows() {
-        toSource(source.ignoreElement().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+    void executorScheduleThrows() {
+        toSource(source.ignoreElement().timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -79,7 +76,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataOnCompletionNoTimeout() {
+    void noDataOnCompletionNoTimeout() {
         init();
 
         source.onSuccess(1);
@@ -90,7 +87,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataOnErrorNoTimeout() {
+    void noDataOnErrorNoTimeout() {
         init();
 
         source.onError(DELIBERATE_EXCEPTION);
@@ -101,7 +98,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void subscriptionCancelAlsoCancelsTimer() {
+    void subscriptionCancelAlsoCancelsTimer() {
         init();
 
         listener.awaitSubscription().cancel();
@@ -111,7 +108,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataAndTimeout() {
+    void noDataAndTimeout() {
         init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
@@ -122,7 +119,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void justSubscribeTimeout() {
+    void justSubscribeTimeout() {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
 
         init(delayedCompletable, false);
@@ -139,12 +136,31 @@ public class TimeoutCompletableTest {
         assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
+    @Test
+    void cancelDoesOnError() throws Exception {
+        DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
+        init(delayedCompletable, false);
+        CountDownLatch cancelLatch = new CountDownLatch(1);
+        CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
+        assertNotNull(subscriber);
+        subscriber.onSubscribe(() -> {
+            subscriber.onError(DELIBERATE_EXCEPTION);
+            cancelLatch.countDown();
+        });
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+        cancelLatch.await();
+        Throwable error = listener.awaitOnError();
+        assertThat(error, instanceOf(TimeoutException.class));
+    }
+
     private void init() {
         init(source.ignoreElement(), true);
     }
 
     private void init(Completable source, boolean expectOnSubscribe) {
-        toSource(source.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(listener);
+        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(listener);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
             assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));

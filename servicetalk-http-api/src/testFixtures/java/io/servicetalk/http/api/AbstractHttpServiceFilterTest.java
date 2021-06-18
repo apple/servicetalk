@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,50 +17,33 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequestHandler;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Insecure;
-import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Secure;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static java.util.Arrays.asList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * This parameterized test facilitates running HTTP service filter tests under all calling variations:
  * with and without SSL context.
  */
-@RunWith(Parameterized.class)
+@ExtendWith(MockitoExtension.class)
 public abstract class AbstractHttpServiceFilterTest {
 
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
 
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     public enum SecurityType { Secure, Insecure }
-
-    public final SecurityType security;
 
     @Mock
     private HttpExecutionContext executionContext;
@@ -68,25 +51,15 @@ public abstract class AbstractHttpServiceFilterTest {
     @Mock
     private HttpServiceContext mockConnectionContext;
 
-    public AbstractHttpServiceFilterTest(final SecurityType security) {
-        this.security = security;
+    @BeforeEach
+    void setUp() {
+        lenient().when(mockConnectionContext.executionContext()).thenReturn(executionContext);
+        lenient().when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
+        lenient().when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
     }
 
-    @SuppressWarnings("unused")
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> securityTypes() {
-        return asList(new Object[][]{
-                {Secure},
-                {Insecure},
-        });
-    }
-
-    @Before
-    public void setUp() {
-        when(mockConnectionContext.executionContext()).thenReturn(executionContext);
-        when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
-        when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
-        when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
+    protected void setUp(SecurityType security) {
+        lenient().when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
             switch (security) {
                 case Secure:
                     return sslSession();
@@ -114,14 +87,8 @@ public abstract class AbstractHttpServiceFilterTest {
     protected final StreamingHttpRequester createFilter(final RequestHandler handler,
                                                         final StreamingHttpServiceFilterFactory factory) {
 
-        StreamingHttpServiceFilter service = factory.create(new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                return handler.request(responseFactory, request);
-            }
-        });
+        StreamingHttpServiceFilter service = factory.create(
+            (ctx, request, responseFactory) -> handler.request(responseFactory, request));
 
         return new StreamingHttpRequester() {
             @Override

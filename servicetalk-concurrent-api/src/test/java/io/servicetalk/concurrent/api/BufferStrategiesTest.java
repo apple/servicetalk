@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,15 +45,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BufferStrategiesTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class BufferStrategiesTest {
     private final BlockingQueue<TestCompletable> timers = new LinkedBlockingDeque<>();
     private final Executor executor = mock(Executor.class);
     private final java.util.concurrent.ExecutorService jdkExecutor = Executors.newCachedThreadPool();
 
-    public BufferStrategiesTest() {
+    BufferStrategiesTest() {
         when(executor.timer(any(Duration.class))).thenAnswer(invocation -> defer(() -> {
             TestCompletable timer = new TestCompletable();
             timers.add(timer);
@@ -64,14 +58,14 @@ public class BufferStrategiesTest {
         }));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() {
         jdkExecutor.shutdownNow();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/1259")
+    @Disabled("https://github.com/apple/servicetalk/issues/1259")
     @Test
-    public void sizeOrDurationConcurrent() throws Exception {
+    void sizeOrDurationConcurrent() throws Exception {
         final int maxBoundaries = 1_000;
         final Collection<Integer> items = unmodifiableCollection(range(1, 1_000).toFuture().get());
         final List<Integer> receivedFromBoundaries = new ArrayList<>(items.size());

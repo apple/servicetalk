@@ -26,7 +26,7 @@ final class PubToSingleFirstOrElse<T> extends AbstractPubToSingle<T> {
     private final Supplier<T> defaultValueSupplier;
 
     PubToSingleFirstOrElse(Publisher<T> source, final Supplier<T> defaultValueSupplier) {
-        super(source.executor(), source);
+        super(source);
         this.defaultValueSupplier = requireNonNull(defaultValueSupplier);
     }
 

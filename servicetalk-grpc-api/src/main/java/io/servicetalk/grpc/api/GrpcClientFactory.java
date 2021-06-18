@@ -16,12 +16,13 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.Identity;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
@@ -110,7 +111,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
 
     /**
      * Sets the supported message encodings for this client factory.
-     * By default only {@link io.servicetalk.encoding.api.ContentCodings#identity()} is supported
+     * By default only {@link Identity#identity()} is supported
      *
      * @param codings The supported encodings {@link ContentCodec}s for this client.
      * @return {@code this}

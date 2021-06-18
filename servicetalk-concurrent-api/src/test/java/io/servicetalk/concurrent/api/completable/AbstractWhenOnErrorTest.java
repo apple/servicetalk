@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.function.Consumer;
@@ -31,7 +31,7 @@ public abstract class AbstractWhenOnErrorTest {
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
-    public void testError() {
+    void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
         toSource(doError(Completable.failed(DELIBERATE_EXCEPTION), onError)).subscribe(listener);
@@ -39,7 +39,7 @@ public abstract class AbstractWhenOnErrorTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    abstract void testCallbackThrowsError();
 
     protected abstract Completable doError(Completable completable, Consumer<Throwable> consumer);
 }

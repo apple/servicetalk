@@ -210,25 +210,45 @@ class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
-        state = set(state, IN_CLOSED);
-        // Use the actual event that initiated graceful closure:
-        final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? closeEvent : CHANNEL_CLOSED_INBOUND;
-        assert evt != null;
-        storeCloseRequestAndEmit(evt);
-        maybeCloseChannelOnHalfClosed(ctx.channel(), evt);
-        state = unset(state, READ);
+        if (!has(state, IN_CLOSED)) {
+            state = set(state, IN_CLOSED);
+            // Use the actual event that initiated graceful closure:
+            final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? closeEvent : CHANNEL_CLOSED_INBOUND;
+            assert evt != null;
+            storeCloseRequestAndEmit(evt);
+            maybeCloseChannelOnHalfClosed(ctx.channel(), evt);
+            state = unset(state, READ);
+        }
     }
 
     @Override
     void channelClosedOutbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
-        state = set(state, OUT_CLOSED);
-        storeCloseRequestAndEmit(CHANNEL_CLOSED_OUTBOUND);
-        if (!has(state, CLOSING_SERVER_GRACEFULLY)) {
-            // Only try to close when we are not closing server gracefully
-            maybeCloseChannelOnHalfClosed(ctx.channel(), CHANNEL_CLOSED_OUTBOUND);
+        if (!has(state, OUT_CLOSED)) {
+            state = set(state, OUT_CLOSED);
+            storeCloseRequestAndEmit(CHANNEL_CLOSED_OUTBOUND);
+            if (!has(state, CLOSING_SERVER_GRACEFULLY)) {
+                // Only try to close when we are not closing server gracefully
+                maybeCloseChannelOnHalfClosed(ctx.channel(), CHANNEL_CLOSED_OUTBOUND);
+            }
+            state = unset(state, WRITE);
         }
-        state = unset(state, WRITE);
+    }
+
+    @Override
+    void channelCloseNotify(final ChannelHandlerContext ctx) {
+        if (hasAny(state, OUT_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
+            // We already closed outbound side of the channel, which triggers closure of SSLEngine and results in
+            // SslCloseCompletionEvent#SUCCESS event generated immediately. Connection is already in a closing state,
+            // we should ignore this event and wait for ChannelInputShutdownReadComplete from the remote peer.
+            return;
+        }
+
+        // Notify close handler first to enhance error reporting and prevent LB from selecting this connection.
+        channelClosedInbound(ctx);
+        // We MUST respond with a "close_notify" alert and close down the connection immediately, discarding any pending
+        // writes.
+        closeChannelOutbound(ctx.channel());
     }
 
     @Override

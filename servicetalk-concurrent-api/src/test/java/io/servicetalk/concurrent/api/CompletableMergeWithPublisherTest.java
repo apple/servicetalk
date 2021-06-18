@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
@@ -31,7 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -41,8 +39,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atMost;
@@ -52,23 +50,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class CompletableMergeWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = newRule();
+class CompletableMergeWithPublisherTest {
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = withCachedExecutor();
     private final TestSubscription subscription = new TestSubscription();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testDelayedPublisherSubscriptionForReqNBuffering() {
+    void testDelayedPublisherSubscriptionForReqNBuffering() {
         testDelayedPublisherSubscriptionForReqNBuffering(false);
     }
 
     @Test
-    public void delayErrorDelayedPublisherSubscriptionForReqNBuffering() {
+    void delayErrorDelayedPublisherSubscriptionForReqNBuffering() {
         testDelayedPublisherSubscriptionForReqNBuffering(true);
     }
 
@@ -95,12 +91,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testDelayedPublisherSubscriptionForCancelBuffering() {
+    void testDelayedPublisherSubscriptionForCancelBuffering() {
         testDelayedPublisherSubscriptionForCancelBuffering(false);
     }
 
     @Test
-    public void delayErrorDelayedPublisherSubscriptionForCancelBuffering() {
+    void delayErrorDelayedPublisherSubscriptionForCancelBuffering() {
         testDelayedPublisherSubscriptionForCancelBuffering(true);
     }
 
@@ -115,12 +111,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testDelayedCompletableSubscriptionForCancelBuffering() {
+    void testDelayedCompletableSubscriptionForCancelBuffering() {
         testDelayedCompletableSubscriptionForCancelBuffering(false);
     }
 
     @Test
-    public void delayErrorDelayedCompletableSubscriptionForCancelBuffering() {
+    void delayErrorDelayedCompletableSubscriptionForCancelBuffering() {
         testDelayedCompletableSubscriptionForCancelBuffering(true);
     }
 
@@ -138,7 +134,7 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCompletableFailCancelsPublisher() {
+    void testCompletableFailCancelsPublisher() {
         TestCompletable completable = new TestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -148,12 +144,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void delayErrorCompletableFailDoesNotCancelPublisherFail() {
+    void delayErrorCompletableFailDoesNotCancelPublisherFail() {
         delayErrorCompletableFailDoesNotCancelPublisher(true);
     }
 
     @Test
-    public void delayErrorCompletableFailDoesNotCancelPublisher() {
+    void delayErrorCompletableFailDoesNotCancelPublisher() {
         delayErrorCompletableFailDoesNotCancelPublisher(false);
     }
 
@@ -173,7 +169,7 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testPublisherFailCancelsCompletable() {
+    void testPublisherFailCancelsCompletable() {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestCancellable cancellable = new TestCancellable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
@@ -187,12 +183,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void delayErrorPublisherFailDoesNotCancelCompletableFail() {
+    void delayErrorPublisherFailDoesNotCancelCompletableFail() {
         delayErrorPublisherFailDoesNotCancelCompletable(true);
     }
 
     @Test
-    public void delayErrorPublisherFailDoesNotCancelCompletable() {
+    void delayErrorPublisherFailDoesNotCancelCompletable() {
         delayErrorPublisherFailDoesNotCancelCompletable(false);
     }
 
@@ -216,12 +212,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCancelCancelsPendingSourceSubscription() {
+    void testCancelCancelsPendingSourceSubscription() {
         testCancelCancelsPendingSourceSubscription(false);
     }
 
     @Test
-    public void delayErrorCancelCancelsPendingSourceSubscription() {
+    void delayErrorCancelCancelsPendingSourceSubscription() {
         testCancelCancelsPendingSourceSubscription(true);
     }
 
@@ -239,12 +235,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
+    void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
         testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction(false);
     }
 
     @Test
-    public void delayErrorCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
+    void delayErrorCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
         testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction(true);
     }
 
@@ -263,12 +259,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
+    void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
         testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction(false);
     }
 
     @Test
-    public void delayErrorCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
+    void delayErrorCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
         testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction(true);
     }
 
@@ -289,12 +285,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
+    void testCompletableAndPublisherCompleteSingleCompleteSignal() {
         testCompletableAndPublisherCompleteSingleCompleteSignal(false);
     }
 
     @Test
-    public void delayErrorCompletableAndPublisherCompleteSingleCompleteSignal() {
+    void delayErrorCompletableAndPublisherCompleteSingleCompleteSignal() {
         testCompletableAndPublisherCompleteSingleCompleteSignal(true);
     }
 
@@ -311,12 +307,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCompletableAndPublisherFailOnlySingleErrorSignal() {
+    void testCompletableAndPublisherFailOnlySingleErrorSignal() {
         testCompletableAndPublisherFailOnlySingleErrorSignal(false);
     }
 
     @Test
-    public void delayErrorCompletableAndPublisherFailOnlySingleErrorSignal() {
+    void delayErrorCompletableAndPublisherFailOnlySingleErrorSignal() {
         testCompletableAndPublisherFailOnlySingleErrorSignal(true);
     }
 
@@ -336,12 +332,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
+    void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
         testCompletableFailsAndPublisherCompletesSingleErrorSignal(false);
     }
 
     @Test
-    public void delayErrorCompletableFailsAndPublisherCompletesSingleErrorSignal() {
+    void delayErrorCompletableFailsAndPublisherCompletesSingleErrorSignal() {
         testCompletableFailsAndPublisherCompletesSingleErrorSignal(true);
     }
 
@@ -358,12 +354,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
+    void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
         testPublisherFailsAndCompletableCompletesSingleErrorSignal(false);
     }
 
     @Test
-    public void delayErrorPublisherFailsAndCompletableCompletesSingleErrorSignal() {
+    void delayErrorPublisherFailsAndCompletableCompletesSingleErrorSignal() {
         testPublisherFailsAndCompletableCompletesSingleErrorSignal(true);
     }
 
@@ -381,12 +377,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
+    void offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
         offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates(false);
     }
 
     @Test
-    public void delayErrorOffloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
+    void delayErrorOffloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
         offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates(true);
     }
 
@@ -394,8 +390,8 @@ public class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestCancellable testCancellable = new TestCancellable();
         CountDownLatch latch = new CountDownLatch(1);
-        toSource(applyMerge(completable.publishOn(executorRule.executor()), delayError,
-                publisher.publishOn(executorRule.executor())).afterOnNext(item -> {
+        toSource(applyMerge(completable.publishOn(executorExtension.executor()), delayError,
+                            publisher.publishOn(executorExtension.executor())).afterOnNext(item -> {
             // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
             // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
             // the downstream subscriber until after all the onNext events have completed.
@@ -425,12 +421,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void publisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
+    void publisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
         publisherAndCompletableErrorDoesNotDuplicateErrorDownstream(false);
     }
 
     @Test
-    public void delayErrorPublisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
+    void delayErrorPublisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
         publisherAndCompletableErrorDoesNotDuplicateErrorDownstream(true);
     }
 
@@ -439,7 +435,7 @@ public class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable();
         toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 barrier.await();
             } catch (Exception e) {
@@ -456,12 +452,12 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void onNextConcurrentWithCompletableError() throws Exception {
+    void onNextConcurrentWithCompletableError() throws Exception {
         onNextConcurrentWithCompletableError(false);
     }
 
     @Test
-    public void delayErrorOnNextConcurrentWithCompletableError() throws Exception {
+    void delayErrorOnNextConcurrentWithCompletableError() throws Exception {
         onNextConcurrentWithCompletableError(true);
     }
 
@@ -483,7 +479,7 @@ public class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {
@@ -507,42 +503,42 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
-    public void onNextReentryCompleteConcurrentWithCompletable() throws Exception {
+    void onNextReentryCompleteConcurrentWithCompletable() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(false, true, true);
     }
 
     @Test
-    public void onNextReentryErrorConcurrentWithCompletable() throws Exception {
+    void onNextReentryErrorConcurrentWithCompletable() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(false, false, true);
     }
 
     @Test
-    public void onNextReentryCompleteConcurrentWithCompletableError() throws Exception {
+    void onNextReentryCompleteConcurrentWithCompletableError() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(false, true, false);
     }
 
     @Test
-    public void onNextReentryErrorConcurrentWithCompletableError() throws Exception {
+    void onNextReentryErrorConcurrentWithCompletableError() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(false, false, false);
     }
 
     @Test
-    public void delayErrorOnNextReentryCompleteConcurrentWithCompletable() throws Exception {
+    void delayErrorOnNextReentryCompleteConcurrentWithCompletable() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(true, true, true);
     }
 
     @Test
-    public void delayErrorOnNextReentryErrorConcurrentWithCompletable() throws Exception {
+    void delayErrorOnNextReentryErrorConcurrentWithCompletable() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(true, false, true);
     }
 
     @Test
-    public void delayErrorOnNextReentryCompleteConcurrentWithCompletableError() throws Exception {
+    void delayErrorOnNextReentryCompleteConcurrentWithCompletableError() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(true, true, false);
     }
 
     @Test
-    public void delayErrorOnNextReentryErrorConcurrentWithCompletableError() throws Exception {
+    void delayErrorOnNextReentryErrorConcurrentWithCompletableError() throws Exception {
         onNextReentryCompleteConcurrentWithCompletable(true, false, false);
     }
 
@@ -576,7 +572,7 @@ public class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {

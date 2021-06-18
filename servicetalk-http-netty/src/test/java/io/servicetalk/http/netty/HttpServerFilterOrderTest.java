@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -23,9 +22,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -40,13 +37,10 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HttpServerFilterOrderTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class HttpServerFilterOrderTest {
 
     @Test
-    public void prependOrder() throws Exception {
+    void prependOrder() throws Exception {
         StreamingHttpService filter1 = newMockService();
         StreamingHttpService filter2 = newMockService();
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,69 +15,103 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslProvider;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.net.InetSocketAddress;
+import java.net.SocketOption;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
-import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.REQUIRE;
+import static io.servicetalk.http.netty.TcpFastOpenTest.clientTcpFastOpenOptions;
+import static io.servicetalk.http.netty.TcpFastOpenTest.serverTcpFastOpenOptions;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslClientAuthMode.REQUIRE;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static java.util.Collections.emptyMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
-public class MutualSslTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final SslProvider serverSslProvider;
-    private final SslProvider clientSslProvider;
+class MutualSslTest {
+    private static final SslProvider[] SSL_PROVIDERS = {JDK, OPENSSL};
+    @SuppressWarnings("rawtypes")
+    private static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
+            asList(emptyMap(), serverTcpFastOpenOptions());
+    @SuppressWarnings("rawtypes")
+    private static final List<Map<SocketOption, Object>> CLIENT_OPTIONS =
+            asList(emptyMap(), clientTcpFastOpenOptions());
 
-    public MutualSslTest(final SslProvider serverSslProvider, final SslProvider clientSslProvider) {
-        this.serverSslProvider = serverSslProvider;
-        this.clientSslProvider = clientSslProvider;
+    @SuppressWarnings("rawtypes")
+    private static Collection<Arguments> params() {
+        List<Arguments> params = new ArrayList<>();
+        for (SslProvider serverSslProvider : SSL_PROVIDERS) {
+            for (SslProvider clientSslProvider : SSL_PROVIDERS) {
+                for (Map<SocketOption, Object> serverListenOptions : SERVER_LISTEN_OPTIONS) {
+                    for (Map<SocketOption, Object> clientOptions : CLIENT_OPTIONS) {
+                        params.add(Arguments.of(serverSslProvider, clientSslProvider,
+                                serverListenOptions, clientOptions));
+                    }
+                }
+            }
+        }
+        return params;
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1}")
-    public static Collection<Object[]> sslProviders() {
-        return asList(
-                new Object[]{JDK, JDK},
-                new Object[]{JDK, OPENSSL},
-                new Object[]{OPENSSL, JDK},
-                new Object[]{OPENSSL, OPENSSL}
-        );
-    }
-
-    @Test
-    public void mutualSsl() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .secure()
-                .provider(serverSslProvider)
-                .clientAuth(REQUIRE)
-                .trustManager(DefaultTestCerts::loadClientCAPem)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                     .secure()
-                     .provider(clientSslProvider)
-                     .disableHostnameVerification() // test certificates hostname isn't coordinated with each test
-                     .trustManager(DefaultTestCerts::loadServerCAPem)
-                     .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey)
-                     .commit()
+    @ParameterizedTest
+    @MethodSource("params")
+    void mutualSsl(SslProvider serverSslProvider,
+                   SslProvider clientSslProvider,
+                   Map<SocketOption, Object> serverListenOptions,
+                   Map<SocketOption, Object> clientOptions)
+            throws Exception {
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
+                .sslConfig(new ServerSslConfigBuilder(
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .trustManager(DefaultTestCerts::loadClientCAPem)
+                        .clientAuthMode(REQUIRE).provider(serverSslProvider).build());
+        for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : serverListenOptions.entrySet()) {
+            @SuppressWarnings("unchecked")
+            SocketOption<Object> option = entry.getKey();
+            serverBuilder.listenSocketOption(option, entry.getValue());
+        }
+        try (ServerContext serverContext = serverBuilder.listenBlockingAndAwait(
+                (ctx, request, responseFactory) -> responseFactory.ok());
+             BlockingHttpClient client = newClientBuilder(serverContext, clientOptions)
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                             .provider(clientSslProvider).peerHost(serverPemHostname())
+                             .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
                      .buildBlocking()) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
+    }
+
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+            ServerContext serverContext, @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions) {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress(serverHostAndPort(serverContext));
+        for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : clientOptions.entrySet()) {
+            @SuppressWarnings("unchecked")
+            SocketOption<Object> option = entry.getKey();
+            builder.socketOption(option, entry.getValue());
+        }
+        return builder;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,10 +52,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class FromInputStreamPublisherTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class FromInputStreamPublisherTest {
 
     private final TestPublisherSubscriber<byte[]> sub1 = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<byte[]> sub2 = new TestPublisherSubscriber<>();
@@ -69,14 +63,14 @@ public class FromInputStreamPublisherTest {
     private InputStream inputStream;
     private Publisher<byte[]> pub;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         inputStream = mock(InputStream.class);
         pub = new FromInputStreamPublisher(inputStream);
     }
 
     @Test
-    public void noDuplicateSubscription() throws Exception {
+    void noDuplicateSubscription() throws Exception {
         initEmptyStream();
 
         toSource(pub).subscribe(sub1);
@@ -89,7 +83,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void noDuplicateSubscriptionAfterError() throws Exception {
+    void noDuplicateSubscriptionAfterError() throws Exception {
         when(inputStream.available()).thenThrow(IOException.class);
 
         toSource(pub).subscribe(sub1);
@@ -101,7 +95,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void noDuplicateSubscriptionAfterComplete() throws Exception {
+    void noDuplicateSubscriptionAfterComplete() throws Exception {
         initEmptyStream();
 
         toSource(pub).subscribe(sub1);
@@ -113,14 +107,14 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void closeStreamOnCancelByDefault() throws Exception {
+    void closeStreamOnCancelByDefault() throws Exception {
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().cancel();
         verify(inputStream).close();
     }
 
     @Test
-    public void streamClosedAndErrorOnInvalidReqN() throws Exception {
+    void streamClosedAndErrorOnInvalidReqN() throws Exception {
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(-1);
         assertThat(sub1.awaitOnError(), instanceOf(IllegalArgumentException.class));
@@ -129,7 +123,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void streamClosedAndErrorOnInvalidReqNAndValidReqN() throws Exception {
+    void streamClosedAndErrorOnInvalidReqNAndValidReqN() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
 
         toSource(pub).subscribe(sub1);
@@ -141,7 +135,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void streamClosedAndErrorOnDoubleInvalidReqN() throws Exception {
+    void streamClosedAndErrorOnDoubleInvalidReqN() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
 
         toSource(pub).subscribe(sub1);
@@ -153,7 +147,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void streamClosedAndErrorOnAvailableIOError() throws Exception {
+    void streamClosedAndErrorOnAvailableIOError() throws Exception {
         when(inputStream.available()).thenThrow(IOException.class);
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(1);
@@ -162,7 +156,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void streamClosedAndErrorOnReadIOError() throws Exception {
+    void streamClosedAndErrorOnReadIOError() throws Exception {
         when(inputStream.available()).thenReturn(10);
         when(inputStream.read(any(), anyInt(), anyInt())).thenThrow(IOException.class);
 
@@ -174,7 +168,7 @@ public class FromInputStreamPublisherTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void streamClosedAndErrorOnDeliveryError() throws Exception {
+    void streamClosedAndErrorOnDeliveryError() throws Exception {
         initChunkedStream(smallBuff, of(10), of(10));
 
         Subscriber sub = mock(Subscriber.class);
@@ -195,7 +189,7 @@ public class FromInputStreamPublisherTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void streamClosedAndErrorOnDeliveryErrorOnce() throws Exception {
+    void streamClosedAndErrorOnDeliveryErrorOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
         Subscriber sub = mock(Subscriber.class);
@@ -220,7 +214,7 @@ public class FromInputStreamPublisherTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void streamCanceledShouldCloseOnce() throws Exception {
+    void streamCanceledShouldCloseOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
         Subscriber sub = mock(Subscriber.class);
@@ -241,7 +235,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void breakReentrantRequestN() throws Throwable {
+    void breakReentrantRequestN() throws Throwable {
 
         AtomicInteger count = new AtomicInteger();
         AtomicBoolean complete = new AtomicBoolean();
@@ -287,7 +281,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void consumeSimpleStream() throws Exception {
+    void consumeSimpleStream() {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(1); // smallBuff
@@ -297,7 +291,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void multiRequests() {
+    void multiRequests() {
         initChunkedStream(smallBuff, of(8, 2, 0), of(8, 2, 0));
         byte[] first = new byte[8];
         arraycopy(smallBuff, 0, first, 0, 8);
@@ -315,7 +309,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void completeStreamIfEOFObservedDuringReadFromOverEstimatedAvailability() throws Throwable {
+    void completeStreamIfEOFObservedDuringReadFromOverEstimatedAvailability() throws Throwable {
         initChunkedStream(smallBuff, ofAll(100), of(10, 0)); // only has 10 items
 
         byte[][] items = new byte[][]{
@@ -326,7 +320,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void dontFailOnInputStreamWithBrokenAvailableCall() throws Throwable {
+    void dontFailOnInputStreamWithBrokenAvailableCall() throws Throwable {
         initChunkedStream(bigBuff, of(5, 0, 0, 10, 5, 5, 5, 5, 0),
                                    of(5, 1, 1, 10, 5, 5, 5, 5, 0));
 
@@ -345,7 +339,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void expandBufferOnIncreasingAvailability() throws Throwable {
+    void expandBufferOnIncreasingAvailability() throws Throwable {
         initChunkedStream(bigBuff, of(3, 2, 15, 15, 10, 0),
                                    of(3, 2, 15, 15, 2, 0));
 
@@ -361,7 +355,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void keepReadingWhenAvailabilityPermits() throws Throwable {
+    void keepReadingWhenAvailabilityPermits() throws Throwable {
         // constrain publisher to 10 byte chunks with full data availability to enforce inner loops until buffer drained
         initChunkedStream(bigBuff, ofAll(100), ofAll(10));
 
@@ -376,7 +370,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void repeatedReadingWhenAvailabilityRunsOut() throws Throwable {
+    void repeatedReadingWhenAvailabilityRunsOut() throws Throwable {
         // constrain publisher to 10 byte chunks with only 5 byte availability per chunk to enforce multiple outer loops
         // simulating multiple calls to IS.available()
         initChunkedStream(bigBuff, ofAll(5), ofAll(5)); // 5 byte chunks per available() call
@@ -451,7 +445,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void assertChunkedUtil() {
+    void assertChunkedUtil() {
         assertThat(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, equalTo(init0toN(10)));
         assertThat(new byte[][]{
                 new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
@@ -516,7 +510,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void dontFailWhenInputStreamAvailableExceedsVmArraySizeLimit() throws Throwable {
+    void dontFailWhenInputStreamAvailableExceedsVmArraySizeLimit() throws Throwable {
         when(inputStream.available()).thenReturn(MAX_VALUE);
         when(inputStream.read(any(), anyInt(), anyInt())).thenReturn(-1);
         toSource(pub).subscribe(sub1);
