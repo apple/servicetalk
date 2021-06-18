@@ -24,6 +24,8 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -161,6 +163,38 @@ class From3PublisherTest {
     @Test
     void invalidRequestNNeg() {
         invalidRequestN(-1);
+    }
+
+    @Test
+    void reentry() {
+        final int[] emitted = {0};
+        final boolean[] completed = {false};
+        final Subscription[] subscription = new Subscription[1];
+        toSource(fromPublisher()).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription1) {
+                subscription[0] = subscription1;
+                subscription1.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                emitted[0]++;
+                subscription[0].request(1);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        assertThat(emitted[0], is(3));
+        assertThat(completed[0], is(true));
     }
 
     private void invalidRequestN(long n) {

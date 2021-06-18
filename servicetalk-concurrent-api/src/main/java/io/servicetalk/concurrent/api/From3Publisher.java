@@ -17,9 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Math.min;
 
 final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
     @Nullable
@@ -50,6 +52,7 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
         private static final byte DELIVERED_V2 = 2;
         private static final byte CANCELLED = 3;
         private static final byte TERMINATED = 4;
+        private boolean rejectRequests = false;
         private byte state;
         private final Subscriber<? super T> subscriber;
 
@@ -74,6 +77,10 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
+            if (rejectRequests) {
+                return;
+            }
+            rejectRequests = true;
             if (state == INIT) {
                 state = DELIVERED_V1;
                 try {
@@ -105,6 +112,7 @@ final class From3Publisher<T> extends AbstractSynchronousPublisher<T> {
                 }
                 subscriber.onComplete();
             }
+            rejectRequests = false;
         }
 
         private void deliverV2() {

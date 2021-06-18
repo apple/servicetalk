@@ -46,6 +46,7 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
         private static final byte DELIVERED_V1 = 1;
         private static final byte CANCELLED = 2;
         private static final byte TERMINATED = 3;
+        private boolean rejectRequests = false;
         private byte state;
         private final Subscriber<? super T> subscriber;
 
@@ -70,6 +71,10 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
+            if (rejectRequests) {
+                return;
+            }
+            rejectRequests = true;
             if (state == INIT) {
                 state = DELIVERED_V1;
                 try {
@@ -86,6 +91,7 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
             } else if (state == DELIVERED_V1) {
                 deliverV2();
             }
+            rejectRequests = false;
         }
 
         private void deliverV2() {
