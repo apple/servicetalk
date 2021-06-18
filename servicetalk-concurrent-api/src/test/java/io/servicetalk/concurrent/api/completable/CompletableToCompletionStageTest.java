@@ -35,35 +35,35 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CompletableToCompletionStageTest {
+class CompletableToCompletionStageTest {
     private static ExecutorService jdkExecutor;
 
     private LegacyTestCompletable source;
 
     @BeforeAll
-    public static void beforeClass() {
+    static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void afterClass() {
+    static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new LegacyTestCompletable();
     }
 
     @Test
-    public void listenBeforeComplete() throws InterruptedException {
+    void listenBeforeComplete() throws InterruptedException {
         verifyComplete(false);
     }
 
     @Test
-    public void completeBeforeListen() throws InterruptedException {
+    void completeBeforeListen() throws InterruptedException {
         verifyComplete(true);
     }
 
@@ -81,12 +81,12 @@ public class CompletableToCompletionStageTest {
     }
 
     @Test
-    public void listenBeforeError() throws InterruptedException {
+    void listenBeforeError() throws InterruptedException {
         verifyError(false);
     }
 
     @Test
-    public void errorBeforeListen() throws InterruptedException {
+    void errorBeforeListen() throws InterruptedException {
         verifyError(true);
     }
 
@@ -114,14 +114,14 @@ public class CompletableToCompletionStageTest {
     }
 
     @Test
-    public void futureComplete() throws Exception {
+    void futureComplete() throws Exception {
         Future<Void> f = source.toFuture();
         jdkExecutor.execute(source::onComplete);
         f.get();
     }
 
     @Test
-    public void futureFail() {
+    void futureFail() {
         Future<Void> f = source.toFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
         Exception e = assertThrows(ExecutionException.class, () -> f.get());

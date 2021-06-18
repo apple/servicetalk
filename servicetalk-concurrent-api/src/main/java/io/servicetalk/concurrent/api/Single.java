@@ -69,39 +69,15 @@ public abstract class Single<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
-    private final Executor executor;
-    private final boolean shareContextOnSubscribe;
-
     static {
         AsyncContext.autoEnable();
     }
 
     /**
      * New instance.
+     *
      */
     protected Single() {
-        this(immediate());
-    }
-
-    /**
-     * New instance.
-     *
-     * @param executor {@link Executor} to use for this {@link Single}.
-     */
-    Single(Executor executor) {
-        this(executor, false);
-    }
-
-    /**
-     * New instance.
-     *
-     * @param executor {@link Executor} to use for this {@link Single}.
-     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
-     * result in sharing {@link AsyncContext} between sources.
-     */
-    Single(Executor executor, boolean shareContextOnSubscribe) {
-        this.executor = requireNonNull(executor);
-        this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
     //
@@ -121,7 +97,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that will now have the result of type {@link R}.
      */
     public final <R> Single<R> map(Function<? super T, ? extends R> mapper) {
-        return new MapSingle<>(this, mapper, executor);
+        return new MapSingle<>(this, mapper);
     }
 
     /**
@@ -284,7 +260,7 @@ public abstract class Single<T> {
      */
     public final Single<T> onErrorMap(Predicate<? super Throwable> predicate,
                                       Function<? super Throwable, ? extends Throwable> mapper) {
-        return new OnErrorMapSingle<>(this, predicate, mapper, executor);
+        return new OnErrorMapSingle<>(this, predicate, mapper);
     }
 
     /**
@@ -374,7 +350,7 @@ public abstract class Single<T> {
      */
     public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
-        return new OnErrorResumeSingle<>(this, predicate, nextFactory, executor);
+        return new OnErrorResumeSingle<>(this, predicate, nextFactory);
     }
 
     /**
@@ -418,7 +394,7 @@ public abstract class Single<T> {
      * completes successfully.
      */
     public final <R> Single<R> flatMap(Function<? super T, ? extends Single<? extends R>> next) {
-        return new SingleFlatMapSingle<>(this, next, executor);
+        return new SingleFlatMapSingle<>(this, next);
     }
 
     /**
@@ -436,7 +412,7 @@ public abstract class Single<T> {
      * {@link Single} completes successfully.
      */
     public final Completable flatMapCompletable(Function<? super T, ? extends Completable> next) {
-        return new SingleFlatMapCompletable<>(this, next, executor);
+        return new SingleFlatMapCompletable<>(this, next);
     }
 
     /**
@@ -458,7 +434,7 @@ public abstract class Single<T> {
      * {@link Single} completes successfully.
      */
     public final <R> Publisher<R> flatMapPublisher(Function<? super T, ? extends Publisher<? extends R>> next) {
-        return new SingleFlatMapPublisher<>(this, next, executor);
+        return new SingleFlatMapPublisher<>(this, next);
     }
 
     /**
@@ -662,88 +638,6 @@ public abstract class Single<T> {
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(long, TimeUnit)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
-     * @param unit The units for {@code duration}.
-     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Single<T> idleTimeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
-     * termination. The timer starts when the returned {@link Single} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
-     * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Single<T> idleTimeout(long duration, TimeUnit unit,
-                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
-     * termination. The timer starts when the returned {@link Single} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * {@link Subscriber} will via {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
-     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Single<T> idleTimeout(Duration duration) {
-        return timeout(duration, executor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * The timer starts when the returned {@link Single} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Single<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutSingle<>(this, duration, timeoutExecutor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
-     * termination. The timer starts when the returned {@link Single} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
-     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param unit The units for {@code duration}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
@@ -751,7 +645,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+        return timeout(duration, unit, executor());
     }
 
     /**
@@ -789,7 +683,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
-        return timeout(duration, executor);
+        return timeout(duration, executor());
     }
 
     /**
@@ -850,7 +744,7 @@ public abstract class Single<T> {
      * terminates successfully.
      */
     public final Single<T> concat(Completable next) {
-        return new SingleConcatWithCompletable<>(this, next, executor);
+        return new SingleConcatWithCompletable<>(this, next);
     }
 
     /**
@@ -871,12 +765,12 @@ public abstract class Single<T> {
      * all elements from {@code next} {@link Publisher}.
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return new SingleConcatWithPublisher<>(this, next, executor);
+        return new SingleConcatWithPublisher<>(this, next, executor());
     }
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code this} and {@code other}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -890,12 +784,38 @@ public abstract class Single<T> {
      * @param <T2> The type of {@code other}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code this} and {@code other}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
                                            BiFunction<? super T, ? super T2, ? extends R> zipper) {
         return zip(this, other, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code this} and {@code other}. If any of the {@link Single}s terminate with an error, the returned
+     * {@link Single} will wait for termination till all the other {@link Single}s have been subscribed and terminated,
+     * and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T> f1 = ...; // this
+     *      CompletableFuture<T2> other = ...;
+     *      CompletableFuture.allOf(f1, other).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), other.get());
+     * }</pre>
+     * @param other The other {@link Single} to zip with.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code this} and {@code other}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public final <T2, R> Single<R> zipWithDelayError(Single<? extends T2> other,
+                                                     BiFunction<? super T, ? super T2, ? extends R> zipper) {
+        return zipDelayError(this, other, zipper);
     }
 
     /**
@@ -930,7 +850,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return new RetrySingle<>(this, shouldRetry, executor);
+        return new RetrySingle<>(this, shouldRetry);
     }
 
     /**
@@ -969,7 +889,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
-        return new RetryWhenSingle<>(this, retryWhen, executor);
+        return new RetryWhenSingle<>(this, retryWhen);
     }
 
     /**
@@ -1088,7 +1008,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeCancel(Runnable onCancel) {
-        return new WhenCancellableSingle<>(this, onCancel::run, true, executor);
+        return new WhenCancellableSingle<>(this, onCancel::run, true);
     }
 
     /**
@@ -1157,7 +1077,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(TerminalSignalConsumer doFinally) {
-        return new BeforeFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally), executor);
+        return new BeforeFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally));
     }
 
     /**
@@ -1192,7 +1112,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(SingleTerminalSignalConsumer<? super T> doFinally) {
-        return new BeforeFinallySingle<>(this, doFinally, executor);
+        return new BeforeFinallySingle<>(this, doFinally);
     }
 
     /**
@@ -1206,7 +1126,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new BeforeSubscriberSingle<>(this, subscriberSupplier, executor);
+        return new BeforeSubscriberSingle<>(this, subscriberSupplier);
     }
 
     /**
@@ -1289,7 +1209,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> afterCancel(Runnable onCancel) {
-        return new WhenCancellableSingle<>(this, onCancel::run, false, executor);
+        return new WhenCancellableSingle<>(this, onCancel::run, false);
     }
 
     /**
@@ -1358,7 +1278,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(TerminalSignalConsumer doFinally) {
-        return new AfterFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally), executor);
+        return new AfterFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally));
     }
 
     /**
@@ -1393,7 +1313,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(SingleTerminalSignalConsumer<? super T> doFinally) {
-        return new AfterFinallySingle<>(this, doFinally, executor);
+        return new AfterFinallySingle<>(this, doFinally);
     }
 
     /**
@@ -1407,7 +1327,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new AfterSubscriberSingle<>(this, subscriberSupplier, executor);
+        return new AfterSubscriberSingle<>(this, subscriberSupplier);
     }
 
     /**
@@ -1428,7 +1348,7 @@ public abstract class Single<T> {
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
@@ -1439,22 +1359,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor} for
-     * invoking all {@link Subscriber} methods. If such an override is not required, {@link #publishOn(Executor)} can be
-     * used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
-     * returned {@link Single} as well as {@code this} {@link Single}.
-     */
-    public final Single<T> publishOnOverride(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOnOverride(this, executor);
-    }
-
-    /**
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
@@ -1462,7 +1366,7 @@ public abstract class Single<T> {
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
@@ -1475,33 +1379,13 @@ public abstract class Single<T> {
     /**
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor} for
-     * invoking the above specified methods.
-     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
-     */
-    public final Single<T> subscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOnOverride(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
@@ -1509,26 +1393,6 @@ public abstract class Single<T> {
      */
     public final Single<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
-     * returned {@link Single} as well as {@code this} {@link Single}.
-     */
-    public final Single<T> publishAndSubscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOnOverride(this, executor);
     }
 
     /**
@@ -1571,7 +1435,7 @@ public abstract class Single<T> {
      * @see #liftAsync(SingleOperator)
      */
     public final <R> Single<R> liftSync(SingleOperator<? super T, ? extends R> operator) {
-        return new LiftSynchronousSingleOperator<>(this, operator, executor);
+        return new LiftSynchronousSingleOperator<>(this, operator);
     }
 
     /**
@@ -1606,7 +1470,7 @@ public abstract class Single<T> {
      * @see #liftSync(SingleOperator)
      */
     public final <R> Single<R> liftAsync(SingleOperator<? super T, ? extends R> operator) {
-        return new LiftAsynchronousSingleOperator<>(this, operator, executor);
+        return new LiftAsynchronousSingleOperator<>(this, operator);
     }
 
     /**
@@ -1627,7 +1491,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Single<T> ambWith(final Single<T> other) {
-        return new SingleAmbWith<>(executor, this, other);
+        return new SingleAmbWith<>(this, other);
     }
 
     //
@@ -1644,7 +1508,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits at most a single item which is emitted by this {@code Single}.
      */
     public final Publisher<T> toPublisher() {
-        return new SingleToPublisher<>(this, executor);
+        return new SingleToPublisher<>(this);
     }
 
     /**
@@ -1654,7 +1518,7 @@ public abstract class Single<T> {
      * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
      */
     public final Completable toCompletable() {
-        return new SingleToCompletable<>(this, executor);
+        return new SingleToCompletable<>(this);
     }
 
     /**
@@ -2228,7 +2092,7 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
-     * by {@code singles}.
+     * by {@code s1} and {@code s2}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2244,7 +2108,7 @@ public abstract class Single<T> {
      * @param <T2> The type for the second {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code s1} and {@code s2}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
@@ -2253,8 +2117,36 @@ public abstract class Single<T> {
     }
 
     /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code s1} and {@code s2}. If any of the {@link Single}s terminate with an error, the returned {@link Single}
+     * will wait for termination till all the other {@link Single}s have been subscribed and terminated, and then
+     * terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture.allOf(f1, f2).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code s1} and {@code s2}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, R> Single<R> zipDelayError(Single<? extends T1> s1, Single<? extends T2> s2,
+                                                      BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return SingleZipper.zipDelayError(s1, s2, zipper);
+    }
+
+    /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, and {@code s3}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2273,7 +2165,7 @@ public abstract class Single<T> {
      * @param <T3> The type for the third {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, and {@code s3}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zip(
@@ -2283,8 +2175,40 @@ public abstract class Single<T> {
     }
 
     /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code s1}, {@code s2}, and {@code s3}. If any of the {@link Single}s terminate with an error, the returned
+     * {@link Single} will wait for termination till all the other {@link Single}s have been subscribed and terminated,
+     * and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code s1}, {@code s2}, and {@code s3}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, R> Single<R> zipDelayError(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return SingleZipper.zipDelayError(s1, s2, s3, zipper);
+    }
+
+    /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2306,13 +2230,48 @@ public abstract class Single<T> {
      * @param <T4> The type for the fourth {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zip(
             Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
             Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
         return SingleZipper.zip(s1, s2, s3, s4, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}. If any of the {@link Single}s terminate with an error, the
+     * returned {@link Single}  will wait for termination till all the other {@link Single}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture<T4> f4 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3, f4).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get(), f4.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param s4 The fourth {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <T4> The type for the fourth {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, T4, R> Single<R> zipDelayError(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
+            Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return SingleZipper.zipDelayError(s1, s2, s3, s4, zipper);
     }
 
     /**
@@ -2338,6 +2297,31 @@ public abstract class Single<T> {
         return SingleZipper.zip(zipper, singles);
     }
 
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}. If any of the {@link Single}s terminate with an error, the returned {@link Single} will wait for
+     * termination till all the other {@link Single}s have been subscribed and terminated, and then terminate with the
+     * first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Function<? super CompletableFuture<?>[], ? extends R> zipper = ...;
+     *      CompletableFuture<?>[] futures = ...; // Provided Futures (analogous to the Singles here)
+     *      CompletableFuture.allOf(futures).get(); // wait for all futures to complete
+     *      return zipper.apply(futures);
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param singles The collection of {@link Single}s that when complete provides the results to "zip" (aka combine)
+     * together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <R> Single<R> zipDelayError(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
+        return SingleZipper.zipDelayError(zipper, singles);
+    }
+
     //
     // Static Utility Methods End
     //
@@ -2355,7 +2339,7 @@ public abstract class Single<T> {
      * @return {@link AsyncContextMap} for this subscribe operation.
      */
     final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        final AsyncContextMap contextMap = shareContextOnSubscribe ? provider.contextMap() :
+        final AsyncContextMap contextMap = shareContextOnSubscribe() ? provider.contextMap() :
                 provider.contextMap().copy();
         subscribeWithContext(subscriber, provider, contextMap);
         return contextMap;
@@ -2394,7 +2378,7 @@ public abstract class Single<T> {
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
             // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor);
+            signalOffloader = newOffloaderFor(executor());
             // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
@@ -2447,10 +2431,20 @@ public abstract class Single<T> {
     /**
      * Returns the {@link Executor} used for this {@link Single}.
      *
-     * @return {@link Executor} used for this {@link Single} via {@link #Single(Executor)}.
+     * @return {@link Executor} used for this {@link Single}.
      */
-    final Executor executor() {
-        return executor;
+    Executor executor() {
+        return immediate();
+    }
+
+    /**
+     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
+     * copied.
+     *
+     * @return true if the async context should be shared on subscribe
+     */
+    boolean shareContextOnSubscribe() {
+        return false;
     }
 
     //

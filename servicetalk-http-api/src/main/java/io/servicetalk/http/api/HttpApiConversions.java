@@ -184,6 +184,16 @@ public final class HttpApiConversions {
     }
 
     /**
+     * Checks whether a request/response payload body is empty.
+     *
+     * @param metadata The request/response to check.
+     * @return {@code true} is the request/response payload body is empty, {@code false} otherwise.
+     */
+    public static boolean isPayloadEmpty(HttpMetaData metadata) {
+        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isEmpty();
+    }
+
+    /**
      * Checks whether a request/response payload is safe to aggregate, which may allow for writing a `content-length`
      * header.
      *
@@ -191,7 +201,7 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload is safe to aggregate, {@code false} otherwise.
      */
     public static boolean isSafeToAggregate(HttpMetaData metadata) {
-        return (metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isSafeToAggregate());
+        return metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isSafeToAggregate();
     }
 
     /**

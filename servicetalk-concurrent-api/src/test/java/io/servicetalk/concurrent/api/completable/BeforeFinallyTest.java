@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class BeforeFinallyTest extends AbstractWhenFinallyTest {
+class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
     protected Completable doFinally(Completable completable, TerminalSignalConsumer doFinally) {
         return completable.beforeFinally(doFinally);
@@ -36,7 +36,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnComplete() {
+    void testCallbackThrowsErrorOnComplete() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         toSource(doFinally(Completable.completed(), mock)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -46,7 +46,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
 
     @Test
     @Override
-    public void testCallbackThrowsErrorOnError() {
+    void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         TerminalSignalConsumer mock = throwableMock(exception);
         toSource(doFinally(Completable.failed(DELIBERATE_EXCEPTION), mock)).subscribe(listener);

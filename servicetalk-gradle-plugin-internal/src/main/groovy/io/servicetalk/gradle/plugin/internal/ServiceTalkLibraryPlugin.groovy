@@ -29,6 +29,12 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLeve
 import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
+import static org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.STARTED
+
 
 final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
@@ -170,10 +176,20 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
         testLogging {
-          events "passed", "skipped", "failed"
-          showStandardStreams = true
-        }
+          events = [FAILED]
+          showStandardStreams = false
+          exceptionFormat = FULL
 
+          warn {
+            // Show more complete info when gradle run in --warn mode
+            events = [STARTED, PASSED, SKIPPED, FAILED]
+            showStandardStreams = true
+          }
+        }
+      
+        // if property is defined and true allow tests to continue running after first fail
+        ignoreFailures = Boolean.getBoolean("servicetalk.test.ignoreFailures")
+        
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
       }

@@ -47,7 +47,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class SingleFlatMapPublisherTest {
+final class SingleFlatMapPublisherTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
@@ -58,7 +58,7 @@ public final class SingleFlatMapPublisherTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testFirstAndSecondPropagate() {
+    void testFirstAndSecondPropagate() {
         toSource(succeeded(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -67,7 +67,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         publisher.onNext("Hello1", "Hello2");
@@ -77,7 +77,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testPublisherEmitsError() {
+    void testPublisherEmitsError() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -85,7 +85,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testSingleEmitsError() {
+    void testSingleEmitsError() {
         toSource(failed(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertFalse(publisher.isSubscribed());
@@ -93,7 +93,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeNextPublisher() {
+    void testCancelBeforeNextPublisher() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         subscriber.awaitSubscription().cancel();
@@ -101,7 +101,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelNoRequest() {
+    void testCancelNoRequest() {
         toSource(single.flatMapPublisher(s -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().cancel();
         subscriber.awaitSubscription().request(1);
@@ -109,7 +109,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeOnSubscribe() {
+    void testCancelBeforeOnSubscribe() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
@@ -122,7 +122,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void testCancelPostOnSubscribe() {
+    void testCancelPostOnSubscribe() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         publisher.onSubscribe(subscription);
@@ -131,7 +131,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
@@ -141,7 +141,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
@@ -149,7 +149,7 @@ public final class SingleFlatMapPublisherTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();

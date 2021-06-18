@@ -24,7 +24,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
+final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return new InMemorySource(values) {
@@ -37,7 +37,7 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
     }
 
     @Test
-    public void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
+    void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(0);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitOnComplete();

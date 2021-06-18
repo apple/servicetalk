@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -31,19 +31,19 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class FlushTest extends AbstractFlushTest {
+class FlushTest extends AbstractFlushTest {
 
     private final TestPublisher<String> source = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private FlushSender flushSender;
     private MockFlushStrategy strategy;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         strategy = new MockFlushStrategy();
         toSource(super.setup(source, strategy)).subscribe(subscriber);
@@ -51,7 +51,7 @@ public class FlushTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testFlushOnEach() {
+    void testFlushOnEach() {
         writeAndFlush("Hello");
 
         verifyWriteAndFlushAfter("Hello");
@@ -59,7 +59,7 @@ public class FlushTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testBatchFlush() {
+    void testBatchFlush() {
         writeAndFlush("Hello1", "Hello2", "Hello3");
 
         verifyWriteAndFlushAfter("Hello1", "Hello2", "Hello3");
@@ -67,7 +67,7 @@ public class FlushTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testMultipleBatchFlush() {
+    void testMultipleBatchFlush() {
         writeAndFlush("Hello1", "Hello2", "Hello3");
 
         verifyWriteAndFlushAfter("Hello1", "Hello2", "Hello3");
@@ -80,7 +80,7 @@ public class FlushTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().cancel();
@@ -95,14 +95,14 @@ public class FlushTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testSourceComplete() {
+    void testSourceComplete() {
         source.onComplete();
         subscriber.awaitOnComplete();
         strategy.verifyWriteTerminated();
     }
 
     @Test
-    public void testSourceEmitError() {
+    void testSourceEmitError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         strategy.verifyWriteTerminated();

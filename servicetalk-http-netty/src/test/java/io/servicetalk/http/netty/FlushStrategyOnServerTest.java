@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -38,22 +37,15 @@ import io.servicetalk.transport.api.ServerContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -71,21 +63,19 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
-public class FlushStrategyOnServerTest {
+class FlushStrategyOnServerTest {
 
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
-    public static final String USE_AGGREGATED_RESP = "aggregated-resp";
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    private static final String USE_AGGREGATED_RESP = "aggregated-resp";
+    private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final Param param;
-    private final OutboundWriteEventsInterceptor interceptor;
-    private final HttpHeadersFactory headersFactory;
+    private OutboundWriteEventsInterceptor interceptor;
+    private HttpHeadersFactory headersFactory;
 
     private ServerContext serverContext;
     private BlockingHttpClient client;
@@ -100,21 +90,15 @@ public class FlushStrategyOnServerTest {
         }
     }
 
-    public FlushStrategyOnServerTest(final Param param) {
-        this.param = param;
+    private void setUp(final Param param) {
         this.interceptor = new OutboundWriteEventsInterceptor();
         this.headersFactory = DefaultHttpHeadersFactory.INSTANCE;
-    }
 
-    @Parameters(name = "{index}: strategy = {0}")
-    public static Param[][] data() {
-        return Arrays.stream(Param.values()).map(s -> new Param[]{s}).toArray(Param[][]::new);
-    }
-
-    @Before
-    public void setup() throws Exception {
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
-            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());
+            StreamingHttpResponse resp = responseFactory.ok();
+            if (request.headers().get(USE_EMPTY_RESP_BODY) == null) {
+                resp.payloadBody(from("Hello", "World"), textSerializer());
+            }
             if (request.headers().get(USE_AGGREGATED_RESP) != null) {
                 return resp.toResponse().map(HttpResponse::toStreamingResponse);
             }
@@ -128,22 +112,26 @@ public class FlushStrategyOnServerTest {
         final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
         final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
 
-        serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
-                httpExecutionContext, null,
-                (channel, observer) -> initChannel(channel, httpExecutionContext, config,
-                        new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
-                                .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
-                        true, connectionObserver),
-                connection -> connection.process(true))
-                .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+        try {
+            serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
+                    httpExecutionContext, null,
+                    (channel, observer) -> initChannel(channel, httpExecutionContext, config,
+                            new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
+                                    .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
+                            true, connectionObserver),
+                    connection -> connection.process(true))
+                    .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+        } catch (Exception e) {
+            fail(e);
+        }
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .protocols(h1Default())
                 .buildBlocking();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -151,61 +139,125 @@ public class FlushStrategyOnServerTest {
         }
     }
 
-    @Test
-    public void aggregatedResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
     }
 
-    @Test
-    public void twoAggregatedResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoAggregatedResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
-        assertAggregatedResponseWrite();
-
-        sendARequest(true);
-        assertAggregatedResponseWrite();
-    }
-
-    @Test
-    public void twoStreamingResponsesFlushOnEach() throws Exception {
-        sendARequest(false);
-        verifyStreamingResponseWrite();
-
-        sendARequest(false);
-        verifyStreamingResponseWrite();
-    }
-
-    @Test
-    public void streamingResponsesFlushOnEach() throws Exception {
-        sendARequest(false);
-        verifyStreamingResponseWrite();
-    }
-
-    @Test
-    public void aggregatedAndThenStreamingResponse() throws Exception {
-        sendARequest(true);
-        assertAggregatedResponseWrite();
-
-        sendARequest(false);
-        verifyStreamingResponseWrite();
-    }
-
-    @Test
-    public void streamingAndThenAggregatedResponse() throws Exception {
-        sendARequest(false);
-        verifyStreamingResponseWrite();
+        assertFlushOnEnd();
 
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
     }
 
-    private void assertAggregatedResponseWrite() throws Exception {
-        // aggregated response; headers, single payload and CRLF
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(3));
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(true, true);
+        assertFlushOnEnd();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoAggregatedEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(true, true);
+        assertFlushOnEnd();
+
+        sendARequest(true, true);
+        assertFlushOnEnd();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingResponsesFlushOnEach(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(false);
+        assertFlushOnEach();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoStreamingResponsesFlushOnEach(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(false);
+        assertFlushOnEach();
+
+        sendARequest(false);
+        assertFlushOnEach();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(false, true);
+        assertFlushOnEnd();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoStreamingEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(false, true);
+        assertFlushOnEnd();
+
+        sendARequest(false, true);
+        assertFlushOnEnd();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedAndThenStreamingResponse(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(true);
+        assertFlushOnEnd();
+
+        sendARequest(false);
+        assertFlushOnEach();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingAndThenAggregatedResponse(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(false);
+        assertFlushOnEach();
+
+        sendARequest(true);
+        assertFlushOnEnd();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedStreamingEmptyResponse(final Param param) throws Exception {
+        setUp(param);
+        sendARequest(true);
+        assertFlushOnEnd();
+
+        sendARequest(false);
+        assertFlushOnEach();
+
+        sendARequest(false, true);
+        assertFlushOnEnd();
+    }
+
+    private void assertFlushOnEnd() throws Exception {
+        // aggregated response: headers, single (or empty) payload, and empty buffer instead of trailers
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), greaterThan(0));
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
     }
 
-    private void verifyStreamingResponseWrite() throws Exception {
+    private void assertFlushOnEach() throws Exception {
         // headers
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(1));
         // one chunk; chunk header payload and CRLF
@@ -218,10 +270,17 @@ public class FlushStrategyOnServerTest {
     }
 
     private void sendARequest(final boolean useAggregatedResp) throws Exception {
+        sendARequest(useAggregatedResp, false);
+    }
+
+    private void sendARequest(boolean useAggregatedResp, boolean useEmptyRespBody) throws Exception {
         HttpHeaders headers = headersFactory.newHeaders();
         headers.set(TRANSFER_ENCODING, CHUNKED);
         if (useAggregatedResp) {
             headers.set(USE_AGGREGATED_RESP, "true");
+        }
+        if (useEmptyRespBody) {
+            headers.set(USE_EMPTY_RESP_BODY, "true");
         }
 
         StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1, headers, DEFAULT_ALLOCATOR,

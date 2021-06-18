@@ -37,14 +37,17 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
@@ -99,18 +102,19 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return isSafeToAggregate(metadata) && (metadata.version().major() > 1 || !mayHaveTrailers(metadata)) &&
+        return (isPayloadEmpty(metadata) || isSafeToAggregate(metadata)) &&
+                (metadata.version().major() > 1 || !mayHaveTrailers(metadata)) &&
                 !hasContentHeaders(metadata.headers());
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
         return setContentLength(request, request.messageBody(),
-                shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
+                shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateContentLength :
                         HeaderUtils::updateRequestContentLengthNonZero);
     }
 
     static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
-        return setContentLength(response, response.messageBody(), HeaderUtils::updateResponseContentLength);
+        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -119,9 +123,9 @@ final class HeaderUtils {
         }
     }
 
-    private static void updateRequestContentLength(final int contentLength, final HttpHeaders headers) {
+    private static void updateContentLength(final int contentLength, final HttpHeaders headers) {
         assert contentLength >= 0;
-        headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
+        headers.set(CONTENT_LENGTH, contentLength == 0 ? ZERO : Integer.toString(contentLength));
     }
 
     static boolean shouldAddZeroContentLength(final HttpRequestMethod requestMethod) {
@@ -168,13 +172,17 @@ final class HeaderUtils {
         };
     }
 
-    private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
-        headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
-    }
-
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
+        if (messageBody == empty() || (isPayloadEmpty(metadata) && !mayHaveTrailers(metadata))) {
+            contentLengthUpdater.apply(0, metadata.headers());
+            return messageBody == empty() ?
+                    from(metadata, EmptyHttpHeaders.INSTANCE) :
+                    // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
+                    // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
+                    from(metadata, EmptyHttpHeaders.INSTANCE).concat(messageBody.ignoreElements());
+        }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer

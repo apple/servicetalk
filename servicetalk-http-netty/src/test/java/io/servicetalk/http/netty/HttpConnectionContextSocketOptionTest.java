@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -25,12 +24,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -49,64 +44,58 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(Parameterized.class)
-public class HttpConnectionContextSocketOptionTest {
+class HttpConnectionContextSocketOptionTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final HttpProtocol protocol;
-
-    public HttpConnectionContextSocketOptionTest(HttpProtocol protocol) {
-        this.protocol = protocol;
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void tcpStandardSocketOptionIsNotNull(HttpProtocol protocol) throws Exception {
+        testSocketOption(StandardSocketOptions.TCP_NODELAY, is(notNullValue()), not(equalTo("null")), protocol);
     }
 
-    @Parameters(name = "protocol={0}")
-    public static Object[] data() {
-        return HttpProtocol.values();
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void udpStandardSocketOptionIsNull(HttpProtocol protocol) throws Exception {
+        testSocketOption(StandardSocketOptions.IP_MULTICAST_LOOP, is(nullValue()), equalTo("null"), protocol);
     }
 
-    @Test
-    public void tcpStandardSocketOptionIsNotNull() throws Exception {
-        testSocketOption(StandardSocketOptions.TCP_NODELAY, is(notNullValue()), not(equalTo("null")));
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void stConnectionTimeoutSocketOption(HttpProtocol protocol) throws Exception {
+        testSocketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, is(notNullValue()), not(equalTo("null")), protocol);
     }
 
-    @Test
-    public void udpStandardSocketOptionIsNull() throws Exception {
-        testSocketOption(StandardSocketOptions.IP_MULTICAST_LOOP, is(nullValue()), equalTo("null"));
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void stWriteBufferThresholdSocketOption(HttpProtocol protocol) throws Exception {
+        testSocketOption(ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD, is(notNullValue()),
+                not(equalTo("null")), protocol);
     }
 
-    @Test
-    public void stConnectionTimeoutSocketOption() throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, is(notNullValue()), not(equalTo("null")));
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void stIdleTimeoutSocketOption(HttpProtocol protocol) throws Exception {
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(30000L), equalTo("30000"), 30000L, protocol);
     }
 
-    @Test
-    public void stWriteBufferThresholdSocketOption() throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD, is(notNullValue()), not(equalTo("null")));
-    }
-
-    @Test
-    public void stIdleTimeoutSocketOption() throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(30000L), equalTo("30000"), 30000L);
-    }
-
-    @Test
-    public void stIdleTimeoutSocketOptionIsNull() throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(nullValue()), equalTo("null"), null);
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void stIdleTimeoutSocketOptionIsNull(HttpProtocol protocol) throws Exception {
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(nullValue()), equalTo("null"), null, protocol);
     }
 
     private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
-                                      Matcher<Object> serverMatcher) throws Exception {
-        testSocketOption(socketOption, clientMatcher, serverMatcher, null);
+                                      Matcher<Object> serverMatcher, HttpProtocol protocol) throws Exception {
+        testSocketOption(socketOption, clientMatcher, serverMatcher, null, protocol);
     }
 
     private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
-                                      Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs) throws Exception {
-        try (ServerContext serverContext = startServer(idleTimeoutMs, socketOption);
-             BlockingHttpClient client = newClient(serverContext, idleTimeoutMs);
+                                      Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs,
+                                      HttpProtocol protocol)
+        throws Exception {
+        try (ServerContext serverContext = startServer(idleTimeoutMs, socketOption, protocol);
+             BlockingHttpClient client = newClient(serverContext, idleTimeoutMs, protocol);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
             assertThat("Client-side connection SocketOption does not match expected value",
@@ -116,7 +105,8 @@ public class HttpConnectionContextSocketOptionTest {
         }
     }
 
-    private <T> ServerContext startServer(@Nullable Long idleTimeoutMs, SocketOption<T> socketOption) throws Exception {
+    private <T> ServerContext startServer(@Nullable Long idleTimeoutMs, SocketOption<T> socketOption,
+                                          HttpProtocol protocol) throws Exception {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config);
         if (idleTimeoutMs != null) {
@@ -126,7 +116,8 @@ public class HttpConnectionContextSocketOptionTest {
                 .payloadBody(valueOf(ctx.socketOption(socketOption)), textSerializer()));
     }
 
-    private BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs) {
+    private BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs,
+                                         HttpProtocol protocol) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                         .protocols(protocol.config);
@@ -136,8 +127,9 @@ public class HttpConnectionContextSocketOptionTest {
         return builder.buildBlocking();
     }
 
-    @Test
-    public void unsupportedSocketOptionThrows() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void unsupportedSocketOptionThrows(HttpProtocol protocol) throws Exception {
         final SocketOption<Boolean> unsupported = new CustomSocketOption<>("UNSUPPORTED", Boolean.class);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config)

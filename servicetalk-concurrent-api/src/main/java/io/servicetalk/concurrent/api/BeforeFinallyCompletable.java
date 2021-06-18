@@ -25,8 +25,8 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
 
     private final TerminalSignalConsumer doFinally;
 
-    BeforeFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
-        super(original, executor);
+    BeforeFinallyCompletable(Completable original, TerminalSignalConsumer doFinally) {
+        super(original);
         this.doFinally = requireNonNull(doFinally);
     }
 

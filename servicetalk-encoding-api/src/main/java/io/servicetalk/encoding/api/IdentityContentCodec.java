@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
@@ -27,6 +29,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 final class IdentityContentCodec implements ContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");
+    private static final int HASH_CODE = caseInsensitiveHashCode(NAME);
 
     @Override
     public CharSequence name() {
@@ -61,5 +64,24 @@ final class IdentityContentCodec implements ContentCodec {
     @Override
     public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
         return from;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof ContentCodec)) {
+            return false;
+        }
+
+        final ContentCodec that = (ContentCodec) o;
+        return contentEqualsIgnoreCase(name(), that.name());
+    }
+
+    @Override
+    public int hashCode() {
+        return HASH_CODE;
     }
 }

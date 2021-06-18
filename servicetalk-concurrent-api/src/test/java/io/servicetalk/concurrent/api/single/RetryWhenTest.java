@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryWhenTest {
+class RetryWhenTest {
     private final TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
@@ -60,7 +60,7 @@ public class RetryWhenTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
@@ -72,14 +72,14 @@ public class RetryWhenTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void publishOnWithRetry() throws Exception {
+    void publishOnWithRetry() throws Exception {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
@@ -97,14 +97,14 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         source.onSuccess(1);
         assertThat(subscriberRule.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         DeliberateException fatal = new DeliberateException();
@@ -115,7 +115,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testTwoError() {
+    void testTwoError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
@@ -129,7 +129,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -141,7 +141,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelPostErrorButBeforeRetryStart() {
+    void testCancelPostErrorButBeforeRetryStart() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.verifyListenCalled();
         subscriberRule.awaitSubscription().cancel();
@@ -152,14 +152,14 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void testCancelBeforeRetry() {
+    void testCancelBeforeRetry() {
         subscriberRule.awaitSubscription().cancel();
         source.onSuccess(1);
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
 
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
@@ -174,7 +174,7 @@ public class RetryWhenTest {
     }
 
     @Test
-    public void nullInTerminalCallsOnError() {
+    void nullInTerminalCallsOnError() {
         TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);
         toSource(source.retryWhen((times, cause) -> null)).subscribe(subscriberRule);

@@ -33,6 +33,7 @@
 
   <!-- testFixtures -->
   <suppress id="ConsolePrint" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
+  <suppress id="IllegalInstantiationOfString" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocType" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,28 +24,32 @@ import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
-public class SingleZipWithTest {
+class SingleZipWithTest {
     private TestSingle<Integer> first;
     private TestSingle<Double> second;
     private TestSingleSubscriber<String> subscriber;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         first = new TestSingle<>();
         second = new TestSingle<>();
         subscriber = new TestSingleSubscriber<>();
     }
 
     @Test
-    public void bothCompleteInOrder() {
+    void bothCompleteInOrder() {
         bothComplete(true);
     }
 
     @Test
-    public void bothCompleteOutOfOrder() {
+    void bothCompleteOutOfOrder() {
         bothComplete(false);
     }
 
@@ -64,12 +69,12 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void justErrorFirst() {
+    void justErrorFirst() {
         justError(true);
     }
 
     @Test
-    public void justErrorSecond() {
+    void justErrorSecond() {
         justError(false);
     }
 
@@ -85,12 +90,12 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void errorAfterCompleteInOrder() {
+    void errorAfterCompleteInOrder() {
         errorAfterComplete(true);
     }
 
     @Test
-    public void errorAfterCompleteOutOfOrder() {
+    void errorAfterCompleteOutOfOrder() {
         errorAfterComplete(false);
     }
 
@@ -108,7 +113,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void justCancel() throws InterruptedException {
+    void justCancel() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -126,7 +131,7 @@ public class SingleZipWithTest {
     }
 
     @Test
-    public void cancelAfterCompleteOutOfOrder() throws InterruptedException {
+    void cancelAfterCompleteOutOfOrder() throws InterruptedException {
         TestCancellable cancellable = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable);
@@ -137,6 +142,30 @@ public class SingleZipWithTest {
         second.onSuccess(10.1);
         c.cancel();
         cancellable.awaitCancelled();
+    }
+
+    @Test
+    void delayErrorOneFail() {
+        toSource(first.zipWithDelayError(second, SingleZipWithTest::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        first.onSuccess(1);
+        assertThat(subscriber.awaitOnError(), is(e1));
+    }
+
+    @Test
+    void delayErrorAllFail() {
+        toSource(first.zipWithDelayError(second, SingleZipWithTest::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        DeliberateException e2 = new DeliberateException();
+        first.onError(e2);
+        assertThat(subscriber.awaitOnError(), is(e1));
+        assertThat(asList(e1.getSuppressed()), contains(e2));
     }
 
     private static String combine(int i, double d) {

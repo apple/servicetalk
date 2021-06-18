@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
@@ -29,10 +28,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -52,15 +49,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class WriteStreamSubscriberFutureListenersTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class WriteStreamSubscriberFutureListenersTest {
     private final BlockingQueue<ChannelFutureListener> listeners;
     private final EmbeddedChannel channel;
     private final WriteStreamSubscriber subscriber;
 
-    public WriteStreamSubscriberFutureListenersTest() {
+    WriteStreamSubscriberFutureListenersTest() {
         listeners = new LinkedBlockingQueue<>();
         channel = new EmbeddedChannel(new ChannelOutboundHandlerAdapter() {
             @Override
@@ -81,20 +75,20 @@ public class WriteStreamSubscriberFutureListenersTest {
         assertThat("No items requested.", subscription.requested(), greaterThan(0L));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         channel.close().sync().await();
     }
 
     @Test
-    public void singleWriteAndFlush() throws Exception {
+    void singleWriteAndFlush() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         channel.flush();
         verifyListenerInvokedWithSuccess(listener1);
     }
 
     @Test
-    public void multipleWritesThenFlush() throws Exception {
+    void multipleWritesThenFlush() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         ChannelFutureListener listener2 = doWrite();
         channel.flush();
@@ -104,7 +98,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void multipleWritesMultipleFlushes() throws Exception {
+    void multipleWritesMultipleFlushes() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         channel.flush();
         verifyListenerInvokedWithSuccess(listener1);
@@ -115,7 +109,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void singleWriteThenSourceComplete() throws Exception {
+    void singleWriteThenSourceComplete() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         subscriber.onComplete();
         verifyZeroInteractions(listener1);
@@ -125,7 +119,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void singleWriteThenSourceFail() throws Exception {
+    void singleWriteThenSourceFail() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         subscriber.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(listener1);
@@ -135,7 +129,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void multipleWriteThenSourceComplete() throws Exception {
+    void multipleWriteThenSourceComplete() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         ChannelFutureListener listener2 = doWrite();
         subscriber.onComplete();
@@ -148,7 +142,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void multipleWriteThenSourceFail() throws Exception {
+    void multipleWriteThenSourceFail() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         ChannelFutureListener listener2 = doWrite();
         subscriber.onError(DELIBERATE_EXCEPTION);
@@ -161,7 +155,7 @@ public class WriteStreamSubscriberFutureListenersTest {
     }
 
     @Test
-    public void synchronousCompleteWrite() throws Exception {
+    void synchronousCompleteWrite() throws Exception {
         Channel mockChannel = mock(Channel.class);
         EventLoop mockEventLoop = mock(EventLoop.class);
         when(mockEventLoop.inEventLoop()).thenReturn(true);

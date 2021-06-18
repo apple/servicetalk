@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -43,17 +44,28 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
+class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+    private final EmbeddedChannel channel = newChannel(false);
+    private final EmbeddedChannel channelSpecException = newChannel(true);
+
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
 
     @Override
-    protected EmbeddedChannel channel() {
+    EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channelSpecException() {
+        return channelSpecException;
     }
 
     @Override
@@ -62,8 +74,8 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLine() {
-        return assertRequestLine(GET, "/", HTTP_1_1);
+    HttpMetaData assertStartLine(EmbeddedChannel channel) {
+        return assertRequestLine(GET, "/", HTTP_1_1, channel);
     }
 
     @Override
@@ -72,99 +84,99 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLineForContent() {
-        return assertRequestLine(POST, "/some/path", HTTP_1_1);
+    HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
+        return assertRequestLine(POST, "/some/path", HTTP_1_1, channel);
     }
 
     @Test
-    public void illegalPrefaceCharacter() {
+    void illegalPrefaceCharacter() {
         assertDecoderExceptionWithCause(' ' + startLine() + "\r\n", "Invalid preface character");
     }
 
     @Test
-    public void noMethod() {
+    void noMethod() {
         assertDecoderException("/ HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void noRequestTarget() {
+    void noRequestTarget() {
         assertDecoderException("GET HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void noVersion() {
+    void noVersion() {
         assertDecoderException("GET / " + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidStartLineOrder() {
+    void invalidStartLineOrder() {
         assertDecoderException("GET HTTP/1.1 /" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void illegalEndSpCharacter() {
+    void illegalEndSpCharacter() {
         assertDecoderException("GET / HTTP/1.1 " + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidMethodName() {
+    void invalidMethodName() {
         assertDecoderExceptionWithCause("GeT / HTTP/1.1" + "\r\n",
                 "Invalid start-line: HTTP request method must contain only upper case letters");
     }
 
     @Test
-    public void invalidMethodNameNothingElse() {
+    void invalidMethodNameNothingElse() {
         assertDecoderExceptionWithCause("GeT ",
                 "Invalid start-line: HTTP request method must contain only upper case letters");
     }
 
     @Test
-    public void onlyMethodName() {
+    void onlyMethodName() {
         assertDecoderException("GET" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void invalidRequestTargetWithControlCharacter() {
+    void invalidRequestTargetWithControlCharacter() {
         assertDecoderExceptionWithCause("GET /\f/ HTTP/1.1" + "\r\n", "Invalid start-line: HTTP request-target");
     }
 
     @Test
-    public void invalidVersionPrefix() {
+    void invalidVersionPrefix() {
         assertDecoderException("GET / HttP/1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionSlash() {
+    void invalidVersionSlash() {
         assertDecoderException("GET / HTTP|1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionMajor() {
+    void invalidVersionMajor() {
         assertDecoderException("GET / HTTP/5.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionDelimiter() {
+    void invalidVersionDelimiter() {
         assertDecoderException("GET / HTTP/1,1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void invalidVersionMinorNotNumber() {
+    void invalidVersionMinorNotNumber() {
         assertDecoderExceptionWithCause("GET / HTTP/1.z" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void twoWsBetweenMethodAndRequestTarget() {
+    void twoWsBetweenMethodAndRequestTarget() {
         assertDecoderException("GET  / HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
-    public void twoWsBetweenRequestTargetAndVersion() {
+    void twoWsBetweenRequestTargetAndVersion() {
         assertDecoderException("GET /  HTTP/1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
-    public void validStartLineWithCustomMethod() {
+    void validStartLineWithCustomMethod() {
         writeMsg("CUSTOM / HTTP/1.1" + "\r\n" + "\r\n");
         assertRequestLine(HttpRequestMethod.of("CUSTOM", NONE), "/", HTTP_1_1);
         assertEmptyTrailers(channel);
@@ -172,7 +184,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineWithShortMethod() {
+    void validStartLineWithShortMethod() {
         writeMsg("A / HTTP/1.1" + "\r\n" + "\r\n");
         assertRequestLine(HttpRequestMethod.of("A", NONE), "/", HTTP_1_1);
         assertEmptyTrailers(channel);
@@ -180,7 +192,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineWithLongerPath() {
+    void validStartLineWithLongerPath() {
         writeMsg("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" + "\r\n");
         assertRequestLine(GET, "/some/path?foo=bar&baz=yyy", HTTP_1_1);
         assertEmptyTrailers(channel);
@@ -188,7 +200,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void validStartLineWithCustomHttpVersion() {
+    void validStartLineWithCustomHttpVersion() {
         writeMsg("GET / HTTP/1.9" + "\r\n" + "\r\n");
         assertRequestLine(GET, "/", HttpProtocolVersion.of(1, 9));
         assertEmptyTrailers(channel);
@@ -196,7 +208,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void chunkedWithTrailersSplitOnNetwork() {
+    void chunkedWithTrailersSplitOnNetwork() {
         int chunkSize = 128;
         List<String> beforeContent = new ArrayList<>();
         beforeContent.add("POST /so");
@@ -244,7 +256,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void noContentHeadersNoContent() {
+    void noContentHeadersNoContent() {
         writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -256,7 +268,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void unexpectedContentAfterNoContentHeaders() {
+    void unexpectedContentAfterNoContentHeaders() {
         writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -266,7 +278,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void unexpectedTrailersAfterNoContentHeaders() {
+    void unexpectedTrailersAfterNoContentHeaders() {
         writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -279,6 +291,11 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     private HttpRequestMetaData assertRequestLine(HttpRequestMethod expectedMethod, String expectedRequestTarget,
                                                   HttpProtocolVersion expectedVersion) {
+        return assertRequestLine(expectedMethod, expectedRequestTarget, expectedVersion, channel());
+    }
+
+    private static HttpRequestMetaData assertRequestLine(HttpRequestMethod expectedMethod, String expectedRequestTarget,
+                                                         HttpProtocolVersion expectedVersion, EmbeddedChannel channel) {
         HttpRequestMetaData request = channel.readInbound();
         assertThat(request.method(), equalTo(expectedMethod));
         assertThat(request.requestTarget(), equalTo(expectedRequestTarget));
@@ -287,7 +304,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleBeforeNonZeroContentLengthHeader() {
+    void smuggleBeforeNonZeroContentLengthHeader() {
         int contentLength = 128;
         assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -306,7 +323,8 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void smuggleBeforeTransferEncodingHeader() {
-        smuggleTransferEncoding(true);
+    void smuggleBeforeTransferEncodingHeader() {
+        smuggleTransferEncoding(true, false);
+        smuggleTransferEncoding(true, true);
     }
 }

@@ -20,11 +20,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,14 +36,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class StreamingHttpPayloadHolderDrainTest {
+class StreamingHttpPayloadHolderDrainTest {
     private static final HttpHeadersFactory H_FACTORY = DefaultHttpHeadersFactory.INSTANCE;
     private static final BufferAllocator ALLOCATOR = DEFAULT_ALLOCATOR;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Test
-    public void resubscribeDrainOriginalSourceNotReSubscribable() throws Exception {
+    void resubscribeDrainOriginalSourceNotReSubscribable() throws Exception {
         Processor<Buffer, Buffer> processor = Processors.newPublisherProcessor();
         processor.onNext(ALLOCATOR.fromAscii("first"));
         processor.onComplete();
@@ -54,11 +49,11 @@ public class StreamingHttpPayloadHolderDrainTest {
     }
 
     @Test
-    public void resubscribeDrainOriginalSourceReSubscribable() throws Exception {
+    void resubscribeDrainOriginalSourceReSubscribable() throws Exception {
         resubscribeDrainOriginalSource(from(ALLOCATOR.fromAscii("first")));
     }
 
-    public void resubscribeDrainOriginalSource(Publisher<?> payload) throws Exception {
+    void resubscribeDrainOriginalSource(Publisher<?> payload) throws Exception {
         AtomicInteger completeCount = new AtomicInteger();
         StreamingHttpPayloadHolder holder = new StreamingHttpPayloadHolder(H_FACTORY.newHeaders(), ALLOCATOR,
                 payload.afterFinally(completeCount::incrementAndGet), forUserCreated(), H_FACTORY, HTTP_1_1);

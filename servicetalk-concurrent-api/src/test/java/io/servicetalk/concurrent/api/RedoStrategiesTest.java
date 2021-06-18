@@ -33,13 +33,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RedoStrategiesTest {
+class RedoStrategiesTest {
 
     protected LinkedBlockingQueue<LegacyTestCompletable> timers;
     protected Executor timerExecutor;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         timers = new LinkedBlockingQueue<>();
         timerExecutor = mock(Executor.class);
         when(timerExecutor.timer(anyLong(), any(TimeUnit.class))).thenAnswer(invocation -> {

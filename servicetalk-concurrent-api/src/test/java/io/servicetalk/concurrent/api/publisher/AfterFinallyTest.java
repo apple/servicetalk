@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class AfterFinallyTest extends AbstractWhenFinallyTest {
+class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
     protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer) {
         return toSource(publisher.afterFinally(signalConsumer));
@@ -40,7 +40,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Override
     @Test
-    public void testCallbackThrowsErrorOnComplete() {
+    void testCallbackThrowsErrorOnComplete() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         try {
             doFinally(publisher, mock).subscribe(subscriber);
@@ -57,7 +57,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
     @Override
     @Test
-    public void testCallbackThrowsErrorOnError() {
+    void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         TerminalSignalConsumer mock = throwableMock(exception);
         try {

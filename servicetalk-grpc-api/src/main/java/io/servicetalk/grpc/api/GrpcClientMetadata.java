@@ -17,6 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
 
 /**
@@ -42,4 +43,13 @@ public interface GrpcClientMetadata extends GrpcMetadata {
      * <a href="https://www.grpc.io">gRPC</a> method.
      */
     ContentCodec requestEncoding();
+
+    /**
+     * Returns timeout duration after which the response is no longer wanted.
+     *
+     * @return {@link Duration} of associated timeout or null for no timeout
+     * @see <a href="https://grpc.io/blog/deadlines/">gRPC Deadlines</a>
+     */
+    @Nullable
+    Duration timeout();
 }

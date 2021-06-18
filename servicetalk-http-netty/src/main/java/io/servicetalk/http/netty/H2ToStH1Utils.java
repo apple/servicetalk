@@ -107,6 +107,13 @@ final class H2ToStH1Utils {
     }
 
     static Http2Headers h1HeadersToH2Headers(HttpHeaders h1Headers) {
+        if (h1Headers.isEmpty()) {
+            if (h1Headers instanceof NettyH2HeadersToHttpHeaders) {
+                return ((NettyH2HeadersToHttpHeaders) h1Headers).nettyHeaders();
+            }
+            return new DefaultHttp2Headers(false, 0);
+        }
+
         // H2 doesn't support connection headers, so remove each one, and the headers corresponding to the
         // connection value.
         // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
@@ -164,6 +171,10 @@ final class H2ToStH1Utils {
             // Assume header field names are already lowercase if they reside in the Http2Headers. We may want to be
             // more strict in the future, but that would require iteration.
             return ((NettyH2HeadersToHttpHeaders) h1Headers).nettyHeaders();
+        }
+
+        if (h1Headers.isEmpty()) {
+            return new DefaultHttp2Headers(false, 0);
         }
 
         DefaultHttp2Headers http2Headers = new DefaultHttp2Headers(false);

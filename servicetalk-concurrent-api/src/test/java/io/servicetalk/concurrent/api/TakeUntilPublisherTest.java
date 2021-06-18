@@ -27,14 +27,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TakeUntilPublisherTest {
+class TakeUntilPublisherTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testUntilComplete() {
+    void testUntilComplete() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
@@ -48,7 +48,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testUntilError() {
+    void testUntilError() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
@@ -62,7 +62,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testEmitsError() {
+    void testEmitsError() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
@@ -74,7 +74,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testEmitsComplete() {
+    void testEmitsComplete() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
@@ -85,7 +85,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testSubCancelled() {
+    void testSubCancelled() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);

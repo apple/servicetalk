@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.EventLoop;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -33,11 +33,11 @@ import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventloopTest {
+class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventloopTest {
 
     private WriteStreamSubscriber subscriber;
 
@@ -50,17 +50,17 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     }
 
     @Test
-    public void writeOnDifferntEventLoopThenWriteOnSameEventLoop() throws Exception {
+    void writeOnDifferntEventLoopThenWriteOnSameEventLoop() throws Exception {
         testWriteFromDifferentEventLoops(getDifferentEventloopThanChannel(), channel.eventLoop());
     }
 
     @Test
-    public void writeOnSameEventLoopThenWriteOnDifferntEventLoop() throws Exception {
+    void writeOnSameEventLoopThenWriteOnDifferntEventLoop() throws Exception {
         testWriteFromDifferentEventLoops(channel.eventLoop(), getDifferentEventloopThanChannel());
     }
 
     @Test
-    public void testWriteFromEventloop() throws Exception {
+    void testWriteFromEventloop() throws Exception {
         channel.eventLoop().submit(() -> subscriber.onNext(1))
                 .addListener(future -> {
                     subscriber.onNext(2);
@@ -70,7 +70,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     }
 
     @Test
-    public void testWriteFromOutsideEventloop() throws Exception {
+    void testWriteFromOutsideEventloop() throws Exception {
         subscriber.onNext(1);
         subscriber.onNext(2);
         subscriber.onComplete();
@@ -79,7 +79,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     }
 
     @Test
-    public void testTerminalOrder() throws Exception {
+    void testTerminalOrder() throws Exception {
         Processor subject = newCompletableProcessor();
         CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
             @Override

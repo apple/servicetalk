@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.UnknownHostException;
 import java.util.function.UnaryOperator;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsNull.nullValue;
 
-public class DefaultAutoRetryStrategyProviderTest {
+class DefaultAutoRetryStrategyProviderTest {
     private static final RetryableConnectException RETRYABLE_EXCEPTION =
             new RetryableConnectException("deliberate exception");
     private static final NoAvailableHostException NO_AVAILABLE_HOST =
@@ -49,14 +49,14 @@ public class DefaultAutoRetryStrategyProviderTest {
     private final TestCompletable sdStatus;
     private final TestCompletableSubscriber retrySubscriber;
 
-    public DefaultAutoRetryStrategyProviderTest() {
+    DefaultAutoRetryStrategyProviderTest() {
         lbEvents = new TestPublisher<>();
         sdStatus = new TestCompletable();
         retrySubscriber = new TestCompletableSubscriber();
     }
 
     @Test
-    public void disableWaitForLb() {
+    void disableWaitForLb() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableWaitForLoadBalancer);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -64,7 +64,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void disableRetryAllRetryableExWithRetryable() {
+    void disableRetryAllRetryableExWithRetryable() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
@@ -72,7 +72,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void disableRetryAllRetryableExWithNoAvailableHost() {
+    void disableRetryAllRetryableExWithNoAvailableHost() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -82,7 +82,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
+    void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -92,7 +92,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void disableAll() {
+    void disableAll() {
         AutoRetryStrategy strategy = newStrategy(builder ->
                 builder.disableWaitForLoadBalancer()
                         .disableRetryAllRetryableExceptions());
@@ -102,7 +102,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForNonRetryableEx() {
+    void defaultForNonRetryableEx() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, DELIBERATE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
@@ -110,7 +110,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForRetryableEx() {
+    void defaultForRetryableEx() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
@@ -118,7 +118,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForNoAvailableHost() {
+    void defaultForNoAvailableHost() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -128,7 +128,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForNoAvailableHostOnUnknownHostException() {
+    void defaultForNoAvailableHostOnUnknownHostException() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -138,7 +138,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForNoAvailableHostOnServiceDiscovererError() {
+    void defaultForNoAvailableHostOnServiceDiscovererError() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -148,7 +148,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void ignoreSdErrorsForNoAvailableHost() {
+    void ignoreSdErrorsForNoAvailableHost() {
         AutoRetryStrategy strategy = newStrategy(Builder::ignoreServiceDiscovererErrors);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -159,7 +159,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void defaultForNoAvailableHostWhenServiceDiscovererTerminated() {
+    void defaultForNoAvailableHostWhenServiceDiscovererTerminated() {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -169,7 +169,7 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void maxRetriesAreHonored() {
+    void maxRetriesAreHonored() {
         AutoRetryStrategy strategy = newStrategy(builder -> builder.maxRetries(1));
         Completable retry = strategy.apply(2, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);

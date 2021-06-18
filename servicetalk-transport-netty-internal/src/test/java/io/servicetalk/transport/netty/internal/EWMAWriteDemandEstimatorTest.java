@@ -15,27 +15,28 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class EWMAWriteDemandEstimatorTest {
+class EWMAWriteDemandEstimatorTest {
     private static final String DUMMY_OBJECT = "dummy";
+
     @Test
-    public void testNoRequestIfLowCapacity() {
+    void testNoRequestIfLowCapacity() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator();
         assertThat("Unexpected request-n.", supplier.getRequestNForCapacity(2), is(0L));
     }
 
     @Test
-    public void testRequestNNoRecord() {
+    void testRequestNNoRecord() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator();
         assertThat("Unexpected requestN.", supplier.estimateRequestN(8), is(1L));
     }
 
     @Test
-    public void testRequestNWithRecord() {
+    void testRequestNWithRecord() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator();
         supplier.onItemWrite(DUMMY_OBJECT, 1, 2);
         supplier.onItemWrite(DUMMY_OBJECT, 3, 5);
@@ -43,7 +44,7 @@ public class EWMAWriteDemandEstimatorTest {
     }
 
     @Test
-    public void testRepeatRequestNSameMaxSize() {
+    void testRepeatRequestNSameMaxSize() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator(5);
         assertThat("Unexpected requestN.", supplier.estimateRequestN(5), is(1L));
         supplier.onItemWrite(DUMMY_OBJECT, 100, 99);
@@ -53,7 +54,7 @@ public class EWMAWriteDemandEstimatorTest {
     }
 
     @Test
-    public void testMultipleOnItemWrittenWithIncreaseInCapacity() {
+    void testMultipleOnItemWrittenWithIncreaseInCapacity() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator(3);
         assertThat("Unexpected requestN.", supplier.estimateRequestN(10), is(3L));
         supplier.onItemWrite(DUMMY_OBJECT, 100, 99);
@@ -62,7 +63,7 @@ public class EWMAWriteDemandEstimatorTest {
     }
 
     @Test
-    public void testZeroSizeWrite() {
+    void testZeroSizeWrite() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator(1);
         assertThat("Unexpected requestN.", supplier.estimateRequestN(10), is(10L));
         for (int i = 0; i < 1000; ++i) {
@@ -72,7 +73,7 @@ public class EWMAWriteDemandEstimatorTest {
     }
 
     @Test
-    public void weightMovesToSteadyState() {
+    void weightMovesToSteadyState() {
         EWMAWriteDemandEstimator supplier = new EWMAWriteDemandEstimator(10);
         assertThat("Unexpected requestN.", supplier.estimateRequestN(10), is(1L));
         supplier.onItemWrite(DUMMY_OBJECT, 100, 98);

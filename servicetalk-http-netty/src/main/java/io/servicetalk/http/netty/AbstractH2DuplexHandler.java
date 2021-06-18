@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -32,21 +33,28 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
+import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
+import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.Http2Exception.newStreamResetException;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractH2DuplexHandler.class);
+
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
     private final StreamObserver observer;
+    private boolean endStream;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
                             StreamObserver observer) {
@@ -65,18 +73,51 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         }
     }
 
+    final void writeMetaData(ChannelHandlerContext ctx, HttpMetaData metaData, Http2Headers h2Headers,
+                             ChannelPromise promise) {
+        endStream = !mayHaveTrailers(metaData) && isPayloadEmpty(metaData);
+        if (endStream) {
+            closeHandler.protocolPayloadEndOutbound(ctx, promise);
+        }
+        ctx.write(new DefaultHttp2HeadersFrame(h2Headers, endStream), promise);
+    }
+
     static void writeBuffer(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        ctx.write(new DefaultHttp2DataFrame(encodeAndRetain((Buffer) msg), false), promise);
+        Buffer buffer = (Buffer) msg;
+        if (buffer.readableBytes() > 0) {
+            ctx.write(new DefaultHttp2DataFrame(encodeAndRetain(buffer), false), promise);
+        } else {
+            promise.setSuccess();
+        }
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        closeHandler.protocolPayloadEndOutbound(ctx, promise);
-        Http2Headers h2Headers = h1HeadersToH2Headers((HttpHeaders) msg);
-        if (h2Headers.isEmpty()) {
-            ctx.write(new DefaultHttp2DataFrame(EMPTY_BUFFER, true), promise);
-        } else {
-            ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
+        HttpHeaders trailers = (HttpHeaders) msg;
+        if (endStream) {
+            promise.setSuccess();
+            if (!trailers.isEmpty()) {
+                LOGGER.warn("{} Received unexpected non-empty trailers while endStream was already sent: {}",
+                        ctx.channel(), trailers);
+            }
+            return;
         }
+
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+        if (trailers.isEmpty()) {
+            writeEmptyEndStream(ctx, promise);
+        } else {
+            Http2Headers h2Headers = h1HeadersToH2Headers(trailers);
+            if (h2Headers.isEmpty()) {
+                writeEmptyEndStream(ctx, promise);
+            } else {
+                ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
+            }
+        }
+        endStream = true;
+    }
+
+    private static void writeEmptyEndStream(ChannelHandlerContext ctx, ChannelPromise promise) {
+        ctx.write(new DefaultHttp2DataFrame(true), promise);
     }
 
     final void readDataFrame(ChannelHandlerContext ctx, Object msg) {
@@ -116,7 +157,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
+    public final void channelInactive(final ChannelHandlerContext ctx) {
         final Throwable t = channelError(ctx.channel());
         if (t == null) {
             observer.streamClosed();

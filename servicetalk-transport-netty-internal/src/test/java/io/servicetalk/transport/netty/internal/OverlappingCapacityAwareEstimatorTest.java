@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-public class OverlappingCapacityAwareEstimatorTest {
+class OverlappingCapacityAwareEstimatorTest {
 
     @Test
-    public void testRequestNNoItemWrite() {
+    void testRequestNNoItemWrite() {
         OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 100);
         requestNAndVerify(supplier, 10, 100L);
         verify(supplier).getRequestNForCapacity(10);
@@ -43,7 +43,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyLessThanDemandNoCapacityChange() {
+    void testSupplyLessThanDemandNoCapacityChange() {
         OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 100);
         requestNAndVerify(supplier, 10, 100L);
         verify(supplier).getRequestNForCapacity(10);
@@ -54,7 +54,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyLessThanDemandCapacityIncrease() {
+    void testSupplyLessThanDemandCapacityIncrease() {
         AtomicLong toRequest = new AtomicLong(2);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 2L);
@@ -68,7 +68,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyLessThanDemandCapacityDecrease() {
+    void testSupplyLessThanDemandCapacityDecrease() {
         AtomicLong toRequest = new AtomicLong(2);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 2L);
@@ -81,7 +81,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyEqualsThanDemandCapacityIncrease() {
+    void testSupplyEqualsThanDemandCapacityIncrease() {
         AtomicLong toRequest = new AtomicLong(1);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 1L);
@@ -95,7 +95,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyEqualsThanDemandCapacityDecrease() {
+    void testSupplyEqualsThanDemandCapacityDecrease() {
         AtomicLong toRequest = new AtomicLong(1);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 1L);
@@ -109,7 +109,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testSupplyEqualsDemandNoCapacityChange() {
+    void testSupplyEqualsDemandNoCapacityChange() {
         OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 1);
         requestNAndVerify(supplier, 10, 1L);
         verify(supplier).getRequestNForCapacity(10);
@@ -121,7 +121,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testNegativeSize() {
+    void testNegativeSize() {
         OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 2);
         requestNAndVerify(supplier, 10, 2L);
         verify(supplier).getRequestNForCapacity(10);
@@ -131,7 +131,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testPredictionZeroAndNoOutstanding() {
+    void testPredictionZeroAndNoOutstanding() {
         AtomicLong toRequest = new AtomicLong(0);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 1L);
@@ -140,7 +140,7 @@ public class OverlappingCapacityAwareEstimatorTest {
     }
 
     @Test
-    public void testPredictionZeroAndSomeOutstanding() {
+    void testPredictionZeroAndSomeOutstanding() {
         AtomicLong toRequest = new AtomicLong(5);
         OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
         requestNAndVerify(supplier, 10, 5L);

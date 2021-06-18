@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -27,13 +26,11 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.annotation.Nullable;
 
@@ -44,25 +41,27 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.util.Objects.requireNonNull;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HttpAuthConnectionFactoryClientTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class HttpAuthConnectionFactoryClientTest {
 
-    @ClassRule
-    public static final ExecutionContextRule CTX = ExecutionContextRule.immediate();
+    @RegisterExtension
+    static final ExecutionContextExtension CTX =
+        immediate();
 
     @Nullable
     private StreamingHttpClient client;
     @Nullable
     private ServerContext serverContext;
 
-    @After
-    public void teardown() throws Exception {
+    @AfterEach
+    void teardown() throws Exception {
         if (client != null) {
             client.closeAsync().toFuture().get();
         }
@@ -72,29 +71,30 @@ public class HttpAuthConnectionFactoryClientTest {
     }
 
     @Test
-    public void simulateAuth() throws Exception {
-        serverContext = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
-                .listenStreamingAndAwait((ctx, request, factory) -> succeeded(newTestResponse(factory)));
+    void simulateAuth() throws Exception {
+        serverContext = forAddress(localAddress(0))
+            .ioExecutor(CTX.ioExecutor())
+            .executionStrategy(noOffloadsStrategy())
+            .listenStreamingAndAwait((ctx, request, factory) -> succeeded(newTestResponse(factory)));
 
-        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
-                .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
-                .buildStreaming();
+        client = forSingleAddress(serverHostAndPort(serverContext))
+            .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
+            .ioExecutor(CTX.ioExecutor())
+            .executionStrategy(noOffloadsStrategy())
+            .buildStreaming();
 
         StreamingHttpResponse response = client.request(newTestRequest(client, "/foo")).toFuture().get();
         assertEquals(OK, response.status());
     }
 
-    private static final class TestHttpAuthConnectionFactory<ResolvedAddress> implements
-                              ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+    private static final class TestHttpAuthConnectionFactory<ResolvedAddress>
+            implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+
         private final ConnectionFactory<ResolvedAddress,
                 ? extends FilterableStreamingHttpConnection> delegate;
 
         TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress,
-                ? extends FilterableStreamingHttpConnection> delegate) {
+            ? extends FilterableStreamingHttpConnection> delegate) {
             this.delegate = requireNonNull(delegate);
         }
 
@@ -102,19 +102,24 @@ public class HttpAuthConnectionFactoryClientTest {
         public Single<FilterableStreamingHttpConnection> newConnection(
                 final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
             return delegate.newConnection(resolvedAddress, observer).flatMap(cnx ->
-                    cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))
+                    cnx.request(defaultStrategy(),
+                            newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();
-                                return failed(new IllegalStateException("failed auth"));
+                                return failed(new IllegalStateException(
+                                        "failed auth"));
                             })
                             .flatMap(response -> {
                                 if (OK.equals(response.status())) {
                                     // In this test we have not enabled pipelining so we drain this response before
                                     // indicating the connection is usable.
-                                    return response.messageBody().ignoreElements().concat(succeeded(cnx));
+                                    return response.messageBody()
+                                            .ignoreElements()
+                                            .concat(succeeded(cnx));
                                 }
                                 cnx.closeAsync().subscribe();
-                                return failed(new IllegalStateException("failed auth"));
+                                return failed(new IllegalStateException(
+                                        "failed auth"));
                             })
             );
         }

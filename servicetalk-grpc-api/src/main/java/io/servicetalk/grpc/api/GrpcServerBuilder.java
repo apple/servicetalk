@@ -38,6 +38,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -51,6 +52,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
+
     private boolean appendedCatchAllFilter;
 
     /**
@@ -63,6 +65,15 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
@@ -361,7 +372,7 @@ public abstract class GrpcServerBuilder {
         }
     }
 
-    private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
+    static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
         CatchAllHttpServiceFilter(final StreamingHttpService service) {
             super(service);
         }
@@ -382,7 +393,7 @@ public abstract class GrpcServerBuilder {
         private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return newErrorResponse(responseFactory, null, cause, ctx.executionContext().bufferAllocator());
+            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
         }
     }
 }

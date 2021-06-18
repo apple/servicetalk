@@ -44,9 +44,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -64,18 +62,18 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
     private final int maxDelayedErrors;
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           boolean delayError, Executor executor) {
-        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
+                           boolean delayError) {
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY);
     }
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           boolean delayError, int maxConcurrency, Executor executor) {
-        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+                           boolean delayError, int maxConcurrency) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency);
     }
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           int maxDelayedErrors, int maxConcurrency, Executor executor) {
-        super(original, executor);
+                           int maxDelayedErrors, int maxConcurrency) {
+        super(original);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected > 0)");
         }
@@ -237,15 +235,28 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
+        private void onErrorHoldingLock(Throwable cause) {
+            try {
+                doCancel(true);
+            } finally {
+                sendToTarget(error(cause));
+            }
+        }
+
         private void tryEmitItem(final Object item) {
             if (tryAcquireLock(emittingUpdater, this)) { // fast path. no concurrency, avoid the queue and emit.
                 try {
                     sendToTarget(item);
+                    // Call doDrainPostProcessing inside the lock so if an exception is thrown we can propagate an
+                    // error terminal downstream and ignore future signals.
                     doDrainPostProcessing(1);
-                } finally {
-                    if (!releaseLock(emittingUpdater, this)) {
-                        drainPending();
-                    }
+                } catch (Throwable cause) {
+                    onErrorHoldingLock(cause);
+                    return; // Poison emittingUpdater. We prematurely terminated, other signals should be ignored.
+                }
+                // Release lock after we handle errors, because error handling needs to poison the lock.
+                if (!releaseLock(emittingUpdater, this)) {
+                    drainPending();
                 }
             } else { // slow path. there is concurrency, so just go through the queue.
                 enqueueAndDrain(item);
@@ -261,30 +272,25 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private void drainPending() {
             long drainCount = 0;
-            Throwable delayedCause = null;
             boolean tryAcquire = true;
             while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
                 try {
                     Object t;
                     while ((t = pending.poll()) != null) {
                         ++drainCount;
-                        try {
-                            sendToTarget(t);
-                        } catch (Throwable cause) {
-                            delayedCause = catchUnexpected(delayedCause, cause);
-                        }
+                        sendToTarget(t);
                     }
-                } finally {
-                    tryAcquire = !releaseLock(emittingUpdater, this);
+                    // Call doDrainPostProcessing inside the lock so if an exception is thrown we can propagate an
+                    // error terminal downstream and ignore future signals.
+                    if (drainCount != 0) {
+                        doDrainPostProcessing(drainCount);
+                    }
+                } catch (Throwable cause) {
+                    onErrorHoldingLock(cause);
+                    return; // Poison emittingUpdater. We prematurely terminated, other signals should be ignored.
                 }
-            }
-
-            if (delayedCause != null) {
-                throwException(delayedCause);
-            }
-
-            if (drainCount != 0) {
-                doDrainPostProcessing(drainCount);
+                // Release lock after we handle errors, because error handling needs to poison the lock.
+                tryAcquire = !releaseLock(emittingUpdater, this);
             }
         }
 
@@ -300,7 +306,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private void enqueueFailed(Object item) {
+        private static void enqueueFailed(Object item) {
             LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
             // Note that we throw even if the item represents a terminal signal (even though we don't expect another
             // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
@@ -405,9 +411,22 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
 
             private boolean onSingleTerminated() {
-                assert singleCancellable != null;
+                if (singleCancellable == null) {
+                    logDuplicateTerminal();
+                    return false;
+                }
                 cancellableSet.remove(singleCancellable);
+                singleCancellable = null;
                 return decrementActiveMappedSources();
+            }
+
+            private void logDuplicateTerminal() {
+                LOGGER.warn("onSubscribe not called before terminal or duplicate terminal on Subscriber {}", this,
+                        new IllegalStateException(
+                                "onSubscribe not called before terminal or duplicate terminal on Subscriber " + this +
+                                " forbidden see: " +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }

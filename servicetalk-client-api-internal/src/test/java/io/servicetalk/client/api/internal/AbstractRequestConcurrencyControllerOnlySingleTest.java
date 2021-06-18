@@ -18,11 +18,8 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
@@ -34,15 +31,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 
     protected abstract RequestConcurrencyController newController(Publisher<Integer> maxSetting, Completable onClose);
 
     @Test
-    public void singleRequestAtTime() {
+    void singleRequestAtTime() {
         RequestConcurrencyController controller = newController(from(1), never());
         for (int i = 0; i < 100; ++i) {
             assertThat(controller.tryRequest(), is(Accepted));
@@ -52,7 +47,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void singleRequestEventIfLimitIsHigher() {
+    void singleRequestEventIfLimitIsHigher() {
         RequestConcurrencyController controller = newController(limitPublisher, never());
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(i);
@@ -63,7 +58,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void singleRequestEventIfLimitIsLower() {
+    void singleRequestEventIfLimitIsLower() {
         RequestConcurrencyController controller = newController(limitPublisher, never());
         limitPublisher.onNext(0);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
@@ -83,7 +78,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     }
 
     @Test
-    public void noMoreRequestsAfterClose() {
+    void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(from(1), completed());
         assertThat(controller.tryRequest(), is(RejectedTemporary));
     }

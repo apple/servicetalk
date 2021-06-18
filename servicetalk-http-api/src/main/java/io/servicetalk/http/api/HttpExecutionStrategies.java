@@ -236,8 +236,11 @@ public final class HttpExecutionStrategies {
          * Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
          * single thread per subscribe of a source.
          *
+         * @deprecated Use a single threaded executor with {@link #executor(Executor)} to ensure affinity.
+         *
          * @return {@code this}.
          */
+        @Deprecated
         public Builder offloadWithThreadAffinity() {
             threadAffinity = true;
             return this;

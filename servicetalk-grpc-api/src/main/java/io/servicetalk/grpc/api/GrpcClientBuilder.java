@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,6 +52,7 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
  */
 public abstract class GrpcClientBuilder<U, R>
         implements SingleAddressGrpcClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
     private boolean appendedCatchAllFilter;
 
     @Override
@@ -75,6 +77,9 @@ public abstract class GrpcClientBuilder<U, R>
 
     @Override
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(

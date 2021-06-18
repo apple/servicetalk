@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,16 @@ import io.grpc.examples.helloworld.HelloRequest;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Implementation of the
+ * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
+ * using async ServiceTalk APIS.
+ * <p/>
+ * Start the {@link HelloWorldServer} first.
+ */
 public final class HelloWorldClient {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String... args) throws Exception {
         try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
@@ -35,6 +42,7 @@ public final class HelloWorldClient {
                     .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);
 
+            // block until response is complete and afterFinally() is called
             responseProcessedLatch.await();
         }
     }

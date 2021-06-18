@@ -18,16 +18,13 @@ package io.servicetalk.dns.discovery.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -51,7 +48,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -60,27 +57,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class DnsServiceDiscovererObserverTest {
+class DnsServiceDiscovererObserverTest {
     private static final String HOST_NAME = "servicetalk.io";
     private static final String SERVICE_NAME = "servicetalk";
     private static final String INVALID = "invalid.";
     private static final int DEFAULT_TTL = 1;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final TestRecordStore recordStore = new TestRecordStore();
     private final TestDnsServer dnsServer = new TestDnsServer(recordStore);
     private final CompositeCloseable toClose = newCompositeCloseable();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, nextIp(), nextIp());
         recordStore.addSrv(SERVICE_NAME, HOST_NAME, 443, DEFAULT_TTL);
         dnsServer.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         try {
             toClose.closeGracefully();
@@ -101,12 +95,12 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryTriggersNewDiscoveryObserver() throws Exception {
+    void aQueryTriggersNewDiscoveryObserver() throws Exception {
         testNewDiscoveryObserver(DnsClient::dnsQuery, HOST_NAME);
     }
 
     @Test
-    public void srvQueryTriggersNewDiscoveryObserver() throws Exception {
+    void srvQueryTriggersNewDiscoveryObserver() throws Exception {
         testNewDiscoveryObserver(DnsClient::dnsSrvQuery, SERVICE_NAME);
     }
 
@@ -127,7 +121,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryTriggersNewResolutionObserver() throws Exception {
+    void aQueryTriggersNewResolutionObserver() throws Exception {
         BlockingQueue<String> newResolution = new LinkedBlockingDeque<>();
         DnsClient client = dnsClient(__ -> name -> {
             newResolution.add(name);
@@ -143,7 +137,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void srvQueryTriggersNewResolutionObserver() throws Exception {
+    void srvQueryTriggersNewResolutionObserver() throws Exception {
         BlockingQueue<String> newResolution = new LinkedBlockingDeque<>();
         DnsClient client = dnsClient(__ -> name -> {
             newResolution.add(name);
@@ -162,12 +156,12 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryFailedResolution() {
+    void aQueryFailedResolution() {
         testFailedResolution(DnsClient::dnsQuery);
     }
 
     @Test
-    public void srvQueryFailedResolution() {
+    void srvQueryFailedResolution() {
         testFailedResolution(DnsClient::dnsSrvQuery);
     }
 
@@ -192,7 +186,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryResolutionResultNoUpdates() throws Exception {
+    void aQueryResolutionResultNoUpdates() throws Exception {
         aQueryResolutionResult(results -> {
             assertResolutionResult(results.take(), 2, 2, 0);
             assertResolutionResult(results.take(), 2, 0, 0);
@@ -200,7 +194,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryResolutionResultNewIPsAvailable() throws Exception {
+    void aQueryResolutionResultNewIPsAvailable() throws Exception {
         aQueryResolutionResult(results -> {
             assertResolutionResult(results.take(), 2, 2, 0);
 
@@ -210,7 +204,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryResolutionResultOneBecameUnavailable() throws Exception {
+    void aQueryResolutionResultOneBecameUnavailable() throws Exception {
         final String tmpIP = nextIp();
         recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, tmpIP);
         aQueryResolutionResult(results -> {
@@ -222,7 +216,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryResolutionResultNewAvailableOneUnavailable() throws Exception {
+    void aQueryResolutionResultNewAvailableOneUnavailable() throws Exception {
         final String tmpIP = nextIp();
         recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, tmpIP);
         aQueryResolutionResult(results -> {
@@ -235,7 +229,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryResolutionResultAllNewIPs() throws Exception {
+    void aQueryResolutionResultAllNewIPs() throws Exception {
         aQueryResolutionResult(results -> {
             assertResolutionResult(results.take(), 2, 2, 0);
 
@@ -273,7 +267,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void srvQueryResolutionResult() throws Exception {
+    void srvQueryResolutionResult() throws Exception {
         Map<String, ResolutionResult> results = new ConcurrentHashMap<>();
         DnsClient client = dnsClient(__ -> name -> new NoopDnsResolutionObserver() {
             @Override
@@ -293,7 +287,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void aQueryOnNewDiscoveryThrows() throws Exception {
+    void aQueryOnNewDiscoveryThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         when(observer.onNewDiscovery(anyString())).thenThrow(DELIBERATE_EXCEPTION);
 
@@ -306,7 +300,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void srvQueryOnNewDiscoveryThrows() throws Exception {
+    void srvQueryOnNewDiscoveryThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         when(observer.onNewDiscovery(anyString())).thenThrow(DELIBERATE_EXCEPTION);
 
@@ -319,7 +313,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void onNewResolutionThrows() throws Exception {
+    void onNewResolutionThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
         when(observer.onNewDiscovery(anyString())).thenReturn(discoveryObserver);
@@ -335,7 +329,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void resolutionFailedThrows() throws Exception {
+    void resolutionFailedThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
         DnsResolutionObserver resolutionObserver = mock(DnsResolutionObserver.class);
@@ -355,7 +349,7 @@ public class DnsServiceDiscovererObserverTest {
     }
 
     @Test
-    public void resolutionCompletedThrows() throws Exception {
+    void resolutionCompletedThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
         DnsResolutionObserver resolutionObserver = mock(DnsResolutionObserver.class);

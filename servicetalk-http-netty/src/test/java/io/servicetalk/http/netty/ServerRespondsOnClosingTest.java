@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.SingleSource.Processor;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequest;
@@ -31,10 +30,8 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -51,6 +48,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,25 +58,24 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class ServerRespondsOnClosingTest {
+class ServerRespondsOnClosingTest {
 
     private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
             DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
     private static final String RESPONSE_PAYLOAD_BODY = "Hello World";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private final EmbeddedDuplexChannel channel;
     private final NettyHttpServerConnection serverConnection;
     private final Queue<Exchange> requests = new ArrayDeque<>();
 
-    public ServerRespondsOnClosingTest() throws Exception {
+    ServerRespondsOnClosingTest() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), immediate(), noOffloadsStrategy());
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
-        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger");
+        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
         HttpService service = (ctx, request, responseFactory) -> {
@@ -92,8 +89,8 @@ public class ServerRespondsOnClosingTest {
                 connectionObserver).toFuture().get();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
@@ -103,7 +100,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void protocolClosingInboundPipelinedFirstInitiatesClosure() throws Exception {
+    void protocolClosingInboundPipelinedFirstInitiatesClosure() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", true);
         // The following request after "Connection: close" header violates the spec, but we want to verify that server
@@ -115,7 +112,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void protocolClosingInboundPipelinedSecondInitiatesClosure() throws Exception {
+    void protocolClosingInboundPipelinedSecondInitiatesClosure() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second", true);
@@ -126,7 +123,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
+    void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first?serverShouldClose=true", false);
         sendRequest("/second", false);
@@ -138,7 +135,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
+    void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second?serverShouldClose=true", false);
@@ -150,7 +147,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void gracefulClosurePipelined() throws Exception {
+    void gracefulClosurePipelined() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second", false);
@@ -165,7 +162,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void gracefulClosurePipelinedDiscardPartialRequest() throws Exception {
+    void gracefulClosurePipelinedDiscardPartialRequest() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         // Send only initial line with CRLF that should hang in ByteToMessage cumulation buffer and will be discarded:
@@ -179,7 +176,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
+    void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
         serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
         sendRequest("/second", false);
@@ -193,7 +190,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void protocolClosingInboundBeforeProcessingStarts() throws Exception {
+    void protocolClosingInboundBeforeProcessingStarts() throws Exception {
         sendRequest("/first", true);
         // Start request processing (read and write) after request was received:
         serverConnection.process(true);
@@ -203,7 +200,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
-    public void gracefulClosureBeforeProcessingStarts() throws Exception {
+    void gracefulClosureBeforeProcessingStarts() throws Exception {
         sendRequest("/first", false);
         serverConnection.closeAsyncGracefully().subscribe();
 

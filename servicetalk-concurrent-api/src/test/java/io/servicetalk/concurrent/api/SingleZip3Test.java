@@ -16,25 +16,31 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.zip;
+import static io.servicetalk.concurrent.api.Single.zipDelayError;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
-public class SingleZip3Test {
+class SingleZip3Test {
     private TestSingle<Integer> first;
     private TestSingle<Double> second;
     private TestSingle<Short> third;
     private TestSingleSubscriber<String> subscriber;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         first = new TestSingle<>();
         second = new TestSingle<>();
         third = new TestSingle<>();
@@ -42,12 +48,12 @@ public class SingleZip3Test {
     }
 
     @Test
-    public void completeInOrder() {
+    void completeInOrder() {
         allComplete(true);
     }
 
     @Test
-    public void completeOutOfOrder() {
+    void completeOutOfOrder() {
         allComplete(false);
     }
 
@@ -70,17 +76,17 @@ public class SingleZip3Test {
     }
 
     @Test
-    public void justErrorFirst() {
+    void justErrorFirst() {
         justError(1);
     }
 
     @Test
-    public void justErrorSecond() {
+    void justErrorSecond() {
         justError(2);
     }
 
     @Test
-    public void justErrorThird() {
+    void justErrorThird() {
         justError(3);
     }
 
@@ -98,12 +104,12 @@ public class SingleZip3Test {
     }
 
     @Test
-    public void errorAfterCompleteInOrder() {
+    void errorAfterCompleteInOrder() {
         errorAfterComplete(true);
     }
 
     @Test
-    public void errorAfterCompleteOutOfOrder() {
+    void errorAfterCompleteOutOfOrder() {
         errorAfterComplete(false);
     }
 
@@ -123,7 +129,7 @@ public class SingleZip3Test {
     }
 
     @Test
-    public void justCancel() throws InterruptedException {
+    void justCancel() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -147,7 +153,7 @@ public class SingleZip3Test {
     }
 
     @Test
-    public void cancelAfterCompleteOutOfOrder() throws InterruptedException {
+    void cancelAfterCompleteOutOfOrder() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -164,6 +170,33 @@ public class SingleZip3Test {
         c.cancel();
         cancellable1.awaitCancelled();
         cancellable3.awaitCancelled();
+    }
+
+    @Test
+    void delayErrorOneFail() {
+        toSource(zipDelayError(first, second, third, SingleZip3Test::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        first.onSuccess(1);
+        third.onSuccess((short) 22);
+        assertThat(subscriber.awaitOnError(), is(e1));
+    }
+
+    @Test
+    void delayErrorAllFail() {
+        toSource(zipDelayError(first, second, third, SingleZip3Test::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        DeliberateException e2 = new DeliberateException();
+        first.onError(e2);
+        DeliberateException e3 = new DeliberateException();
+        third.onError(e3);
+        assertThat(subscriber.awaitOnError(), is(e1));
+        assertThat(asList(e1.getSuppressed()), contains(e2, e3));
     }
 
     private static String combine(int i, double d, short s) {

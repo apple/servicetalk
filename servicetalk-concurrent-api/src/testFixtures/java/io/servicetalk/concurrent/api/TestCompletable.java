@@ -151,7 +151,7 @@ public final class TestCompletable extends Completable implements CompletableSou
     }
 
     /**
-     * Allows for creating {@link TestCompletable}s with non-default settings. For defaults, see <b>Defaults</b> section
+     * Allows creation of {@link TestCompletable}s with non-default settings. For defaults, see <b>Defaults</b> section
      * of class javadoc.
      */
     public static class Builder {

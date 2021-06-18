@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RepeatWhenTest {
+class RepeatWhenTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
@@ -58,14 +58,14 @@ public class RepeatWhenTest {
     private Executor executor;
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
         }
     }
 
     @Test
-    public void publishOnWithRepeat() throws Exception {
+    void publishOnWithRepeat() throws Exception {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
@@ -78,7 +78,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testError() {
+    void testError() {
         init();
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
@@ -89,7 +89,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testRepeatCount() {
+    void testRepeatCount() {
         init();
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
@@ -101,7 +101,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testRequestAcrossRepeat() {
+    void testRequestAcrossRepeat() {
         init();
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -116,7 +116,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testTwoCompletes() {
+    void testTwoCompletes() {
         init();
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -136,7 +136,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testMaxRepeats() {
+    void testMaxRepeats() {
         init();
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -152,7 +152,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testCancelPostCompleteButBeforeRetryStart() {
+    void testCancelPostCompleteButBeforeRetryStart() {
         SequentialPublisherSubscriberFunction<Integer> sequentialPublisherSubscriberFunction =
                 new SequentialPublisherSubscriberFunction<>();
         init(new TestPublisher.Builder<Integer>()
@@ -170,7 +170,7 @@ public class RepeatWhenTest {
     }
 
     @Test
-    public void testCancelBeforeRetry() {
+    void testCancelBeforeRetry() {
         init();
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);

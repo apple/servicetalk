@@ -14,7 +14,7 @@ jobs:
         os: [ ubuntu-latest ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@35e61b9c228e2067c3b87e49b79f0c2d8dd319e9
+        uses: dawidd6/action-download-artifact@b9571484721e8187f1fd08147b497129f8972c74
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -23,7 +23,7 @@ jobs:
           # File location set in ci-prb.yml and must be coordinated.
           name: test-results-${{ matrix.os }}-${{ matrix.java }}
       - name: Publish Test Report
-        uses: scacap/action-surefire-report@a915ba6359417544044fb06093a6c75097fe2a2b
+        uses: scacap/action-surefire-report@931cea1ce1cb7199a2fc6fe128bd1c392e92c92d
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'

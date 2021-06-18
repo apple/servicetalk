@@ -16,8 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import org.hamcrest.Matcher;
-import org.junit.Assert;
-import org.junit.function.ThrowingRunnable;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.function.Executable;
 
 import javax.annotation.Nullable;
 
@@ -59,12 +59,12 @@ public final class VerificationTestUtils {
 
     @SuppressWarnings("unchecked")
     public static <T1 extends Throwable, T2 extends Throwable> T1 assertThrows(
-            Class<T1> expectedClass, @Nullable Class<T2> optionalWrapperClass, ThrowingRunnable runnable) {
+            Class<T1> expectedClass, @Nullable Class<T2> optionalWrapperClass, Executable executable) {
         if (optionalWrapperClass == null) {
-            return Assert.assertThrows(expectedClass, runnable);
+            return Assertions.assertThrows(expectedClass, executable);
         }
         try {
-            runnable.run();
+            executable.execute();
         } catch (Throwable cause) {
             if (expectedClass.isInstance(cause)) {
                 return (T1) cause;

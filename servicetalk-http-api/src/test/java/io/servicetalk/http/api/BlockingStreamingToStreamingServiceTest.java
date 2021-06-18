@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,17 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.oio.api.PayloadWriter;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,7 +47,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -67,21 +64,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class BlockingStreamingToStreamingServiceTest {
+@ExtendWith(MockitoExtension.class)
+class BlockingStreamingToStreamingServiceTest {
 
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExecutorRule<Executor> executorRule = newRule();
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     @Mock
     private HttpExecutionContext mockExecutionCtx;
@@ -90,15 +85,14 @@ public class BlockingStreamingToStreamingServiceTest {
             DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
     private HttpServiceContext mockCtx;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
-
         mockCtx = new TestHttpServiceContext(DefaultHttpHeadersFactory.INSTANCE, reqRespFactory, mockExecutionCtx);
     }
 
     @Test
-    public void defaultResponseStatusNoPayload() throws Exception {
+    void defaultResponseStatusNoPayload() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> response.sendMetaData().close();
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
@@ -108,7 +102,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void customResponseStatusNoPayload() throws Exception {
+    void customResponseStatusNoPayload() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) ->
                 response.status(NO_CONTENT).sendMetaData().close();
 
@@ -119,7 +113,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void receivePayloadBody() throws Exception {
+    void receivePayloadBody() throws Exception {
         StringBuilder receivedPayload = new StringBuilder();
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             request.payloadBody().forEach(chunk -> receivedPayload.append(chunk.toString(US_ASCII)));
@@ -136,7 +130,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void respondWithPayloadBody() throws Exception {
+    void respondWithPayloadBody() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             try (PayloadWriter<Buffer> pw = response.sendMetaData()) {
                 pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello\n"));
@@ -151,7 +145,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void echoServiceUsingPayloadWriterWithTrailers() throws Exception {
+    void echoServiceUsingPayloadWriterWithTrailers() throws Exception {
         echoService((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
@@ -170,7 +164,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void echoServiceUsingPayloadWriterWithSerializerWithTrailers() throws Exception {
+    void echoServiceUsingPayloadWriterWithSerializerWithTrailers() throws Exception {
         echoService((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
@@ -189,7 +183,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void echoServiceUsingInputOutputStreamWithTrailers() throws Exception {
+    void echoServiceUsingInputOutputStreamWithTrailers() throws Exception {
         echoService((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpOutputStream out = response.sendMetaDataOutputStream();
@@ -215,7 +209,8 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void closeAsync() throws Exception {
+    void closeAsync() throws Exception {
+        lenient().when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         final AtomicBoolean closedCalled = new AtomicBoolean();
         BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
             @Override
@@ -236,7 +231,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void cancelBeforeSendMetaDataPropagated() throws Exception {
+    void cancelBeforeSendMetaDataPropagated() throws Exception {
         CountDownLatch handleLatch = new CountDownLatch(1);
         AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
         CountDownLatch onErrorLatch = new CountDownLatch(1);
@@ -256,7 +251,7 @@ public class BlockingStreamingToStreamingServiceTest {
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
                 // of handle method
-                .subscribeOn(executorRule.executor()))
+                .subscribeOn(executorExtension.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
                     @Override
@@ -281,7 +276,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void cancelAfterSendMetaDataPropagated() throws Exception {
+    void cancelAfterSendMetaDataPropagated() throws Exception {
         CountDownLatch cancelLatch = new CountDownLatch(1);
         CountDownLatch serviceTerminationLatch = new CountDownLatch(1);
         CountDownLatch onErrorLatch = new CountDownLatch(1);
@@ -303,7 +298,7 @@ public class BlockingStreamingToStreamingServiceTest {
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
                 // method
-                .subscribeOn(executorRule.executor()).toFuture().get();
+                .subscribeOn(executorExtension.executor()).toFuture().get();
         assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
@@ -331,7 +326,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void sendMetaDataTwice() throws Exception {
+    void sendMetaDataTwice() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             response.sendMetaData();
             response.sendMetaData();
@@ -346,7 +341,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void modifyMetaDataAfterSend() throws Exception {
+    void modifyMetaDataAfterSend() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             response.sendMetaData();
             response.status(NO_CONTENT);
@@ -362,7 +357,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void throwBeforeSendMetaData() throws Exception {
+    void throwBeforeSendMetaData() throws Exception {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
@@ -374,7 +369,7 @@ public class BlockingStreamingToStreamingServiceTest {
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
                 // with an error
-                .subscribeOn(executorRule.executor()))
+                .subscribeOn(executorExtension.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
                     @Override
@@ -396,7 +391,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void throwAfterSendMetaData() throws Exception {
+    void throwAfterSendMetaData() throws Exception {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
@@ -408,7 +403,7 @@ public class BlockingStreamingToStreamingServiceTest {
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
-                .subscribeOn(executorRule.executor()).toFuture().get();
+                .subscribeOn(executorExtension.executor()).toFuture().get();
         assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
@@ -434,7 +429,7 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void throwAfterPayloadWriterClosed() {
+    void throwAfterPayloadWriterClosed() {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             response.sendMetaData().close();
             throw DELIBERATE_EXCEPTION;
@@ -449,7 +444,7 @@ public class BlockingStreamingToStreamingServiceTest {
         ServiceAdapterHolder holder = toStreamingHttpService(syncService, strategy -> strategy);
 
         Collection<Object> responseCollection = holder.serviceInvocationStrategy()
-                .invokeService(executorRule.executor(), request,
+                .invokeService(executorExtension.executor(), request,
                         req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
                                 .flatMapPublisher(response -> Publisher.<Object>from(response)
                                         .concat(response.messageBody())), (t, e) -> failed(t))

@@ -1909,27 +1909,40 @@ public interface Buffer {
      * {@link #arrayOffset()}.
      *
      * @return {@code true} if backed by an byte array and is not read-only
+     * @see #array()
+     * @see #arrayOffset()
      */
     boolean hasArray();
 
     /**
      * Returns the backing byte array of this buffer.
-     *
+     * <p>
+     * The caller must check {@link #hasArray()} returns {@code true} before calling this method or
+     * {@link UnsupportedOperationException} maybe thrown.
+     * <p>
+     * Use {@link #arrayOffset()} to get the starting point of data for this buffer. The returned array maybe shared and
+     * this {@link Buffer}'s data may reside in a sub-section.
      * @return byte array.
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
      * @throws ReadOnlyBufferException if this buffer is read-only
+     * @see #hasArray()
+     * @see #arrayOffset()
      */
     byte[] array();
 
     /**
-     * Returns the offset of the first byte within the backing byte array of
-     * this buffer.
+     * Returns the offset of the first byte within the backing byte array of this buffer.
+     * <p>
+     * The caller must check {@link #hasArray()} returns {@code true} before calling this method or
+     * {@link UnsupportedOperationException} maybe thrown.
      *
      * @return the offset in the array.
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
      * @throws ReadOnlyBufferException if this buffer is read-only
+     * @see #hasArray()
+     * @see #array()
      */
     int arrayOffset();
 

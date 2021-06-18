@@ -37,22 +37,29 @@ import io.servicetalk.http.api.TrailersTransformer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
+import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
+import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -63,6 +70,9 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
+
+    // TODO could/should add "+proto"
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
     private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
     private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
@@ -83,15 +93,44 @@ final class GrpcUtils {
                     ensureGrpcStatusReceived(trailers);
                     return trailers;
                 }
+
+                @Override
+                protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
+                        throws Throwable {
+
+                    // local cancel
+                    if (cause instanceof CancellationException) {
+                        // include the cause so that caller can determine who cancelled request
+                        throw new GrpcStatusException(new GrpcStatus(CANCELLED, cause), () -> null);
+                    }
+
+                    // local timeout
+                    if (cause instanceof TimeoutException) {
+                        // omit the cause unless DEBUG logging has been configured
+                        throw new GrpcStatusException(
+                                LOGGER.isDebugEnabled() ?
+                                    new GrpcStatus(DEADLINE_EXCEEDED, cause) :
+                                    DEADLINE_EXCEEDED.status(),
+                                () -> null);
+                    }
+
+                    throw cause;
+                }
             };
 
     private GrpcUtils() {
         // No instances.
     }
 
-    static void initRequest(final HttpRequestMetaData request, final List<ContentCodec> supportedEncodings) {
+    static void initRequest(final HttpRequestMetaData request,
+                            final List<ContentCodec> supportedEncodings,
+                            @Nullable final Duration timeout) {
         assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
+        final CharSequence timeoutValue = makeTimeoutHeader(timeout);
+        if (null != timeoutValue) {
+            headers.set(GRPC_TIMEOUT_HEADER_KEY, timeoutValue);
+        }
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
@@ -126,18 +165,32 @@ final class GrpcUtils {
         return response;
     }
 
-    static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory,
-                                         @Nullable final GrpcServiceContext context,
-                                         final Throwable cause, final BufferAllocator allocator) {
-        HttpResponse response = newResponse(responseFactory, context, allocator);
-        setStatus(response.trailers(), cause, allocator);
+    static HttpResponse newErrorResponse(
+            final HttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert status != null || cause != null;
+        final HttpResponse response = responseFactory.ok();
+        initResponse(response, context);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
         return response;
     }
 
-    static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                  @Nullable final GrpcServiceContext context, final Throwable cause,
-                                                  final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, context).transform(new ErrorUpdater(cause, allocator));
+    static StreamingHttpResponse newErrorResponse(
+            final StreamingHttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert (status != null && cause == null) || (status == null && cause != null);
+        final StreamingHttpResponse response = responseFactory.ok();
+        initResponse(response, context);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
+        return response;
     }
 
     private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory,
@@ -167,14 +220,33 @@ final class GrpcUtils {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
             setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
-        } else if (cause instanceof MessageEncodingException) {
-            MessageEncodingException msgEncException = (MessageEncodingException) cause;
-            GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
-                    msgEncException.encoding() + "' not supported ");
-            setStatus(trailers, status, null, allocator);
         } else {
-            setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
+            setStatus(trailers, toGrpcStatus(cause), null, allocator);
         }
+    }
+
+    static GrpcStatus toGrpcStatus(Throwable cause) {
+        GrpcStatus status;
+        if (cause instanceof MessageEncodingException) {
+            MessageEncodingException msgEncException = (MessageEncodingException) cause;
+            status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
+                    + "' not supported ");
+        } else if (cause instanceof CancellationException) {
+            status = new GrpcStatus(CANCELLED, cause);
+        } else if (cause instanceof TimeoutException) {
+            // omit cause unless logging configured for debug
+            status = LOGGER.isDebugEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
+        } else {
+            // Initialize detail because cause is often lost
+            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
+        }
+
+        return status;
+    }
+
+    static GrpcStatusException toGrpcException(Throwable cause) {
+        return cause instanceof GrpcStatusException ? (GrpcStatusException) cause
+                : new GrpcStatusException(toGrpcStatus(cause), () -> null);
     }
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
@@ -183,13 +255,19 @@ final class GrpcUtils {
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers. Since this is streaming response and we have the headers now, we check for the
         // grpc-status here first. If there is no grpc-status in headers, we look for it in trailers later.
+
         final HttpHeaders headers = response.headers();
         ensureGrpcContentType(response.status(), headers);
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
-            return response.messageBody().ignoreElements()
-                    .concat(grpcStatusException != null ? failed(grpcStatusException) : empty());
+            if (grpcStatusException != null) {
+                // Give priority to the error if it happens, to allow delayed requests or streams to terminate.
+                return Publisher.<Resp>failed(grpcStatusException)
+                        .concat(response.messageBody().ignoreElements());
+            } else {
+                return response.messageBody().ignoreElements().toPublisher();
+            }
         }
 
         response.transform(ENSURE_GRPC_STATUS_RECEIVED);
@@ -227,7 +305,7 @@ final class GrpcUtils {
             throw new GrpcStatus(INTERNAL, null,
                     "HTTP status code: " + status + "\n" +
                             "\tinvalid " + CONTENT_TYPE + ": " + contentTypeHeader + "\n" +
-                            "\theaders: " + headers.toString()).asException();
+                            "\theaders: " + headers).asException();
         }
     }
 
@@ -344,7 +422,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
         StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
-            if (codec == identity()) {
+            if (identity().equals(codec)) {
                 continue;
             }
             builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);
@@ -433,22 +511,6 @@ final class GrpcUtils {
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
-            return trailers;
-        }
-    }
-
-    private static final class ErrorUpdater extends StatelessTrailersTransformer<Buffer> {
-        private final Throwable cause;
-        private final BufferAllocator allocator;
-
-        ErrorUpdater(final Throwable cause, final BufferAllocator allocator) {
-            this.cause = cause;
-            this.allocator = allocator;
-        }
-
-        @Override
-        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            setStatus(trailers, cause, allocator);
             return trailers;
         }
     }

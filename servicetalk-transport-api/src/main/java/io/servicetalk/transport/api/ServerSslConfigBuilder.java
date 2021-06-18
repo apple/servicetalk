@@ -78,16 +78,6 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
         keyManager(keyCertChainSupplier, keySupplier, keyPassword);
     }
 
-    @Override
-    public ServerSslConfigBuilder trustManager(TrustManagerFactory tmf) {
-        return super.trustManager(tmf);
-    }
-
-    @Override
-    public ServerSslConfigBuilder trustManager(Supplier<InputStream> trustCertChainSupplier) {
-        return super.trustManager(trustCertChainSupplier);
-    }
-
     /**
      * Set the {@link SslClientAuthMode} which determines how client authentication should be done.
      * @param clientAuthMode the {@link SslClientAuthMode} which determines how client authentication should be done.

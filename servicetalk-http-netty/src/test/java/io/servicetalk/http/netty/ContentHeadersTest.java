@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -82,11 +81,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
-public class ContentHeadersTest extends AbstractNettyHttpServerTest {
+class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
     private static final String EXISTING_CONTENT = "Hello World!";
@@ -94,15 +92,14 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     private static final String PAYLOAD = "Hello";
     private static final int PAYLOAD_LENGTH = PAYLOAD.length();
 
-    private final TestType testDefinition;
+    private TestType testDefinition;
 
-    public ContentHeadersTest(final TestType testDefinition) {
-        super(CACHED, CACHED);
+    private void setUp(final TestType testDefinition) {
         this.testDefinition = testDefinition;
+        setUp(CACHED, CACHED);
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<TestType> parameters() {
+    static Collection<TestType> parameters() {
         return Arrays.asList(
                 // ----- Request -----
                 new RequestTest(aggregatedRequest(GET), defaults(), HAVE_CONTENT_LENGTH),
@@ -132,13 +129,13 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequestAsStreaming(GET), transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_NEITHER),
 
                 new BlockingRequestTest(aggregatedRequest(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(aggregatedRequestAsStreaming(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new BlockingRequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new BlockingRequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new BlockingRequestTest(streamingRequest(GET), withoutPayload(), HAVE_NEITHER),
 
                 // ----- Response -----
                 new ResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
@@ -181,7 +178,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponse(INTERNAL_SERVER_ERROR), CONNECT, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponseAsStreaming(OK), GET, transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(streamingResponse(OK), GET, defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
 
                 new BlockingResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingResponseTest(aggregatedResponseAsStreaming(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
@@ -300,8 +297,10 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
         }, "Transform");
     }
 
-    @Test
-    public void integrationTest() throws Exception {
+    @ParameterizedTest
+    @MethodSource("parameters")
+    void integrationTest(TestType testType) throws Exception {
+        setUp(testType);
         testDefinition.runTest(streamingHttpConnection());
     }
 
@@ -424,7 +423,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
         @Override
         public String toString() {
-            return requestSupplier.toString() + "With" + modifier + expectation;
+            return requestSupplier + "With" + modifier + expectation;
         }
 
         @Override
@@ -496,7 +495,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
         @Override
         public String toString() {
-            return responseSupplier.toString() + "To" + requestMethod + "With" + modifier + expectation;
+            return responseSupplier + "To" + requestMethod + "With" + modifier + expectation;
         }
 
         @Override

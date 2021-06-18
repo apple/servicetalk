@@ -27,8 +27,8 @@ final class OnErrorMapCompletable extends AbstractSynchronousCompletableOperator
     private final Function<? super Throwable, ? extends Throwable> mapper;
 
     OnErrorMapCompletable(final Completable original, Predicate<? super Throwable> predicate,
-                          Function<? super Throwable, ? extends Throwable> mapper, final Executor executor) {
-        super(original, executor);
+                          Function<? super Throwable, ? extends Throwable> mapper) {
+        super(original);
         this.predicate = requireNonNull(predicate);
         this.mapper = requireNonNull(mapper);
     }

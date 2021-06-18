@@ -107,16 +107,17 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
 
     @Override
     public Single<HttpResponse> toResponse() {
-        return payloadHolder.aggregate()
-                .map(pair -> {
-                    assert pair.payload != null;
-                    return new DefaultHttpResponse(this, pair.payload, pair.trailers);
-                });
+        return payloadHolder.aggregate().map(pair -> new DefaultHttpResponse(this, pair.payload, pair.trailers));
     }
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         return new DefaultBlockingStreamingHttpResponse(this);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return payloadHolder.isEmpty();
     }
 
     @Override

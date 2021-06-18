@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ public final class ContentCodingHttpServiceFilter
                             encodePayloadContentIfAvailable(request.headers(), request.method(), responseCodings,
                                     response, allocator);
                             return response;
-                        });
+                        }).subscribeShareContext();
                     } catch (UnsupportedContentEncodingException cause) {
                         LOGGER.error("Request failed for service={}, connection={}", service, this, cause);
                         // see https://tools.ietf.org/html/rfc7231#section-3.1.2.2
@@ -183,6 +183,6 @@ public final class ContentCodingHttpServiceFilter
             encoding = negotiateAcceptedEncoding(requestHeaders.get(ACCEPT_ENCODING), supportedEncodings);
         }
 
-        return encoding == identity() ? null : encoding;
+        return identity().equals(encoding) ? null : encoding;
     }
 }

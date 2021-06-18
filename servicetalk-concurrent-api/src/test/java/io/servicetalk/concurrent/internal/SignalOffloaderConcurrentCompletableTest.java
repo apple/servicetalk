@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-public class SignalOffloaderConcurrentCompletableTest {
+class SignalOffloaderConcurrentCompletableTest {
 
     private enum OffloaderTestParam {
         THREAD_BASED {
@@ -67,13 +67,13 @@ public class SignalOffloaderConcurrentCompletableTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         state.shutdown();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(OffloaderTestParam.class)
-    public void concurrentSignalsMultipleEntities(OffloaderTestParam offloader)
+    void concurrentSignalsMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
         init(offloader);
         final int entityCount = 100;

@@ -33,36 +33,36 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class PubToCompletableIgnoreTest {
+class PubToCompletableIgnoreTest {
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestCompletableSubscriber listenerRule = new TestCompletableSubscriber();
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         listen(from("Hello"));
         listenerRule.awaitOnComplete();
     }
 
     @Test
-    public void testError() {
+    void testError() {
         listen(Publisher.failed(DELIBERATE_EXCEPTION));
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testEmpty() {
+    void testEmpty() {
         listen(Publisher.empty());
         listenerRule.awaitOnComplete();
     }
 
     @Test
-    public void testEmptyFromRequestN() {
+    void testEmptyFromRequestN() {
         listen(new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -73,7 +73,7 @@ public class PubToCompletableIgnoreTest {
     }
 
     @Test
-    public void testErrorFromRequestN() {
+    void testErrorFromRequestN() {
         listen(new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -85,7 +85,7 @@ public class PubToCompletableIgnoreTest {
     }
 
     @Test
-    public void subscribeOnOriginalIsPreserved() throws Exception {
+    void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
@@ -97,7 +97,7 @@ public class PubToCompletableIgnoreTest {
             analyzed.countDown();
         }).subscribeOn(executorExtension.executor()).ignoreElements().toFuture().get();
         analyzed.await();
-        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertNoAsyncErrors(errors);
     }
 
     private void listen(Publisher<String> src) {

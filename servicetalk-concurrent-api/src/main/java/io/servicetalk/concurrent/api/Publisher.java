@@ -61,6 +61,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSuppli
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -79,18 +80,6 @@ import static java.util.Objects.requireNonNull;
 public abstract class Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
-    /**
-     * Maximum positive duration which can be expressed as a signed 64-bit number of nanoseconds.
-     */
-    private static final Duration LONG_MAX_NANOS = Duration.ofNanos(Long.MAX_VALUE);
-    /**
-     * Maximum negative duration which can be expressed as a signed 64-bit number of nanoseconds.
-     */
-    private static final Duration LONG_MIN_NANOS = Duration.ofNanos(Long.MIN_VALUE);
-
-    private final Executor executor;
-    private final boolean shareContextOnSubscribe;
-
     static {
         AsyncContext.autoEnable();
     }
@@ -99,28 +88,6 @@ public abstract class Publisher<T> {
      * New instance.
      */
     protected Publisher() {
-        this(immediate());
-    }
-
-    /**
-     * New instance.
-     *
-     * @param executor {@link Executor} to use for this {@link Publisher}.
-     */
-    Publisher(Executor executor) {
-        this(executor, false);
-    }
-
-    /**
-     * New instance.
-     *
-     * @param executor {@link Executor} to use for this {@link Publisher}.
-     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
-     * result in sharing {@link AsyncContext} between sources.
-     */
-    Publisher(Executor executor, boolean shareContextOnSubscribe) {
-        this.executor = requireNonNull(executor);
-        this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
     //
@@ -146,7 +113,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
      */
     public final <R> Publisher<R> map(Function<? super T, ? extends R> mapper) {
-        return new MapPublisher<>(this, mapper, executor);
+        return new MapPublisher<>(this, mapper);
     }
 
     /**
@@ -169,7 +136,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
     public final Publisher<T> filter(Predicate<? super T> predicate) {
-        return new FilterPublisher<>(this, predicate, executor);
+        return new FilterPublisher<>(this, predicate);
     }
 
     /**
@@ -195,7 +162,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
     public final <R> Publisher<R> scanWith(Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
-        return new ScanWithPublisher<>(this, initial, accumulator, executor);
+        return new ScanWithPublisher<>(this, initial, accumulator);
     }
 
     /**
@@ -229,7 +196,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
     public final <R> Publisher<R> scanWith(Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
-        return new ScanWithPublisher<>(this, mapperSupplier, executor);
+        return new ScanWithPublisher<>(this, mapperSupplier);
     }
 
     /**
@@ -272,7 +239,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> scanWithLifetime(
             Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier) {
-        return new ScanWithLifetimePublisher<>(this, mapperSupplier, executor);
+        return new ScanWithLifetimePublisher<>(this, mapperSupplier);
     }
 
     /**
@@ -346,7 +313,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorComplete(Predicate<? super Throwable> predicate) {
-        return new OnErrorCompletePublisher<>(this, predicate, executor);
+        return new OnErrorCompletePublisher<>(this, predicate);
     }
 
     /**
@@ -510,7 +477,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> onErrorMap(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Throwable> mapper) {
-        return new OnErrorMapPublisher<>(this, predicate, mapper, executor);
+        return new OnErrorMapPublisher<>(this, predicate, mapper);
     }
 
     /**
@@ -602,7 +569,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> onErrorResume(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
-        return new OnErrorResumePublisher<>(this, predicate, nextFactory, executor);
+        return new OnErrorResumePublisher<>(this, predicate, nextFactory);
     }
 
     /**
@@ -664,7 +631,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-        return new PublisherFlatMapMerge<>(this, mapper, false, executor);
+        return new PublisherFlatMapMerge<>(this, mapper, false);
     }
 
     /**
@@ -699,7 +666,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                int maxConcurrency) {
-        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, executor);
+        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency);
     }
 
     /**
@@ -749,7 +716,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-        return new PublisherFlatMapMerge<>(this, mapper, true, executor);
+        return new PublisherFlatMapMerge<>(this, mapper, true);
     }
 
     /**
@@ -797,7 +764,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                          int maxConcurrency) {
-        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, executor);
+        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency);
     }
 
     /**
@@ -850,7 +817,7 @@ public abstract class Publisher<T> {
         if (maxDelayedErrorsHint <= 0) {
             throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
         }
-        return new PublisherFlatMapMerge<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
+        return new PublisherFlatMapMerge<>(this, mapper, maxDelayedErrorsHint, maxConcurrency);
     }
 
     /**
@@ -889,7 +856,7 @@ public abstract class Publisher<T> {
      * @see #flatMapMergeSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
-        return new PublisherFlatMapSingle<>(this, mapper, false, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, false);
     }
 
     /**
@@ -928,7 +895,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper,
                                                      int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, false, maxConcurrency, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, false, maxConcurrency);
     }
 
     /**
@@ -982,7 +949,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper) {
-        return new PublisherFlatMapSingle<>(this, mapper, true, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, true);
     }
 
     /**
@@ -1035,7 +1002,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, true, maxConcurrency, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, true, maxConcurrency);
     }
 
     /**
@@ -1093,7 +1060,7 @@ public abstract class Publisher<T> {
         if (maxDelayedErrorsHint <= 0) {
             throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
         }
-        return new PublisherFlatMapSingle<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, maxDelayedErrorsHint, maxConcurrency);
     }
 
     /**
@@ -1338,7 +1305,7 @@ public abstract class Publisher<T> {
      * {@link Iterable#iterator()}
      */
     public final <R> Publisher<R> flatMapConcatIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-        return new PublisherConcatMapIterable<>(this, mapper, executor);
+        return new PublisherConcatMapIterable<>(this, mapper);
     }
 
     /**
@@ -1555,89 +1522,6 @@ public abstract class Publisher<T> {
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(long, TimeUnit)}.
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
-     * @param unit The units for {@code duration}.
-     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
-     */
-    @Deprecated
-    public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Subscription} from
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled}
-     * and the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration)}
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
-     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
-     */
-    @Deprecated
-    public final Publisher<T> idleTimeout(Duration duration) {
-        return timeout(duration);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Subscription} from
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
-     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
-     * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
-                                          io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return timeout(duration, unit, timeoutExecutor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Subscription} from
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
-     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    @Deprecated
-    public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return timeout(duration, timeoutExecutor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is subscribed.
-     * <p>
-     * In the event of timeout any {@link Subscription} from
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
-     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param unit The units for {@code duration}.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
@@ -1646,7 +1530,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+        return timeout(duration, unit, executor());
     }
 
     /**
@@ -1664,7 +1548,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
-        return timeout(duration, executor);
+        return timeout(duration, executor());
     }
 
     /**
@@ -1684,20 +1568,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit,
                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, true, timeoutExecutor);
-    }
-
-    /**
-     * Converts a {@code Duration} to nanoseconds or if the resulting value would overflow a 64-bit signed integer then
-     * either {@code Long.MIN_VALUE} or {@code Long.MAX_VALUE} as appropriate.
-     *
-     * @param duration The duration to convert
-     * @return The converted nanoseconds value.
-     */
-    private static long toNanos(Duration duration) {
-        return duration.compareTo(LONG_MAX_NANOS) < 0 ?
-                duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE
-                : Long.MAX_VALUE;
+        return new TimeoutPublisher<>(this, duration, unit, true, timeoutExecutor);
     }
 
     /**
@@ -1732,7 +1603,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration) {
-        return timeoutTerminal(duration, executor);
+        return timeoutTerminal(duration, executor());
     }
 
     /**
@@ -1768,7 +1639,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
-        return timeoutTerminal(duration, unit, executor);
+        return timeoutTerminal(duration, unit, executor());
     }
 
     /**
@@ -1788,7 +1659,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit,
                                               io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, false, timeoutExecutor);
+        return new TimeoutPublisher<>(this, duration, unit, false, timeoutExecutor);
     }
 
     /**
@@ -1810,7 +1681,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return new ConcatPublisher<>(this, next, executor);
+        return new ConcatPublisher<>(this, next);
     }
 
     /**
@@ -1832,7 +1703,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Single<? extends T> next) {
-        return new PublisherConcatWithSingle<>(this, next, executor);
+        return new PublisherConcatWithSingle<>(this, next);
     }
 
     /**
@@ -1856,7 +1727,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Completable next) {
-        return new PublisherConcatWithCompletable<>(this, next, executor);
+        return new PublisherConcatWithCompletable<>(this, next);
     }
 
     /**
@@ -1900,8 +1771,8 @@ public abstract class Publisher<T> {
     public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
         return new RedoPublisher<>(this,
                 (retryCount, terminalNotification) -> terminalNotification.cause() != null &&
-                        shouldRetry.test(retryCount, terminalNotification.cause()),
-                executor);
+                        shouldRetry.test(retryCount, terminalNotification.cause())
+        );
     }
 
     /**
@@ -1951,7 +1822,7 @@ public abstract class Publisher<T> {
                 return Completable.completed();
             }
             return retryWhen.apply(retryCount, notification.cause());
-        }, true, executor);
+        }, true);
     }
 
     /**
@@ -1978,8 +1849,8 @@ public abstract class Publisher<T> {
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
         return new RedoPublisher<>(this,
                 (repeatCount, terminalNotification) -> terminalNotification.cause() == null &&
-                        shouldRepeat.test(repeatCount),
-                executor);
+                        shouldRepeat.test(repeatCount)
+        );
     }
 
     /**
@@ -2017,7 +1888,7 @@ public abstract class Publisher<T> {
                 return Completable.completed();
             }
             return repeatWhen.apply(retryCount);
-        }, false, executor);
+        }, false);
     }
 
     /**
@@ -2046,7 +1917,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
      */
     public final Publisher<T> takeAtMost(long numElements) {
-        return new TakeNPublisher<>(this, numElements, executor);
+        return new TakeNPublisher<>(this, numElements);
     }
 
     /**
@@ -2074,7 +1945,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
      */
     public final Publisher<T> takeWhile(Predicate<? super T> predicate) {
-        return new TakeWhilePublisher<>(this, predicate, executor);
+        return new TakeWhilePublisher<>(this, predicate);
     }
 
     /**
@@ -2099,7 +1970,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
      */
     public final Publisher<T> takeUntil(Completable until) {
-        return new TakeUntilPublisher<>(this, until, executor);
+        return new TakeUntilPublisher<>(this, until);
     }
 
     /**
@@ -2155,7 +2026,7 @@ public abstract class Publisher<T> {
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
                                                                    int groupMaxQueueSize) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, executor);
+        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize);
     }
 
     /**
@@ -2212,7 +2083,7 @@ public abstract class Publisher<T> {
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
                                                                    int groupMaxQueueSize, int expectedGroupCountHint) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
+        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
     }
 
     /**
@@ -2247,7 +2118,7 @@ public abstract class Publisher<T> {
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize);
     }
 
     /**
@@ -2285,7 +2156,7 @@ public abstract class Publisher<T> {
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
             int expectedGroupCountHint) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
     }
 
     /**
@@ -2312,7 +2183,7 @@ public abstract class Publisher<T> {
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
     public final Publisher<T> multicastToExactly(int expectedSubscribers) {
-        return new MulticastPublisher<>(this, expectedSubscribers, executor);
+        return new MulticastPublisher<>(this, expectedSubscribers);
     }
 
     /**
@@ -2343,7 +2214,7 @@ public abstract class Publisher<T> {
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
     public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
-        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
+        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize);
     }
 
     /**
@@ -2374,7 +2245,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/buffer.html">ReactiveX buffer operator.</a>
      */
     public final <BC extends Accumulator<T, B>, B> Publisher<B> buffer(final BufferStrategy<T, BC, B> strategy) {
-        return new PublisherBuffer<>(this, executor, strategy);
+        return new PublisherBuffer<>(this, strategy);
     }
 
     /**
@@ -2552,7 +2423,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(TerminalSignalConsumer doFinally) {
-        return new BeforeFinallyPublisher<>(this, doFinally, executor);
+        return new BeforeFinallyPublisher<>(this, doFinally);
     }
 
     /**
@@ -2568,7 +2439,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new BeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
+        return new BeforeSubscriberPublisher<>(this, subscriberSupplier);
     }
 
     /**
@@ -2584,7 +2455,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
-        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
+        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, true);
     }
 
     /**
@@ -2762,7 +2633,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(TerminalSignalConsumer doFinally) {
-        return new AfterFinallyPublisher<>(this, doFinally, executor);
+        return new AfterFinallyPublisher<>(this, doFinally);
     }
 
     /**
@@ -2778,7 +2649,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new AfterSubscriberPublisher<>(this, subscriberSupplier, executor);
+        return new AfterSubscriberPublisher<>(this, subscriberSupplier);
     }
 
     /**
@@ -2808,7 +2679,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
-        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
+        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false);
     }
 
     /**
@@ -2854,7 +2725,7 @@ public abstract class Publisher<T> {
      * methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
@@ -2865,21 +2736,6 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishOn(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber} both for the returned {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    public final Publisher<T> publishOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOnOverride(this, executor);
-    }
-
-    /**
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
@@ -2887,7 +2743,7 @@ public abstract class Publisher<T> {
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
@@ -2900,32 +2756,13 @@ public abstract class Publisher<T> {
     /**
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the returned
-     * {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    public final Publisher<T> subscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOnOverride(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
@@ -2933,26 +2770,6 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the
-     * returned {@link Publisher} as well as {@code this} {@link Publisher}.
-     */
-    public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
     }
 
     /**
@@ -2996,7 +2813,7 @@ public abstract class Publisher<T> {
      * @see #liftAsync(PublisherOperator)
      */
     public final <R> Publisher<R> liftSync(PublisherOperator<? super T, ? extends R> operator) {
-        return new LiftSynchronousPublisherOperator<>(this, operator, executor);
+        return new LiftSynchronousPublisherOperator<>(this, operator);
     }
 
     /**
@@ -3060,7 +2877,7 @@ public abstract class Publisher<T> {
      * @see #liftSync(PublisherOperator)
      */
     public final <R> Publisher<R> liftAsync(PublisherOperator<? super T, ? extends R> operator) {
-        return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
+        return new LiftAsynchronousPublisherOperator<>(this, operator);
     }
 
     //
@@ -3358,7 +3175,7 @@ public abstract class Publisher<T> {
     protected final void subscribeInternal(Subscriber<? super T> subscriber) {
         AsyncContextProvider provider = AsyncContext.provider();
         subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe ? provider.contextMap() : provider.contextMap().copy());
+                shareContextOnSubscribe() ? provider.contextMap() : provider.contextMap().copy());
     }
 
     /**
@@ -3661,7 +3478,7 @@ public abstract class Publisher<T> {
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
             // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor);
+            signalOffloader = newOffloaderFor(executor());
             // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber =
@@ -3714,10 +3531,20 @@ public abstract class Publisher<T> {
     /**
      * Returns the {@link Executor} used for this {@link Publisher}.
      *
-     * @return {@link Executor} used for this {@link Publisher} via {@link #Publisher(Executor)}.
+     * @return {@link Executor} used for this {@link Publisher}.
      */
-    final Executor executor() {
-        return executor;
+    Executor executor() {
+        return immediate();
+    }
+
+    /**
+     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
+     * copied.
+     *
+     * @return true if the async context should be shared on subscribe
+     */
+    boolean shareContextOnSubscribe() {
+        return false;
     }
 
     //

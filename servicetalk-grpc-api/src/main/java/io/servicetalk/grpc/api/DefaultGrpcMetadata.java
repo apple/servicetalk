@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,13 @@ class DefaultGrpcMetadata implements GrpcMetadata {
 
     private final String path;
 
+    /**
+     * Construct a new instance.
+     *
+     * @param path The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     */
     DefaultGrpcMetadata(final String path) {
-        this.path = requireNonNull(path);
+        this.path = requireNonNull(path, "path");
     }
 
     @Override

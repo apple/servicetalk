@@ -84,6 +84,19 @@ Extends the async "Hello World" example to demonstrate compression of the respon
 * link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleClient.java[CompressionExampleClient] - Sends a hello request to the server and receives a
   compressed greeting response.
 
+[#Deadlines]
+== Deadlines
+
+Extends the async "Hello World" example to demonstrate
+https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines[gRPC deadlines] (aka timeout).
+
+* link:{source-root}/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineServer.java[DeadlineServer]
+ – Waits for hello request from the client and, after 5 seconds of delay, responds with a greeting response.
+* link:{source-root}/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineClient.java[DeadlineClient]
+– Sends hello requests to the server with 1 minute deadline and 3 second deadline and receives a greeting response
+within that time or cancels the request.
+
+
 [#errors]
 == Application Errors
 The gRPC protocol supports propagating application level errors, and also provides serialization/deserialization of

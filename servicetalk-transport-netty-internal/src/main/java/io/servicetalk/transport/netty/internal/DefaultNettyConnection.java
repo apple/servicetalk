@@ -69,7 +69,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -172,11 +171,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
             // in the pipeline may race with closure as we have already created the channel. If that happens, we may
             // miss channelInactive event.
-            toSource(onClose()
-                    // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
-                    // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
-                    // Subscriber end of CompletableProcessor (onClosing) will not block.
-                    .publishAndSubscribeOnOverride(immediate()))
+            // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
+            // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
+            // Subscriber end of CompletableProcessor (onClosing) will not block.
+            toSource(onCloseNoOffload())
                     .subscribe(onClosing);
         } else {
             onClosing = null;
@@ -453,7 +451,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Completable onClosing() {
-        return onClosing == null ? onClose() : fromSource(onClosing).publishOn(executionContext().executor());
+        return onClosing == null ? onClose() : fromSource(onClosing);
     }
 
     @Override
@@ -503,7 +501,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Single<Throwable> transportError() {
-        return fromSource(transportError).publishOn(executionContext().executor());
+        return fromSource(transportError);
     }
 
     /**
@@ -643,14 +641,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
-                // Received "close_notify" alert from the peer: https://tools.ietf.org/html/rfc5246#section-7.2.1.
-                // This message notifies that the sender will not send any more messages on this connection.
-
-                // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
-                connection.closeHandler.channelClosedInbound(ctx);
-                // We MUST respond with a "close_notify" alert and close down the connection immediately,
-                // discarding any pending writes.
-                connection.closeHandler.closeChannelOutbound(ctx.channel());
+                connection.closeHandler.channelCloseNotify(ctx);
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);

@@ -43,6 +43,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:protoc-options",
         "servicetalk-examples:grpc:compression",
         "servicetalk-examples:grpc:errors",
+        "servicetalk-examples:grpc:deadline",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:http2",
@@ -56,6 +57,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:timeout",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
+        "servicetalk-grpc-internal",
         "servicetalk-grpc-netty",
         "servicetalk-grpc-protobuf",
         "servicetalk-grpc-protoc",
@@ -95,6 +97,7 @@ project(":servicetalk-examples:grpc:routeguide").name = "servicetalk-examples-gr
 project(":servicetalk-examples:grpc:protoc-options").name = "servicetalk-examples-grpc-protoc-options"
 project(":servicetalk-examples:grpc:compression").name = "servicetalk-examples-grpc-compression"
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
+project(":servicetalk-examples:grpc:deadline").name = "servicetalk-examples-grpc-deadline"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"

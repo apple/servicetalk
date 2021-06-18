@@ -18,16 +18,19 @@ package io.servicetalk.opentracing.asynccontext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
 import io.opentracing.Scope;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class AsyncContextInMemoryScopeManagerTest {
+@ExtendWith(MockitoExtension.class)
+class AsyncContextInMemoryScopeManagerTest {
     @Mock
     private InMemorySpan mockSpan;
     @Mock
@@ -35,7 +38,7 @@ public class AsyncContextInMemoryScopeManagerTest {
 
     private AsyncContextInMemoryScopeManager scopeManager = (AsyncContextInMemoryScopeManager) SCOPE_MANAGER;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
         AsyncContextInMemoryScopeManager.AsyncContextInMemoryScope previousScope = scopeManager.active();
@@ -45,7 +48,7 @@ public class AsyncContextInMemoryScopeManagerTest {
     }
 
     @Test
-    public void closedScopeNotReturnedByActive() {
+    void closedScopeNotReturnedByActive() {
         Scope scope = SCOPE_MANAGER.activate(mockSpan);
         assertSame(scope, scopeManager.active());
         scope.close();
@@ -53,7 +56,7 @@ public class AsyncContextInMemoryScopeManagerTest {
     }
 
     @Test
-    public void previousScopeRestoredAfterCurrentScopeClosed() {
+    void previousScopeRestoredAfterCurrentScopeClosed() {
         Scope previousScope = SCOPE_MANAGER.activate(mockSpan2);
         Scope scope = SCOPE_MANAGER.activate(mockSpan);
         assertSame(scope, scopeManager.active());

@@ -89,7 +89,7 @@ public final class HeaderUtils {
         }
 
         for (ContentCodec encoding : serverSupportedEncodings) {
-            if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
+            if (!identity().equals(encoding) && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }

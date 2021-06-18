@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PublisherConcatWithCompletableTest {
+class PublisherConcatWithCompletableTest {
 
     private final TestSubscription subscription = new TestSubscription();
     private final TestCancellable cancellable = new TestCancellable();
@@ -38,7 +38,7 @@ public class PublisherConcatWithCompletableTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestCompletable completable = new TestCompletable();
 
-    public PublisherConcatWithCompletableTest() {
+    PublisherConcatWithCompletableTest() {
         toSource(source.concat(completable)).subscribe(subscriber);
         source.onSubscribe(subscription);
         assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -46,7 +46,7 @@ public class PublisherConcatWithCompletableTest {
     }
 
     @Test
-    public void bothComplete() {
+    void bothComplete() {
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
@@ -58,7 +58,7 @@ public class PublisherConcatWithCompletableTest {
     }
 
     @Test
-    public void sourceError() {
+    void sourceError() {
         subscriber.awaitSubscription().request(1);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -67,7 +67,7 @@ public class PublisherConcatWithCompletableTest {
     }
 
     @Test
-    public void nextError() {
+    void nextError() {
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
@@ -79,7 +79,7 @@ public class PublisherConcatWithCompletableTest {
     }
 
     @Test
-    public void sourceCancel() {
+    void sourceCancel() {
         subscriber.awaitSubscription().cancel();
         assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
         assertThat("Next source subscribed on cancellation.", completable.isSubscribed(), is(false));
@@ -90,7 +90,7 @@ public class PublisherConcatWithCompletableTest {
     }
 
     @Test
-    public void nextCancel() {
+    void nextCancel() {
         source.onComplete();
         assertThat("Next source not subscribed.", completable.isSubscribed(), is(true));
         subscriber.awaitSubscription().cancel();

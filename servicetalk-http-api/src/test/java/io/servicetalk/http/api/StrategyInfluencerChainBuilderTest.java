@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import javax.annotation.Nonnull;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class StrategyInfluencerChainBuilderTest {
+class StrategyInfluencerChainBuilderTest {
 
     @Test
-    public void deepCopy() {
+    void deepCopy() {
         StrategyInfluencerChainBuilder chain1 = new StrategyInfluencerChainBuilder();
         HttpExecutionStrategyInfluencer influencer1 = newNoInfluenceInfluencer();
         chain1.append(influencer1);
@@ -46,17 +46,17 @@ public class StrategyInfluencerChainBuilderTest {
     }
 
     @Test
-    public void appendAndPrepend() {
+    void appendAndPrepend() {
         appendAndPrepend(false);
     }
 
     @Test
-    public void conditionalAppendAndPrepend() {
+    void conditionalAppendAndPrepend() {
         appendAndPrepend(true);
     }
 
     @Test
-    public void buildWithStrategy() {
+    void buildWithStrategy() {
         StrategyInfluencerChainBuilder chain = new StrategyInfluencerChainBuilder();
         HttpExecutionStrategy transportStrategy = mock(HttpExecutionStrategy.class);
         when(transportStrategy.merge(defaultStrategy())).then(invocation -> invocation.getArgument(0));

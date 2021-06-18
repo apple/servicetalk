@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,19 +31,17 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
@@ -75,7 +73,6 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_TEST_PUBLISHER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,58 +81,63 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.CombinableMatcher.either;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+class NettyHttpServerTest extends AbstractNettyHttpServerTest {
+
     private final TestCompletableSubscriber completableListenerRule = new TestCompletableSubscriber();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
+        new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
 
     private final TestPublisher<Buffer> publisher = new TestPublisher<>();
     private final CountDownLatch serviceHandleLatch = new CountDownLatch(1);
-    private AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
+    private final AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
 
-    public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,
-                               final ExecutorSupplier serverExecutorSupplier) {
-        super(clientExecutorSupplier, serverExecutorSupplier);
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> clientExecutors() {
+        return Stream.of(
+            Arguments.of(IMMEDIATE, IMMEDIATE),
+            Arguments.of(IMMEDIATE, CACHED),
+            Arguments.of(CACHED, IMMEDIATE),
+            Arguments.of(CACHED, CACHED));
     }
 
-    @Parameterized.Parameters(name = "client={0} server={1}")
-    public static Collection<ExecutorSupplier[]> clientExecutors() {
-        return asList(
-                new ExecutorSupplier[]{IMMEDIATE, IMMEDIATE},
-                new ExecutorSupplier[]{IMMEDIATE, CACHED},
-                new ExecutorSupplier[]{CACHED, IMMEDIATE},
-                new ExecutorSupplier[]{CACHED, CACHED}
-        );
-    }
-
-    @Test
-    public void testGetNoRequestPayloadWithoutResponseLastChunk() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetNoRequestPayloadWithoutResponseLastChunk(ExecutorSupplier clientExecutorSupplier,
+                                                         ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "Testing1\n");
     }
 
-    @Test
-    public void testGetNoRequestPayload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetNoRequestPayload(ExecutorSupplier clientExecutorSupplier,
+                                 ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "Testing1\n");
     }
 
-    @Test
-    public void testGetEchoPayloadContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetEchoPayloadContentLength(ExecutorSupplier clientExecutorSupplier,
+                                         ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request.transformPayloadBody(payload -> {
             payload.ignoreElements().subscribe();
             return getChunkPublisherFromStrings("hello");
@@ -145,40 +147,60 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertResponse(response, HTTP_1_1, OK, "hello");
     }
 
-    @Test
-    public void testGetEchoPayloadChunked() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetEchoPayloadChunked(ExecutorSupplier clientExecutorSupplier,
+                                   ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "hello");
     }
 
-    @Test
-    public void testGetRot13Payload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetRot13Payload(ExecutorSupplier clientExecutorSupplier,
+                             ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ROT13).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "uryyb");
     }
 
-    @Test
-    public void testGetIgnoreRequestPayload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetIgnoreRequestPayload(ExecutorSupplier clientExecutorSupplier,
+                                     ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "Testing1\n");
     }
 
-    @Test
-    public void testGetNoRequestPayloadNoResponsePayload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGetNoRequestPayloadNoResponsePayload(ExecutorSupplier clientExecutorSupplier,
+                                                  ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_NO_CONTENT);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, NO_CONTENT, "");
     }
 
-    @Test
-    public void testMultipleGetsNoRequestPayloadWithoutResponseLastChunk() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testMultipleGetsNoRequestPayloadWithoutResponseLastChunk(ExecutorSupplier clientExecutorSupplier,
+                                                                  ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "Testing1\n");
@@ -188,8 +210,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertResponse(response2, HTTP_1_1, OK, "Testing2\n");
     }
 
-    @Test
-    public void testMultipleGetsNoRequestPayload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testMultipleGetsNoRequestPayload(ExecutorSupplier clientExecutorSupplier,
+                                          ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "Testing1\n");
@@ -199,51 +225,67 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertResponse(response2, HTTP_1_1, OK, "Testing2\n");
     }
 
-    @Test
-    public void testMultipleGetsEchoPayloadContentLength() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testMultipleGetsEchoPayloadContentLength(ExecutorSupplier clientExecutorSupplier,
+                                                  ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request1.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "hello");
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request2.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, "hello");
     }
 
-    @Test
-    public void testMultipleGetsEchoPayloadChunked() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testMultipleGetsEchoPayloadChunked(ExecutorSupplier clientExecutorSupplier,
+                                            ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "hello");
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         final StreamingHttpResponse response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, "hello");
     }
 
-    @Test
-    public void testMultipleGetsIgnoreRequestPayload() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testMultipleGetsIgnoreRequestPayload(ExecutorSupplier clientExecutorSupplier,
+                                              ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request1.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "Testing1\n");
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER).payloadBody(
-                getChunkPublisherFromStrings("hello"));
+            getChunkPublisherFromStrings("hello"));
         request2.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, "Testing2\n");
     }
 
-    @Test
-    public void testHttp10CloseConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testHttp10CloseConnection(ExecutorSupplier clientExecutorSupplier,
+                                   ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER).version(HTTP_1_0);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_0, OK, "Testing1\n");
@@ -252,8 +294,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Test
-    public void testHttp10KeepAliveConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testHttp10KeepAliveConnection(ExecutorSupplier clientExecutorSupplier,
+                                       ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER).version(HTTP_1_0);
         request1.headers().set("connection", "keep-alive");
         final StreamingHttpResponse response1 = makeRequest(request1);
@@ -267,8 +313,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertTrue(response1.headers().contains(CONNECTION, KEEP_ALIVE));
     }
 
-    @Test
-    public void testHttp11CloseConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testHttp11CloseConnection(ExecutorSupplier clientExecutorSupplier,
+                                   ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER);
         request.headers().set("connection", "close");
         final StreamingHttpResponse response = makeRequest(request);
@@ -278,8 +328,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Test
-    public void testHttp11KeepAliveConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testHttp11KeepAliveConnection(ExecutorSupplier clientExecutorSupplier,
+                                       ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "Testing1\n");
@@ -291,9 +345,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertFalse(response2.headers().contains(CONNECTION));
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testGracefulShutdownWhileIdle() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGracefulShutdownWhileIdle(ExecutorSupplier clientExecutorSupplier,
+                                       ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, "Testing1\n");
@@ -305,9 +363,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testGracefulShutdownWhileReadingPayload() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGracefulShutdownWhileReadingPayload(ExecutorSupplier clientExecutorSupplier,
+                                                 ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
 
         when(publisherSupplier.apply(any())).thenReturn(publisher);
@@ -326,9 +388,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testImmediateShutdownWhileReadingPayload() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testImmediateShutdownWhileReadingPayload(ExecutorSupplier clientExecutorSupplier,
+                                                  ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         when(publisherSupplier.apply(any())).thenReturn(publisher);
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
@@ -339,9 +405,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain(
+            ExecutorSupplier clientExecutorSupplier,
+            ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         when(publisherSupplier.apply(any())).thenReturn(publisher);
         toSource(serverContext().onClose()).subscribe(completableListenerRule);
 
@@ -360,9 +431,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown(ExecutorSupplier clientExecutorSupplier,
+                                                                      ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         when(publisherSupplier.apply(any())).thenReturn(publisher);
         toSource(serverContext().onClose()).subscribe(completableListenerRule);
 
@@ -381,9 +456,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testGracefulShutdownTimesOutWhileReadingPayload(ExecutorSupplier clientExecutorSupplier,
+                                                         ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         when(publisherSupplier.apply(any())).thenReturn(publisher);
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
@@ -394,9 +473,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testImmediateCloseAfterGracefulShutdownWhileReadingPayload(ExecutorSupplier clientExecutorSupplier,
+                                                                    ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         when(publisherSupplier.apply(any())).thenReturn(publisher);
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
@@ -410,8 +493,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Test
-    public void testDeferCloseConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testDeferCloseConnection(ExecutorSupplier clientExecutorSupplier,
+                                  ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         /*
         TODO: This test is not quite as robust as it could be.
         If deferring the close is not working properly, it's possible for this test to pass, when it should fail.
@@ -427,38 +514,43 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Test
-    public void testSynchronousError() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testSynchronousError(ExecutorSupplier clientExecutorSupplier,
+                              ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_THROW_ERROR);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, "");
         assertTrue(response.headers().contains(CONTENT_LENGTH, ZERO));
     }
 
-    @Test
-    public void testSingleError() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testSingleError(ExecutorSupplier clientExecutorSupplier,
+                         ExecutorSupplier serverExecutorSupplier)
+        throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_SINGLE_ERROR);
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, "");
         assertTrue(response.headers().contains(CONTENT_LENGTH, ZERO));
     }
 
-    @Test
-    public void testErrorBeforeRead() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testErrorBeforeRead(ExecutorSupplier clientExecutorSupplier,
+                             ExecutorSupplier serverExecutorSupplier) throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
+        // Flaky test: https://github.com/apple/servicetalk/issues/245
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
         ignoreTestWhen(IMMEDIATE, CACHED);
         ignoreTestWhen(CACHED, IMMEDIATE);
         ignoreTestWhen(CACHED, CACHED);
 
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_BEFORE_READ).payloadBody(
-                getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
-
-        thrown.expect(either(instanceOf(RuntimeException.class)).or(instanceOf(ExecutionException.class)));
-        // Due to a race condition, the exception cause here can vary.
-        // If the socket closure is delayed slightly (for example, by delaying the Publisher.error(...) on the server)
-        // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
-        // the client throws NativeIoException (KQueue) or IOException (NIO).
-        thrown.expectCause(instanceOf(IOException.class));
+            getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
 
         try {
             final StreamingHttpResponse response = makeRequest(request);
@@ -468,18 +560,27 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
             final BlockingIterator<Buffer> httpPayloadChunks = response.payloadBody().toIterable().iterator();
 
-            httpPayloadChunks.next();
+            Exception e = assertThrows(Exception.class, () -> httpPayloadChunks.next());
+            assertThat(e, either(instanceOf(RuntimeException.class)).or(instanceOf(ExecutionException.class)));
+            // Due to a race condition, the exception cause here can vary.
+            // If the socket closure is delayed slightly
+            // (for example, by delaying the Publisher.error(...) on the server)
+            // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
+            // the client throws NativeIoException (KQueue) or IOException (NIO).
+            assertThat(e.getCause(), instanceOf(IOException.class));
         } finally {
             assertConnectionClosed();
         }
     }
 
-    @Test
-    public void testErrorDuringRead() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")
+    @MethodSource("clientExecutors")
+    void testErrorDuringRead(ExecutorSupplier clientExecutorSupplier,
+                             ExecutorSupplier serverExecutorSupplier) throws Exception {
+        setUp(clientExecutorSupplier, serverExecutorSupplier);
         ignoreTestWhen(CACHED, IMMEDIATE);
-
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_DURING_READ).payloadBody(
-                getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
+            getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
         final StreamingHttpResponse response = makeRequest(request);
 
         assertEquals(OK, response.status());
@@ -503,7 +604,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
         // Client inbound channel closed - should be same exception as above
         Throwable clientThrowable = ((NettyConnectionContext) streamingHttpConnection().connectionContext())
-                .transportError().toFuture().get();
+            .transportError().toFuture().get();
         assertClientTransportInboundClosed(clientThrowable);
         // Server outbound channel force closed (reset)
         Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get();
@@ -513,7 +614,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     private void assertClientTransportInboundClosed(final Throwable clientThrowable) {
         if (clientThrowable instanceof ClosedChannelException) {
             assertThat(clientThrowable.getMessage(), startsWith(
-                    "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) [id: 0x"));
+                "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) [id: 0x"));
         } else if (clientThrowable instanceof IOException) {
             // connection reset - unlikely, but possible due to races (no standard way to assert)
         } else {
@@ -522,7 +623,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         super.service(new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -531,7 +632,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 // Capture for future assertions on the transport errors
                 capturedServiceTransportErrorRef.set(((NettyConnectionContext) ctx).transportError());
                 return delegate().handle(ctx, request, responseFactory)
-                        .afterOnSubscribe(c -> serviceHandleLatch.countDown());
+                    .afterOnSubscribe(c -> serviceHandleLatch.countDown());
             }
         });
     }

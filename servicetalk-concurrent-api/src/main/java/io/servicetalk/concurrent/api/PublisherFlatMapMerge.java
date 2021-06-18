@@ -78,18 +78,18 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
     private final int maxDelayedErrors;
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          boolean delayError, Executor executor) {
-        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
+                          boolean delayError) {
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          boolean delayError, int maxConcurrency, Executor executor) {
-        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+                          boolean delayError, int maxConcurrency) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          int maxDelayedErrors, int maxConcurrency, Executor executor) {
-        super(original, executor);
+                          int maxDelayedErrors, int maxConcurrency) {
+        super(original);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
         }
@@ -330,7 +330,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             drainPending();
         }
 
-        private void enqueueFailed(Object item) {
+        private static void enqueueFailed(Object item) {
             LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
             // Note that we throw even if the item represents a terminal signal (even though we don't expect another
             // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
@@ -606,11 +606,20 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onComplete() {
-                if (parent.removeSubscriber(this, pendingDemandUpdater.getAndSet(this, -1))) {
+                final int unusedDemand = pendingDemandUpdater.getAndSet(this, -1);
+                if (unusedDemand < 0) {
+                    logDuplicateTerminal();
+                } else if (parent.removeSubscriber(this, unusedDemand)) {
                     parent.enqueueAndDrain(complete());
                 } else {
                     parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                 }
+            }
+
+            private void logDuplicateTerminal() {
+                LOGGER.warn("Duplicate terminal on Subscriber {}", this,
+                        new IllegalStateException("Duplicate terminal on Subscriber " + this + " forbidden see: " +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }

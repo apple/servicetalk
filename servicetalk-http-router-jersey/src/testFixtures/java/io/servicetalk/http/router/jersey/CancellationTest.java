@@ -226,7 +226,12 @@ public class CancellationTest {
             Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
-                    .beforeOnError(errorRef::set)
+                    .beforeOnError((err) -> {
+                        // Ignore racy cancellation, it's ordered safely.
+                        if (!(err instanceof IllegalStateException)) {
+                            errorRef.compareAndSet(null, err);
+                        }
+                    })
                     .afterCancel(cancelledLatch::countDown);
 
             toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {

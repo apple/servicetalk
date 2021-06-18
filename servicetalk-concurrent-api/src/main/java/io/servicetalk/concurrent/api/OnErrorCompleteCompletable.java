@@ -24,9 +24,8 @@ import static java.util.Objects.requireNonNull;
 final class OnErrorCompleteCompletable extends AbstractSynchronousCompletableOperator {
     private final Predicate<? super Throwable> predicate;
 
-    OnErrorCompleteCompletable(final Completable original, Predicate<? super Throwable> predicate,
-                               final Executor executor) {
-        super(original, executor);
+    OnErrorCompleteCompletable(final Completable original, Predicate<? super Throwable> predicate) {
+        super(original);
         this.predicate = requireNonNull(predicate);
     }
 
