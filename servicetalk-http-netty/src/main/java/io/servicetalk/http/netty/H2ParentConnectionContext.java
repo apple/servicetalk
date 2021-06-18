@@ -99,7 +99,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     public final Single<Throwable> transportError() {
-        return fromSource(transportError).publishOn(executionContext().executor());
+        return fromSource(transportError);
     }
 
     @Override
