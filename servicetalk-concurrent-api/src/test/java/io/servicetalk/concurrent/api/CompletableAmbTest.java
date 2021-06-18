@@ -30,7 +30,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class CompletableAmbTest {
+class CompletableAmbTest {
 
     private TestCompletable first;
     private TestCompletable second;
@@ -77,7 +77,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirst(final AmbParam ambParam) {
+    void successFirst(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -85,7 +85,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecond(final AmbParam ambParam) {
+    void successSecond(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -93,7 +93,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirst(final AmbParam ambParam) {
+    void failFirst(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -101,7 +101,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecond(final AmbParam ambParam) {
+    void failSecond(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
@@ -109,7 +109,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirstThenSecond(final AmbParam ambParam) {
+    void successFirstThenSecond(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -118,7 +118,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecondThenFirst(final AmbParam ambParam) {
+    void successSecondThenFirst(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -127,7 +127,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirstThenSecond(final AmbParam ambParam) {
+    void failFirstThenSecond(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -136,7 +136,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecondThenFirst(final AmbParam ambParam) {
+    void failSecondThenFirst(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
@@ -145,7 +145,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successFirstThenSecondFail(final AmbParam ambParam) {
+    void successFirstThenSecondFail(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
@@ -154,7 +154,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void successSecondThenFirstFail(final AmbParam ambParam) {
+    void successSecondThenFirstFail(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
@@ -163,7 +163,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failFirstThenSecondSuccess(final AmbParam ambParam) {
+    void failFirstThenSecondSuccess(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
@@ -172,7 +172,7 @@ public class CompletableAmbTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(AmbParam.class)
-    public void failSecondThenFirstSuccess(final AmbParam ambParam) {
+    void failSecondThenFirstSuccess(final AmbParam ambParam) {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);

@@ -57,10 +57,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     @Override
     public abstract <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
     @Override
     public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
                                                                    LogLevel logLevel,
@@ -202,6 +198,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
+     * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
     public abstract HttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, SDE> retryStrategy);

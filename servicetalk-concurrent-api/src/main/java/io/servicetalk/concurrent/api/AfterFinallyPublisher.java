@@ -23,8 +23,8 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
 
     private final TerminalSignalConsumer doFinally;
 
-    AfterFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally, Executor executor) {
-        super(original, executor);
+    AfterFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally) {
+        super(original);
         this.doFinally = requireNonNull(doFinally);
     }
 

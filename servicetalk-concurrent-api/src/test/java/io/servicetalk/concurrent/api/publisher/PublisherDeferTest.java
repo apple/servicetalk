@@ -32,19 +32,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class PublisherDeferTest {
+class PublisherDeferTest {
 
     private Supplier<Publisher<Integer>> factory;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = mock(Supplier.class);
         when(factory.get()).thenReturn(empty());
     }
 
     @Test
-    public void testEverySubscribeCreatesNew() {
+    void testEverySubscribeCreatesNew() {
         Publisher<Integer> source = Publisher.defer(factory);
         subscribeAndVerify(source);
         subscribeAndVerify(source);

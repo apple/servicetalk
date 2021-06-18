@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -41,20 +40,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Standard timeout shared by test classes. The {@link #lookForStuckThread} setting is ignored.
  */
 public final class ServiceTalkTestTimeout extends Timeout {
-    public static final boolean CI = parseBoolean(System.getenv("CI"));
-    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 30 : 10;
-    public static final String THREAD_PREFIX = "Time-limited test";
+
+    private static final String THREAD_PREFIX = "Time-limited test";
     private final Runnable onTimeout;
 
     public ServiceTalkTestTimeout() {
-        this(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        this(TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     public ServiceTalkTestTimeout(long timeout, TimeUnit unit) {
         this(timeout, unit, () -> { });
     }
 
-    public ServiceTalkTestTimeout(long timeout, TimeUnit unit, Runnable onTimeout) {
+    private ServiceTalkTestTimeout(long timeout, TimeUnit unit, Runnable onTimeout) {
         super(timeout, unit);
         this.onTimeout = requireNonNull(onTimeout);
     }

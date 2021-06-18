@@ -38,7 +38,8 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
 @RunWith(Parameterized.class)
 public class ExecutorThrowsTest {
@@ -165,13 +166,13 @@ public class ExecutorThrowsTest {
         Executor original = from(task -> {
             throw DELIBERATE_EXCEPTION;
         });
-        return new OffloaderAwareExecutor(original, threadBasedOffloaderFactory());
+        return new OffloaderAwareExecutor(original, defaultOffloaderFactory());
     }
 
     private void verifyError() throws Throwable {
-        Throwable err = errors.take();
+        Throwable err = errors.peek();
         if (err != DELIBERATE_EXCEPTION) {
-            throw err;
+            assertNoAsyncErrors(errors);
         }
     }
 }

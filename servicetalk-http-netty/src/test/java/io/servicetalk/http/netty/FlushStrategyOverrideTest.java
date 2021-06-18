@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -31,16 +30,15 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 import io.servicetalk.transport.netty.internal.MockFlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -56,25 +54,23 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-public class FlushStrategyOverrideTest {
+class FlushStrategyOverrideTest {
 
-    @Rule
-    public final ExecutionContextRule ctx = immediate();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    final ExecutionContextExtension ctx = immediate();
 
     private StreamingHttpClient client;
     private ServerContext serverCtx;
     private ReservedStreamingHttpConnection conn;
     private FlushingService service;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         service = new FlushingService();
         serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
@@ -91,13 +87,13 @@ public class FlushStrategyOverrideTest {
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         newCompositeCloseable().appendAll(conn, client, serverCtx).closeAsync().toFuture().get();
     }
 
     @Test
-    public void overrideFlush() throws Throwable {
+    void overrideFlush() throws Throwable {
         NettyConnectionContext nctx = (NettyConnectionContext) conn.connectionContext();
         MockFlushStrategy clientStrategy = new MockFlushStrategy();
         Cancellable c = nctx.updateFlushStrategy((old, isOriginal) -> isOriginal ? clientStrategy : old);
@@ -141,7 +137,7 @@ public class FlushStrategyOverrideTest {
 
     private static final class FlushingService implements StreamingHttpService {
 
-        private BlockingQueue<MockFlushStrategy> flushStrategies = new LinkedBlockingQueue<>();
+        private final BlockingQueue<MockFlushStrategy> flushStrategies = new LinkedBlockingQueue<>();
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,

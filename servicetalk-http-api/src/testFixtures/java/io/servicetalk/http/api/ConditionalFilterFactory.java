@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package io.servicetalk.http.api;
 
 import java.util.function.Predicate;
+
+import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
 
 public final class ConditionalFilterFactory
         implements StreamingHttpConnectionFilterFactory, StreamingHttpClientFilterFactory {
@@ -39,8 +42,8 @@ public final class ConditionalFilterFactory
     }
 
     public FilterFactory append(FilterFactory append) {
-        StreamingHttpClientFilterFactory clientFactory = append((StreamingHttpClientFilterFactory) append);
-        StreamingHttpConnectionFilterFactory connectionFactory = append((StreamingHttpConnectionFilterFactory) append);
+        StreamingHttpClientFilterFactory clientFactory = appendClientFilterFactory(this, append);
+        StreamingHttpConnectionFilterFactory connectionFactory = appendConnectionFilterFactory(this, append);
         return new FilterFactory() {
             @Override
             public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {

@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RetryTest {
+class RetryTest {
 
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
@@ -52,7 +52,7 @@ public class RetryTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new TestPublisher<>();
         shouldRetry = (BiIntPredicate<Throwable>) mock(BiIntPredicate.class);
         when(shouldRetry.test(anyInt(), any())).thenAnswer(invocation -> shouldRetryValue);
@@ -60,7 +60,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testComplete() {
+    void testComplete() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
@@ -70,7 +70,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testRetryCount() {
+    void testRetryCount() {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
@@ -81,7 +81,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testRequestAcrossRetry() {
+    void testRequestAcrossRetry() {
         shouldRetryValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -95,7 +95,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testTwoFailures() {
+    void testTwoFailures() {
         shouldRetryValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -113,7 +113,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testMaxRetries() {
+    void testMaxRetries() {
         shouldRetryValue = true;
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
@@ -128,7 +128,7 @@ public class RetryTest {
     }
 
     @Test
-    public void testCancel() {
+    void testCancel() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
@@ -140,7 +140,7 @@ public class RetryTest {
     }
 
     @Test
-    public void exceptionInTerminalCallsOnError() {
+    void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         subscriber = new TestPublisherSubscriber<>();
         source = new TestPublisher<>();

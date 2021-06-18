@@ -18,8 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.channels.ClosedChannelException;
 
@@ -39,13 +39,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class WriteStreamSubscriberTest extends AbstractWriteTest {
+class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     private WriteStreamSubscriber subscriber;
     private Subscription subscription;
     private CloseHandler closeHandler;
 
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -58,7 +58,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testSingleItem() {
+    void testSingleItem() {
         WriteInfo info = writeAndFlush("Hello");
         subscriber.onComplete();
         verifyListenerSuccessful();
@@ -68,7 +68,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testMultipleItem() {
+    void testMultipleItem() {
         WriteInfo info1 = writeAndFlush("Hello1");
         WriteInfo info2 = writeAndFlush("Hello2");
         WriteInfo info3 = writeAndFlush("Hello3");
@@ -80,21 +80,21 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testOnErrorNoWrite() throws InterruptedException {
+    void testOnErrorNoWrite() throws InterruptedException {
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
         assertChannelClose();
     }
 
     @Test
-    public void testOnCompleteNoWrite() {
+    void testOnCompleteNoWrite() {
         subscriber.onComplete();
         verify(this.completableSubscriber).onComplete();
         verifyZeroInteractions(closeHandler);
     }
 
     @Test
-    public void testOnErrorPostWrite() throws InterruptedException {
+    void testOnErrorPostWrite() throws InterruptedException {
         writeAndFlush("Hello");
         channel.flushOutbound();
         subscriber.onError(DELIBERATE_EXCEPTION);
@@ -104,7 +104,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testCancelBeforeOnSubscribe() {
+    void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
         subscription = mock(Subscription.class);
@@ -115,14 +115,14 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testCancelAfterOnSubscribe() {
+    void testCancelAfterOnSubscribe() {
         subscriber.cancel();
         verify(subscription).cancel();
         verifyZeroInteractions(closeHandler);
     }
 
     @Test
-    public void testRequestMoreBeforeOnSubscribe() {
+    void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
@@ -138,17 +138,17 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void writeFailureClosesChannel() throws Exception {
+    void writeFailureClosesChannel() throws Exception {
         failingWriteClosesChannel(() -> failingWriteHandler.failNextWritePromise());
     }
 
     @Test
-    public void uncaughtWriteExceptionClosesChannel() throws Exception {
+    void uncaughtWriteExceptionClosesChannel() throws Exception {
         failingWriteClosesChannel(() -> failingWriteHandler.throwFromNextWrite());
     }
 
     @Test
-    public void onNextAfterChannelClose() {
+    void onNextAfterChannelClose() {
         subscriber.channelClosed(new ClosedChannelException());
         subscriber.onNext("Hello");
         channel.runPendingTasks();

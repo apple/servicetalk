@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
 import static org.mockito.Mockito.mock;
 
 public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttpFilterTest {
@@ -65,9 +66,10 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
         }
     }
 
-    private StreamingHttpConnection newConnection(AtomicBoolean closed) {
+    private static StreamingHttpConnection newConnection(AtomicBoolean closed) {
         return TestStreamingHttpConnection.from(REQ_RES_FACTORY, testHttpExecutionContext(),
-                mock(HttpConnectionContext.class), new TestCondFilterFactory(closed).append(REQ_FILTER));
+                mock(HttpConnectionContext.class),
+                appendConnectionFilterFactory(new TestCondFilterFactory(closed), REQ_FILTER));
     }
 
     @Override

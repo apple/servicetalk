@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
@@ -43,11 +42,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http2.Http2Exception.StreamException;
 import io.netty.handler.codec.http2.Http2StreamChannel;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -58,12 +55,13 @@ import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -71,10 +69,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class StreamObserverTest {
+class StreamObserverTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
@@ -89,7 +86,7 @@ public class StreamObserverTest {
     private final HttpClient client;
     private final CountDownLatch requestReceived = new CountDownLatch(1);
 
-    public StreamObserverTest() {
+    StreamObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");
@@ -121,14 +118,14 @@ public class StreamObserverTest {
             return h2Builder;
         });
         client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
-                .protocols(h2().enableFrameLogging("h2-logging").build())
+                .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build())
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
                 .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                 .build();
     }
 
-    @After
-    public void teardown() {
+    @AfterEach
+    void teardown() {
         safeSync(() -> serverAcceptorChannel.close().syncUninterruptibly());
         safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly());
         safeClose(client);
@@ -142,9 +139,9 @@ public class StreamObserverTest {
         }
     }
 
-    @Ignore("https://github.com/apple/servicetalk/issues/1264")
+    @Disabled("https://github.com/apple/servicetalk/issues/1264")
     @Test
-    public void maxActiveStreamsViolationError() throws Exception {
+    void maxActiveStreamsViolationError() throws Exception {
         CountDownLatch maxConcurrentStreamsValueSetToOne = new CountDownLatch(1);
         try (HttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
             conn.transportEventStream(MAX_CONCURRENCY).forEach(event -> {

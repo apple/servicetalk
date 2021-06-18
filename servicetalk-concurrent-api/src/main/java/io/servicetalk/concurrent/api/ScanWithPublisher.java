@@ -33,16 +33,30 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     private final Publisher<T> original;
     private final Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier;
 
-    ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> accumulator,
-                      Executor executor) {
-        this(original, new SupplierScanWithMapper<>(initial, accumulator), executor);
+    ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
+        this(original, new SupplierScanWithMapper<>(initial, accumulator));
     }
 
-    ScanWithPublisher(Publisher<T> original, Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier,
-                      Executor executor) {
-        super(executor, true);
+    ScanWithPublisher(Publisher<T> original,
+                      Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
         this.mapperSupplier = requireNonNull(mapperSupplier);
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
+    }
+
+    /**
+     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
+     * copied.
+     *
+     * @return true if the async context should be shared on subscribe
+     */
+    @Override
+    boolean shareContextOnSubscribe() {
+        return true;
     }
 
     @Override

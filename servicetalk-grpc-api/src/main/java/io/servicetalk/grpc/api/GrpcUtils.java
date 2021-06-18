@@ -51,8 +51,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
@@ -167,18 +165,32 @@ final class GrpcUtils {
         return response;
     }
 
-    static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory,
-                                         @Nullable final GrpcServiceContext context,
-                                         final Throwable cause, final BufferAllocator allocator) {
-        HttpResponse response = newResponse(responseFactory, context, allocator);
-        setStatus(response.trailers(), cause, allocator);
+    static HttpResponse newErrorResponse(
+            final HttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert status != null || cause != null;
+        final HttpResponse response = responseFactory.ok();
+        initResponse(response, context);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
         return response;
     }
 
-    static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                  @Nullable final GrpcServiceContext context, final Throwable cause,
-                                                  final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, context).transform(new ErrorUpdater(cause, allocator));
+    static StreamingHttpResponse newErrorResponse(
+            final StreamingHttpResponseFactory responseFactory, @Nullable final GrpcServiceContext context,
+            @Nullable final GrpcStatus status, @Nullable final Throwable cause, final BufferAllocator allocator) {
+        assert (status != null && cause == null) || (status == null && cause != null);
+        final StreamingHttpResponse response = responseFactory.ok();
+        initResponse(response, context);
+        if (status != null) {
+            setStatus(response.headers(), status, null, allocator);
+        } else {
+            setStatus(response.headers(), cause, allocator);
+        }
+        return response;
     }
 
     private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory,
@@ -243,13 +255,19 @@ final class GrpcUtils {
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers. Since this is streaming response and we have the headers now, we check for the
         // grpc-status here first. If there is no grpc-status in headers, we look for it in trailers later.
+
         final HttpHeaders headers = response.headers();
         ensureGrpcContentType(response.status(), headers);
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
-            return response.messageBody().ignoreElements()
-                    .concat(grpcStatusException != null ? failed(grpcStatusException) : empty());
+            if (grpcStatusException != null) {
+                // Give priority to the error if it happens, to allow delayed requests or streams to terminate.
+                return Publisher.<Resp>failed(grpcStatusException)
+                        .concat(response.messageBody().ignoreElements());
+            } else {
+                return response.messageBody().ignoreElements().toPublisher();
+            }
         }
 
         response.transform(ENSURE_GRPC_STATUS_RECEIVED);
@@ -404,7 +422,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
         StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
-            if (codec == identity()) {
+            if (identity().equals(codec)) {
                 continue;
             }
             builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);
@@ -493,22 +511,6 @@ final class GrpcUtils {
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
-            return trailers;
-        }
-    }
-
-    private static final class ErrorUpdater extends StatelessTrailersTransformer<Buffer> {
-        private final Throwable cause;
-        private final BufferAllocator allocator;
-
-        ErrorUpdater(final Throwable cause, final BufferAllocator allocator) {
-            this.cause = cause;
-            this.allocator = allocator;
-        }
-
-        @Override
-        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            setStatus(trailers, cause, allocator);
             return trailers;
         }
     }

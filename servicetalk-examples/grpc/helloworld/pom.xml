@@ -10,7 +10,7 @@
 
   <properties>
     <!-- servicetalk.version is updated automatically by release.sh during the ServiceTalk release process -->
-    <servicetalk.version>0.39.0</servicetalk.version>
+    <servicetalk.version>0.41.0</servicetalk.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <protoc.version>3.12.3</protoc.version>
     <os-mave-plugin.version>1.6.0</os-mave-plugin.version>

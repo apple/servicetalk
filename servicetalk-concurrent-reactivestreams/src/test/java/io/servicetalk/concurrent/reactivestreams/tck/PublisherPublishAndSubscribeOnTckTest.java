@@ -25,6 +25,6 @@ public class PublisherPublishAndSubscribeOnTckTest extends PublisherAbstractOffl
 
     @Override
     Publisher<Integer> applyOffload(final Publisher<Integer> original, final Executor executor) {
-        return original.publishAndSubscribeOnOverride(executor);
+        return original.publishAndSubscribeOn(executor);
     }
 }

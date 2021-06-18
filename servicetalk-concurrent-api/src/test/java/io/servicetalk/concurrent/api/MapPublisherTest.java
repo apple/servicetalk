@@ -24,14 +24,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-public class MapPublisherTest {
+class MapPublisherTest {
 
     private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
             .disableAutoOnSubscribe().build();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void testMapFunctionReturnsNull() {
+    void testMapFunctionReturnsNull() {
         Publisher<String> map = source.map(v -> null);
 
         toSource(map).subscribe(subscriber);

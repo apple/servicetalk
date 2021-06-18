@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class AsyncContextDisableTest {
+class AsyncContextDisableTest {
     private static final Key<String> K1 = Key.newKey("k1");
 
     @Test
-    public void testDisableAsyncContext() throws Exception {
+    void testDisableAsyncContext() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             Executor executor = Executors.newCachedThreadExecutor();
             Executor executor2 = null;
@@ -72,7 +72,7 @@ public class AsyncContextDisableTest {
     }
 
     @Test
-    public void testAutoEnableDoesNotOverrideDisable() throws Exception {
+    void testAutoEnableDoesNotOverrideDisable() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             AsyncContext.disable();
             try {

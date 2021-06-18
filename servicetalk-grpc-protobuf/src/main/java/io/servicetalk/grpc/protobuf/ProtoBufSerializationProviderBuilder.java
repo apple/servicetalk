@@ -258,7 +258,7 @@ public final class ProtoBufSerializationProviderBuilder {
 
         private void addContentHeaders(final HttpHeaders headers) {
             headers.set(CONTENT_TYPE, APPLICATION_GRPC_PROTO);
-            if (codec != identity()) {
+            if (!identity().equals(codec)) {
                 headers.set(GRPC_MESSAGE_ENCODING_KEY, codec.name());
             }
         }

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -26,13 +26,13 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.lang.Character.toLowerCase;
 import static java.lang.Character.toUpperCase;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AsciiBufferTest {
+class AsciiBufferTest {
     @Test
-    public void testHashCode() {
+    void testHashCode() {
         for (int i = 0; i < 1000; ++i) {
             StringBuilder sb = new StringBuilder(i);
             for (int x = 0; x < i; ++x) {
@@ -61,38 +61,38 @@ public class AsciiBufferTest {
         CharSequence buffer2FlipCase = newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(flipCase));
         verifyDifferentAsciiStringTypes(flipCase, bufferFlipCase, buffer2FlipCase);
         if (flipCase.equals(s)) {
-            assertEquals("failure for " + s + " and " + flipCase, buffer, bufferFlipCase);
-            assertEquals("failure for " + s + " and " + flipCase, buffer2, buffer2FlipCase);
+            assertEquals(buffer, bufferFlipCase, "failure for " + s + " and " + flipCase);
+            assertEquals(buffer2, buffer2FlipCase, "failure for " + s + " and " + flipCase);
         } else {
-            assertNotEquals("failure for " + s + " and " + flipCase, buffer, bufferFlipCase);
-            assertNotEquals("failure for " + s + " and " + flipCase, buffer2, buffer2FlipCase);
+            assertNotEquals(buffer, bufferFlipCase, "failure for " + s + " and " + flipCase);
+            assertNotEquals(buffer2, buffer2FlipCase, "failure for " + s + " and " + flipCase);
         }
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(buffer, bufferFlipCase));
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(buffer, buffer2FlipCase));
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(s, flipCase));
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(bufferFlipCase, buffer2FlipCase));
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(bufferFlipCase, s));
-        assertTrue("failure for " + s + " and " + flipCase, contentEqualsIgnoreCase(buffer2FlipCase, flipCase));
-        assertEquals("failure for " + s + " and " + flipCase, buffer.hashCode(), bufferFlipCase.hashCode());
-        assertEquals("failure for " + s + " and " + flipCase, buffer.hashCode(), buffer2FlipCase.hashCode());
-        assertEquals("failure for " + s + " and " + flipCase, buffer.hashCode(), caseInsensitiveHashCode(s));
-        assertEquals("failure for " + s + " and " + flipCase, buffer.hashCode(), caseInsensitiveHashCode(flipCase));
+        assertTrue(contentEqualsIgnoreCase(buffer, bufferFlipCase), "failure for " + s + " and " + flipCase);
+        assertTrue(contentEqualsIgnoreCase(buffer, buffer2FlipCase), "failure for " + s + " and " + flipCase);
+        assertTrue(contentEqualsIgnoreCase(s, flipCase), "failure for " + s + " and " + flipCase);
+        assertTrue(contentEqualsIgnoreCase(bufferFlipCase, buffer2FlipCase), "failure for " + s + " and " + flipCase);
+        assertTrue(contentEqualsIgnoreCase(bufferFlipCase, s), "failure for " + s + " and " + flipCase);
+        assertTrue(contentEqualsIgnoreCase(buffer2FlipCase, flipCase), "failure for " + s + " and " + flipCase);
+        assertEquals(buffer.hashCode(), bufferFlipCase.hashCode(), "failure for " + s + " and " + flipCase);
+        assertEquals(buffer.hashCode(), buffer2FlipCase.hashCode(), "failure for " + s + " and " + flipCase);
+        assertEquals(buffer.hashCode(), caseInsensitiveHashCode(s), "failure for " + s + " and " + flipCase);
+        assertEquals(buffer.hashCode(), caseInsensitiveHashCode(flipCase), "failure for " + s + " and " + flipCase);
     }
 
     private static void verifyDifferentAsciiStringTypes(String s, CharSequence buffer, CharSequence buffer2) {
-        assertEquals("failure for " + s, buffer.hashCode(), buffer2.hashCode());
-        assertEquals("failure for " + s, buffer.hashCode(), caseInsensitiveHashCode(s));
-        assertEquals("failure for " + s, buffer, buffer2);
-        assertTrue("failure for " + s, contentEqualsIgnoreCase(buffer, buffer2));
-        assertTrue("failure for " + s, contentEqualsIgnoreCase(buffer, s));
-        assertTrue("failure for " + s, contentEqualsIgnoreCase(buffer2, s));
-        assertTrue("failure for " + s, contentEquals(buffer, buffer2));
-        assertTrue("failure for " + s, contentEquals(buffer, s));
-        assertTrue("failure for " + s, contentEquals(buffer2, s));
+        assertEquals(buffer.hashCode(), buffer2.hashCode(), "failure for " + s);
+        assertEquals(buffer.hashCode(), caseInsensitiveHashCode(s), "failure for " + s);
+        assertEquals(buffer, buffer2, "failure for " + s);
+        assertTrue(contentEqualsIgnoreCase(buffer, buffer2), "failure for " + s);
+        assertTrue(contentEqualsIgnoreCase(buffer, s), "failure for " + s);
+        assertTrue(contentEqualsIgnoreCase(buffer2, s), "failure for " + s);
+        assertTrue(contentEquals(buffer, buffer2), "failure for " + s);
+        assertTrue(contentEquals(buffer, s), "failure for " + s);
+        assertTrue(contentEquals(buffer2, s), "failure for " + s);
     }
 
     @Test
-    public void testSubSequence() {
+    void testSubSequence() {
         testSubSequence(newAsciiString("some-data"));
         testSubSequence(newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii("some-data")));
     }

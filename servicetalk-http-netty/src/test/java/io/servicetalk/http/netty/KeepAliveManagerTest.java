@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import io.netty.channel.ChannelPromise;
@@ -26,9 +25,7 @@ import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.util.concurrent.Promise;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,22 +40,23 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class KeepAliveManagerTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class KeepAliveManagerTest {
+
 
     private final BlockingQueue<ScheduledTask> scheduledTasks;
     private final EmbeddedChannel channel;
 
-    public KeepAliveManagerTest() {
+    KeepAliveManagerTest() {
         scheduledTasks = new LinkedBlockingQueue<>();
         channel = new EmbeddedChannel();
     }
 
     @Test
-    public void keepAliveDisallowedWithNoActiveStreams() {
+    void keepAliveDisallowedWithNoActiveStreams() {
         KeepAliveManager manager = newManager(false);
         manager.channelIdle();
         verifyNoWrite();
@@ -66,14 +64,14 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void keepAliveAllowedWithNoActiveStreams() {
+    void keepAliveAllowedWithNoActiveStreams() {
         KeepAliveManager manager = newManager(true);
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
     }
 
     @Test
-    public void keepAliveWithActiveStreams() {
+    void keepAliveWithActiveStreams() {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         manager.channelIdle();
@@ -81,7 +79,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void keepAlivePingAckReceived() {
+    void keepAlivePingAckReceived() {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         manager.channelIdle();
@@ -98,7 +96,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void keepAlivePingAckWithUnknownContent() {
+    void keepAlivePingAckWithUnknownContent() {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         manager.channelIdle();
@@ -112,7 +110,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void keepAliveMissingPingAck() {
+    void keepAliveMissingPingAck() {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         manager.channelIdle();
@@ -121,7 +119,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void gracefulCloseNoActiveStreams() throws Exception {
+    void gracefulCloseNoActiveStreams() throws Exception {
         KeepAliveManager manager = newManager(false);
         Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
 
@@ -131,7 +129,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void gracefulCloseWithActiveStreams() throws Exception {
+    void gracefulCloseWithActiveStreams() throws Exception {
         KeepAliveManager manager = newManager(false);
         EmbeddedChannel activeStream = addActiveStream(manager);
         Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
@@ -145,7 +143,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void gracefulCloseNoActiveStreamsMissingPingAck() throws Exception {
+    void gracefulCloseNoActiveStreamsMissingPingAck() throws Exception {
         KeepAliveManager manager = newManager(false);
         initiateGracefulCloseVerifyGoAwayAndPing(manager);
 
@@ -157,7 +155,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void gracefulCloseActiveStreamsMissingPingAck() throws Exception {
+    void gracefulCloseActiveStreamsMissingPingAck() throws Exception {
         KeepAliveManager manager = newManager(false);
         EmbeddedChannel activeStream = addActiveStream(manager);
         initiateGracefulCloseVerifyGoAwayAndPing(manager);
@@ -174,7 +172,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void gracefulClosePendingPingsCloseConnection() throws Exception {
+    void gracefulClosePendingPingsCloseConnection() throws Exception {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
@@ -188,7 +186,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void pingsAreAcked() {
+    void pingsAreAcked() {
         KeepAliveManager manager = newManager(false);
         long pingContent = ThreadLocalRandom.current().nextLong();
         manager.pingReceived(new DefaultHttp2PingFrame(pingContent, false));
@@ -198,7 +196,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void channelClosedDuringGracefulClose() throws Exception {
+    void channelClosedDuringGracefulClose() throws Exception {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         initiateGracefulCloseVerifyGoAwayAndPing(manager);
@@ -213,7 +211,7 @@ public class KeepAliveManagerTest {
     }
 
     @Test
-    public void channelClosedDuringPing() {
+    void channelClosedDuringPing() {
         KeepAliveManager manager = newManager(false);
         addActiveStream(manager);
         manager.channelIdle();
@@ -232,7 +230,9 @@ public class KeepAliveManagerTest {
         verifyNoWrite();
         verifyNoScheduledTasks();
 
-        manager.initiateGracefulClose(() -> { });
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated, never()).run();
         verifyNoWrite();
         verifyNoScheduledTasks();
     }
@@ -265,7 +265,10 @@ public class KeepAliveManagerTest {
     }
 
     private Http2PingFrame initiateGracefulCloseVerifyGoAwayAndPing(final KeepAliveManager manager) {
-        manager.initiateGracefulClose(() -> { });
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated).run();
+
         Http2GoAwayFrame firstGoAway = verifyWrite(instanceOf(Http2GoAwayFrame.class));
         assertThat("Unexpected error in go_away", firstGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
         Http2PingFrame pingFrame = verifyWrite(instanceOf(Http2PingFrame.class));
@@ -289,7 +292,7 @@ public class KeepAliveManagerTest {
         assertThat("Unexpected tasks scheduled.", scheduledTasks.poll(), is(nullValue()));
     }
 
-    private EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
+    private static EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
         EmbeddedChannel stream = new EmbeddedChannel();
         manager.trackActiveStream(stream);
         return stream;

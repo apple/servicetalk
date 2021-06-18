@@ -15,17 +15,17 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
-public class DefaultHttpCookiePairTest {
+class DefaultHttpCookiePairTest {
 
     @Test
-    public void testEqual() {
+    void testEqual() {
         assertThat(new DefaultHttpCookiePair("foo", "bar"),
                 is(new DefaultHttpCookiePair("foo", "bar")));
         assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
@@ -45,7 +45,7 @@ public class DefaultHttpCookiePairTest {
     }
 
     @Test
-    public void testNotEqual() {
+    void testNotEqual() {
         // Name is case-sensitive:
         assertThat(new DefaultHttpCookiePair("foo", "bar"),
                    is(not(new DefaultHttpCookiePair("Foo", "bar"))));

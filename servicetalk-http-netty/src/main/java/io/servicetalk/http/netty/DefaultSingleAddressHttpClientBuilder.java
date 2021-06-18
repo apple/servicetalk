@@ -45,7 +45,6 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -273,8 +272,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
-                connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
-                        roConfig.connectAddress()).append(connectionFactoryFilter);
+                connectionFactoryFilter = appendConnectionFactoryFilter(
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress()), connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
@@ -375,7 +374,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         if (currClientFilterFactory == null) {
             return appendClientFilterFactory;
         } else {
-            return currClientFilterFactory.append(appendClientFilterFactory);
+            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
         }
     }
 
@@ -436,13 +435,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
-    @Deprecated
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
-        config.tcpConfig().enableWireLogging(loggerName);
-        return this;
-    }
-
     @Override
     public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {
@@ -459,18 +451,32 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        connectionFilterFactory = connectionFilterFactory == null ?
-                requireNonNull(factory) : connectionFilterFactory.append(factory);
+        requireNonNull(factory);
+        connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    // Use another method to keep final references and avoid StackOverflowError
+    private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
+            @Nullable final StreamingHttpConnectionFilterFactory current,
+            final StreamingHttpConnectionFilterFactory next) {
+        return current == null ? next : connection -> current.create(next.create(connection));
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = connectionFactoryFilter.append(factory);
+        requireNonNull(factory);
+        connectionFactoryFilter = appendConnectionFactoryFilter(connectionFactoryFilter, factory);
         influencerChainBuilder.add(factory);
         return this;
+    }
+
+    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> current,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> next) {
+        return connection -> current.create(next.create(connection));
     }
 
     @Override
@@ -503,8 +509,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
-        clientFilterFactory = clientFilterFactory == null ? requireNonNull(factory) :
-                clientFilterFactory.append(factory);
+        requireNonNull(factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -531,22 +537,30 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
-    @Deprecated
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> secure() {
-        assert address != null;
-        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(sslConfig -> {
-                    sslConfig(sslConfig);
-                    return DefaultSingleAddressHttpClientBuilder.this;
-                });
-    }
-
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
         assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
         setFallbackHostAndPort(config, address);
         config.tcpConfig().sslConfig(sslConfig);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+        config.inferPeerHost(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+        config.inferPeerPort(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+        config.inferSniHostname(shouldInfer);
         return this;
     }
 

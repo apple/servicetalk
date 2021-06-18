@@ -15,16 +15,13 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 
@@ -43,27 +40,24 @@ import static io.opentracing.tag.Tags.SPAN_KIND_PRODUCER;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ZipkinPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
+class ZipkinPublisherTest {
     private InMemoryTracer tracer;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).persistLogs(true).build();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
     }
 
     @Test
-    public void testReportSpan() throws ExecutionException, InterruptedException {
+    void testReportSpan() throws ExecutionException, InterruptedException {
         SpanHolder reporter = new SpanHolder();
         try (ZipkinPublisher publisher = buildPublisher(reporter)) {
             InMemorySpan span = buildSpan(SPAN_KIND_SERVER);
@@ -87,7 +81,7 @@ public class ZipkinPublisherTest {
     }
 
     @Test
-    public void testReportSpanSupportsAllKinds() throws ExecutionException, InterruptedException {
+    void testReportSpanSupportsAllKinds() throws ExecutionException, InterruptedException {
         final HashMap<String, Span.Kind> kinds = new HashMap<>();
         kinds.put(SPAN_KIND_CLIENT, Span.Kind.CLIENT);
         kinds.put(SPAN_KIND_SERVER, Span.Kind.SERVER);

@@ -23,7 +23,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.net.InetSocketAddress;
@@ -37,29 +37,29 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class CopyByteBufHandlerTest {
+class CopyByteBufHandlerTest {
 
     @Test
-    public void doesNotAcceptPooledAllocator() {
+    void doesNotAcceptPooledAllocator() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> new CopyByteBufHandler(PooledByteBufAllocator.DEFAULT));
         assertThat(ex.getMessage(), equalTo("ByteBufAllocator must be unpooled"));
     }
 
     @Test
-    public void acceptsUnpooledAllocator() {
+    void acceptsUnpooledAllocator() {
         assertThat(new CopyByteBufHandler(UnpooledByteBufAllocator.DEFAULT), is(notNullValue()));
     }
 
     @Test
-    public void doesNotProcessByteBufHolder() {
+    void doesNotProcessByteBufHolder() {
         CopyByteBufHandler handler = new CopyByteBufHandler(UnpooledByteBufAllocator.DEFAULT);
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         ByteBuf buf = mock(ByteBuf.class);
@@ -74,7 +74,7 @@ public class CopyByteBufHandlerTest {
     }
 
     @Test
-    public void copiesAndReleasesPooledByteBuf() {
+    void copiesAndReleasesPooledByteBuf() {
         ByteBufAllocator pooledAllocator = PooledByteBufAllocator.DEFAULT;
         ByteBufAllocator unpooledAllocator = UnpooledByteBufAllocator.DEFAULT;
         CopyByteBufHandler handler = new CopyByteBufHandler(unpooledAllocator);
@@ -102,7 +102,7 @@ public class CopyByteBufHandlerTest {
     }
 
     @Test
-    public void forwardsOtherTypes() {
+    void forwardsOtherTypes() {
         CopyByteBufHandler handler = new CopyByteBufHandler(UnpooledByteBufAllocator.DEFAULT);
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         ArgumentCaptor<String> valueCapture = ArgumentCaptor.forClass(String.class);

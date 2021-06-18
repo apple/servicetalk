@@ -37,9 +37,9 @@ import static java.util.Objects.requireNonNull;
 final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<T, B> {
     private final BufferStrategy<T, ?, B> bufferStrategy;
 
-    PublisherBuffer(final Publisher<T> original, final Executor executor,
+    PublisherBuffer(final Publisher<T> original,
                     final BufferStrategy<T, ?, B> bufferStrategy) {
-        super(original, executor);
+        super(original);
         this.bufferStrategy = requireNonNull(bufferStrategy);
     }
 

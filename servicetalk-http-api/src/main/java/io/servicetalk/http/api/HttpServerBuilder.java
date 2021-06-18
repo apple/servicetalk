@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
@@ -82,16 +83,6 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Initiates security configuration for this server. Calling any {@code commit} method on the returned
-     * {@link HttpServerSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
-     * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    @Deprecated
-    public abstract HttpServerSecurityConfigurator secure();
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
@@ -130,16 +121,6 @@ public abstract class HttpServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> HttpServerBuilder listenSocketOption(SocketOption<T> option, T value);
-
-    /**
-     * Enables wire-logging for this server.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract HttpServerBuilder enableWireLogging(String loggerName);
 
     /**
      * Enables wire-logging for this server.
@@ -239,11 +220,8 @@ public abstract class HttpServerBuilder {
      * @return {@code this}
      */
     public final HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        if (serviceFilter == null) {
-            serviceFilter = factory;
-        } else {
-            serviceFilter = serviceFilter.append(factory);
-        }
+        requireNonNull(factory);
+        serviceFilter = appendFilter(serviceFilter, factory);
         if (!influencerChainBuilder.appendIfInfluencer(factory)) {
             influencerChainBuilder.append(defaultStreamingInfluencer());
         }
@@ -451,11 +429,17 @@ public abstract class HttpServerBuilder {
         StreamingHttpServiceFilterFactory currServiceFilter = serviceFilter;
         if (!AsyncContext.isDisabled()) {
             StreamingHttpServiceFilterFactory asyncContextFilter = new AsyncContextAwareHttpServiceFilter();
-            currServiceFilter = currServiceFilter == null ?
-                    asyncContextFilter : asyncContextFilter.append(currServiceFilter);
+            currServiceFilter = currServiceFilter == null ? asyncContextFilter :
+                    appendFilter(asyncContextFilter, currServiceFilter);
         }
         StreamingHttpService filteredService = currServiceFilter != null ?
                 currServiceFilter.create(rawService) : rawService;
         return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
+    }
+
+    private static StreamingHttpServiceFilterFactory appendFilter(
+            @Nullable final StreamingHttpServiceFilterFactory current,
+            final StreamingHttpServiceFilterFactory next) {
+        return current == null ? next : service -> current.create(next.create(service));
     }
 }

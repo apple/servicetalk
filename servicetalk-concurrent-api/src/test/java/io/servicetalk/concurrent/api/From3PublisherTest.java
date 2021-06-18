@@ -40,11 +40,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class From3PublisherTest {
+class From3PublisherTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
     @Test
-    public void request3Complete() {
+    void request3Complete() {
         toSource(fromPublisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
@@ -52,7 +52,7 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void request2FirstComplete() {
+    void request2FirstComplete() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(2);
@@ -63,7 +63,7 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void request2SecondComplete() {
+    void request2SecondComplete() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -74,7 +74,7 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void request1Complete() {
+    void request1Complete() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -91,7 +91,7 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void request1Cancel() {
+    void request1Cancel() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -104,7 +104,7 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void request2Cancel() {
+    void request2Cancel() {
         toSource(fromPublisher()).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -120,17 +120,17 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void throwFirst() {
+    void throwFirst() {
         throwInOnNext(1);
     }
 
     @Test
-    public void throwSecond() {
+    void throwSecond() {
         throwInOnNext(2);
     }
 
     @Test
-    public void throwThird() {
+    void throwThird() {
         throwInOnNext(3);
     }
 
@@ -154,12 +154,12 @@ public class From3PublisherTest {
     }
 
     @Test
-    public void invalidRequestNZero() {
+    void invalidRequestNZero() {
         invalidRequestN(0);
     }
 
     @Test
-    public void invalidRequestNNeg() {
+    void invalidRequestNNeg() {
         invalidRequestN(-1);
     }
 

@@ -24,9 +24,8 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator<Co
     private final Iterable<? extends Completable> others;
     private final boolean delayError;
 
-    IterableMergeCompletable(boolean delayError, Completable original, Iterable<? extends Completable> others,
-                             Executor executor) {
-        super(original, executor);
+    IterableMergeCompletable(boolean delayError, Completable original, Iterable<? extends Completable> others) {
+        super(original);
         this.delayError = delayError;
         this.others = requireNonNull(others);
     }

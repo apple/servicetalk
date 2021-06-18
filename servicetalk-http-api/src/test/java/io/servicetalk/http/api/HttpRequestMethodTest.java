@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
@@ -26,28 +26,29 @@ import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
+import static io.servicetalk.http.api.HttpRequestMethod.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class HttpRequestMethodTest {
+class HttpRequestMethodTest {
 
     @Test
-    public void testOfStringReturnsConstants() {
-        assertThat(HttpRequestMethod.of("GET"), sameInstance(GET));
-        assertThat(HttpRequestMethod.of("HEAD"), sameInstance(HEAD));
-        assertThat(HttpRequestMethod.of("POST"), sameInstance(POST));
-        assertThat(HttpRequestMethod.of("PUT"), sameInstance(PUT));
-        assertThat(HttpRequestMethod.of("DELETE"), sameInstance(DELETE));
-        assertThat(HttpRequestMethod.of("CONNECT"), sameInstance(CONNECT));
-        assertThat(HttpRequestMethod.of("OPTIONS"), sameInstance(OPTIONS));
-        assertThat(HttpRequestMethod.of("TRACE"), sameInstance(TRACE));
-        assertThat(HttpRequestMethod.of("PATCH"), sameInstance(PATCH));
+    void testOfStringReturnsConstants() {
+        assertThat(of("GET"), sameInstance(GET));
+        assertThat(of("HEAD"), sameInstance(HEAD));
+        assertThat(of("POST"), sameInstance(POST));
+        assertThat(of("PUT"), sameInstance(PUT));
+        assertThat(of("DELETE"), sameInstance(DELETE));
+        assertThat(of("CONNECT"), sameInstance(CONNECT));
+        assertThat(of("OPTIONS"), sameInstance(OPTIONS));
+        assertThat(of("TRACE"), sameInstance(TRACE));
+        assertThat(of("PATCH"), sameInstance(PATCH));
     }
 
     @Test
-    public void testOfStringReturnsNullForUnknownMethod() {
-        assertThat(HttpRequestMethod.of("UNKNOWN"), is(nullValue()));
+    void testOfStringReturnsNullForUnknownMethod() {
+        assertThat(of("UNKNOWN"), is(nullValue()));
     }
 }

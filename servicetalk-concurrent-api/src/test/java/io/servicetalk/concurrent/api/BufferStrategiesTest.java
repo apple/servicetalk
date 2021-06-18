@@ -45,12 +45,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BufferStrategiesTest {
+class BufferStrategiesTest {
     private final BlockingQueue<TestCompletable> timers = new LinkedBlockingDeque<>();
     private final Executor executor = mock(Executor.class);
     private final java.util.concurrent.ExecutorService jdkExecutor = Executors.newCachedThreadPool();
 
-    public BufferStrategiesTest() {
+    BufferStrategiesTest() {
         when(executor.timer(any(Duration.class))).thenAnswer(invocation -> defer(() -> {
             TestCompletable timer = new TestCompletable();
             timers.add(timer);
@@ -59,13 +59,13 @@ public class BufferStrategiesTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         jdkExecutor.shutdownNow();
     }
 
     @Disabled("https://github.com/apple/servicetalk/issues/1259")
     @Test
-    public void sizeOrDurationConcurrent() throws Exception {
+    void sizeOrDurationConcurrent() throws Exception {
         final int maxBoundaries = 1_000;
         final Collection<Integer> items = unmodifiableCollection(range(1, 1_000).toFuture().get());
         final List<Integer> receivedFromBoundaries = new ArrayList<>(items.size());

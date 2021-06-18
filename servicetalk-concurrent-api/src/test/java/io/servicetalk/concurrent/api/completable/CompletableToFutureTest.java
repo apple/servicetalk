@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.TestCompletable;
 
 import java.util.concurrent.Future;
 
-public class CompletableToFutureTest extends AbstractToFutureTest<Void> {
+class CompletableToFutureTest extends AbstractToFutureTest<Void> {
 
     private final TestCompletable source = new TestCompletable.Builder().build(subscriber -> {
         subscriber.onSubscribe(mockCancellable);

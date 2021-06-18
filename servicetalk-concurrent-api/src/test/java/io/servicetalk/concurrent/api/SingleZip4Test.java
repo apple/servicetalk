@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class SingleZip4Test {
+class SingleZip4Test {
     private TestSingle<Integer> first;
     private TestSingle<Double> second;
     private TestSingle<Short> third;
@@ -41,7 +41,7 @@ public class SingleZip4Test {
     private TestSingleSubscriber<String> subscriber;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         first = new TestSingle<>();
         second = new TestSingle<>();
         third = new TestSingle<>();
@@ -50,12 +50,12 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void completeInOrder() {
+    void completeInOrder() {
         allComplete(true);
     }
 
     @Test
-    public void completeOutOfOrder() {
+    void completeOutOfOrder() {
         allComplete(false);
     }
 
@@ -81,22 +81,22 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void justErrorFirst() {
+    void justErrorFirst() {
         justError(1);
     }
 
     @Test
-    public void justErrorSecond() {
+    void justErrorSecond() {
         justError(2);
     }
 
     @Test
-    public void justErrorThird() {
+    void justErrorThird() {
         justError(3);
     }
 
     @Test
-    public void justErrorForth() {
+    void justErrorForth() {
         justError(4);
     }
 
@@ -116,12 +116,12 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void errorAfterCompleteInOrder() {
+    void errorAfterCompleteInOrder() {
         errorAfterComplete(true);
     }
 
     @Test
-    public void errorAfterCompleteOutOfOrder() {
+    void errorAfterCompleteOutOfOrder() {
         errorAfterComplete(false);
     }
 
@@ -143,7 +143,7 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void justCancel() throws InterruptedException {
+    void justCancel() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -173,7 +173,7 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void cancelAfterCompleteOutOfOrder() throws InterruptedException {
+    void cancelAfterCompleteOutOfOrder() throws InterruptedException {
         TestCancellable cancellable1 = new TestCancellable();
         TestSingle<Integer> first = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable1);
@@ -199,7 +199,7 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void delayErrorOneFail() {
+    void delayErrorOneFail() {
         toSource(zipDelayError(first, second, third, fourth, SingleZip4Test::combine)).subscribe(subscriber);
         subscriber.awaitSubscription();
         DeliberateException e1 = new DeliberateException();
@@ -212,7 +212,7 @@ public class SingleZip4Test {
     }
 
     @Test
-    public void delayErrorAllFail() {
+    void delayErrorAllFail() {
         toSource(zipDelayError(first, second, third, fourth, SingleZip4Test::combine)).subscribe(subscriber);
         subscriber.awaitSubscription();
         DeliberateException e1 = new DeliberateException();

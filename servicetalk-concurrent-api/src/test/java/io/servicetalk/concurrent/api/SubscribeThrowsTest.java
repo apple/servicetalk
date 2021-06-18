@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SubscribeThrowsTest {
+class SubscribeThrowsTest {
 
     @Test
-    public void publisherSubscriberThrows() {
+    void publisherSubscriberThrows() {
         Publisher<String> p = new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -47,7 +47,7 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void publisherSubscriberWithOffloaderThrows() {
+    void publisherSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
@@ -63,7 +63,7 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void singleSubscriberThrows() {
+    void singleSubscriberThrows() {
         Single<String> s = new Single<String>() {
             @Override
             protected void handleSubscribe(final SingleSource.Subscriber subscriber) {
@@ -75,7 +75,7 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void singleSubscriberWithOffloaderThrows() {
+    void singleSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         SingleSource.Subscriber<String> subscriber =
@@ -92,7 +92,7 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void completableSubscriberThrows() {
+    void completableSubscriberThrows() {
         Completable c = new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
@@ -104,7 +104,7 @@ public class SubscribeThrowsTest {
     }
 
     @Test
-    public void completableSubscriberWithOffloaderThrows() {
+    void completableSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
         Completable c = new Completable() {

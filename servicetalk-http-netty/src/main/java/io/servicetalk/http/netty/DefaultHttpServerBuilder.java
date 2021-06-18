@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -68,15 +67,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         return this;
     }
 
-    @Deprecated
-    @Override
-    public HttpServerSecurityConfigurator secure() {
-        return new DefaultHttpServerSecurityConfigurator(config -> {
-            this.config.tcpConfig().sslConfig(config);
-            return DefaultHttpServerBuilder.this;
-        });
-    }
-
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config) {
         this.config.tcpConfig().sslConfig(config);
@@ -98,12 +88,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
         config.tcpConfig().listenSocketOption(option, value);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder enableWireLogging(final String loggerName) {
-        config.tcpConfig().enableWireLogging(loggerName);
         return this;
     }
 

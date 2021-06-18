@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -37,10 +36,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.TestStreamingHttpClient;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
@@ -58,6 +55,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -67,13 +65,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class LoadBalancerReadyHttpClientTest {
+class LoadBalancerReadyHttpClientTest {
     private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
             new UnknownHostException("deliberate exception");
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
     private final TestCompletable sdStatusCompletable = new TestCompletable();
@@ -100,8 +97,8 @@ public class LoadBalancerReadyHttpClientTest {
         }
     };
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         initMocks(this);
         doAnswer((Answer<StreamingHttpRequest>) invocation ->
                 reqRespFactory.newRequest(invocation.getArgument(0), invocation.getArgument(1)))
@@ -111,32 +108,32 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     @Test
-    public void requestsAreDelayed() throws InterruptedException {
+    void requestsAreDelayed() throws InterruptedException {
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void reserveIsDelayed() throws InterruptedException {
+    void reserveIsDelayed() throws InterruptedException {
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
-    public void initializedFailedAlsoFailsRequest() throws InterruptedException {
+    void initializedFailedAlsoFailsRequest() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void initializedFailedAlsoFailsReserve() throws InterruptedException {
+    void initializedFailedAlsoFailsReserve() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
-    public void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
+    void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void serviceDiscovererAlsoFailsReserve() throws InterruptedException {
+    void serviceDiscovererAlsoFailsReserve() throws InterruptedException {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
@@ -153,7 +150,8 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action,
                                    Consumer<Throwable> errorConsumer, Throwable error) throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
+                appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
+                        testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -175,9 +173,9 @@ public class LoadBalancerReadyHttpClientTest {
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
-
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
+                appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
+                        testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(client).subscribe(resp -> latch.countDown());
@@ -189,8 +187,8 @@ public class LoadBalancerReadyHttpClientTest {
         latch.await();
     }
 
-    private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(TestPublisher<Object> loadBalancerPublisher,
-                                                                            TestCompletable sdStatusCompletable) {
+    private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
+            TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
         return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
                 .newStrategy(loadBalancerPublisher, sdStatusCompletable));
     }

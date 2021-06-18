@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
+package io.servicetalk.encoding.api;
 
-import org.testng.annotations.Test;
+/**
+ * Extension of {@link NoopContentCodec} with custom implementations for {@link #equals(Object)} and {@link #hashCode()}
+ * based on {@link #name()}.
+ * This class can be used as is or can be extended to create a {@link ContentCodec} with custom behaviour.
+ */
+class CustomIdentityContentCodec extends NoopContentCodec {
 
-@Test
-public class PublisherPublishAndSubscribeOnOverrideTckTest extends PublisherAbstractOffloaderTckTest {
-
-    @Override
-    Publisher<Integer> applyOffload(final Publisher<Integer> original, final Executor executor) {
-        return original.publishAndSubscribeOnOverride(executor);
+    CustomIdentityContentCodec() {
+        super(Identity.identity().name());
     }
 }

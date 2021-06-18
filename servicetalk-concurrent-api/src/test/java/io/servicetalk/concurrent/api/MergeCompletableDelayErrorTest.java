@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -27,24 +26,24 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class MergeCompletableDelayErrorTest {
+class MergeCompletableDelayErrorTest {
     private final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return MergeCompletable.newInstance(true, completables[0], immediate(),
+            return MergeCompletable.newInstance(true, completables[0],
                     copyOfRange(completables, 1, completables.length));
         }
     };
 
     @Test
-    public void testCompletion() {
+    void testCompletion() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void testCompletionFew() {
+    void testCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(1, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -53,7 +52,7 @@ public class MergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testFailFirstEvent() {
+    void testFailFirstEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).fail(1);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -62,7 +61,7 @@ public class MergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testFailLastEvent() {
+    void testFailLastEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(0, 2);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -71,7 +70,7 @@ public class MergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testFailMiddleEvent() {
+    void testFailMiddleEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(0);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -82,7 +81,7 @@ public class MergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testMergeWithOne() {
+    void testMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(1).listen(subscriber).completeAll();
         subscriber.awaitOnComplete();

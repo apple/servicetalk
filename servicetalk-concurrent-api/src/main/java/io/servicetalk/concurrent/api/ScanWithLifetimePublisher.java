@@ -34,11 +34,19 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     private final Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier;
 
     ScanWithLifetimePublisher(Publisher<T> original,
-                              Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier,
-                              Executor executor) {
-        super(executor, true);
+                              Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier) {
         this.mapperSupplier = requireNonNull(mapperSupplier);
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
+    }
+
+    @Override
+    boolean shareContextOnSubscribe() {
+        return true;
     }
 
     @Override

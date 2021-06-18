@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
-public class AfterCompleteTest extends AbstractWhenOnCompleteTest {
+class AfterCompleteTest extends AbstractWhenOnCompleteTest {
 
     @Override
     protected Completable doComplete(Completable completable, Runnable runnable) {
@@ -30,7 +30,7 @@ public class AfterCompleteTest extends AbstractWhenOnCompleteTest {
     }
 
     @Test
-    public void testCallbackThrowsError() {
+    void testCallbackThrowsError() {
         toSource(doComplete(Completable.completed(), () -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(listener);

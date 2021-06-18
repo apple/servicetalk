@@ -27,14 +27,14 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TakePublisherTest {
+class TakePublisherTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
-    public void testEnoughRequests() {
+    void testEnoughRequests() {
         Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -46,7 +46,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testTakeError() {
+    void testTakeError() {
         Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -57,7 +57,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testTakeComplete() {
+    void testTakeComplete() {
         Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -67,7 +67,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testSubCancelled() {
+    void testSubCancelled() {
         Publisher<String> p = publisher.takeAtMost(3);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);

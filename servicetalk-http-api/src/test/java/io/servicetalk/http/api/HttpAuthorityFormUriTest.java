@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,103 +15,106 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static io.servicetalk.http.api.HttpAuthorityFormUri.decode;
+import static io.servicetalk.http.api.HttpAuthorityFormUri.encode;
 import static io.servicetalk.http.api.Uri3986Test.verifyUri;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class HttpAuthorityFormUriTest {
+class HttpAuthorityFormUriTest {
     @Test
-    public void regNameAndPort() {
+    void regNameAndPort() {
         verifyAuthForm("www.example.com:80", "www.example.com", 80);
     }
 
     @Test
-    public void regName() {
+    void regName() {
         verifyAuthForm("www.example.com", "www.example.com", -1);
     }
 
     @Test
-    public void ipv6AndPort() {
+    void ipv6AndPort() {
         verifyAuthForm("[::1]:8080", "[::1]", 8080);
     }
 
     @Test
-    public void ipv6() {
+    void ipv6() {
         verifyAuthForm("[af::98]", "[af::98]", -1);
     }
 
     @Test
-    public void ipv4AndPort() {
+    void ipv4AndPort() {
         verifyAuthForm("1.2.3.4:8080", "1.2.3.4", 8080);
     }
 
     @Test
-    public void ipv4() {
+    void ipv4() {
         verifyAuthForm("244.244.244.244", "244.244.244.244", -1);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6InvalidNegativePort() {
-        new HttpAuthorityFormUri("[::1]:-1");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6InvalidLargePort() {
-        new HttpAuthorityFormUri("[::1]:65536");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6InvalidNoCloseBracketNoPort() {
-        new HttpAuthorityFormUri("[::1");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6NonBracketWithScope() {
-        // https://tools.ietf.org/html/rfc3986#section-3.2.2
-        // IPv6 + future must be enclosed in []
-        new HttpAuthorityFormUri("0:0:0:0:0:0:0:0%0:49178");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6InvalidNoCloseBracketWithPort() {
-        new HttpAuthorityFormUri("[::1:65536");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6ContentBeforePort() {
-        new HttpAuthorityFormUri("[::1]foo:8080");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ipv6ContentAfterPort() {
-        new HttpAuthorityFormUri("[::1]:8080foo");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void malformedAuthority() {
-        new HttpAuthorityFormUri("blah@apple.com:80@apple.com");
+    @Test
+    void ipv6InvalidNegativePort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1]:-1"));
     }
 
     @Test
-    public void encodeTouchesAllComponents() {
+    void ipv6InvalidLargePort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1]:65536"));
+    }
+
+    @Test
+    void ipv6InvalidNoCloseBracketNoPort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1"));
+    }
+
+    @Test
+    void ipv6NonBracketWithScope() {
+        // https://tools.ietf.org/html/rfc3986#section-3.2.2
+        // IPv6 + future must be enclosed in []
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("0:0:0:0:0:0:0:0%0:49178"));
+    }
+
+    @Test
+    void ipv6InvalidNoCloseBracketWithPort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1:65536"));
+    }
+
+    @Test
+    void ipv6ContentBeforePort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1]foo:8080"));
+    }
+
+    @Test
+    void ipv6ContentAfterPort() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("[::1]:8080foo"));
+    }
+
+    @Test
+    void malformedAuthority() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpAuthorityFormUri("blah@apple.com:80@apple.com"));
+    }
+
+    @Test
+    void encodeTouchesAllComponents() {
         verifyEncodeDecode("www.foo bar.com:8080", "www.foo%20bar.com:8080");
     }
 
     @Test
-    public void encodeIPv6() {
+    void encodeIPv6() {
         verifyEncodeDecode("[::1]:8080");
     }
 
     @Test
-    public void encodeIPv6WithScope() {
+    void encodeIPv6WithScope() {
         verifyEncodeDecode("[::1%29]:8080");
     }
 
     @Test
-    public void encodeIPv4() {
+    void encodeIPv4() {
         verifyEncodeDecode("1.2.3.4:8080");
     }
 
@@ -120,8 +123,8 @@ public class HttpAuthorityFormUriTest {
     }
 
     private static void verifyEncodeDecode(String decoded, String encoded) {
-        assertEquals(encoded, HttpAuthorityFormUri.encode(decoded, UTF_8));
-        assertEquals(decoded, HttpAuthorityFormUri.decode(encoded, UTF_8));
+        assertEquals(encoded, encode(decoded, UTF_8));
+        assertEquals(decoded, decode(encoded, UTF_8));
     }
 
     private static void verifyAuthForm(String expectedUri, String expectedHost, int port) {

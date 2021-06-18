@@ -41,38 +41,36 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOn(executor, original);
-    }
-
-    @Deprecated
-    static Completable publishAndSubscribeOnOverride(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOnOverride(original, executor);
+        return original.executor() == executor ? original : new PublishAndSubscribeOn(original, executor);
     }
 
     static Completable publishOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOn(executor, original);
-    }
-
-    @Deprecated
-    static Completable publishOnOverride(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOnOverride(original, executor);
+        return original.executor() == executor ? original : new PublishOn(original, executor);
     }
 
     static Completable subscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOn(executor, original);
+        return original.executor() == executor ? original : new SubscribeOn(original, executor);
     }
 
-    @Deprecated
-    static Completable subscribeOnOverride(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOnOverride(original, executor);
-    }
+    private abstract static class OffloadingCompletable extends AbstractNoHandleSubscribeCompletable {
+        protected final Executor executor;
+        protected final Completable original;
 
-    private static final class PublishAndSubscribeOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
-
-        PublishAndSubscribeOn(final Executor executor, final Completable original) {
-            super(executor);
+        protected OffloadingCompletable(Completable original, Executor executor) {
             this.original = original;
+            this.executor = executor;
+        }
+
+        @Override
+        final Executor executor() {
+            return executor;
+        }
+    }
+
+    private static final class PublishAndSubscribeOn extends OffloadingCompletable {
+
+        PublishAndSubscribeOn(final Completable original, final Executor executor) {
+            super(original, executor);
         }
 
         @Override
@@ -94,31 +92,10 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Completable} with an {@link Executor}, i.e. all operators behave
-     * the same way. Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra
-     * offloading, it just overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class PublishAndSubscribeOnOverride extends AbstractSynchronousCompletableOperator {
-        PublishAndSubscribeOnOverride(final Completable original, final Executor executor) {
-            super(original, executor);
-        }
+    private static final class PublishOn extends OffloadingCompletable {
 
-        @Override
-        public Subscriber apply(final Subscriber subscriber) {
-            // We are using AbstractSynchronousCompletableOperator just to override the Executor. We do not intend
-            // to do any extra offloading that is done by a regular Completable created with an Executor.
-            return subscriber;
-        }
-    }
-
-    private static final class PublishOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
-
-        PublishOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadPublish(original.executor(), executor));
-            this.original = original;
+        PublishOn(final Completable original, final Executor executor) {
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -138,33 +115,10 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Completable} with an {@link Executor}, i.e. all operators behave
-     * the same way.
-     * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
-     * just overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class PublishOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class SubscribeOn extends OffloadingCompletable {
 
-        PublishOnOverride(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.executor(), executor));
-        }
-
-        @Override
-        public Subscriber apply(final Subscriber subscriber) {
-            // We are using AbstractSynchronousCompletableOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Completable created with an Executor.
-            return subscriber;
-        }
-    }
-
-    private static final class SubscribeOn extends AbstractNoHandleSubscribeCompletable {
-        private final Completable original;
-
-        SubscribeOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadSubscribe(original.executor(), executor));
-            this.original = original;
+        SubscribeOn(final Completable original, final Executor executor) {
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override
@@ -180,27 +134,6 @@ final class PublishAndSubscribeOnCompletables {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(subscriber, contextProvider);
-        }
-    }
-
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Completable} with an {@link Executor}, i.e. all operators behave
-     * the same way.
-     * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
-     * just overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class SubscribeOnOverride extends AbstractSynchronousCompletableOperator {
-
-        SubscribeOnOverride(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
-        }
-
-        @Override
-        public Subscriber apply(final Subscriber subscriber) {
-            // We are using AbstractSynchronousCompletableOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Completable created with an Executor.
-            return subscriber;
         }
     }
 }

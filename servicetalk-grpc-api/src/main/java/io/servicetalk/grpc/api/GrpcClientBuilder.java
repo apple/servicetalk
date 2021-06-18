@@ -68,10 +68,6 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
-    @Deprecated
-    public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
-
-    @Override
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
                                                               BooleanSupplier logUserData);
 
@@ -91,10 +87,6 @@ public abstract class GrpcClientBuilder<U, R>
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
-
-    @Deprecated
-    @Override
-    public abstract GrpcClientSecurityConfigurator<U, R> secure();
 
     @Override
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);

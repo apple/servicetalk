@@ -38,12 +38,12 @@ public abstract class AbstractWhenSubscriberTest {
     private CompletableSource.Subscriber subscriber;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subscriber = mock(CompletableSource.Subscriber.class);
     }
 
     @Test
-    public void testOnWithOnComplete() {
+    void testOnWithOnComplete() {
         toSource(doSubscriber(Completable.completed(), () -> subscriber)).subscribe(listener);
         listener.awaitOnComplete();
         verify(subscriber).onSubscribe(any());
@@ -51,7 +51,7 @@ public abstract class AbstractWhenSubscriberTest {
     }
 
     @Test
-    public void testOnWithOnError() {
+    void testOnWithOnError() {
         toSource(doSubscriber(Completable.failed(DELIBERATE_EXCEPTION), () -> subscriber)).subscribe(listener);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(subscriber).onSubscribe(any());

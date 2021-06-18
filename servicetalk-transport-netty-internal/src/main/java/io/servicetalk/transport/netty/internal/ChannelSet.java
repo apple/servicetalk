@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -61,7 +60,8 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             }
         }
     };
-    public static final AttributeKey<AsyncCloseable> CHANNEL_CLOSEABLE_KEY = AttributeKey.newInstance("closeable");
+    public static final AttributeKey<PrivilegedListenableAsyncCloseable> CHANNEL_CLOSEABLE_KEY =
+            AttributeKey.newInstance("closeable");
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
     private final Processor onCloseProcessor = newCompletableProcessor();
@@ -144,31 +144,31 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
-                    Attribute<AsyncCloseable> closeableAttribute = channel.attr(CHANNEL_CLOSEABLE_KEY);
-                    AsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
-                    if (channelCloseable != null) {
-                        // Upon shutdown of the set, we will close all live channels. If close of individual channels
+                    Attribute<PrivilegedListenableAsyncCloseable> closeableAttribute =
+                            channel.attr(CHANNEL_CLOSEABLE_KEY);
+                    PrivilegedListenableAsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
+                    if (null != channelCloseable) {
+                        // Upon shutdown of the set, we will close all live channels. If close of individual hannels
                         // are offloaded, then this would trigger a surge in threads required to offload these closures.
                         // Here we assume that if there is any offloading required, it is done by offloading the
                         // Completable returned by closeAsyncGracefully() hence offloading each channel is not required.
-                        // Hence, we override the offloading on each channel for this particular subscribe to use
+                        // Hence, we use the "noOffload" variant for each channel for this particular subscribe to use
                         // immediate and effectively disable offloading on each channel.
                         closeable.merge(new AsyncCloseable() {
                             @Override
                             public Completable closeAsync() {
-                                return channelCloseable.closeAsync().publishOnOverride(immediate());
+                                return channelCloseable.closeAsyncNoOffload();
                             }
 
                             @Override
                             public Completable closeAsyncGracefully() {
-                                return channelCloseable.closeAsyncGracefully().publishOnOverride(immediate());
+                                return channelCloseable.closeAsyncGracefullyNoOffload();
                             }
                         });
                     } else {
                         channel.close();
                     }
                 }
-
                 toSource(closeable.closeAsyncGracefully()).subscribe(subscriber);
             }
         };

@@ -21,8 +21,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +41,7 @@ public abstract class AbstractWriteTest {
     protected CompletableSource.Subscriber completableSubscriber;
     protected FailingWriteHandler failingWriteHandler;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         completableSubscriber = mock(CompletableSource.Subscriber.class);
         failingWriteHandler = new FailingWriteHandler();
@@ -49,7 +49,7 @@ public abstract class AbstractWriteTest {
         demandEstimator = mock(WriteDemandEstimator.class);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         channel.finishAndReleaseAll();
         channel.close().await();

@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultAsyncContextProviderTest {
+class DefaultAsyncContextProviderTest {
     private static final Key<String> K1 = Key.newKey("k1");
     private static final Key<String> K2 = Key.newKey("k2");
     private static final Key<String> K3 = Key.newKey("k3");
@@ -74,19 +74,19 @@ public class DefaultAsyncContextProviderTest {
     private static ScheduledExecutorService executor;
 
     @BeforeAll
-    public static void beforeClass() {
+    static void beforeClass() {
         AsyncContext.autoEnable();
         executor = Executors.newScheduledThreadPool(4);
     }
 
     @AfterAll
-    public static void afterClass() throws Exception {
+    static void afterClass() throws Exception {
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         AsyncContext.clear();
     }
 
@@ -105,7 +105,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInCompletableListener() throws Exception {
+    void testContextInCompletableListener() throws Exception {
         Completable completable = new Completable() {
             @Override
             protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
@@ -132,7 +132,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInCompletableOperators() throws Exception {
+    void testContextInCompletableOperators() throws Exception {
         CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
@@ -170,7 +170,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInSingleListener() throws Exception {
+    void testContextInSingleListener() throws Exception {
         Single<String> single = new Single<String>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
@@ -197,7 +197,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInSingleOperators() throws Exception {
+    void testContextInSingleOperators() throws Exception {
         CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
@@ -248,7 +248,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInSingleConversions() throws Exception {
+    void testContextInSingleConversions() throws Exception {
         CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
@@ -284,7 +284,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInSubscriber() throws Exception {
+    void testContextInSubscriber() throws Exception {
         ContextCaptureTestPublisher publisher1 = new ContextCaptureTestPublisher();
         AsyncContext.put(K1, "v1");
         new ContextCaptureSubscriber<String>()
@@ -314,7 +314,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testContextInPublisherOperators() throws Exception {
+    void testContextInPublisherOperators() throws Exception {
         CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
         CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
@@ -359,7 +359,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testWrapExecutor() throws Exception {
+    void testWrapExecutor() throws Exception {
         AsyncContext.put(K1, "v1");
         Consumer<AsyncContextMap> verifier = map -> {
             assertEquals("v1", map.get(K1));
@@ -384,7 +384,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testWrapFunctions() throws Exception {
+    void testWrapFunctions() throws Exception {
         AsyncContext.put(K1, "v1");
         Consumer<AsyncContextMap> verifier = map -> {
             assertEquals("v1", map.get(K1));
@@ -430,7 +430,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testSinglePutAndRemove() {
+    void testSinglePutAndRemove() {
         assertContextSize(0);
 
         AsyncContext.put(K1, "v1");
@@ -590,7 +590,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testMultiPutAndRemove() {
+    void testMultiPutAndRemove() {
         AsyncContext.putAll(newMap(K1, "v1"));
         assertContains(K1, "v1");
         assertContextSize(1);
@@ -669,42 +669,42 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void oneRemoveMultiplePermutations() {
+    void oneRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1));
     }
 
     @Test
-    public void twoRemoveMultiplePermutations() {
+    void twoRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2));
     }
 
     @Test
-    public void threeRemoveMultiplePermutations() {
+    void threeRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3));
     }
 
     @Test
-    public void fourRemoveMultiplePermutations() {
+    void fourRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3, K4));
     }
 
     @Test
-    public void fiveRemoveMultiplePermutations() {
+    void fiveRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5));
     }
 
     @Test
-    public void sixRemoveMultiplePermutations() {
+    void sixRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6));
     }
 
     @Test
-    public void sevenRemoveMultiplePermutations() {
+    void sevenRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7));
     }
 
     @Test
-    public void eightRemoveMultiplePermutations() {
+    void eightRemoveMultiplePermutations() {
         testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7, K8));
     }
 
@@ -759,47 +759,47 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void emptyPutMultiplePermutations() {
+    void emptyPutMultiplePermutations() {
         testPutMultiplePermutations(emptyList());
     }
 
     @Test
-    public void onePutMultiplePermutations() {
+    void onePutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1));
     }
 
     @Test
-    public void twoPutMultiplePermutations() {
+    void twoPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2));
     }
 
     @Test
-    public void threePutMultiplePermutations() {
+    void threePutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3));
     }
 
     @Test
-    public void fourPutMultiplePermutations() {
+    void fourPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4));
     }
 
     @Test
-    public void fivePutMultiplePermutations() {
+    void fivePutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4, K5));
     }
 
     @Test
-    public void sixPutMultiplePermutations() {
+    void sixPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6));
     }
 
     @Test
-    public void sevenPutMultiplePermutations() {
+    void sevenPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7));
     }
 
     @Test
-    public void eightPutMultiplePermutations() {
+    void eightPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7, K8));
     }
 
@@ -864,7 +864,7 @@ public class DefaultAsyncContextProviderTest {
         }
     }
 
-    public static Map<Key<?>, Object> newMap(Key<?>... keys) {
+    static Map<Key<?>, Object> newMap(Key<?>... keys) {
         HashMap<Key<?>, Object> map = new HashMap<>();
         for (int i = 0; i < keys.length; ++i) {
             map.put(keys[i], "permutation" + (i + 1));
@@ -872,20 +872,20 @@ public class DefaultAsyncContextProviderTest {
         return map;
     }
 
-    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1) {
+    static Map<Key<?>, Object> newMap(Key<?> k1, Object v1) {
         HashMap<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         return map;
     }
 
-    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2) {
+    static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2) {
         HashMap<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         map.put(k2, v2);
         return map;
     }
 
-    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2, Key<?> k3, Object v3) {
+    static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2, Key<?> k3, Object v3) {
         HashMap<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         map.put(k2, v2);

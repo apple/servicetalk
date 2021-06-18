@@ -55,12 +55,12 @@ abstract class AbstractPublisherGroupBy<Key, T>
     final int initialCapacityForGroups;
     final int groupQueueSize;
 
-    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, Executor executor) {
-        this(original, groupQueueSize, 4, executor);
+    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize) {
+        this(original, groupQueueSize, 4);
     }
 
-    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, int expectedGroupCountHint, Executor executor) {
-        super(original, executor);
+    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, int expectedGroupCountHint) {
+        super(original);
         if (expectedGroupCountHint <= 0) {
             throw new IllegalArgumentException("expectedGroupCountHint " + expectedGroupCountHint + " (expected >0)");
         }
@@ -502,7 +502,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
             implements PublisherSource<T> {
 
         GroupedPublisherSource(final Executor executor, final Key key) {
-            super(executor, key);
+            super(key);
         }
 
         @Override

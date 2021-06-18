@@ -22,7 +22,7 @@ import java.util.function.LongConsumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
-public class BeforeRequestTest extends AbstractWhenRequestTest {
+class BeforeRequestTest extends AbstractWhenRequestTest {
     @Override
     protected <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer) {
         return toSource(publisher.beforeRequest(consumer));

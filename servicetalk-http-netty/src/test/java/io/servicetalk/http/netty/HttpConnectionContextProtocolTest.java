@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -28,12 +27,8 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 
@@ -47,8 +42,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(Parameterized.class)
-public class HttpConnectionContextProtocolTest {
+class HttpConnectionContextProtocolTest {
 
     private enum Config {
 
@@ -72,22 +66,9 @@ public class HttpConnectionContextProtocolTest {
         }
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final Config config;
-
-    public HttpConnectionContextProtocolTest(Config config) {
-        this.config = config;
-    }
-
-    @Parameters(name = "config={0}")
-    public static Object[] data() {
-        return Config.values();
-    }
-
-    @Test
-    public void testProtocol() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Config.class)
+    void testProtocol(Config config) throws Exception {
         try (ServerContext serverContext = startServer(config);
              BlockingHttpClient client = newClient(serverContext, config);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {

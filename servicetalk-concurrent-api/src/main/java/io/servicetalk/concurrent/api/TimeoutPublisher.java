@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
@@ -57,12 +58,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final boolean restartAtOnNext;
 
     TimeoutPublisher(final Publisher<T> original,
-                     final Executor publisherExecutor,
                      final long duration,
                      final TimeUnit unit,
                      final boolean restartAtOnNext,
-                     final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        super(publisherExecutor);
+                     final Executor timeoutExecutor) {
         this.original = requireNonNull(original);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
         // We use the duration in arithmetic below to determine the expiration time for the "next timer" below. So
@@ -71,6 +70,11 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // would otherwise have to generate the timeout exception themselves.
         this.durationNs = max(0, unit.toNanos(duration));
         this.restartAtOnNext = restartAtOnNext;
+    }
+
+    @Override
+    io.servicetalk.concurrent.api.Executor executor() {
+        return original.executor();
     }
 
     @Override

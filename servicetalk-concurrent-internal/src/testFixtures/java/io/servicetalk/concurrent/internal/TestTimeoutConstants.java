@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.reactivestreams.tck;
+package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
+import static java.lang.Boolean.parseBoolean;
 
-import org.testng.annotations.Test;
+public final class TestTimeoutConstants {
+    public static final boolean CI = parseBoolean(System.getenv("CI"));
+    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 30 : 10;
 
-@Test
-public class CompletablePublishOnOverrideTckTest extends CompletableAbstractOffloaderTckTest {
-    @Override
-    Completable applyOffload(final Completable original, final Executor executor) {
-        return original.publishOnOverride(executor);
+    private TestTimeoutConstants() {
     }
 }

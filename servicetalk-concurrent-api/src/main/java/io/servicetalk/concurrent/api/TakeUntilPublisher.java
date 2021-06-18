@@ -31,8 +31,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
     private final Completable until;
 
-    TakeUntilPublisher(Publisher<T> original, Completable until, Executor executor) {
-        super(original, executor);
+    TakeUntilPublisher(Publisher<T> original, Completable until) {
+        super(original);
         this.until = requireNonNull(until);
     }
 

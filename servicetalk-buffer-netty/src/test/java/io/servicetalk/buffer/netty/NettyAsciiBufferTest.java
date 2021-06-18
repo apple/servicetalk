@@ -15,17 +15,17 @@
  */
 package io.servicetalk.buffer.netty;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Netty counter-part for AsciiBufferTest
-public class NettyAsciiBufferTest {
+class NettyAsciiBufferTest {
 
     @Test
-    public void testSubSequence() {
+    void testSubSequence() {
         testSubSequence(newAsciiString(DEFAULT_ALLOCATOR.fromAscii("some-data")));
     }
 

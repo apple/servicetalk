@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+# Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ set -eu
 
 function usage() {
   echo "Usage: $0 next_version"
-  echo "nex_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
+  echo "next_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
 }
 
 if [ "$#" -ne "1" ]; then
@@ -38,10 +38,18 @@ if ( echo "$nextVersion" | grep -qv "SNAPSHOT" ); then
     exit 1
 fi
 
-version=$(cat gradle.properties | grep version= |  sed 's/-SNAPSHOT//' | sed 's/^version=//')
+version=$(cat gradle.properties | grep version= | sed 's/^version=//')
+
+if [ "$nextVersion" == "$version" ]; then
+    echo "Next version '$nextVersion' cannot be equal to the current version in gradle.properties: $version"
+    usage
+    exit 1
+fi
+
+version=$(echo "$version" | sed 's/-SNAPSHOT//')
 
 if ( echo "$version" | grep -q "SNAPSHOT" ); then
-    echo "Expected release version to be a release version, not snapshot"
+    echo "Expected release version '$version' to be a release version, not a snapshot"
     usage
     exit 1
 fi

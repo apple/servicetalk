@@ -90,16 +90,6 @@ public abstract class GrpcServerBuilder {
     }
 
     /**
-     * Initiate security configuration for this server. Calling any {@code commit} method on the returned
-     * {@link GrpcServerSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
-     * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    @Deprecated
-    public abstract GrpcServerSecurityConfigurator secure();
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
@@ -138,16 +128,6 @@ public abstract class GrpcServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
-
-    /**
-     * Enable wire-logging for this server.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract GrpcServerBuilder enableWireLogging(String loggerName);
 
     /**
      * Enables wire-logging for connections created by this builder.
@@ -403,7 +383,7 @@ public abstract class GrpcServerBuilder {
         private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return newErrorResponse(responseFactory, null, cause, ctx.executionContext().bufferAllocator());
+            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
         }
     }
 }
