@@ -21,13 +21,9 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ClientSecurityConfigurator;
-import io.servicetalk.transport.api.ClientSslConfig;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -160,17 +156,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
-
-    /**
-     * Sets a function that is used for configuring SSL/TLS for https requests.
-     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and create a
-     * {@link SingleAddressInitializer} that invokes {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
-     * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
-     * @return {@code this}
-     */
-    @Deprecated
-    public abstract MultiAddressHttpClientBuilder<U, R> secure(
-            BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
