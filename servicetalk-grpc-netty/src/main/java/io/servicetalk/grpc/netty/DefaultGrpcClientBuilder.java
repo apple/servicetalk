@@ -118,7 +118,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         return this;
     }
 
-    @Deprecated
     @Override
     public GrpcClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                      final BooleanSupplier logUserData) {
