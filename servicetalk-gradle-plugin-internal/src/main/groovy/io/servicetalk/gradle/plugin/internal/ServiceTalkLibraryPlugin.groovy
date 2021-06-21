@@ -217,6 +217,10 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pitest {
         pitestVersion = project.properties["pitestVersion"]
         junit5PluginVersion = project.properties["pitestPluginJunit5Version"]
+      }
+
+      tasks.withType(PitestTask).all {
+        group = "verification"
 
         timestampedReports = false
 
@@ -226,10 +230,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           outputFormats = ['HTML']
         }
         failWhenNoMutations = false
-      }
-
-      tasks.withType(PitestTask).all {
-        group = "verification"
+        verbose = false
       }
     }
   }
