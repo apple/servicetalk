@@ -16,7 +16,6 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServerSslConfig;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -124,16 +123,5 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     @SuppressWarnings("rawtypes")
     public Map<ChannelOption, Object> listenOptions() {
         return listenOptions;
-    }
-
-    /**
-     * Returns the maximum queue length for incoming connection indications (a request to connect).
-     * @deprecated Use {@link #listenOptions()} with key {@link ServiceTalkSocketOptions#SO_BACKLOG}.
-     * @return backlog
-     */
-    @Deprecated
-    public int backlog() {
-        final Integer i = (Integer) listenOptions.get(ChannelOption.SO_BACKLOG);
-        return i == null ? 0 : i;
     }
 }

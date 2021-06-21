@@ -69,20 +69,6 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
-     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
-     * @param backlog the backlog to use when accepting connections.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public HttpServerBuilder backlog(int backlog) {
-        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
-        return this;
-    }
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
