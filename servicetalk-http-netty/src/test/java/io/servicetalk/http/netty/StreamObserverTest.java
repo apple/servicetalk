@@ -55,6 +55,7 @@ import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -117,7 +118,7 @@ class StreamObserverTest {
             return h2Builder;
         });
         client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
-                .protocols(h2().enableFrameLogging("h2-logging").build())
+                .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build())
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
                 .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                 .build();

@@ -93,7 +93,7 @@ class NettyServerContextTest {
     @Mock
     private ChannelPipeline channelPipeline;
     @Mock
-    private Attribute<AsyncCloseable> mockClosableAttribute;
+    private Attribute<PrivilegedListenableAsyncCloseable> mockClosableAttribute;
 
     ListenableAsyncCloseable channelSetCloseable = AsyncCloseables.toListenableAsyncCloseable(new AsyncCloseable() {
         @Override

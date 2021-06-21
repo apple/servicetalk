@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 final class PubFirstOrError<T> extends AbstractPubToSingle<T> {
 
     PubFirstOrError(Publisher<T> source) {
-        super(source.executor(), source);
+        super(source);
     }
 
     @Override

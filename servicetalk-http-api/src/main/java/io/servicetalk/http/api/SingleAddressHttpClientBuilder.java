@@ -53,10 +53,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
-
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                            LogLevel logLevel,
@@ -125,18 +121,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
         return (SingleAddressHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }
-
-    /**
-     * Initiates security configuration for this client. Calling
-     * {@link SingleAddressHttpClientSecurityConfigurator#commit()} on the returned
-     * {@link SingleAddressHttpClientSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ClientSslConfig)}.
-     * @return {@link SingleAddressHttpClientSecurityConfigurator} to configure security for this client. It is
-     * mandatory to call {@link SingleAddressHttpClientSecurityConfigurator#commit() commit} after all configuration is
-     * done.
-     */
-    @Deprecated
-    public abstract SingleAddressHttpClientSecurityConfigurator<U, R> secure();
 
     /**
      * Set the SSL/TLS configuration.

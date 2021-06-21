@@ -21,8 +21,17 @@ final class CompletableSubscribeShareContext extends AbstractNoHandleSubscribeCo
     private final Completable original;
 
     CompletableSubscribeShareContext(final Completable original) {
-        super(original.executor(), true);
         this.original = original;
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
+    }
+
+    @Override
+    boolean shareContextOnSubscribe() {
+        return true;
     }
 
     @Override

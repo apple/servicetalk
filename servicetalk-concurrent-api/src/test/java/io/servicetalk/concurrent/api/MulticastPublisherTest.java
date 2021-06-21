@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -79,12 +78,12 @@ class MulticastPublisherTest {
 
     @Test
     void duplicateOnSubscribeIsInvalid() {
-        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>(immediate()) {
+        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Integer> subscriber) {
                 // noop
             }
-        }, 2, immediate());
+        }, 2);
         source.forEach(t -> {
             //ignore
         });

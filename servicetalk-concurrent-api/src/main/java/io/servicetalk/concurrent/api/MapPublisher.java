@@ -28,8 +28,8 @@ import static java.util.Objects.requireNonNull;
 final class MapPublisher<R, T> extends AbstractSynchronousPublisherOperator<T, R> {
     private final Function<? super T, ? extends R> mapper;
 
-    MapPublisher(Publisher<T> source, Function<? super T, ? extends R> mapper, Executor executor) {
-        super(source, executor);
+    MapPublisher(Publisher<T> source, Function<? super T, ? extends R> mapper) {
+        super(source);
         this.mapper = requireNonNull(mapper);
     }
 

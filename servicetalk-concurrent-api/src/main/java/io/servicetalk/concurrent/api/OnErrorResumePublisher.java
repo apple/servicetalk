@@ -29,12 +29,15 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
     private final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
     OnErrorResumePublisher(Publisher<T> original, Predicate<? super Throwable> predicate,
-                           Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory,
-                           Executor executor) {
-        super(executor);
+                           Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
         this.original = original;
         this.predicate = requireNonNull(predicate);
         this.nextFactory = requireNonNull(nextFactory);
+    }
+
+    @Override
+    Executor executor() {
+        return original.executor();
     }
 
     @Override

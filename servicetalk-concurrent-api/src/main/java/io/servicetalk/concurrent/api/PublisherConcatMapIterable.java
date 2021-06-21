@@ -40,9 +40,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
     private static final long CANCELLED = Long.MIN_VALUE;
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
-    PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper,
-                               Executor executor) {
-        super(original, executor);
+    PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper) {
+        super(original);
         this.mapper = requireNonNull(mapper);
     }
 

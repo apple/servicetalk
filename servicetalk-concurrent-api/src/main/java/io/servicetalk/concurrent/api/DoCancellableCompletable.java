@@ -24,8 +24,8 @@ final class DoCancellableCompletable extends AbstractSynchronousCompletableOpera
     private final Cancellable cancellable;
     private final boolean before;
 
-    DoCancellableCompletable(Completable original, Cancellable cancellable, boolean before, Executor executor) {
-        super(original, executor);
+    DoCancellableCompletable(Completable original, Cancellable cancellable, boolean before) {
+        super(original);
         this.cancellable = requireNonNull(cancellable);
         this.before = before;
     }

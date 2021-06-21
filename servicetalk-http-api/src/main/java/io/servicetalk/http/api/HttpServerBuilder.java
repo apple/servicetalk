@@ -83,16 +83,6 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Initiates security configuration for this server. Calling any {@code commit} method on the returned
-     * {@link HttpServerSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
-     * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    @Deprecated
-    public abstract HttpServerSecurityConfigurator secure();
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
@@ -131,16 +121,6 @@ public abstract class HttpServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> HttpServerBuilder listenSocketOption(SocketOption<T> option, T value);
-
-    /**
-     * Enables wire-logging for this server.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract HttpServerBuilder enableWireLogging(String loggerName);
 
     /**
      * Enables wire-logging for this server.

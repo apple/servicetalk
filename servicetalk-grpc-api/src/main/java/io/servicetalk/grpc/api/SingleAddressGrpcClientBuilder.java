@@ -56,10 +56,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
     @Override
     <T> SingleAddressGrpcClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName, LogLevel logLevel,
                                                                 BooleanSupplier logUserData);
@@ -98,18 +94,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                      StreamingHttpConnectionFilterFactory factory);
-
-    /**
-     * Initiate security configuration for this client. Calling
-     * {@link GrpcClientSecurityConfigurator#commit()} on the returned {@link GrpcClientSecurityConfigurator} will
-     * commit the configuration.
-     * @deprecated Use {@link #sslConfig(ClientSslConfig)}.
-     * @return {@link GrpcClientSecurityConfigurator} to configure security for this client. It is
-     * mandatory to call {@link GrpcClientSecurityConfigurator#commit() commit} after all configuration is
-     * done.
-     */
-    @Deprecated
-    GrpcClientSecurityConfigurator<U, R> secure();
 
     /**
      * Set the SSL/TLS configuration.

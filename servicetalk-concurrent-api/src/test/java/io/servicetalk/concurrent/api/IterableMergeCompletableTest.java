@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
@@ -37,14 +36,14 @@ class IterableMergeCompletableTest {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],
-                    asList(completables).subList(1, completables.length), immediate());
+                    asList(completables).subList(1, completables.length));
         }
     };
     private final CompletableHolder iterableHolder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],
-                    () -> asList(completables).subList(1, completables.length).iterator(), immediate());
+                    () -> asList(completables).subList(1, completables.length).iterator());
         }
     };
 

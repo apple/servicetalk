@@ -16,9 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
@@ -55,15 +53,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  */
 public abstract class GrpcServerBuilder {
 
-    /**
-     * gRPC timeout is stored in context as a deadline so that when propagated to a new client request the remaining
-     * time to be included in the request can be calculated.
-     *
-     * @deprecated Do not use. This is internal implementation details that users should not depend on.
-     */
-    @Deprecated
-    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = DeadlineUtils.GRPC_DEADLINE_KEY;
-
     private boolean appendedCatchAllFilter;
 
     /**
@@ -99,16 +88,6 @@ public abstract class GrpcServerBuilder {
         listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
         return this;
     }
-
-    /**
-     * Initiate security configuration for this server. Calling any {@code commit} method on the returned
-     * {@link GrpcServerSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
-     * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    @Deprecated
-    public abstract GrpcServerSecurityConfigurator secure();
 
     /**
      * Set the SSL/TLS configuration.
@@ -149,16 +128,6 @@ public abstract class GrpcServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
-
-    /**
-     * Enable wire-logging for this server.
-     * <p>
-     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public abstract GrpcServerBuilder enableWireLogging(String loggerName);
 
     /**
      * Enables wire-logging for connections created by this builder.

@@ -49,6 +49,9 @@ public interface NettyConnectionContext extends ConnectionContext {
     /**
      * Returns a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
      * the transport.
+     * <p>
+     * <b>Note:</b>The {@code Single} is not required to be blocking-safe and should be offloaded if the
+     * {@link io.servicetalk.concurrent.SingleSource.Subscriber} may block.
      *
      * @return a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
      * the transport.
@@ -57,6 +60,9 @@ public interface NettyConnectionContext extends ConnectionContext {
 
     /**
      * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
+     * <p>
+     * <b>Note:</b>The {@code Completable} is not required to be blocking-safe and should be offloaded if the
+     * {@link io.servicetalk.concurrent.CompletableSource.Subscriber} may block.
      *
      * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
      * {@link CloseHandler} will determine whether more reads or writes will be allowed on this

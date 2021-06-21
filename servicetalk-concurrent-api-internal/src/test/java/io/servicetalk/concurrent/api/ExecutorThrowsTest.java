@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
 @RunWith(Parameterized.class)
 public class ExecutorThrowsTest {
@@ -169,9 +170,9 @@ public class ExecutorThrowsTest {
     }
 
     private void verifyError() throws Throwable {
-        Throwable err = errors.take();
+        Throwable err = errors.peek();
         if (err != DELIBERATE_EXCEPTION) {
-            throw err;
+            assertNoAsyncErrors(errors);
         }
     }
 }

@@ -15,7 +15,13 @@
  */
 package io.servicetalk.test.resources;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.util.Queue;
+
+import static java.lang.Integer.min;
 
 /**
  * Test utility methods / helpers.
@@ -55,5 +61,31 @@ public final class TestUtils {
         }
 
         throw error;
+    }
+
+    public static Matcher<Thread> matchThreadNamePrefix(String expectPrefix) {
+        return new TypeSafeMatcher<Thread>() {
+            final String matchPrefix = expectPrefix;
+
+            @Override
+            public void describeTo(final Description description) {
+                description.appendText("a prefix of ")
+                        .appendValue(matchPrefix);
+            }
+
+            @Override
+            public void describeMismatchSafely(Thread item, Description mismatchDescription) {
+                String threadName = item.getName();
+                String mismatch = threadName.substring(0, min(threadName.length(), expectPrefix.length()));
+                mismatchDescription
+                        .appendText("was ")
+                        .appendValue(mismatch);
+            }
+
+            @Override
+            protected boolean matchesSafely(final Thread item) {
+                return item.getName().startsWith(matchPrefix);
+            }
+        };
     }
 }

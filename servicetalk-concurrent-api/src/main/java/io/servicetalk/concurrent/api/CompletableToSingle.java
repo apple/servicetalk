@@ -22,9 +22,13 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Completable parent;
 
-    CompletableToSingle(Completable parent, Executor executor) {
-        super(executor);
+    CompletableToSingle(Completable parent) {
         this.parent = parent;
+    }
+
+    @Override
+    Executor executor() {
+        return parent.executor();
     }
 
     @Override

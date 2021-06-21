@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -41,38 +42,42 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     static <T> Publisher<T> publishAndSubscribeOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
-    }
-
-    @Deprecated
-    static <T> Publisher<T> publishAndSubscribeOnOverride(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
+        return original.executor() == executor || immediate() == executor ?
+                original :
+                new PublishAndSubscribeOn<>(original, executor);
     }
 
     static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOn<>(executor, original);
-    }
-
-    @Deprecated
-    static <T> Publisher<T> publishOnOverride(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOnOverride<>(original, executor);
+        return original.executor() == executor || immediate() == executor ?
+                original :
+                new PublishOn<>(original, executor);
     }
 
     static <T> Publisher<T> subscribeOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOn<>(executor, original);
+        return original.executor() == executor || immediate() == executor ?
+                original :
+                new SubscribeOn<>(original, executor);
     }
 
-    @Deprecated
-    static <T> Publisher<T> subscribeOnOverride(Publisher<T> original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOnOverride<>(original, executor);
-    }
+    private abstract static class OffloadingPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
+        protected final Executor executor;
+        protected final Publisher<T> original;
 
-    private static final class PublishAndSubscribeOn<T> extends AbstractNoHandleSubscribePublisher<T> {
-        private final Publisher<T> original;
-
-        PublishAndSubscribeOn(final Executor executor, final Publisher<T> original) {
-            super(executor);
+        protected OffloadingPublisher(final Publisher<T> original, final Executor executor) {
             this.original = original;
+            this.executor = executor;
+        }
+
+        @Override
+        final Executor executor() {
+            return executor;
+        }
+    }
+
+    private static final class PublishAndSubscribeOn<T> extends OffloadingPublisher<T> {
+
+        PublishAndSubscribeOn(final Publisher<T> original, final Executor executor) {
+            super(original, executor);
         }
 
         @Override
@@ -93,32 +98,10 @@ final class PublishAndSubscribeOnPublishers {
         }
     }
 
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Publisher} with an {@link Executor}, i.e. all operators behave
-     * the same way.
-     * Hence, we simply use {@link AbstractSynchronousPublisherOperator} which does not do any extra offloading, it just
-     * overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class PublishAndSubscribeOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
-        PublishAndSubscribeOnOverride(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
-        }
+    private static final class PublishOn<T> extends OffloadingPublisher<T> {
 
-        @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            // We are using AbstractSynchronousPublisherOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Publisher created with an Executor.
-            return subscriber;
-        }
-    }
-
-    private static final class PublishOn<T> extends AbstractNoHandleSubscribePublisher<T> {
-        private final Publisher<T> original;
-
-        PublishOn(final Executor executor, final Publisher<T> original) {
-            super(mergeAndOffloadPublish(original.executor(), executor));
-            this.original = original;
+        PublishOn(final Publisher<T> original, final Executor executor) {
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -137,33 +120,10 @@ final class PublishAndSubscribeOnPublishers {
         }
     }
 
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Publisher} with an {@link Executor}, i.e. all operators behave the
-     * same way.
-     * Hence, we simply use {@link AbstractSynchronousPublisherOperator} which does not do any extra offloading, it just
-     * overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class PublishOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
+    private static final class SubscribeOn<T> extends OffloadingPublisher<T> {
 
-        PublishOnOverride(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.executor(), executor));
-        }
-
-        @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            // We are using AbstractSynchronousPublisherOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Publisher created with an Executor.
-            return subscriber;
-        }
-    }
-
-    private static final class SubscribeOn<T> extends AbstractNoHandleSubscribePublisher<T> {
-        private final Publisher<T> original;
-
-        SubscribeOn(final Executor executor, final Publisher<T> original) {
-            super(mergeAndOffloadSubscribe(original.executor(), executor));
-            this.original = original;
+        SubscribeOn(final Publisher<T> original, final Executor executor) {
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override
@@ -179,27 +139,6 @@ final class PublishAndSubscribeOnPublishers {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(subscriber);
-        }
-    }
-
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Publisher} with an {@link Executor}, i.e. all operators behave the
-     * same way.
-     * Hence, we simply use {@link AbstractSynchronousPublisherOperator} which does not do any extra offloading, it just
-     * overrides the Executor that will be used to do the offloading.
-     */
-    private static final class SubscribeOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
-
-        SubscribeOnOverride(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
-        }
-
-        @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            // We are using AbstractSynchronousPublisherOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Publisher created with an Executor.
-            return subscriber;
         }
     }
 }

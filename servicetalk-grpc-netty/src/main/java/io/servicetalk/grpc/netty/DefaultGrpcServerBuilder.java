@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
-import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -29,7 +28,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -96,13 +94,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
-    @Deprecated
-    @Override
-    public GrpcServerSecurityConfigurator secure() {
-        HttpServerSecurityConfigurator secure = httpServerBuilder.secure();
-        return new DefaultGrpcServerSecurityConfigurator(secure, this);
-    }
-
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
         httpServerBuilder.sslConfig(config);
@@ -124,13 +115,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Override
     public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
         httpServerBuilder.listenSocketOption(option, value);
-        return this;
-    }
-
-    @Deprecated
-    @Override
-    public GrpcServerBuilder enableWireLogging(final String loggerName) {
-        httpServerBuilder.enableWireLogging(loggerName);
         return this;
     }
 
