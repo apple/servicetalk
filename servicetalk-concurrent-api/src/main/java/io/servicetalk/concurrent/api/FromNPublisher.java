@@ -17,38 +17,52 @@ package io.servicetalk.concurrent.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Math.min;
 
-final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
+final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
     @Nullable
     private final T v1;
     @Nullable
     private final T v2;
+    @Nullable
+    private final T v3;
 
-    From2Publisher(@Nullable T v1, @Nullable T v2) {
+    private final int maxN;
+
+    FromNPublisher(@Nullable T v1, @Nullable T v2) {
         this.v1 = v1;
         this.v2 = v2;
+        this.v3 = null;
+        this.maxN = 2;
+    }
+
+    FromNPublisher(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
+        this.v1 = v1;
+        this.v2 = v2;
+        this.v3 = v3;
+        this.maxN = 3;
     }
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
         try {
-            subscriber.onSubscribe(new TwoValueSubscription(subscriber));
+            subscriber.onSubscribe(new NValueSubscription(subscriber));
         } catch (Throwable cause) {
             handleExceptionFromOnSubscribe(subscriber, cause);
         }
     }
 
-    private final class TwoValueSubscription implements Subscription {
-        private static final byte INIT = 0;
-        private static final byte DELIVERED_V1 = 1;
-        private static final byte TERMINATED = 2;
-        private byte state;
+    private final class NValueSubscription implements Subscription {
+        private static final int TERMINATED = -1;
+        private int requested;
+        private int state;
         private final Subscriber<? super T> subscriber;
 
-        private TwoValueSubscription(final Subscriber<? super T> subscriber) {
+        private NValueSubscription(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
         }
 
@@ -67,33 +81,38 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
-            if (state == INIT) {
-                state = DELIVERED_V1;
-                try {
-                    subscriber.onNext(v1);
-                } catch (Throwable cause) {
-                    state = TERMINATED;
-                    subscriber.onError(cause);
-                    return;
+            if (requested == maxN) {
+                return;
+            }
+            requested = (int) min(maxN, addWithOverflowProtection(requested, n));
+            while (state < requested) {
+                boolean successful;
+                if (state == 0) {
+                    successful = deliver(v1);
+                } else if (state == 1) {
+                    successful = deliver(v2);
+                } else if (state == 2) {
+                    successful = deliver(v3);
+                } else {
+                    break;
                 }
-                // We could check CANCELLED here and return, but it isn't required.
-                if (n > 1 && state == DELIVERED_V1) {
-                    deliverV2();
+
+                if (successful && state == maxN) {
+                    subscriber.onComplete();
                 }
-            } else if (state == DELIVERED_V1) {
-                deliverV2();
             }
         }
 
-        private void deliverV2() {
-            state = TERMINATED;
+        private boolean deliver(@Nullable T value) {
+            ++state;
             try {
-                subscriber.onNext(v2);
+                subscriber.onNext(value);
+                return true;
             } catch (Throwable cause) {
+                state = TERMINATED;
                 subscriber.onError(cause);
-                return;
+                return false;
             }
-            subscriber.onComplete();
         }
     }
 }

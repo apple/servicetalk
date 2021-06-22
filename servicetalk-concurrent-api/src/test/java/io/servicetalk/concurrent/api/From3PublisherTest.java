@@ -181,8 +181,23 @@ class From3PublisherTest {
     }
 
     @Test
+    void reentryOneFirstNoReentry() {
+        reentry(1, false, 2);
+    }
+
+    @Test
     void reentryMaxFirst() {
         reentry(MAX_VALUE, true, 1);
+    }
+
+    @Test
+    void reentryMaxFirstNoReentry() {
+        reentry(MAX_VALUE, false, 1);
+    }
+
+    @Test
+    void reentryMaxLaterNoReentry() {
+        reentry(1, false, MAX_VALUE);
     }
 
     @Test

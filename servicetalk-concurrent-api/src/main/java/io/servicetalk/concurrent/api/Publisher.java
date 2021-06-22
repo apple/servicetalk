@@ -3219,7 +3219,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2) {
-        return new From2Publisher<>(v1, v2);
+        return new FromNPublisher<>(v1, v2);
     }
 
     /**
@@ -3237,7 +3237,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
-        return new From3Publisher<>(v1, v2, v3);
+        return new FromNPublisher<>(v1, v2, v3);
     }
 
     /**
