@@ -43,6 +43,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -50,13 +51,16 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -638,5 +642,21 @@ class PublisherFlatMapSingleTest {
         submitFuture.get(); // Await everything requested.
         assertThat("Unexpected items emitted.", received, hasSize(totalToRequest));
         assertThat(received, containsInAnyOrder(range(0, totalToRequest).boxed().toArray()));
+    }
+
+    @Test
+    void testConcurrentEmissions() throws Exception {
+        final Executor executor = newFixedSizeExecutor(10);
+        final int maxSingles = 1_000;
+        final int expected = range(1, maxSingles).reduce(0, Integer::sum);
+
+        final int actual = Publisher.range(1, maxSingles)
+                .flatMapMergeSingle(key -> executor.timer(ofMillis(current().nextInt(10)))
+                                                   .toSingle().map(ignored -> key), 10)
+                .collect(() -> 0, Integer::sum)
+                .toFuture().get();
+
+        assertThat(actual, is(equalTo(expected)));
+        executor.closeAsync().toFuture().get();
     }
 }
