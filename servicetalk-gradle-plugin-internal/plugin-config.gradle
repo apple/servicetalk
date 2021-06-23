@@ -22,6 +22,7 @@ dependencies {
   implementation gradleApi()
   implementation localGroovy()
   implementation "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
+  implementation "info.solidsoft.gradle.pitest:gradle-pitest-plugin:$props.pitestPluginVersion"
 }
 
 gradlePlugin {
