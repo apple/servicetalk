@@ -17,47 +17,63 @@ package io.servicetalk.concurrent.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Math.min;
 
-final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
+final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
+
+    private static final Object UNUSED_REF = new Object();
+
     @Nullable
     private final T v1;
     @Nullable
     private final T v2;
+    @Nullable
+    private final T v3;
 
-    From2Publisher(@Nullable T v1, @Nullable T v2) {
+    @SuppressWarnings("unchecked")
+    FromNPublisher(@Nullable T v1, @Nullable T v2) {
+        this.v1 = (T) UNUSED_REF;
+        this.v2 = v1;
+        this.v3 = v2;
+    }
+
+    FromNPublisher(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
         this.v1 = v1;
         this.v2 = v2;
+        this.v3 = v3;
     }
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
         try {
-            subscriber.onSubscribe(new TwoValueSubscription(subscriber));
+            subscriber.onSubscribe(new NValueSubscription(subscriber));
         } catch (Throwable cause) {
             handleExceptionFromOnSubscribe(subscriber, cause);
         }
     }
 
-    private final class TwoValueSubscription implements Subscription {
-        private static final byte INIT = 0;
-        private static final byte DELIVERED_V1 = 1;
-        private static final byte CANCELLED = 2;
+    private final class NValueSubscription implements Subscription {
         private static final byte TERMINATED = 3;
+        private byte requested;
         private byte state;
         private final Subscriber<? super T> subscriber;
 
-        private TwoValueSubscription(final Subscriber<? super T> subscriber) {
+        private NValueSubscription(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
+            if (v1 == UNUSED_REF) {
+                // 3-value version - simulate 1 emitted item, start counting from 1.
+                requested = 1;
+                state++;
+            }
         }
 
         @Override
         public void cancel() {
-            if (state != TERMINATED) {
-                state = CANCELLED;
-            }
+            state = TERMINATED;
         }
 
         @Override
@@ -70,33 +86,32 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
-            if (state == INIT) {
-                state = DELIVERED_V1;
-                try {
-                    subscriber.onNext(v1);
-                } catch (Throwable cause) {
-                    state = TERMINATED;
-                    subscriber.onError(cause);
-                    return;
+            if (requested == 3) {
+                return;
+            }
+            requested = (byte) min(3, addWithOverflowProtection(requested, n));
+            boolean successful = true;
+            while (successful && state < requested) {
+                if (state == 0) {
+                    successful = deliver(v1);
+                } else if (state == 1) {
+                    successful = deliver(v2);
+                } else if (state == 2 && deliver(v3)) {
+                    subscriber.onComplete();
                 }
-                // We could check CANCELLED here and return, but it isn't required.
-                if (n > 1) {
-                    deliverV2();
-                }
-            } else if (state == DELIVERED_V1) {
-                deliverV2();
             }
         }
 
-        private void deliverV2() {
-            state = TERMINATED;
+        private boolean deliver(@Nullable T value) {
+            ++state;
             try {
-                subscriber.onNext(v2);
+                subscriber.onNext(value);
+                return true;
             } catch (Throwable cause) {
+                state = TERMINATED;
                 subscriber.onError(cause);
-                return;
+                return false;
             }
-            subscriber.onComplete();
         }
     }
 }

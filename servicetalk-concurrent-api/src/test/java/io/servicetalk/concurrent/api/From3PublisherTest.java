@@ -23,11 +23,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -161,6 +163,122 @@ class From3PublisherTest {
     @Test
     void invalidRequestNNeg() {
         invalidRequestN(-1);
+    }
+
+    @Test
+    void reentry() {
+        reentry(1, true, 1);
+    }
+
+    @Test
+    void reentryTwoFirst() {
+        reentry(2, true, 1);
+    }
+
+    @Test
+    void reentryTwoFirstNoReentry() {
+        reentry(2, false, 1);
+    }
+
+    @Test
+    void reentryOneFirstNoReentry() {
+        reentry(1, false, 2);
+    }
+
+    @Test
+    void reentryMaxFirst() {
+        reentry(MAX_VALUE, true, 1);
+    }
+
+    @Test
+    void reentryMaxFirstNoReentry() {
+        reentry(MAX_VALUE, false, 1);
+    }
+
+    @Test
+    void reentryMaxLaterNoReentry() {
+        reentry(1, false, MAX_VALUE);
+    }
+
+    @Test
+    void reentryMaxLater() {
+        reentry(1, true, MAX_VALUE);
+    }
+
+    void reentry(final long firstDemand, final boolean nextWithReentry, final long nextDemand) {
+        final int[] emitted = {0};
+        final boolean[] completed = {false};
+        final Subscription[] subscription = new Subscription[1];
+        toSource(fromPublisher()).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription1) {
+                subscription[0] = subscription1;
+                subscription1.request(firstDemand);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                emitted[0]++;
+                if (nextWithReentry) {
+                    subscription[0].request(nextDemand);
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        if (!nextWithReentry) {
+            subscription[0].request(nextDemand);
+        }
+
+        assertThat(emitted[0], is(3));
+        assertThat(completed[0], is(true));
+    }
+
+    @Test
+    void testErrorWhenCancelInterleavesDemandCompletion() {
+        final int[] emitted = {0};
+        final boolean[] completed = {false};
+        final boolean[] error = {false};
+        final Subscription[] subscription = new Subscription[1];
+        toSource(fromPublisher()).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription1) {
+                subscription[0] = subscription1;
+                subscription1.request(3);
+            }
+
+            @Override
+            public void onNext(final Integer integer) {
+                subscription[0].cancel();
+                if (integer == 2) {
+                    throw new IllegalStateException();
+                } else {
+                    emitted[0]++;
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                error[0] = true;
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        assertThat(emitted[0], is(1));
+        assertThat(completed[0], is(false));
+        assertThat(error[0], is(false));
     }
 
     private void invalidRequestN(long n) {
