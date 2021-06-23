@@ -24,6 +24,9 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static java.lang.Math.min;
 
 final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
+
+    private static final Object UNUSED_REF = new Object();
+
     @Nullable
     private final T v1;
     @Nullable
@@ -31,20 +34,17 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
     @Nullable
     private final T v3;
 
-    private final int maxN;
-
+    @SuppressWarnings("unchecked")
     FromNPublisher(@Nullable T v1, @Nullable T v2) {
-        this.v1 = v1;
-        this.v2 = v2;
-        this.v3 = null;
-        this.maxN = 2;
+        this.v1 = (T) UNUSED_REF;
+        this.v2 = v1;
+        this.v3 = v2;
     }
 
     FromNPublisher(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
         this.v1 = v1;
         this.v2 = v2;
         this.v3 = v3;
-        this.maxN = 3;
     }
 
     @Override
@@ -57,13 +57,18 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
     }
 
     private final class NValueSubscription implements Subscription {
-        private static final int TERMINATED = -1;
-        private int requested;
-        private int state;
+        private static final byte TERMINATED = 3;
+        private byte requested;
+        private byte state;
         private final Subscriber<? super T> subscriber;
 
         private NValueSubscription(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
+            if (v1 == UNUSED_REF) {
+                // 3-value version - simulate 1 emitted item, start counting from 1.
+                requested = 1;
+                state++;
+            }
         }
 
         @Override
@@ -81,23 +86,17 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }
-            if (requested == maxN) {
+            if (requested == 3) {
                 return;
             }
-            requested = (int) min(maxN, addWithOverflowProtection(requested, n));
-            while (state < requested) {
-                boolean successful;
+            requested = (byte) min(3, addWithOverflowProtection(requested, n));
+            boolean successful = true;
+            while (successful && state < requested) {
                 if (state == 0) {
                     successful = deliver(v1);
                 } else if (state == 1) {
                     successful = deliver(v2);
-                } else if (state == 2) {
-                    successful = deliver(v3);
-                } else {
-                    break;
-                }
-
-                if (successful && state == maxN) {
+                } else if (state == 2 && deliver(v3)) {
                     subscriber.onComplete();
                 }
             }

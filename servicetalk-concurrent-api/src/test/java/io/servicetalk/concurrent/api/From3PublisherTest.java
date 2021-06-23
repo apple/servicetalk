@@ -242,6 +242,45 @@ class From3PublisherTest {
         assertThat(completed[0], is(true));
     }
 
+    @Test
+    void testErrorWhenCancelInterleavesDemandCompletion() {
+        final int[] emitted = {0};
+        final boolean[] completed = {false};
+        final boolean[] error = {false};
+        final Subscription[] subscription = new Subscription[1];
+        toSource(fromPublisher()).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription1) {
+                subscription[0] = subscription1;
+                subscription1.request(3);
+            }
+
+            @Override
+            public void onNext(final Integer integer) {
+                subscription[0].cancel();
+                if (integer == 2) {
+                    throw new IllegalStateException();
+                } else {
+                    emitted[0]++;
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                error[0] = true;
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        assertThat(emitted[0], is(1));
+        assertThat(completed[0], is(false));
+        assertThat(error[0], is(false));
+    }
+
     private void invalidRequestN(long n) {
         toSource(fromPublisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(n);
