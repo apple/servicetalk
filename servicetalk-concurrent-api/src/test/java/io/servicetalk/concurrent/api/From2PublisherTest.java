@@ -23,11 +23,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -114,6 +116,52 @@ class From2PublisherTest {
     @Test
     void invalidRequestNNeg() {
         invalidRequestN(-1);
+    }
+
+    @Test
+    void reentry() {
+        reentry(1, 1);
+    }
+
+    @Test
+    void reentryMaxFirst() {
+        reentry(MAX_VALUE, 1);
+    }
+
+    @Test
+    void reentryMaxLater() {
+        reentry(1, MAX_VALUE);
+    }
+
+    void reentry(final long firstDemand, final long nextDemand) {
+        final int[] emitted = {0};
+        final boolean[] completed = {false};
+        final Subscription[] subscription = new Subscription[1];
+        toSource(fromPublisher()).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription1) {
+                subscription[0] = subscription1;
+                subscription1.request(firstDemand);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                emitted[0]++;
+                subscription[0].request(nextDemand);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed[0] = true;
+            }
+        });
+
+        assertThat(emitted[0], is(2));
+        assertThat(completed[0], is(true));
     }
 
     private void invalidRequestN(long n) {
