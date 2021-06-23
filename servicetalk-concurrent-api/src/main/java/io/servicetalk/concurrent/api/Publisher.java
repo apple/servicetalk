@@ -2241,8 +2241,8 @@ public abstract class Publisher<T> {
      * @deprecated Use {@link #multicast(int, int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
-     * @param queueLimit The number of elements which will be queued for each multicasted {@link Subscriber} in order to
-     * compensate for unequal demand.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
     @Deprecated
@@ -2256,7 +2256,6 @@ public abstract class Publisher<T> {
      * <p>
      * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
      * the downstream {@link Subscriber} subscribed will not be queued.
-     * queued.
      * <p>
      * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
      * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
@@ -2285,7 +2284,6 @@ public abstract class Publisher<T> {
      * <p>
      * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
      * the downstream {@link Subscriber} subscribed will not be queued.
-     * queued.
      * <p>
      * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
      * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
@@ -2300,8 +2298,8 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
      * subscribe to the return value.
-     * @param queueLimit The number of elements which will be queued for each multicasted {@link Subscriber} in order to
-     * compensate for unequal demand.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
      * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
@@ -2316,7 +2314,6 @@ public abstract class Publisher<T> {
      * <p>
      * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
      * the downstream {@link Subscriber} subscribed will not be queued.
-     * queued.
      * <p>
      * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
      * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
@@ -2331,8 +2328,8 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
      * subscribe to the return value.
-     * @param queueLimit The number of elements which will be queued for each multicasted {@link Subscriber} in order to
-     * compensate for unequal demand.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
      * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
      * returns a {@link Completable} whose termination resets the state of the returned {@link Publisher} and allows
      * for downstream resubscribing. The argument to this function is as follows:

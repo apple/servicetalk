@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.DefaultPriorityQueue.Node;
+import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
@@ -101,14 +102,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                     // terminated, demandQueue is not thread safe and isn't cleaned up on the Subscriber thread.
                     return false;
                 }
-                int i;
-                for (i = 0; i < currSubs.length; ++i) {
-                    if (currSubs[i] == subscriber) {
-                        break;
-                    }
-                }
-
-                assert i < currSubs.length;
+                final int i = ArrayUtils.indexOf(subscriber, currSubs);
                 @SuppressWarnings("unchecked")
                 Subscriber<? super T>[] newSubs = (Subscriber<? super T>[])
                         Array.newInstance(Subscriber.class, currSubs.length - 1);
