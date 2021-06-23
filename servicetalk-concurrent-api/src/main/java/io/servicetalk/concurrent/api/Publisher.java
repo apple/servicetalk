@@ -50,6 +50,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
@@ -1793,7 +1794,7 @@ public abstract class Publisher<T> {
     public final Publisher<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() == null) {
-                return Completable.completed();
+                return completed();
             }
             return retryWhen.apply(retryCount, notification.cause());
         }, true);
@@ -1859,7 +1860,7 @@ public abstract class Publisher<T> {
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() != null) {
-                return Completable.completed();
+                return completed();
             }
             return repeatWhen.apply(retryCount);
         }, false);
@@ -1953,19 +1954,19 @@ public abstract class Publisher<T> {
      * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
      * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
      * returned {@link Publisher}.
-     *
-     * <h2>Flow control</h2>
+     * <p>
+     * Flow control
+     * <p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
-     * size can be controlled with the {@code maxQueuePerGroup} argument.
-     *
-     * <h2>Cancellation</h2>
-     *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
-     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
-     * will be cancelled.
+     * size can be controlled via {@link #groupBy(Function, int)}.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
      * <p>
      * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
      * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
@@ -1990,38 +1991,34 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
      * {@code keySelector} {@link Function}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
-                                                                   int groupMaxQueueSize) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize);
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector) {
+        return groupBy(keySelector, 64);
     }
 
     /**
-     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s. Item to group
-     * association is done by {@code keySelector} {@link Function}. If the selector selects a key which is previously
-     * seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item is sent to
-     * that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the returned
-     * {@link Publisher}.
-     *
-     * <h2>Flow control</h2>
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s.
+     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is
+     * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
+     * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
+     * returned {@link Publisher}.
+     * <p>
+     * Flow control
+     * <p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
-     * size can be controlled with the {@code maxQueuePerGroup} argument.
-     *
-     * <h2>Cancellation</h2>
-     *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
-     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
-     * will be cancelled.
+     * size can be controlled with the {@code queueLimit} argument.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
      * <p>
      * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
      * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
@@ -2046,8 +2043,65 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
+     * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
+     */
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
+                                                                   int queueLimit) {
+        return new PublisherGroupBy<>(this, keySelector, queueLimit);
+    }
+
+    /**
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s.
+     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is
+     * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
+     * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
+     * returned {@link Publisher}.
+     * <p>
+     * Flow control
+     * <p>
+     * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
+     * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
+     * elements requested by one group may end up producing items for a different group, which has not yet requested
+     * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
+     * size can be controlled with the {@code queueLimit} argument.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
+     * <p>
+     * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
+     * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
+     * emitted from the returned {@link Publisher}. Any queued items for a cancelled {@link Subscriber} for a
+     * {@link GroupedPublisher} will be discarded and hence will not be emitted if the same {@link GroupedPublisher} is
+     * emitted again.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         Key k = keySelector.apply(result);
+     *         List<T> v = results.get(k);
+     *         if (v == null) {
+     *             v = // new List
+     *             results.put(k, v);
+     *         }
+     *         v.add(result);
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
+     * {@link GroupedPublisher}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
      * This is just a hint for internal data structures and does not have to be precise.
      * @param <Key> Type of {@link GroupedPublisher} keys.
@@ -2056,8 +2110,8 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
-                                                                   int groupMaxQueueSize, int expectedGroupCountHint) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+                                                                   int queueLimit, int expectedGroupCountHint) {
+        return new PublisherGroupBy<>(this, keySelector, queueLimit, expectedGroupCountHint);
     }
 
     /**
@@ -2083,7 +2137,9 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
@@ -2091,8 +2147,8 @@ public abstract class Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
-            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize);
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int queueLimit) {
+        return new PublisherGroupToMany<>(this, keySelector, queueLimit);
     }
 
     /**
@@ -2118,8 +2174,9 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
      * This is just a hint for internal data structures and does not have to be precise.
      * @param <Key> Type of {@link GroupedPublisher} keys.
@@ -2128,9 +2185,9 @@ public abstract class Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
-            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int queueLimit,
             int expectedGroupCountHint) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+        return new PublisherGroupToMany<>(this, keySelector, queueLimit, expectedGroupCountHint);
     }
 
     /**
@@ -2151,13 +2208,14 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     *
+     * @deprecated Use {@link #multicast(int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
+    @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers) {
-        return new MulticastPublisher<>(this, expectedSubscribers);
+        return multicastToExactly(expectedSubscribers, 64);
     }
 
     /**
@@ -2168,7 +2226,7 @@ public abstract class Publisher<T> {
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
      * {@link Subscription#request(long) request(10)}, and the second only calls
-     * {@link Subscription#request(long) request(10)}, then 9 elements will be queued to deliver to second when more
+     * {@link Subscription#request(long) request(1)}, then 9 elements will be queued to deliver to second when more
      * {@link Subscription#request(long)} demand is made.
      * <p>
      * In sequential programming this is similar to the following:
@@ -2180,15 +2238,112 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     *
+     * @deprecated Use {@link #multicast(int, int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
-     * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there
-     * is no demand for data before the {@link Subscriber} will be discarded.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
-        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize);
+    @Deprecated
+    public final Publisher<T> multicastToExactly(int expectedSubscribers, int queueLimit) {
+        return new MulticastPublisher<>(this, expectedSubscribers, true, queueLimit, t -> completed());
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers) {
+        return multicast(minSubscribers, 64);
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit) {
+        return multicast(minSubscribers, queueLimit, t -> completed());
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
+     * returns a {@link Completable} whose termination resets the state of the returned {@link Publisher} and allows
+     * for downstream resubscribing. The argument to this function is as follows:
+     * <ul>
+     *     <li>{@code null} if upstream terminates with {@link Subscriber#onComplete()}</li>
+     *     <li>otherwise the {@link Throwable} from {@link Subscriber#onError(Throwable)}</li>
+     * </ul>
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit,
+                                        Function<Throwable, Completable> terminalResubscribe) {
+        return new MulticastPublisher<>(this, minSubscribers, false, queueLimit, terminalResubscribe);
     }
 
     /**

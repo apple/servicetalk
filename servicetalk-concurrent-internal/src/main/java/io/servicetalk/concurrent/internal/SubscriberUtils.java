@@ -25,12 +25,10 @@ import io.servicetalk.concurrent.SingleSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
-import static java.lang.Math.min;
 
 /**
  * A set of utilities for common {@link Subscriber} tasks.
@@ -77,55 +75,6 @@ public final class SubscriberUtils {
      */
     public static IllegalArgumentException newExceptionForInvalidRequestN(long n) {
         return new IllegalArgumentException("Rule 3.9 states non-positive request signals are illegal, but got: " + n);
-    }
-
-    /**
-     * Attempts to increment {@code sourceRequestedUpdater} in order to make it the same as {@code requestNUpdater}
-     * while not exceeding the {@code limit}.
-     * @param requestNUpdater The total number which has been requested (typically from
-     * {@link Subscription#request(long)}).
-     * @param sourceRequestedUpdater The total number which has actually been passed to
-     * {@link Subscription#request(long)}. This outstanding count
-     * {@code sourceRequestedUpdater() - emittedUpdater.get()} should never exceed {@code limit}.
-     * @param emittedUpdater The amount of data that has been emitted/delivered by the source.
-     * @param limit The maximum outstanding demand from the source at any given time.
-     * @param owner The object which all atomic updater parameters are associated with.
-     * @param <T> The type of object which owns the atomic updater parameters.
-     * @return The amount that {@code sourceRequestedUpdater} was increased by. This value is typically used to call
-     * {@link Subscription#request(long)}.
-     */
-    public static <T> int calculateSourceRequested(final AtomicLongFieldUpdater<T> requestNUpdater,
-                                                   final AtomicLongFieldUpdater<T> sourceRequestedUpdater,
-                                                   final AtomicLongFieldUpdater<T> emittedUpdater,
-                                                   final int limit,
-                                                   final T owner) {
-        for (;;) {
-            final long sourceRequested = sourceRequestedUpdater.get(owner);
-            final long requested = requestNUpdater.get(owner);
-            if (requested == sourceRequested) {
-                return 0;
-            }
-            final long emitted = emittedUpdater.get(owner);
-            // Connected sources (like each Publisher in a group-by) may buffer data before requesting as the peer
-            // source could have requested the data. In such cases, the source would drain and then call this method
-            // leading to emitted > sourceRequested
-            if (emitted > sourceRequested) {
-                // sourceRequested ... emitted ...[delta]... requested
-                final long delta = requested - emitted;
-                final int toRequest = (int) min(limit, delta);
-                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, emitted + toRequest)) {
-                    return toRequest;
-                }
-            } else {
-                // emitted ...[outstanding]... sourceRequested ...[delta]... requested
-                final long outstanding = sourceRequested - emitted;
-                final long delta = requested - sourceRequested;
-                final int toRequest = (int) min(limit - outstanding, delta);
-                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
-                    return toRequest;
-                }
-            }
-        }
     }
 
     /**
