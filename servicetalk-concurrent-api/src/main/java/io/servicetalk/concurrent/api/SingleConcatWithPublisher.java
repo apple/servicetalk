@@ -117,6 +117,9 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
             super.cancel();
         }
 
+        /**
+         * Helper method to invoke {@link DelayedCancellableThenSubscription#cancel()} from subclasses.
+         */
         final void superCancel() {
             super.cancel();
         }

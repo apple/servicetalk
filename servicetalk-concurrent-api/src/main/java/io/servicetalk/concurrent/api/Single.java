@@ -727,6 +727,10 @@ public abstract class Single<T> {
      * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
      * {@link Publisher} is forwarded to the returned {@link Publisher}.
      * <p>
+     * Note: this method is an overload for {@link #concat(Publisher, boolean)} with {@code deferSubscribe} equal to
+     * {@code false}, which triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully.
+     * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
      * <pre>{@code
@@ -738,9 +742,10 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Publisher, boolean)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return concat(next, false);
+        return new SingleConcatWithPublisher<>(this, next, false);
     }
 
     /**
@@ -758,7 +763,8 @@ public abstract class Single<T> {
      * }</pre>
      * @param next {@link Publisher} to concat.
      * @param deferSubscribe if {@code true} subscribe to the {@code next} {@link Publisher} will be deferred until
-     * demand is received.
+     * demand is received. Otherwise, it subscribes to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
      */
