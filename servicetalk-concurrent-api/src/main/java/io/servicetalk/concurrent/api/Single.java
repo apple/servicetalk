@@ -764,7 +764,10 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @param deferSubscribe if {@code true} subscribe to the {@code next} {@link Publisher} will be deferred until
      * demand is received. Otherwise, it subscribes to the {@code next} {@link Publisher} as soon as {@code this}
-     * {@link Single} completes successfully.
+     * {@link Single} completes successfully. Choosing the deferred ({@code true}) behavior is important if the
+     * {@code next} {@link Publisher} does not or might not support multiple subscribers (non-replayable). Choosing the
+     * immediate subscribe ({@code false}) behavior may have better performance and may be a preferable choice for
+     * replayable {@link Publisher}(s) or when eager subscribe is beneficial.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
      */
