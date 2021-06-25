@@ -35,9 +35,4 @@ public class SingleConcatWithPublisherDeferSubscribeTckTest extends AbstractSing
     public long maxElementsFromPublisher() {
         return TckUtils.maxElementsFromPublisher();
     }
-
-    @Override
-    public long boundedDepthOfOnNextAndRequestRecursion() {
-        return 2;
-    }
 }
