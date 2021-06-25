@@ -15,24 +15,13 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
 import org.testng.annotations.Test;
 
 @Test
-public class SingleConcatWithPublisherDeferSubscribeTckTest extends AbstractSingleTckTest<Integer> {
+public class SingleConcatWithPublisherDeferSubscribeTckTest extends SingleConcatWithPublisherTckTest {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
-        if (elements < 2) {
-            return Single.succeeded(1).toPublisher();
-        }
-        return Single.succeeded(1).concat(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1), true);
-    }
-
-    @Override
-    public long maxElementsFromPublisher() {
-        return TckUtils.maxElementsFromPublisher();
+    boolean deferSubscribe() {
+        return true;
     }
 }
