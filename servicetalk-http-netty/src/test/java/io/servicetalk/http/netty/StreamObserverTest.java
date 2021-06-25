@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -70,8 +71,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class StreamObserverTest {
-
-
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
@@ -168,7 +167,7 @@ class StreamObserverTest {
             verify(clientStreamObserver, times(2)).streamEstablished();
             verify(clientDataObserver, times(2)).onNewRead();
             verify(clientDataObserver, times(2)).onNewWrite();
-            verify(clientReadObserver).readCancelled();
+            verify(clientReadObserver).readFailed(any(ClosedChannelException.class));
             verify(clientWriteObserver).writeFailed(e.getCause());
             verify(clientStreamObserver, await()).streamClosed(e.getCause());
         }

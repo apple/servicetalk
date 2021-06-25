@@ -375,7 +375,8 @@ final class NettyHttpServer {
             if (canAddResponseContentLength(response, requestMethod)) {
                 return setResponseContentLength(response);
             } else {
-                final Publisher<Object> flatResponse = Publisher.<Object>from(response).concat(response.messageBody())
+                // Not necessary to defer subscribe to message body because server does not retry responses
+                final Publisher<Object> flatResponse = Single.<Object>succeeded(response).concat(response.messageBody())
                         .scanWith(HeaderUtils::insertTrailersMapper);
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;

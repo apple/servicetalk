@@ -76,9 +76,6 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final void writeMetaData(ChannelHandlerContext ctx, HttpMetaData metaData, Http2Headers h2Headers,
                              ChannelPromise promise) {
         endStream = !mayHaveTrailers(metaData) && isPayloadEmpty(metaData);
-        if (endStream) {
-            closeHandler.protocolPayloadEndOutbound(ctx, promise);
-        }
         ctx.write(new DefaultHttp2HeadersFrame(h2Headers, endStream), promise);
     }
 
@@ -92,6 +89,8 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+
         HttpHeaders trailers = (HttpHeaders) msg;
         if (endStream) {
             promise.setSuccess();
@@ -102,7 +101,6 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
             return;
         }
 
-        closeHandler.protocolPayloadEndOutbound(ctx, promise);
         if (trailers.isEmpty()) {
             writeEmptyEndStream(ctx, promise);
         } else {

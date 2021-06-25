@@ -37,6 +37,7 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,7 +56,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
-                NoopWriteObserver.INSTANCE, identity());
+                NoopWriteObserver.INSTANCE, identity(), false);
         subscription = mock(Subscription.class);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -113,7 +114,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false);
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
@@ -132,7 +133,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
@@ -160,6 +161,26 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         subscriber.onNext("Hello");
         channel.runPendingTasks();
         assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void clientRequestsOne() {
+        reset(completableSubscriber, demandEstimator);
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), true);
+        subscription = mock(Subscription.class);
+        subscriber.onSubscribe(subscription);
+        verify(subscription).request(1L);
+        verify(demandEstimator, never()).estimateRequestN(anyLong());
+        WriteInfo info = writeAndFlush("Hello");
+        verify(demandEstimator).onItemWrite(info.messsage(), info.writeCapacityBefore(), info.writeCapacityAfter());
+        verify(demandEstimator).estimateRequestN(info.writeCapacityAfter());
+        verify(subscription).request(10L);
+        subscriber.onComplete();
+        verifyListenerSuccessful();
+        verifyWriteSuccessful("Hello");
+        verifyZeroInteractions(closeHandler);
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
