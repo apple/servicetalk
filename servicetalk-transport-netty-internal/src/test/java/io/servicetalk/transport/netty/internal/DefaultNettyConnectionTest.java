@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundBuffer;
@@ -165,7 +166,9 @@ class DefaultNettyConnectionTest {
     @Test
     void testPublisherErrorFailsWrite() {
         toSource(conn.write(Publisher.failed(DELIBERATE_EXCEPTION))).subscribe(writeListener);
-        assertThat(writeListener.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        final Throwable error = writeListener.awaitOnError();
+        assertThat(error, instanceOf(AbortedFirstWriteException.class));
+        assertThat(error.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -304,7 +307,7 @@ class DefaultNettyConnectionTest {
         toSource(conn.read()).subscribe(subscriber);
         Throwable cause = writeListener.awaitOnError(); // ClosedChannelException was translated
         // Exception should be of type CloseEventObservedException
-        assertThat(cause, instanceOf(RetryableClosureException.class));
+        assertThat(cause, instanceOf(RetryableClosedChannelException.class));
         assertThat(cause.getCause(), instanceOf(ClosedChannelException.class));
         assertThat(cause.getCause().getMessage(), equalTo(
                 "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) " +
@@ -327,8 +330,10 @@ class DefaultNettyConnectionTest {
         channel.close().syncUninterruptibly();
         toSource(conn.write(publisher)).subscribe(writeListener);
 
-        Throwable cause = writeListener.awaitOnError();
-        // Exception should NOT be of type CloseEventObservedException
+        Throwable error = writeListener.awaitOnError();
+        assertThat(error, instanceOf(RetryableClosedChannelException.class));
+        Throwable cause = error.getCause();
+        // Error cause should NOT be of type CloseEventObservedException
         assertThat(cause, instanceOf(StacklessClosedChannelException.class));
         assertThat(cause.getCause(), nullValue());
         assertThat(cause.getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));

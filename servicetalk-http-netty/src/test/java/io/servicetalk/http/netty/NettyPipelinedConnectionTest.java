@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -323,13 +324,19 @@ class NettyPipelinedConnectionTest {
     @Test
     void writeErrorFailsPendingReadsDoesNotSubscribeToPendingWrites() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        assertTrue(writePublisher1.isSubscribed());
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         writePublisher1.onError(DELIBERATE_EXCEPTION);
-        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        final Throwable firstError = readSubscriber.awaitOnError();
+        assertThat(firstError, instanceOf(RetryableException.class));
+        assertThat(firstError.getCause(), is(DELIBERATE_EXCEPTION));
+        final Throwable secondError = readSubscriber2.awaitOnError();
+        assertThat(secondError, instanceOf(RetryableException.class));
+        assertThat(secondError, instanceOf(ClosedChannelException.class));
+        assertThat(secondError.getCause(), instanceOf(ClosedChannelException.class));
         assertTrue(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
     }
