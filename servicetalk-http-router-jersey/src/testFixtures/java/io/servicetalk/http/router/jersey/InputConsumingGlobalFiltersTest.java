@@ -26,11 +26,7 @@ import static java.util.Arrays.asList;
 
 public class InputConsumingGlobalFiltersTest extends AbstractFilterInterceptorTest {
 
-    public InputConsumingGlobalFiltersTest(final RouterApi api) {
-        super(api);
-    }
-
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(

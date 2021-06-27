@@ -20,7 +20,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.internal.util.collection.Refs;
 import org.glassfish.jersey.process.internal.RequestScope;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.inject.Provider;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -29,10 +29,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.internal.util.reflection.FieldSetter.setField;
 
-public class EndpointEnhancingRequestFilterTest {
+class EndpointEnhancingRequestFilterTest {
 
     @Test
-    public void shouldNotFilterNonStRequests() throws Exception {
+    void shouldNotFilterNonStRequests() throws Exception {
         EndpointEnhancingRequestFilter filter = new EndpointEnhancingRequestFilter();
         Provider<Ref<ConnectionContext>> ctxRefProvider = () -> Refs.of(null);
         Provider<RouteStrategiesConfig> routeStrategiesConfigProvider = () -> mock(RouteStrategiesConfig.class);

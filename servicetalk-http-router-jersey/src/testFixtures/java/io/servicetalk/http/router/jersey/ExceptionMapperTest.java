@@ -24,7 +24,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -54,15 +55,11 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonPartEquals;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest {
+class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest {
     private static final String EXCEPTION_RESPONSE_TYPE_HEADER = "X-EXCEPTION-RESPONSE-TYPE";
     private static final HttpResponseStatus STATUS_555 = HttpResponseStatus.of(555, "");
-
-    public ExceptionMapperTest(final RouterApi api) {
-        super(api);
-    }
 
     enum ExceptionResponseType {
         STR {
@@ -129,7 +126,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
         }
     }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -145,38 +142,40 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
         return new TestApplication();
     }
 
-    @Test
-    public void stringResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPlainResponse(STR);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void stringResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPlainResponse(STR));
     }
 
-    @Test
-    public void bufferResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPlainResponse(BUF);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void bufferResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPlainResponse(BUF));
     }
 
-    @Test
-    public void singleBufferResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPlainResponse(SBUF);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void singleBufferResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPlainResponse(SBUF));
     }
 
-    @Test
-    public void mapResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testJsonResponse(MAP);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void mapResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testJsonResponse(MAP));
     }
 
-    @Test
-    public void singleMapResponse() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void singleMapResponse(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
-            assumeThat(isStreamingJsonEnabled(), is(true));
+            assumeTrue(isStreamingJsonEnabled());
             testJsonResponse(SMAP);
         });
     }
