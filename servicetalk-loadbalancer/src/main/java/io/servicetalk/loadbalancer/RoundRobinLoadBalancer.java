@@ -148,9 +148,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      *
      * @param eventPublisher    provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
-     * @param eagerConnectionShutdown whether connections that have been marked as unavailable should be eagerly closed.
-     *  When {@code false}, the expired addresses will be used for sending requests, but new connections will not be
-     *  requested, allowing the server to drive the connection closure and shifting traffic to other addresses.
+     * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#isAvailable()} flag
+     * set to {@code false} should be eagerly closed. When {@code false}, the expired addresses will be used
+     * for sending requests, but new connections will not be requested, allowing the server to drive
+     * the connection closure and shifting traffic to other addresses.
      */
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
@@ -238,7 +239,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     List<Host<ResolvedAddress, C>> oldHosts, ResolvedAddress addr) {
                 @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
-                if (oldHostsTyped.size() == 0) {
+                if (oldHostsTyped.isEmpty()) {
                     // this can happen when an expired host is removed,
                     // but all of its connections have already been closed
                     return oldHostsTyped;
@@ -421,7 +422,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
             private Builder() { }
 
-            public Builder<ResolvedAddress, C> withEagerConnectionShutdown(boolean eagerConnectionShutdown) {
+            public Builder<ResolvedAddress, C> eagerConnectionShutdown(boolean eagerConnectionShutdown) {
                 this.eagerConnectionShutdown = eagerConnectionShutdown;
                 return this;
             }
