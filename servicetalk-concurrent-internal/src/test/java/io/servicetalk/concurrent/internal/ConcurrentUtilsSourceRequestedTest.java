@@ -28,24 +28,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.calculateSourceRequested;
+import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class SubscriberUtilsTest {
+public class ConcurrentUtilsSourceRequestedTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(2, MINUTES);
 
-    private static final AtomicLongFieldUpdater<SubscriberUtilsTest> requestNUpdater =
-            AtomicLongFieldUpdater.newUpdater(SubscriberUtilsTest.class, "requestN");
-    private static final AtomicLongFieldUpdater<SubscriberUtilsTest> sourceRequestedUpdater =
-            AtomicLongFieldUpdater.newUpdater(SubscriberUtilsTest.class, "sourceRequested");
-    private static final AtomicLongFieldUpdater<SubscriberUtilsTest> emittedUpdater =
-            AtomicLongFieldUpdater.newUpdater(SubscriberUtilsTest.class, "emitted");
+    private static final AtomicLongFieldUpdater<ConcurrentUtilsSourceRequestedTest> requestNUpdater =
+            AtomicLongFieldUpdater.newUpdater(ConcurrentUtilsSourceRequestedTest.class, "requestN");
+    private static final AtomicLongFieldUpdater<ConcurrentUtilsSourceRequestedTest> sourceRequestedUpdater =
+            AtomicLongFieldUpdater.newUpdater(ConcurrentUtilsSourceRequestedTest.class, "sourceRequested");
+    private static final AtomicLongFieldUpdater<ConcurrentUtilsSourceRequestedTest> emittedUpdater =
+            AtomicLongFieldUpdater.newUpdater(ConcurrentUtilsSourceRequestedTest.class, "emitted");
     private volatile long requestN;
     private volatile long sourceRequested;
     private volatile long emitted;
@@ -161,9 +162,9 @@ public class SubscriberUtilsTest {
         try {
             final CyclicBarrier barrier = new CyclicBarrier(2 + consumerThreads);
             final List<Future<?>> futures = new ArrayList<>(1 + consumerThreads);
-            final AtomicInteger totalCount = new AtomicInteger();
-            final AtomicInteger totalCountNotConsumed = new AtomicInteger();
-            final AtomicInteger totalCountConsumed = new AtomicInteger();
+            final AtomicLong totalCount = new AtomicLong();
+            final AtomicLong totalCountNotConsumed = new AtomicLong();
+            final AtomicLong totalCountConsumed = new AtomicLong();
 
             futures.add(executorService.submit(() -> {
                 try {
@@ -182,7 +183,7 @@ public class SubscriberUtilsTest {
                         produced += localProduced;
                     }
                     requestNUpdater.addAndGet(this, localProduced);
-                    int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
+                    long amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
                             limit, this);
                     assertTrue("invalid increment: " + amount, amount <= limit && amount >= 0);
                     totalCount.addAndGet(amount);
@@ -201,7 +202,7 @@ public class SubscriberUtilsTest {
                     for (;;) {
                         int localConsumed;
                         for (;;) {
-                            int totalNotConsumed = totalCountNotConsumed.get();
+                            long totalNotConsumed = totalCountNotConsumed.get();
                             if (totalNotConsumed == 0) {
                                 if (totalExpectedCount == totalCountConsumed.get()) {
                                     return;
@@ -209,7 +210,7 @@ public class SubscriberUtilsTest {
                                 Thread.yield();
                                 continue;
                             }
-                            localConsumed = random.nextInt(totalNotConsumed) + 1;
+                            localConsumed = random.nextInt((int) min(Integer.MAX_VALUE, totalNotConsumed)) + 1;
                             if (totalCountNotConsumed.compareAndSet(totalNotConsumed,
                                     totalNotConsumed - localConsumed)) {
                                 break;
@@ -217,7 +218,7 @@ public class SubscriberUtilsTest {
                         }
                         totalCountConsumed.addAndGet(localConsumed);
                         emittedUpdater.addAndGet(this, localConsumed);
-                        int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
+                        long amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
                                 limit, this);
                         assertTrue("invalid decrement: " + amount, amount <= limit && amount >= 0);
                         totalCount.addAndGet(amount);

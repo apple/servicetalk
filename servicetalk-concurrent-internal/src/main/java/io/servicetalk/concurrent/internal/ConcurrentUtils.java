@@ -15,8 +15,12 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+
+import static java.lang.Math.min;
 
 /**
  * Utilities which can be used for concurrency.
@@ -119,5 +123,65 @@ public final class ConcurrentUtils {
         assert acquireId != REENTRANT_LOCK_ZERO_THREAD_ID;
         return acquireId < REENTRANT_LOCK_ZERO_THREAD_ID ||
                 lockUpdater.getAndSet(owner, REENTRANT_LOCK_ZERO_THREAD_ID) == acquireId;
+    }
+
+    /**
+     * Attempts to increment {@code sourceRequestedUpdater} in order to make it the same as {@code requestNUpdater}
+     * while not exceeding the {@code limit}. Note that the return value maybe larger than {@code limit} if
+     * there is "stolen" demand (e.g. {@code emitting > sourceRequested}). In this case the assumed peer sources have
+     * requested signals, and instead the signals were delivered to the local source.
+     * @param requestNUpdater The total number which has been requested (typically from
+     * {@link Subscription#request(long)}).
+     * @param sourceRequestedUpdater The total number which has actually been passed to
+     * {@link Subscription#request(long)}. This outstanding count
+     * {@code sourceRequestedUpdater - emittedUpdater} should not exceed {@code limit} unless there are peer sources
+     * which may result in "unsolicited" emissions.
+     * @param emittedUpdater The amount of data that has been emitted/delivered by the source.
+     * @param limit The maximum outstanding demand from the source at any given time.
+     * @param owner The object which all atomic updater parameters are associated with.
+     * @param <T> The type of object which owns the atomic updater parameters.
+     * @return The amount which {@code sourceRequestedUpdater} was increased plus any "stolen" demand. This value is
+     * typically used for upstream {@link Subscription#request(long)} calls.
+     */
+    public static <T> long calculateSourceRequested(final AtomicLongFieldUpdater<T> requestNUpdater,
+                                                    final AtomicLongFieldUpdater<T> sourceRequestedUpdater,
+                                                    final AtomicLongFieldUpdater<T> emittedUpdater,
+                                                    final int limit, final T owner) {
+        for (;;) {
+            final long sourceRequested = sourceRequestedUpdater.get(owner);
+            final long requested = requestNUpdater.get(owner);
+            assert sourceRequested <= requested;
+            if (requested == sourceRequested) {
+                return 0;
+            }
+            final long emitted = emittedUpdater.get(owner);
+            // Connected sources (like each Publisher in a group-by) may buffer data before requesting as the peer
+            // source could have requested the data. In such cases, the source would drain and then call this method
+            // leading to emitted > sourceRequested
+            if (emitted > requested) {
+                // In a single threaded world this should never happen, but in multi-threaded scenarios it is possible
+                // the Subscriber thread invokes this method and hasn't yet observed an update to requested on the
+                // Subscription thread. In this case the Subscription thread MUST invoke this method as well and will
+                // fall into one of the respective cases below.
+                return 0;
+            } else if (emitted >= sourceRequested) {
+                // sourceRequested ... emitted ...[delta]... requested
+                final long delta = requested - emitted;
+                final int toRequest = (int) min(limit, delta);
+                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, emitted + toRequest)) {
+                    // (emitted - sourceRequested) is the "stolen" amount (emissions with no corresponding demand).
+                    // We need to give the demand back to upstream or else peer sources may be starved of demand.
+                    return toRequest + (emitted - sourceRequested);
+                }
+            } else {
+                // emitted ...[outstanding]... sourceRequested ...[delta]... requested
+                final long outstanding = sourceRequested - emitted;
+                final long delta = requested - sourceRequested;
+                final int toRequest = (int) min(limit - outstanding, delta);
+                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
+                    return toRequest;
+                }
+            }
+        }
     }
 }
