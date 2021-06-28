@@ -53,10 +53,10 @@ import static org.hamcrest.Matchers.sameInstance;
 
 class SingleConcatWithPublisherTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private final TestSingle<Integer> source = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build();
-    private final TestPublisher<Integer> next = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private final TestSubscription subscription = new TestSubscription();
     private final TestCancellable cancellable = new TestCancellable();
+    private TestSingle<Integer> source = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build();
+    private TestPublisher<Integer> next = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
 
     void setUp(boolean deferSubscribe) {
         toSource(source.concat(next, deferSubscribe)).subscribe(subscriber);
@@ -246,6 +246,32 @@ class SingleConcatWithPublisherTest {
             next.onSubscribe(subscription);
             assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0), is(false));
         }
+    }
+
+    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ValueSource(booleans = {false, true})
+    void publisherSubscribeBlockDemandMakesProgress(boolean deferSubscribe) {
+        source = new TestSingle<>();
+        next = new TestPublisher.Builder<Integer>().build(sub1 -> {
+            sub1.onSubscribe(subscription);
+            try {
+                // Simulate the a blocking operation on demand, like ConnectablePayloadWriter.
+                subscription.awaitRequestN(1);
+            } catch (InterruptedException e) {
+                throw new AssertionError(e);
+            }
+            return sub1;
+        });
+        setUp(deferSubscribe);
+
+        source.onSuccess(10);
+        // Give at least 2 demand so there is enough to unblock the awaitRequestN and deliver data below.
+        subscriber.awaitSubscription().request(2);
+
+        next.onNext(11);
+        next.onComplete();
+        assertThat(subscriber.takeOnNext(2), contains(10, 11));
+        subscriber.awaitOnComplete();
     }
 
     @ParameterizedTest(name = "deferSubscribe={0}")

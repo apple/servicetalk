@@ -179,15 +179,20 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                     }
                     break;
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
+                    // We need to ensure that the queued result is delivered in order (first). Upstream demand is
+                    // delayed via DelayedSubscription until onSubscribe which preserves ordering, and there are some
+                    // scenarios where subscribing to the concat Publisher may block on demand (e.g.
+                    // ConnectablePayloadWriter write) so we need to propagate demand first to prevent deadlock.
+                    if (n != 1) {
+                        super.request(n - 1);
+                    }
+
                     if (oldVal != INITIAL) {
                         @SuppressWarnings("unchecked")
                         final T tVal = (T) oldVal;
                         if (tryEmitSingleSuccessToTarget(tVal)) {
                             next.subscribeInternal(this);
                         }
-                    }
-                    if (n != 1) {
-                        super.request(n - 1);
                     }
                     break;
                 }
