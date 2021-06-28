@@ -179,15 +179,15 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                     }
                     break;
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
-                    if (n != 1) {
-                        super.request(n - 1);
-                    }
                     if (oldVal != INITIAL) {
                         @SuppressWarnings("unchecked")
                         final T tVal = (T) oldVal;
                         if (tryEmitSingleSuccessToTarget(tVal)) {
                             next.subscribeInternal(this);
                         }
+                    }
+                    if (n != 1) {
+                        super.request(n - 1);
                     }
                     break;
                 }
