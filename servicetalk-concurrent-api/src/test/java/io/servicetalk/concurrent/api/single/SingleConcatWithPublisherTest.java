@@ -197,6 +197,35 @@ class SingleConcatWithPublisherTest {
                 is(false));
     }
 
+    @Test
+    void publisherSubscribeBlockDemandMakesProgress() {
+        subscriber = new TestPublisherSubscriber<>();
+        cancellable = new TestCancellable();
+        source = new TestSingle<>();
+        subscription = new TestSubscription();
+        next = new TestPublisher.Builder<Integer>().build(sub1 -> {
+           sub1.onSubscribe(subscription);
+            try {
+                // Simulate the a blocking operation on demand, like ConnectablePayloadWriter.
+                subscription.awaitRequestN(1);
+            } catch (InterruptedException e) {
+                throw new AssertionError(e);
+            }
+            return sub1;
+        });
+        toSource(source.concat(next)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+
+        source.onSuccess(10);
+        // Give at least 2 demand so there is enough to unblock the awaitRequestN and deliver data below.
+        subscriber.awaitSubscription().request(2);
+
+        next.onNext(11);
+        next.onComplete();
+        assertThat(subscriber.takeOnNext(2), contains(10, 11));
+        subscriber.awaitOnComplete();
+    }
+
     private void triggerNextSubscribe() {
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
