@@ -149,8 +149,8 @@ class SingleConcatWithPublisherTest {
     void request0PropagatedAfterSuccess() {
         source.onSuccess(1);
         subscriber.awaitSubscription().request(1); // get the success from the Single
-        subscriber.awaitSubscription().request(0);
         next.onSubscribe(subscription);
+        subscriber.awaitSubscription().request(0);
         assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0),
                 is(true));
     }
