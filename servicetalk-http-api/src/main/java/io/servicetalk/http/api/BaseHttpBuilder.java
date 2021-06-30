@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
      *
      * @return {@code this}
-     * @see MultiAddressHttpClientBuilder#unresolvedAddressToHost(Function)
+     * @see SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)
      */
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 

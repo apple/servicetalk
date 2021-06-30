@@ -98,7 +98,7 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
-                .serviceDiscoverer(sdThatSupportsInvalidHostname())
+                .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 
         httpService = (ctx, request, factory) -> {
