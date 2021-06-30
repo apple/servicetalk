@@ -2896,7 +2896,15 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
      * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @deprecated This operator has been deprecated because of upcoming behavior changes in how the operator does
+     * offloading. Previously the subscribe would be offloaded for the entire subscribe chain, not just the portion
+     * preceding the offload operator and the publish would be offloaded from the source, not just for the operators
+     * following the operator. This change in behaviour means that it no longer makes sense to fuse the offloading of
+     * publish and subscribe as the location of the operators in the execution chain is now significant and publish and
+     * subscribe offloading, when required, will typically be placed in different locations. Use separate
+     * {@link #subscribeOn(Executor)} and {@link #publishOn(Executor)} operators instead.
      */
+    @Deprecated
     public final Publisher<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
     }
