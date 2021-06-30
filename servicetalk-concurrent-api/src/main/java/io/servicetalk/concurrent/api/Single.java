@@ -1365,12 +1365,16 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
      * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     * @deprecated This operator has been deprecated because of upcoming behavior changes in how the operator does
-     * offloading. Previously the subscribe would be offloaded for the entire subscribe chain, not just the portion
-     * preceding the offload operator and the publish would be offloaded from the source, not just for the operators
-     * following the operator. This change in behaviour means that it no longer makes sense to fuse the offloading of
-     * publish and subscribe as the location of the operators in the execution chain is now significant and publish and
-     * subscribe offloading, when required, will typically be placed in different locations. Use separate
+     * @deprecated This operator has been deprecated because of upcoming behavior changes in how offloading via
+     * operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+     * (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+     * at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+     * current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+     * regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+     * respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+     * chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+     * subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+     * offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
      * {@link #subscribeOn(Executor)} and {@link #publishOn(Executor)} operators instead.
      */
     @Deprecated
