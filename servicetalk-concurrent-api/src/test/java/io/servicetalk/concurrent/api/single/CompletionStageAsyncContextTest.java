@@ -68,7 +68,7 @@ class CompletionStageAsyncContextTest {
     void beforeTest() {
         AsyncContext.clear();
         testSource = new LegacyTestSingle<>(true, true);
-        source = testSource.publishAndSubscribeOn(executorExtension.executor());
+        source = testSource.publishOn(executorExtension.executor());
     }
 
     @Test

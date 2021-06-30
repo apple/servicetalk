@@ -87,7 +87,7 @@ class SingleToCompletionStageTest {
     @BeforeEach
     void beforeTest() {
         testSingle = new LegacyTestSingle<>(true, true);
-        source = testSingle.publishAndSubscribeOn(executorExtension.executor());
+        source = testSingle.publishOn(executorExtension.executor());
     }
 
     @Test

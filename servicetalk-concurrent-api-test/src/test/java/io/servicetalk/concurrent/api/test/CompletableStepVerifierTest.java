@@ -62,7 +62,7 @@ public class CompletableStepVerifierTest {
     public void expectCancellableTimeout() {
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> StepVerifiers.create(completed().publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+            verifyException(() -> StepVerifiers.create(completed().subscribeOn(EXECUTOR_RULE.executor()))
                     .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
@@ -237,7 +237,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void asyncContextOnError() {
-        StepVerifiers.create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        StepVerifiers.create(failed(DELIBERATE_EXCEPTION).subscribeOn(EXECUTOR_RULE.executor()))
                 .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);

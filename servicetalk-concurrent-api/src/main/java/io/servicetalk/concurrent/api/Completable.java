@@ -1411,25 +1411,6 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
-     * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
-     */
-    public final Completable publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
      * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
@@ -1583,9 +1564,8 @@ public abstract class Completable {
      * emitted by the {@link Runnable} will terminate the returned {@link Completable} with the same error.
      * <p>
      * Blocking inside {@link Runnable#run()} will in turn block the subscribe call to the returned {@link Completable}.
-     * If this behavior is undesirable then the returned {@link Completable} should be offloaded using one of the
-     * operators that offloads the subscribe call (eg: {@link #subscribeOn(Executor)},
-     * {@link #publishAndSubscribeOn(Executor)}).
+     * If this behavior is undesirable then the returned {@link Completable} should be offloaded using
+     * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param runnable {@link Runnable} which is invoked before completion.
      * @return A new {@code Completable}.

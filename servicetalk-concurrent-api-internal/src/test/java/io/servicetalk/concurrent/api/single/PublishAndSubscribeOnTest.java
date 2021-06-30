@@ -47,18 +47,8 @@ public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribe
     }
 
     @Test
-    public void testPublishAndSubscribeOn() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishAndSubscribeOn, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[TERMINAL_SIGNAL_THREAD], OFFLOAD_EXECUTOR);
-    }
-
-    @Test
-    public void testPublishAndSubscribeOnWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOn, offload.executor());
+    public void testSubscribeOnWithCancel() throws InterruptedException {
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::subscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,
                 capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);

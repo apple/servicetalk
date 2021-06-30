@@ -2883,25 +2883,6 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
-     * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     */
-    public final Publisher<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
      * Signifies that when the returned {@link Publisher} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
