@@ -24,4 +24,9 @@ public class SingleConcatWithPublisherDeferSubscribeTckTest extends SingleConcat
     boolean deferSubscribe() {
         return true;
     }
+
+    @Override
+    public long boundedDepthOfOnNextAndRequestRecursion() {
+        return 2;
+    }
 }
