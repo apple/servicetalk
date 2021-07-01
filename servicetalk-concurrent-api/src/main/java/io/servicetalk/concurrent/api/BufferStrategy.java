@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 
 import javax.annotation.Nullable;
 
@@ -33,7 +34,7 @@ import javax.annotation.Nullable;
  * @param <BC> An intermediate mutable object that holds the items into a buffer before it is emitted.
  * @param <B> The buffer of items.
  */
-public interface BufferStrategy<T, BC extends BufferStrategy.Accumulator<T, B>, B> {
+public interface BufferStrategy<T, BC extends Accumulator<T, B>, B> {
 
     /**
      * Returns a {@link Publisher} representing asynchronous buffer boundaries. This {@link Publisher} is expected to be

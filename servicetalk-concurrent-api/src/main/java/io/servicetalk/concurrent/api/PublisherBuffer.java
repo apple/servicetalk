@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.BufferStrategies.CountingAccumulator;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
@@ -77,91 +79,106 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
 
     private static final class ItemsSubscriber<T, B> implements Subscriber<T> {
         private final State state;
+        private final Subscriber<? super B> target;
+        private final DelayedSubscription bSubscription;
         private final DelayedSubscription tSubscription;
         private final int bufferSizeHint;
-        @Nullable
-        private ConcurrentSubscription subscription;
         private int itemsPending;
 
         ItemsSubscriber(final Publisher<? extends Accumulator<T, B>> boundaries,
                         final Subscriber<? super B> target, final int bufferSizeHint) {
             state = new State(bufferSizeHint);
+            this.target = target;
+            bSubscription = new DelayedSubscription();
             tSubscription = new DelayedSubscription();
             this.bufferSizeHint = bufferSizeHint;
             // Request-n is delayed till we receive the first boundary but we will request bufferSizeHint.
             // This is done here to localize state management (pending count) in this subscriber but still drive the
             // first request-n from inside State.
             itemsPending = bufferSizeHint;
-            toSource(boundaries).subscribe(new BoundariesSubscriber<>(state, target, tSubscription));
+            toSource(boundaries).subscribe(new BoundariesSubscriber<>(state, target, bSubscription, tSubscription));
         }
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            this.subscription = wrap(subscription);
-            tSubscription.delayedSubscription(this.subscription);
+            // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
+            // it will not prevent concurrent access between request(n) and cancel() on the original subscription.
+            tSubscription.delayedSubscription(ConcurrentSubscription.wrap(subscription));
         }
 
         @Override
         public void onNext(@Nullable final T t) {
             assert itemsPending > 0;
             --itemsPending;
-            state.accumulate(t);
+            state.accumulate(t, target, bSubscription, tSubscription);
             if (itemsPending == 0) {
-                assert subscription != null;
                 itemsPending = bufferSizeHint;
-                subscription.request(bufferSizeHint);
+                tSubscription.request(bufferSizeHint);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            state.itemsTerminated(error(t));
+            state.itemsTerminated(error(t), target, bSubscription);
         }
 
         @Override
         public void onComplete() {
-            state.itemsTerminated(complete());
+            state.itemsTerminated(complete(), target, bSubscription);
         }
     }
 
     private static final class BoundariesSubscriber<T, B> implements Subscriber<Accumulator<T, B>> {
         private final State state;
         private final Subscriber<? super B> target;
+        private final DelayedSubscription bSubscription;
         private final Subscription tSubscription;
 
-        @Nullable
-        private ConcurrentSubscription subscription;
-
-        BoundariesSubscriber(final State state, final Subscriber<? super B> target, final Subscription tSubscription) {
+        BoundariesSubscriber(final State state, final Subscriber<? super B> target,
+                             final DelayedSubscription bSubscription, final Subscription tSubscription) {
             this.state = state;
             this.target = target;
+            this.bSubscription = bSubscription;
             this.tSubscription = tSubscription;
         }
 
         @Override
-        public void onSubscribe(final Subscription bSubscription) {
-            subscription = wrap(new Subscription() {
+        public void onSubscribe(final Subscription subscription) {
+            // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
+            // it will not prevent concurrent access between request(n) and cancel() on the original subscription.
+            bSubscription.delayedSubscription(ConcurrentSubscription.wrap(new Subscription() {
                 @Override
                 public void request(final long n) {
-                    bSubscription.request(n);
+                    subscription.request(n);
                 }
 
                 @Override
                 public void cancel() {
                     try {
-                        bSubscription.cancel();
+                        subscription.cancel();
                     } finally {
                         tSubscription.cancel();
                     }
                 }
+            }));
+            // Wrap bSubscription to count number of requested items excluding internal demand for discarded boundaries.
+            target.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    state.requested(n);
+                    bSubscription.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    bSubscription.cancel();
+                }
             });
-            target.onSubscribe(subscription);
         }
 
         @Override
         public void onNext(@Nonnull final Accumulator<T, B> accumulator) {
-            assert subscription != null;
-            state.nextAccumulator(accumulator, target, subscription, tSubscription);
+            state.nextAccumulator(accumulator, target, bSubscription, tSubscription);
         }
 
         @Override
@@ -189,58 +206,82 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         private static final Object TERMINATED = new Object();
         private static final AtomicReferenceFieldUpdater<State, Object> maybeAccumulatorUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(State.class, Object.class, "maybeAccumulator");
+        private static final AtomicLongFieldUpdater<State> pendingUpdater =
+                AtomicLongFieldUpdater.newUpdater(State.class, "pending");
 
         private final int firstItemsRequestN;
         /**
          * Following values are assigned to this variable:
          * <ul>
          *     <li>{@code null} till the first accumulator arrives.</li>
-         *     <li>{@link #ADDING} if an item is being added to the currently active {@link Accumulator}</li>
-         *     <li>{@link ItemsTerminated} if the items source terminated but the target is not yet terminated.</li>
-         *     <li>{@link #TERMINATED} if the target subscriber has been terminated (or cancelled).</li>
          *     <li>{@link Accumulator} which is emitted by the boundaries source.</li>
+         *     <li>{@link #ADDING} if an item is being added to the currently active {@link Accumulator}.</li>
+         *     <li>{@link NextAccumulatorHolder} if the next boundary is received while still {@link #ADDING} or
+         *     finishing current {@link Accumulator}.</li>
+         *     <li>{@link ItemsTerminated} if the items source terminated but the target is not yet terminated because
+         *     we were delivering onNext.</li>
+         *     <li>{@link #TERMINATED} if the target subscriber has been terminated (or cancelled).</li>
          * </ul>
          */
         @Nullable
         private volatile Object maybeAccumulator;
+        /**
+         * Number of pending boundaries to deliver to the target based on expressed demand.
+         */
+        private volatile long pending;
 
         State(final int firstItemsRequestN) {
             this.firstItemsRequestN = firstItemsRequestN;
         }
 
-        <T, B> void accumulate(@Nullable final T item) {
+        void requested(long n) {
+            pendingUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
+        }
+
+        <T, B> void accumulate(@Nullable final T item, final Subscriber<? super B> target,
+                               final Cancellable bCancellable, final Cancellable tCancellable) {
             for (;;) {
                 final Object cMaybeAccumulator = maybeAccumulator;
-                assert cMaybeAccumulator != null;
+                assert cMaybeAccumulator != null;   // without the first accumulator there is no demand for items
 
                 // This method is called when a new item is received.
                 // The subscription for items source is local to this operator and could never be interacted from an
                 // external entity. This means we neither re-enter this method nor the items source can terminate
                 // when we are inside this method (onNext and onError/onComplete can not be concurrent).
-                if (cMaybeAccumulator == TERMINATED || cMaybeAccumulator instanceof ItemsTerminated) {
+                if (cMaybeAccumulator == TERMINATED) {
                     return;
                 }
-                assert cMaybeAccumulator != ADDING;
+                assert cMaybeAccumulator != ADDING; // Invocation of 'accumulate' method is expected to be sequential
                 // If we are ADDING and maybeAccumulator has changed then either it should have terminated or
-                // a new accumulator has been received. If a new accumulator is received, we could have never added to
-                // that accumulator (as we were adding to an old accumulator), so we discard that accumulator.
+                // a new accumulator has been received. If a new accumulator is received, we will finish the current
+                // accumulator and emit the result.
                 if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, ADDING)) {
                     @SuppressWarnings("unchecked")
-                    final Accumulator<T, B> accumulator = (Accumulator<T, B>) cMaybeAccumulator;
+                    final Accumulator<T, B> accumulator =
+                            NextAccumulatorHolder.class.equals(cMaybeAccumulator.getClass()) ?
+                                    ((NextAccumulatorHolder<T, B>) cMaybeAccumulator).accumulator :
+                                    (Accumulator<T, B>) cMaybeAccumulator;
                     accumulator.accumulate(item);
-                    // If maybeAccumulator changed, it means either we terminated or we receive a new accumulator.
-                    // We could not have added any new items to the newly received accumulator, so we overwrite the
-                    // accumulator, effectively discarding the new accumulator. We will emit this accumulator on the
-                    // next boundary emission.
-                    maybeAccumulatorUpdater.accumulateAndGet(this, accumulator,
-                            (prev, next) -> prev == TERMINATED ? TERMINATED : next);
+                    final Object nextState = maybeAccumulatorUpdater.accumulateAndGet(this, accumulator,
+                            (prev, next) -> prev == ADDING ? next : prev);
+                    if (nextState == accumulator || nextState == TERMINATED) {
+                        return;
+                    }
+                    // Received the next boundary while adding, deliver current accumulator and unwrap the next boundary
+                    assert nextState instanceof NextAccumulatorHolder : "Expected next boundary";
+                    if (deliverOnNext(accumulator, target, bCancellable, tCancellable)) {
+                        @SuppressWarnings("unchecked")
+                        final Accumulator<T, B> nextAccumulator = ((NextAccumulatorHolder<T, B>) nextState).accumulator;
+                        maybeAccumulatorUpdater.accumulateAndGet(this, nextAccumulator,
+                                (prev, next) -> prev == TERMINATED ? TERMINATED : next);
+                    }
                     return;
                 }
             }
         }
 
         <T, B> void nextAccumulator(final Accumulator<T, B> nextAccumulator, final Subscriber<? super B> target,
-                                    final Subscription bSubscription, final Subscription itemsSubscription) {
+                                    final Subscription bSubscription, final Subscription tSubscription) {
             requireNonNull(nextAccumulator);
             for (;;) {
                 final Object cMaybeAccumulator = maybeAccumulator;
@@ -249,49 +290,78 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                 }
                 if (cMaybeAccumulator == null) {
                     // This is the first received accumulator (first boundary start); so we just store the accumulator
-                    // to accumulate and request items from itemsSubscription.
-                    if (maybeAccumulatorUpdater.compareAndSet(this, null, nextAccumulator)) {
-                        itemsSubscription.request(firstItemsRequestN);
-                        bSubscription.request(1); // since we did not emit the accumulator
+                    // to accumulate and request items from tSubscription.
+                    if (maybeAccumulatorUpdater.compareAndSet(this, null, toCounting(nextAccumulator))) {
+                        tSubscription.request(firstItemsRequestN);
+                        // Since we did not emit the accumulator we request one more to observe the next boundary:
+                        bSubscription.request(1);
                         return;
                     }
                 } else if (cMaybeAccumulator == ADDING) {
                     // Hand-off emission of nextAccumulator to the thread that is ADDING
-                    if (maybeAccumulatorUpdater.compareAndSet(this, ADDING, nextAccumulator)) {
-                        bSubscription.request(1); // since we did not emit the accumulator
+                    if (maybeAccumulatorUpdater.compareAndSet(this, ADDING,
+                            new NextAccumulatorHolder<>(nextAccumulator))) {
+                        // Thread that is ADDING will observe the change and emit the current accumulator
                         return;
                     }
-                } else if (cMaybeAccumulator instanceof ItemsTerminated) {
-                    bSubscription.cancel();
-                    if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, TERMINATED)) {
-                        @SuppressWarnings("unchecked")
-                        ItemsTerminated<T, B> itemsTerminated = (ItemsTerminated<T, B>) cMaybeAccumulator;
-                        terminateTarget(itemsTerminated.accumulator, target, itemsTerminated.terminalNotification,
-                                bSubscription);
-                        return;
-                    }
+                } else if (NextAccumulatorHolder.class.equals(cMaybeAccumulator.getClass())) {
+                    // Hand-off emission of one more nextAccumulator to the thread that is still ADDING, discarding it.
+                    // Since we did not emit the accumulator we request one more to observe the next boundary:
+                    bSubscription.request(1);
+                    return;
                 } else {
-                    assert cMaybeAccumulator instanceof Accumulator;
-                    if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, nextAccumulator)) {
+                    assert cMaybeAccumulator instanceof CountingAccumulator;
+                    final NextAccumulatorHolder<T, B> holder = new NextAccumulatorHolder<>(nextAccumulator);
+                    if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, holder)) {
                         @SuppressWarnings("unchecked")
                         Accumulator<T, B> oldAccumulator = (Accumulator<T, B>) cMaybeAccumulator;
-                        target.onNext(oldAccumulator.finish());
+                        if (deliverOnNext(oldAccumulator, target, bSubscription, tSubscription)) {
+                            final Object nextState = maybeAccumulatorUpdater.accumulateAndGet(this,
+                                    // Keep "prev" state because we observed `itemsTerminated` or `accumulate` took
+                                    // ownership of the `holder`
+                                    toCounting(nextAccumulator), (prev, next) -> prev == holder ? next : prev);
+                            if (ItemsTerminated.class.equals(nextState.getClass())) {
+                                maybeAccumulator = TERMINATED;
+                                @SuppressWarnings("unchecked")
+                                final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) nextState;
+                                // Deliver the last boundary only if there are some items pending and demand is present
+                                final Accumulator<T, B> accumulator = it.accumulator.size() > 0 &&
+                                        pendingUpdater.decrementAndGet(this) >= 0L ? it.accumulator : null;
+                                terminateTarget(accumulator, target, it.terminalNotification, bSubscription);
+                            }
+                        }
                         return;
                     }
                 }
             }
         }
 
-        <T, B> void itemsTerminated(final TerminalNotification terminalNotification) {
+        <T, B> void itemsTerminated(final TerminalNotification terminalNotification,
+                                    final Subscriber<? super B> target, final Cancellable bCancellable) {
             for (;;) {
                 final Object cMaybeAccumulator = maybeAccumulator;
+                // 'itemsTerminated' and 'accumulate' are expected to be sequential:
+                assert cMaybeAccumulator != ADDING;
                 if (cMaybeAccumulator == TERMINATED) {
                     return;
-                }
-                assert !(cMaybeAccumulator instanceof ItemsTerminated);
-
-                ItemsTerminated<T, B> itemsTerminated = new ItemsTerminated<>(cMaybeAccumulator, terminalNotification);
-                if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, itemsTerminated)) {
+                } else if (cMaybeAccumulator != null &&
+                        NextAccumulatorHolder.class.equals(cMaybeAccumulator.getClass())) {
+                    // Terminated while `nextAccumulator` delivers onNext, notify that thread using ItemsTerminated
+                    // wrapper. There is no more concurrency because neither `itemsTerminated` nor `accumulate` will be
+                    // invoked again.
+                    @SuppressWarnings("unchecked")
+                    final ItemsTerminated<T, B> itemsTerminated = new ItemsTerminated<>(
+                            (NextAccumulatorHolder<T, B>) cMaybeAccumulator, terminalNotification);
+                    if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, itemsTerminated)) {
+                        return;
+                    }
+                } else if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, TERMINATED)) {
+                    assert cMaybeAccumulator instanceof CountingAccumulator;
+                    // Deliver the last boundary only if there are some items pending and demand is present
+                    @SuppressWarnings("unchecked")
+                    final CountingAccumulator<T, B> accumulator = (CountingAccumulator<T, B>) cMaybeAccumulator;
+                    terminateTarget(accumulator.size() > 0 && pendingUpdater.decrementAndGet(this) >= 0 ?
+                            accumulator : null, target, terminalNotification, bCancellable);
                     return;
                 }
             }
@@ -299,7 +369,32 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
 
         void boundariesTerminated(final Throwable cause, final Subscriber<?> target) {
             maybeAccumulator = TERMINATED;
-            target.onError(cause);
+            safeOnError(target, cause);
+        }
+
+        private <T, B> boolean deliverOnNext(final Accumulator<T, B> accumulator,
+                                             final Subscriber<? super B> target,
+                                             final Cancellable bCancellable,
+                                             final Cancellable tCancellable) {
+            try {
+                final long pending = pendingUpdater.decrementAndGet(this);
+                assert pending >= 0;
+                target.onNext(accumulator.finish());
+                return true;
+            } catch (Throwable t) {
+                terminate(t, target, bCancellable, tCancellable);
+                return false;
+            }
+        }
+
+        private <B> void terminate(final Throwable cause, final Subscriber<? super B> target,
+                                   final Cancellable bCancellable, final Cancellable tCancellable) {
+            boundariesTerminated(cause, target);
+            try {
+                bCancellable.cancel();
+            } finally {
+                tCancellable.cancel();
+            }
         }
 
         private static <T, B> void terminateTarget(@Nullable final Accumulator<T, B> accumulator,
@@ -327,19 +422,26 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         }
     }
 
+    private static <T, B> CountingAccumulator<T, B> toCounting(final Accumulator<T, B> accumulator) {
+        return CountingAccumulator.class.equals(accumulator.getClass()) ? (CountingAccumulator<T, B>) accumulator :
+                new CountingAccumulator<>(accumulator);
+    }
+
+    private static final class NextAccumulatorHolder<T, B> {
+        final CountingAccumulator<T, B> accumulator;
+
+        NextAccumulatorHolder(final Accumulator<T, B> accumulator) {
+            this.accumulator = toCounting(accumulator);
+        }
+    }
+
     private static final class ItemsTerminated<T, B> {
-        @Nullable
-        final Accumulator<T, B> accumulator;
+        final CountingAccumulator<T, B> accumulator;
         final TerminalNotification terminalNotification;
 
-        ItemsTerminated(@Nullable final Object maybeAccumulator, final TerminalNotification terminalNotification) {
-            if (maybeAccumulator instanceof Accumulator) {
-                @SuppressWarnings("unchecked")
-                Accumulator<T, B> accumulator = (Accumulator<T, B>) maybeAccumulator;
-                this.accumulator = accumulator;
-            } else {
-                accumulator = null;
-            }
+        ItemsTerminated(final NextAccumulatorHolder<T, B> holder,
+                        final TerminalNotification terminalNotification) {
+            this.accumulator = holder.accumulator;
             this.terminalNotification = terminalNotification;
         }
     }

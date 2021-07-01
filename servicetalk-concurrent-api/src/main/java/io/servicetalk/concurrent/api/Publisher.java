@@ -2364,6 +2364,9 @@ public abstract class Publisher<T> {
      *     }
      *     return buffers;
      * }</pre>
+     * If this {@link Publisher} does not emit items between {@link BufferStrategy#boundaries() boundaries}, it's
+     * expected to see empty buffers as the result of accumulating nothing. Use {@link #filter(Predicate)} operator if
+     * empty buffers have to be discarded.
      *
      * @param strategy A {@link BufferStrategy} to use for buffering items from this {@link Publisher}.
      * @param <BC> Type of the {@link Accumulator} to buffer items from this {@link Publisher}.
