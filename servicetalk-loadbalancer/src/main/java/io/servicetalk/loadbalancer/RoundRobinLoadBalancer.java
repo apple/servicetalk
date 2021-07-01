@@ -200,8 +200,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             if (eagerConnectionShutdown) {
                                 return removeFromHostsList(oldHosts, addr);
                             } else {
-                                for (int i = 0; i < oldHostsTyped.size(); ++i) {
-                                    final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
+                                for (Host<ResolvedAddress, C> host : oldHostsTyped) {
                                     if (host.address.equals(addr)) {
                                         host.isExpired = true;
                                         break;
