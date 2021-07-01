@@ -79,7 +79,7 @@ public class PublisherStepVerifierTest {
         CountDownLatch latch = new CountDownLatch(1);
         try {
             verifyException(() ->
-                    StepVerifiers.create(from("foo").publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+                    StepVerifiers.create(from("foo").subscribeOn(EXECUTOR_RULE.executor()))
                     .expectSubscriptionConsumed(subscription -> {
                         try {
                             latch.await();
@@ -645,7 +645,7 @@ public class PublisherStepVerifierTest {
 
     @Test
     public void asyncContextOnComplete() {
-        StepVerifiers.create(from("foo").publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        StepVerifiers.create(from("foo").subscribeOn(EXECUTOR_RULE.executor()))
                 .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
@@ -661,7 +661,7 @@ public class PublisherStepVerifierTest {
     @Test
     public void asyncContextOnError() {
         StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION))
-                        .publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+                        .subscribeOn(EXECUTOR_RULE.executor()))
                 .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);

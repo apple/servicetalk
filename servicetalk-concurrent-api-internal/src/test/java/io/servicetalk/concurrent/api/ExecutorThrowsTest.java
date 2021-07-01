@@ -71,7 +71,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         SourceAdapters.toSource(p).subscribe(new Subscriber<String>() {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -109,7 +109,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         toSource(s).subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -142,7 +142,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         toSource(c).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {

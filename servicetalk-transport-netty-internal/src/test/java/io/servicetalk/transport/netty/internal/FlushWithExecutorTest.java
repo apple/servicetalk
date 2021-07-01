@@ -50,7 +50,7 @@ class FlushWithExecutorTest extends AbstractFlushTest {
     @ParameterizedTest(name = "{index}: flushStrategy = {0}")
     @MethodSource("flushStrategyAndVerifiers")
     void testFlushBeforeEnd(final FlushStrategyAndVerifier flushStrategyAndVerifier) throws Exception {
-        Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
+        Publisher<String> source = from(data).publishOn(contextRule.executor()).map(String::valueOf);
         Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.flushStrategy());
         flushSource.toFuture().get();
         int index = 0;

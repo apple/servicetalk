@@ -42,7 +42,7 @@ public class ReduceOffloadingTest {
             taskCount.incrementAndGet();
             executor.execute(task);
         }), threadBasedOffloaderFactory());
-        int sum = Publisher.from(1, 2, 3, 4).publishAndSubscribeOn(wrapped)
+        int sum = Publisher.from(1, 2, 3, 4).publishOn(wrapped)
                 .collect(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));
         assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));

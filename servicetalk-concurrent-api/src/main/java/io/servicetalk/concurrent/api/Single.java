@@ -1352,37 +1352,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
-     * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     * @deprecated This operator has been deprecated because of upcoming behavior changes in how offloading via
-     * operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
-     * (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
-     * at the "top" of the operator chain (logically the first operator in the chain after the async source). The
-     * current offloading doesn't respect the order in which the operators are applied, the offloading is the same
-     * regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
-     * respect operator placement order and apply offloading exactly where the offloading operators are applied in the
-     * chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
-     * subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
-     * offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
-     * {@link #subscribeOn(Executor)} and {@link #publishOn(Executor)} operators instead.
-     */
-    @Deprecated
-    public final Single<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
      * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
@@ -1594,8 +1563,8 @@ public abstract class Single<T> {
      * emitted by the {@link Callable} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param callable {@link Callable} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -1612,8 +1581,8 @@ public abstract class Single<T> {
      * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     *      * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     *      * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
