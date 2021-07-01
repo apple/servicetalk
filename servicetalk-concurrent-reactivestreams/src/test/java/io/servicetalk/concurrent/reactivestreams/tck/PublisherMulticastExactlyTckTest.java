@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.concurrent.reactivestreams.tck;
 
-/**
- * A factory for {@link StreamingHttpConnectionFilter}.
- */
-@FunctionalInterface
-public interface StreamingHttpConnectionFilterFactory {
+import io.servicetalk.concurrent.api.Publisher;
 
-    /**
-     * Create a {@link StreamingHttpConnectionFilter} using the provided {@link FilterableStreamingHttpConnection}.
-     *
-     * @param connection {@link FilterableStreamingHttpConnection} to filter
-     * @return {@link StreamingHttpConnectionFilter} using the provided {@link FilterableStreamingHttpConnection}.
-     */
-    StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection);
+import org.testng.annotations.Test;
+
+@Test
+public class PublisherMulticastExactlyTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+    @Override
+    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
+        return publisher.multicastToExactly(1);
+    }
 }

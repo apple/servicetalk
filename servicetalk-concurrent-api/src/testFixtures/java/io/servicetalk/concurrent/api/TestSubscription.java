@@ -60,7 +60,7 @@ public final class TestSubscription extends TestCancellable implements Subscript
      * @return {@code true} if the cumulative value of {@link #request(long)} matches {@code value}.
      */
     public boolean requestedEquals(long value) {
-        return value == 0 && requestCalled || value != 0 && requested.get() == value;
+        return (value != 0 || requestCalled) && requested.get() == value;
     }
 
     /**

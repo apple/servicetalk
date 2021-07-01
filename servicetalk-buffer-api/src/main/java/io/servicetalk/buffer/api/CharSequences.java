@@ -62,17 +62,6 @@ public final class CharSequences {
      * @param input a character sequence containing only 8-bit ASCII characters.
      * @return a {@link CharSequence}
      */
-    public static CharSequence newAsciiString(final String input) {
-        return newAsciiString((CharSequence) input);
-    }
-
-    /**
-     * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
-     * with a case-insensitive {@code hashCode}.
-     *
-     * @param input a character sequence containing only 8-bit ASCII characters.
-     * @return a {@link CharSequence}
-     */
     public static CharSequence newAsciiString(final CharSequence input) {
         return newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(input));
     }
@@ -104,11 +93,8 @@ public final class CharSequences {
      *
      * @param sequence The {@link CharSequence} to check.
      * @return {@code true} if the check passes.
-     * @deprecated Internal implementation detail that will be removed in follow-up releases. Please rely on API inside
-     * {@link CharSequences} to manipulated ascii strings.
      */
-    @Deprecated
-    public static boolean isAsciiString(final CharSequence sequence) {
+    private static boolean isAsciiString(final CharSequence sequence) {
         return sequence.getClass() == AsciiBuffer.class;
     }
 

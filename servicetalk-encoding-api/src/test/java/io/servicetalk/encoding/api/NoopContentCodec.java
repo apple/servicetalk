@@ -42,17 +42,7 @@ class NoopContentCodec implements ContentCodec {
     }
 
     @Override
-    public Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator) {
-        return src;
-    }
-
-    @Override
     public Buffer decode(Buffer src, BufferAllocator allocator) {
-        return src;
-    }
-
-    @Override
-    public Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator) {
         return src;
     }
 

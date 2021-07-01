@@ -99,23 +99,6 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     }
 
     /**
-     * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with
-     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
-     * @param backlog the backlog to use when accepting connections
-     * @return {@code this}
-     */
-    @Deprecated
-    public TcpServerConfig backlog(final int backlog) {
-        if (backlog < 0) {
-            throw new IllegalArgumentException("backlog must be >= 0");
-        }
-        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
-        return this;
-    }
-
-    /**
      * Create a read only view of this object.
      * @return a read only view of this object.
      */

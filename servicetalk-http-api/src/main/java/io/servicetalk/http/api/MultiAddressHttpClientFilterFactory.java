@@ -43,29 +43,6 @@ public interface MultiAddressHttpClientFilterFactory<U> {
     StreamingHttpClientFilter create(U address, FilterableStreamingHttpClient client);
 
     /**
-     * Returns a composed function that first applies the {@code before} function to its input, and then applies
-     * this function to the result.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     filter1.append(filter2).append(filter3)
-     * </pre>
-     * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
-     * </pre>
-     *
-     * @deprecated Use {@link MultiAddressHttpClientBuilder#appendClientFilter(MultiAddressHttpClientFilterFactory)}
-     * @param before the function to apply before this function is applied
-     * @return a composed function that first applies the {@code before} function and then applies this function
-     */
-    @Deprecated
-    default MultiAddressHttpClientFilterFactory<U> append(MultiAddressHttpClientFilterFactory<U> before) {
-        requireNonNull(before);
-        return (group, client) -> create(group, before.create(group, client));
-    }
-
-    /**
      * Returns a {@link StreamingHttpClientFilterFactory} that adapts from a
      * {@link MultiAddressHttpClientFilterFactory}.
      *

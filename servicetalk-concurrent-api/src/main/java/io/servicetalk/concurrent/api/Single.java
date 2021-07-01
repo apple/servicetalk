@@ -354,31 +354,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     T result;
-     *     try {
-     *         result = resultOfThisSingle();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
-     *         result = nextFactory.apply(cause);
-     *     }
-     *     return result;
-     * }</pre>
-     * @deprecated Use {@link #onErrorResume(Function)}.
-     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
-     * {@link Single} provided by the passed {@code nextFactory}.
-     */
-    @Deprecated
-    public final Single<T> recoverWith(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
-        return onErrorResume(nextFactory);
-    }
-
-    /**
      * Returns a {@link Single} that mirrors emissions from the {@link Single} returned by {@code next}.
      * Any error emitted by this {@link Single} is forwarded to the returned {@link Single}.
      * <p>

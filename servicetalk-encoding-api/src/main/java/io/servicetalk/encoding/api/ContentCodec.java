@@ -45,22 +45,6 @@ public interface ContentCodec {
     Buffer encode(Buffer src, BufferAllocator allocator);
 
     /**
-     * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
-     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
-     * of bytes read {@code length}.
-     *
-     * @param src the {@link Buffer} to encode
-     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
-     * @param length the total count of bytes to read
-     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
-     * @return {@link Buffer} the result buffer with the content encoded
-     * @deprecated Use the plain {@link #encode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
-     * where needed.
-     */
-    @Deprecated
-    Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
-
-    /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
      * This call increases the {{@link Buffer#readerIndex()} of the {@code src} with the number of
      * bytes available to read {@link Buffer#readableBytes()}.
@@ -70,22 +54,6 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     Buffer decode(Buffer src, BufferAllocator allocator);
-
-    /**
-     * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
-     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
-     * of bytes read {@code length}.
-     *
-     * @param src the {@link Buffer} to decode
-     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
-     * @param length the total count of bytes to read
-     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
-     * @return {@link Buffer} the result buffer with the content decoded
-     * @deprecated Use the plain {@link #decode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
-     * where needed.
-     */
-    @Deprecated
-    Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a

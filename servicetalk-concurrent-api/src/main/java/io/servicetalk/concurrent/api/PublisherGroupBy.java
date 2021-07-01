@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -28,46 +30,34 @@ import static java.util.Objects.requireNonNull;
 final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<? super T, ? extends Key> keySelector;
 
-    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int groupQueueSize) {
-        super(original, groupQueueSize);
+    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int queueLimit) {
+        super(original, queueLimit);
         this.keySelector = requireNonNull(keySelector);
     }
 
-    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int groupQueueSize,
+    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int queueLimit,
                      int expectedGroupCountHint) {
-        super(original, groupQueueSize, expectedGroupCountHint);
+        super(original, queueLimit, expectedGroupCountHint);
         this.keySelector = requireNonNull(keySelector);
     }
 
     @Override
-    public Subscriber<? super T> apply(Subscriber<? super GroupedPublisher<Key, T>> subscriber) {
-        return new SourceSubscriber<>(executor(), this, subscriber);
+    void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber, SignalOffloader signalOffloader,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new GroupBySubscriber(subscriber, queueLimit, initialCapacityForGroups, contextMap,
+                contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
-        private final PublisherGroupBy<Key, T> source;
-
-        SourceSubscriber(Executor executor, PublisherGroupBy<Key, T> source,
-                         Subscriber<? super GroupedPublisher<Key, T>> target) {
-            super(executor, source.initialCapacityForGroups, target);
-            this.source = source;
+    private final class GroupBySubscriber extends AbstractGroupBySubscriber<Key, T> {
+        GroupBySubscriber(final Subscriber<? super GroupedPublisher<Key, T>> target, final int maxQueueSize,
+                          final int initialCapacityForGroups, final AsyncContextMap contextMap,
+                          final AsyncContextProvider contextProvider) {
+            super(target, maxQueueSize, initialCapacityForGroups, contextMap, contextProvider);
         }
 
         @Override
-        void onNext0(@Nullable T t) {
-            final Key key;
-            try {
-                key = requireNonNull(source.keySelector.apply(t));
-            } catch (Throwable throwable) {
-                cancelSourceFromSource(false, throwable);
-                return;
-            }
-            onNextGroup(key, t);
-        }
-
-        @Override
-        int groupQueueSize() {
-            return source.groupQueueSize;
+        public void onNext(@Nullable final T t) {
+            onNext(requireNonNull(keySelector.apply(t)), t);
         }
     }
 }

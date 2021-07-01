@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ import static io.servicetalk.concurrent.api.CompositeExceptionUtils.maxDelayedEr
 import static io.servicetalk.concurrent.api.PublisherFlatMapMerge.FLAT_MAP_DEFAULT_CONCURRENCY;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -153,7 +153,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             assert subscription != null;
             if (isRequestNValid(n)) {
                 requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
-                int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                final long actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                         sourceEmittedUpdater, source.maxConcurrency, this);
                 if (actualSourceRequestN != 0) {
                     subscription.request(actualSourceRequestN);
@@ -271,9 +271,9 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         }
 
         private void drainPending() {
-            long drainCount = 0;
             boolean tryAcquire = true;
             while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
+                long drainCount = 0;
                 try {
                     Object t;
                     while ((t = pending.poll()) != null) {
@@ -299,7 +299,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             // We ignore overflow here because once we get to this extreme, we won't be able to account for more
             // data anyways.
             sourceEmittedUpdater.addAndGet(this, drainCount);
-            final int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+            final long actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                     sourceEmittedUpdater, source.maxConcurrency, this);
             if (actualSourceRequestN != 0) {
                 subscription.request(actualSourceRequestN);

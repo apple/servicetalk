@@ -27,7 +27,6 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
@@ -49,21 +48,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
         config.httpConfig().protocols(protocols);
-        return this;
-    }
-
-    /**
-     * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
-     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
-     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
-     * @param backlog the backlog to use when accepting connections.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public HttpServerBuilder backlog(int backlog) {
-        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
         return this;
     }
 
