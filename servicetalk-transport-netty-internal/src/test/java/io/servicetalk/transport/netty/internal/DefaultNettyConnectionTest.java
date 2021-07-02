@@ -287,7 +287,9 @@ class DefaultNettyConnectionTest {
             verify(demandEstimator).onItemWrite(eq(item), anyLong(), anyLong());
         }
         final boolean hasTrailers = Arrays.asList(items).contains(TRAILER);
-        verify(demandEstimator, times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount))
+        verify(demandEstimator,
+                // -1 because the first request(1) does not invoke WriteDemandEstimator for the client-side
+                times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount - 1))
                 .estimateRequestN(anyLong());
     }
 

@@ -394,7 +394,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
-                        completableSubscriber, closeHandler, writeObserver, enrichProtocolError);
+                        completableSubscriber, closeHandler, writeObserver, enrichProtocolError, isClient);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);
