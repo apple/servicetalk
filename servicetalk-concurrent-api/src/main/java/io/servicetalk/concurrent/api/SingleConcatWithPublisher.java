@@ -202,11 +202,17 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
          */
         private static final Object REQUESTED_ONE = new Object();
         /**
-         * If more than one item was {@link #request(long) requested} before {@link #onSuccess(Object)}.
+         * If more than one item was {@link #request(long) requested} before {@link #onSuccess(Object)} or while its
+         * result is delivering to the target.
          */
         private static final Object REQUESTED_MORE = new Object();
         /**
          * If only one item was {@link #request(long) requested} and {@link #onSuccess(Object)} invoked.
+         */
+        private static final Object SINGLE_DELIVERING = new Object();
+        /**
+         * If only one item was {@link #request(long) requested}, {@link #onSuccess(Object)} invoked, and its result was
+         * delivered to the target.
          */
         private static final Object SINGLE_DELIVERED = new Object();
         /**
@@ -223,6 +229,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         public void onSuccess(@Nullable final T result) {
             for (;;) {
                 final Object oldValue = mayBeResult;
+                assert oldValue != SINGLE_DELIVERING;
                 assert oldValue != SINGLE_DELIVERED;
                 assert oldValue != PUBLISHER_SUBSCRIBED;
 
@@ -233,8 +240,8 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                         break;
                     }
                 } else if (oldValue == REQUESTED_ONE) {
-                    if (mayBeResultUpdater.compareAndSet(this, oldValue, SINGLE_DELIVERED)) {
-                        tryEmitSingleSuccessToTarget(result);
+                    if (mayBeResultUpdater.compareAndSet(this, oldValue, SINGLE_DELIVERING)) {
+                        emitSingleSuccessToTarget(result);
                         break;
                     }
                 } else if (oldValue == REQUESTED_MORE &&
@@ -276,7 +283,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                             break;
                         }
                     }
-                } else if (oldVal == REQUESTED_ONE) {
+                } else if (oldVal == REQUESTED_ONE || oldVal == SINGLE_DELIVERING) {
                     if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED_MORE)) {
                         super.request(n);
                         break;
@@ -297,11 +304,24 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                         }
                         break;
                     }
-                } else if (mayBeResultUpdater.compareAndSet(this, oldVal, SINGLE_DELIVERED)) {
+                } else if (mayBeResultUpdater.compareAndSet(this, oldVal, SINGLE_DELIVERING)) {
                     @SuppressWarnings("unchecked")
                     final T tVal = (T) oldVal;
-                    tryEmitSingleSuccessToTarget(tVal);
+                    emitSingleSuccessToTarget(tVal);
                     break;
+                }
+            }
+        }
+
+        private void emitSingleSuccessToTarget(@Nullable final T result) {
+            if (tryEmitSingleSuccessToTarget(result)) {
+                if (mayBeResultUpdater.compareAndSet(this, SINGLE_DELIVERING, SINGLE_DELIVERED)) {
+                    // state didn't change, we are done
+                } else if (mayBeResultUpdater.compareAndSet(this, REQUESTED_MORE, PUBLISHER_SUBSCRIBED)) {
+                    // more demand appeared while we were delivering the single result
+                    next.subscribeInternal(this);
+                } else {
+                    assert mayBeResult == CANCELLED;
                 }
             }
         }
