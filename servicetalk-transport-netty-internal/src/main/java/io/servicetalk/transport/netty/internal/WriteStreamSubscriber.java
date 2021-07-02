@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
@@ -35,6 +36,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -339,12 +341,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void writeNext(Object msg) {
             assert eventLoop.inEventLoop();
-            if (!written) {
-                written = true;
-            }
             activeWrites++;
             listenersOnWriteBoundaries.addLast(WRITE_BOUNDARY);
             channel.write(msg, this);
+            if (!written) {
+                written = true;
+            }
         }
 
         void sourceTerminated(@Nullable Throwable cause) {
@@ -390,7 +392,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 setFlag(CHANNEL_CLOSED);
                 // subscriber has not terminated, no writes are pending and channel has closed so terminate the
                 // subscriber with a failure.
-                tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
+                tryFailure(cause);
             }
         }
 
@@ -481,17 +483,19 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     closeHandler.closeChannelOutbound(channel);
                 }
             } else {
-                final Throwable enrichedCause = enrichProtocolError.apply(cause);
+                Throwable enrichedCause = enrichProtocolError.apply(cause);
+                assignConnectionError(channel, enrichedCause);
+                enrichedCause = !written ? new AbortedFirstWriteException(enrichedCause) : enrichedCause;
                 try {
                     observer.writeFailed(enrichedCause);
-                    assignConnectionError(channel, enrichedCause);
                     subscriber.onError(enrichedCause);
                 } catch (Throwable t) {
+                    t.addSuppressed(enrichedCause);
                     tryFailureOrLog(t);
                 }
                 if (!hasFlag(CHANNEL_CLOSED)) {
-                    // Close channel on error.
-                    ChannelCloseUtils.close(channel, enrichedCause);
+                    // Close channel on error, connection error is already assigned to the channel's attribute
+                    channel.close();
                 }
             }
             // Notify listeners after the subscriber is terminated. Otherwise, WriteStreamSubscriber#channelClosed may
@@ -542,9 +546,16 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
     }
 
-    static final class AbortedFirstWrite extends Exception {
-        AbortedFirstWrite(final Throwable cause) {
-            super(null, cause, false, false);
+    static final class AbortedFirstWriteException extends IOException implements RetryableException {
+        private static final long serialVersionUID = -5626706348233302247L;
+
+        AbortedFirstWriteException(final Throwable cause) {
+            super(cause);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
         }
     }
 }

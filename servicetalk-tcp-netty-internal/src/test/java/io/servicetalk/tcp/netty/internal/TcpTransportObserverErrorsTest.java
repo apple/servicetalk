@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -29,6 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -37,7 +39,11 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
@@ -136,7 +142,10 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                         Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
                 verify(clientDataObserver).onNewWrite();
                 verify(clientWriteObserver).requestedToWrite(anyLong());
-                verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
+                ArgumentCaptor<Throwable> exceptionCaptor = forClass(Throwable.class);
+                verify(clientWriteObserver).writeFailed(exceptionCaptor.capture());
+                assertThat(exceptionCaptor.getValue(), instanceOf(RetryableException.class));
+                assertThat(exceptionCaptor.getValue().getCause(), is(DELIBERATE_EXCEPTION));
                 break;
             case CLIENT_IDLE_TIMEOUT:
             case SERVER_IDLE_TIMEOUT:
