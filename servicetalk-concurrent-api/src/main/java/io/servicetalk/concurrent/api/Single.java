@@ -181,7 +181,7 @@ public abstract class Single<T> {
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> Single.succeeded(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)));
     }
 
     /**
@@ -727,6 +727,10 @@ public abstract class Single<T> {
      * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
      * {@link Publisher} is forwarded to the returned {@link Publisher}.
      * <p>
+     * Note: this method is an overload for {@link #concat(Publisher, boolean)} with {@code deferSubscribe} equal to
+     * {@code false}, which triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully.
+     * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
      * <pre>{@code
@@ -738,9 +742,37 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Publisher, boolean)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return new SingleConcatWithPublisher<>(this, next, executor());
+        return new SingleConcatWithPublisher<>(this, next, false);
+    }
+
+    /**
+     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all
+     * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
+     * {@link Publisher} is forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     results.add(resultOfThisSingle());
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
+     * @param next {@link Publisher} to concat.
+     * @param deferSubscribe if {@code true} subscribe to the {@code next} {@link Publisher} will be deferred until
+     * demand is received. Otherwise, it subscribes to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully. Choosing the deferred ({@code true}) behavior is important if the
+     * {@code next} {@link Publisher} does not or might not support multiple subscribers (non-replayable). Choosing the
+     * immediate subscribe ({@code false}) behavior may have better performance and may be a preferable choice for
+     * replayable {@link Publisher}(s) or when eager subscribe is beneficial.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * all elements from {@code next} {@link Publisher}.
+     */
+    public final Publisher<T> concat(Publisher<? extends T> next, boolean deferSubscribe) {
+        return new SingleConcatWithPublisher<>(this, next, deferSubscribe);
     }
 
     /**
