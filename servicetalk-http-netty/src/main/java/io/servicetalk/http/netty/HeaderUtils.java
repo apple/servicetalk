@@ -142,7 +142,7 @@ final class HeaderUtils {
 
     static ScanWithMapper<Object, Object> insertTrailersMapper() {
         return new ScanWithMapper<Object, Object>() {
-            @Nullable
+
             private boolean sawHeaders;
 
             @Nullable

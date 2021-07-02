@@ -17,9 +17,11 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
+import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
 
@@ -29,7 +31,9 @@ import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -82,7 +86,10 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     void testOnErrorNoWrite() throws InterruptedException {
         subscriber.onError(DELIBERATE_EXCEPTION);
-        verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
+        ArgumentCaptor<Throwable> exceptionCaptor = forClass(Throwable.class);
+        verify(this.completableSubscriber).onError(exceptionCaptor.capture());
+        assertThat(exceptionCaptor.getValue(), instanceOf(AbortedFirstWriteException.class));
+        assertThat(exceptionCaptor.getValue().getCause(), is(DELIBERATE_EXCEPTION));
         assertChannelClose();
     }
 

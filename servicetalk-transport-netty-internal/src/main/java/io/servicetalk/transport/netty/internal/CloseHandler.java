@@ -202,7 +202,7 @@ public abstract class CloseHandler {
             this.description = description;
         }
 
-        Throwable wrapError(@Nullable Throwable cause, Channel channel) {
+        CloseEventObservedException wrapError(@Nullable Throwable cause, Channel channel) {
             return new CloseEventObservedException(cause, this, channel);
         }
     }
