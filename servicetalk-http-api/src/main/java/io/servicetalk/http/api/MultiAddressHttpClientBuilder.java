@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ExecutionContext;
-
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
@@ -33,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public abstract class MultiAddressHttpClientBuilder<U, R> {
+public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientBuildFinalizer {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.
@@ -89,10 +87,16 @@ public abstract class MultiAddressHttpClientBuilder<U, R> {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
      *
+     * @deprecated Use
+     *   {@link #initializer(SingleAddressInitializer)} and
+     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+     *   on the last argument of
+     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
      */
+    @Deprecated
     public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(
             MultiAddressHttpClientFilterFactory<U> factory);
 
@@ -112,11 +116,17 @@ public abstract class MultiAddressHttpClientBuilder<U, R> {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
      *
+     * @deprecated Use
+     *   {@link #initializer(SingleAddressInitializer)} and
+     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
+     *   on the last argument of
+     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
      */
+    @Deprecated
     public MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                   MultiAddressHttpClientFilterFactory<U> factory) {
         requireNonNull(predicate);
@@ -131,38 +141,4 @@ public abstract class MultiAddressHttpClientBuilder<U, R> {
      * @return {@code this}.
      */
     public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
-
-    /**
-     * Builds a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link StreamingHttpClient}
-     */
-    public abstract StreamingHttpClient buildStreaming();
-
-    /**
-     * Builds a new {@link HttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link HttpClient}
-     */
-    public final HttpClient build() {
-        return buildStreaming().asClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingStreamingHttpClient}
-     */
-    public final BlockingStreamingHttpClient buildBlockingStreaming() {
-        return buildStreaming().asBlockingStreamingClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingHttpClient}
-     */
-    public final BlockingHttpClient buildBlocking() {
-        return buildStreaming().asBlockingClient();
-    }
 }

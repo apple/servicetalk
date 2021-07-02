@@ -25,7 +25,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -43,7 +42,8 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <R> the type of address after resolution (resolved address)
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
-abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> extends BaseHttpBuilder<R> {
+abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> extends BaseHttpBuilder<R>
+        implements HttpClientBuildFinalizer {
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
@@ -210,38 +210,4 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
-
-    /**
-     * Builds a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link StreamingHttpClient}
-     */
-    public abstract StreamingHttpClient buildStreaming();
-
-    /**
-     * Builds a new {@link HttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link HttpClient}
-     */
-    public final HttpClient build() {
-        return buildStreaming().asClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingStreamingHttpClient}
-     */
-    public final BlockingStreamingHttpClient buildBlockingStreaming() {
-        return buildStreaming().asBlockingStreamingClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingHttpClient}
-     */
-    public final BlockingHttpClient buildBlocking() {
-        return buildStreaming().asBlockingClient();
-    }
 }

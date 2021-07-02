@@ -19,6 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toClientFactory;
@@ -27,9 +28,17 @@ import static java.util.Objects.requireNonNull;
 /**
  * A factory for {@link StreamingHttpClientFilter} to filter clients for different unresolved addresses.
  *
+ * @deprecated Use
+ *   {@link MultiAddressHttpClientBuilder#initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)} and
+ *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)} or
+ *   {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
+ *   on the last argument of
+ *   {@link io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer#initialize(
+ *   String, Object, SingleAddressHttpClientBuilder)}.
  * @param <U> the type of address before resolution (unresolved address).
  * @see StreamingHttpClientFilterFactory
  */
+@Deprecated
 @FunctionalInterface
 public interface MultiAddressHttpClientFilterFactory<U> {
     /**
