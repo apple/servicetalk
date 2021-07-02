@@ -57,6 +57,9 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
     }
 
     private final class NValueSubscription implements Subscription {
+        private static final byte ZERO = 0;
+        private static final byte ONE = 1;
+        private static final byte TWO = 2;
         private static final byte TERMINATED = 3;
         private byte requested;
         private byte state;
@@ -65,9 +68,9 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
         private NValueSubscription(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
             if (v1 == UNUSED_REF) {
-                // 3-value version - simulate 1 emitted item, start counting from 1.
+                // 2-value version - simulate 1 emitted item, start counting from 1.
                 requested = 1;
-                state++;
+                state = ONE;
             }
         }
 
@@ -78,7 +81,7 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
 
         @Override
         public void request(final long n) {
-            if (state == TERMINATED) {
+            if (state() == TERMINATED) {
                 return;
             }
             if (!isRequestNValid(n)) {
@@ -90,20 +93,27 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
                 return;
             }
             requested = (byte) min(3, addWithOverflowProtection(requested, n));
-            boolean successful = true;
-            while (successful && state < requested) {
-                if (state == 0) {
-                    successful = deliver(v1);
-                } else if (state == 1) {
-                    successful = deliver(v2);
-                } else if (state == 2 && deliver(v3)) {
-                    subscriber.onComplete();
+            if (ignoreRequests()) {
+                return;
+            }
+            ignoreRequests(true);
+            while (state() < requested) {
+                if (state() == ZERO) {
+                    deliver(v1, ONE);
+                } else if (state() == ONE) {
+                    deliver(v2, TWO);
+                } else if (state() == TWO) {
+                    if (deliver(v3, TERMINATED)) {
+                        subscriber.onComplete();
+                    }
+                    return;
                 }
             }
+            ignoreRequests(false);
         }
 
-        private boolean deliver(@Nullable T value) {
-            ++state;
+        private boolean deliver(@Nullable final T value, final byte nextState) {
+            state = (byte) ((state & 0x10) | nextState);
             try {
                 subscriber.onNext(value);
                 return true;
@@ -111,6 +121,22 @@ final class FromNPublisher<T> extends AbstractSynchronousPublisher<T> {
                 state = TERMINATED;
                 subscriber.onError(cause);
                 return false;
+            }
+        }
+
+        private byte state() {
+            return (byte) (state & 0x0F);
+        }
+
+        private boolean ignoreRequests() {
+            return (state & 0x10) > 0;
+        }
+
+        private void ignoreRequests(final boolean ignore) {
+            if (ignore) {
+                state |= 0x10;
+            } else {
+                state &= 0x0F;
             }
         }
     }
