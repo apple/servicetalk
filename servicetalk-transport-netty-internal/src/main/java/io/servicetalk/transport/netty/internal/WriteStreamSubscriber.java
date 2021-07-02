@@ -241,7 +241,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     private void initialRequestN(Subscription subscription) {
         if (isClient) {
-            if (channel.isWritable()) {
+            if (promise.isWritable()) {
                 subscription.request(1L);   // Request meta-data only
             }
         } else {
