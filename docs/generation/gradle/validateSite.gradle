@@ -53,14 +53,14 @@ for (location in ["local", "remote"]) {
 
   def htmlFiles
   if (location == "local") {
-		htmlFiles = fileTree("$buildDir/$location").matching {
-	  	include "**/*.html"
-		}
+        htmlFiles = fileTree("$buildDir/$location").matching {
+        include "**/*.html"
+        }
   } else {
-		// only check the currently generated docs, ignore legacy docs
-		htmlFiles = fileTree("$buildDir/$location").matching {
-	  	include "**/SNAPSHOT/*.html"
-		}
+        // only check the currently generated docs, ignore legacy docs
+        htmlFiles = fileTree("$buildDir/$location").matching {
+        include "**/SNAPSHOT/*.html"
+        }
   }
 
   task(validateSiteTask) {
