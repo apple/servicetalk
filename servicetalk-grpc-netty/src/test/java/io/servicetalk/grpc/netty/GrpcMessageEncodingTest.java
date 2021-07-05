@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -38,13 +37,11 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -56,6 +53,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -96,16 +94,15 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.internal.util.io.IOUtil.closeQuietly;
 
-@RunWith(Parameterized.class)
-public class GrpcMessageEncodingTest {
+class GrpcMessageEncodingTest {
 
     private static final int PAYLOAD_SIZE = 512;
-    static final ContentCodec CUSTOM_ENCODING = new ContentCodec() {
+    private static final ContentCodec CUSTOM_ENCODING = new ContentCodec() {
 
         private static final int OUGHT_TO_BE_ENOUGH = 1 << 20;
 
@@ -191,11 +188,13 @@ public class GrpcMessageEncodingTest {
                                 }
 
                                 if (!identity().equals(reqEncoding)) {
-                                    assertTrue("Compressed content length should be less than the " +
-                                                    "original payload size", buffer.readableBytes() < PAYLOAD_SIZE);
+                                    assertTrue(buffer.readableBytes() < PAYLOAD_SIZE,
+                                                          "Compressed content length should be less than the " +
+                                                                                "original payload size");
                                 } else {
-                                    assertTrue("Uncompressed content length should be more than the " +
-                                                    "original payload size", buffer.readableBytes() > PAYLOAD_SIZE);
+                                    assertTrue(buffer.readableBytes() > PAYLOAD_SIZE,
+                                                          "Uncompressed content length should be more than the " +
+                                                                                "original payload size");
                                 }
 
                                 assertEquals(!identity().equals(reqEncoding) ? 1 : 0, compressedFlag);
@@ -211,8 +210,9 @@ public class GrpcMessageEncodingTest {
                             assertThat("Message-Encoding should NOT be present in the headers if identity",
                                     request.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
-                            assertTrue("Message-Encoding should be present in the headers if not identity",
-                                    contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING)));
+                            assertTrue(
+                                contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING)),
+                                "Message-Encoding should be present in the headers if not identity");
                         }
                     } catch (Throwable t) {
                         errors.add(t);
@@ -255,7 +255,7 @@ public class GrpcMessageEncodingTest {
                                     response.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
                             assertEquals(expected, encodingFor(clientSupportedEncodings,
-                                    response.headers().get(MESSAGE_ENCODING)));
+                                                                          response.headers().get(MESSAGE_ENCODING)));
                         }
                     }
 
@@ -275,12 +275,14 @@ public class GrpcMessageEncodingTest {
                                 }
 
                                 if (respEnc != null) {
-                                    assertTrue("Compressed content length should be less than the original " +
-                                            "payload size", buffer.readableBytes() < PAYLOAD_SIZE);
+                                    assertTrue(buffer.readableBytes() < PAYLOAD_SIZE,
+                                            "Compressed content length should be less than the original " +
+                                                    "payload size");
                                 } else {
-                                    assertTrue("Uncompressed content length should be more than the original " +
-                                                    "payload size " + buffer.readableBytes(),
-                                            buffer.readableBytes() > PAYLOAD_SIZE);
+                                    assertTrue(
+                                        buffer.readableBytes() > PAYLOAD_SIZE,
+                                        "Uncompressed content length should be more than the original " +
+                                            "payload size " + buffer.readableBytes());
                                 }
                             }
                         } catch (Throwable t) {
@@ -330,20 +332,17 @@ public class GrpcMessageEncodingTest {
         }
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final GrpcServerBuilder grpcServerBuilder;
-    private final ServerContext serverContext;
-    private final TesterClient client;
-    private final ContentCodec requestEncoding;
-    private final boolean expectedSuccess;
+    @Nullable
+    private GrpcServerBuilder grpcServerBuilder;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private TesterClient client;
     private final BlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
-    public GrpcMessageEncodingTest(final List<ContentCodec> serverSupportedCodings,
-                                   final List<ContentCodec> clientSupportedCodings,
-                                   final ContentCodec requestEncoding,
-                                   final boolean expectedSuccess) throws Exception {
+    void setUp(final List<ContentCodec> serverSupportedCodings,
+               final List<ContentCodec> clientSupportedCodings,
+               final ContentCodec requestEncoding) throws Exception {
 
         TestEncodingScenario options = new TestEncodingScenario(requestEncoding, clientSupportedCodings,
                 serverSupportedCodings);
@@ -351,40 +350,40 @@ public class GrpcMessageEncodingTest {
         grpcServerBuilder = GrpcServers.forAddress(localAddress(0));
         serverContext = listenAndAwait(options);
         client = newClient(clientSupportedCodings);
-        this.requestEncoding = requestEncoding;
-        this.expectedSuccess = expectedSuccess;
     }
 
-    @Parameterized.Parameters(name = "server-supported-encodings={0} client-supported-encodings={1} " +
-                                     "request-encoding={2} expected-success={3}")
-    public static Object[][] params() {
-        return new Object[][] {
-                {null, null, identity(), true},
-                {null, asList(gzipDefault(), identity()), gzipDefault(), false},
-                {null, asList(deflateDefault(), identity()), deflateDefault(), false},
-                {asList(gzipDefault(), deflateDefault(), identity()), null, identity(), true},
-                {asList(identity(), gzipDefault(), deflateDefault()),
-                        asList(gzipDefault(), identity()), gzipDefault(), true},
-                {asList(identity(), gzipDefault(), deflateDefault()),
-                        asList(deflateDefault(), identity()), deflateDefault(), true},
-                {asList(identity(), gzipDefault()), asList(deflateDefault(), identity()), deflateDefault(), false},
-                {asList(identity(), deflateDefault()), asList(gzipDefault(), identity()), gzipDefault(), false},
-                {asList(identity(), deflateDefault()), asList(deflateDefault(), identity()), deflateDefault(), true},
-                {asList(identity(), deflateDefault()), null, identity(), true},
-                {singletonList(gzipDefault()), singletonList(identity()), identity(), true},
-                {singletonList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true},
-                {singletonList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true},
-                {singletonList(gzipDefault()), asList(gzipDefault(), identity()), gzipDefault(), true},
-                {singletonList(gzipDefault()), asList(deflateDefault(), gzipDefault()), gzipDefault(), true},
-                {null, asList(gzipDefault(), identity()), gzipDefault(), false},
-                {null, asList(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false},
-                {null, asList(gzipDefault(), identity()), identity(), true},
-                {singletonList(CUSTOM_ENCODING), singletonList(CUSTOM_ENCODING), CUSTOM_ENCODING, true},
-        };
+    static Stream<Arguments> params() {
+        return Stream.of(
+                Arguments.of(null, null, identity(), true),
+                Arguments.of(null, asList(gzipDefault(), identity()), gzipDefault(), false),
+                Arguments.of(null, asList(deflateDefault(), identity()), deflateDefault(), false),
+                Arguments.of(asList(gzipDefault(), deflateDefault(), identity()), null, identity(), true),
+                Arguments.of(asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(gzipDefault(), identity()), gzipDefault(), true),
+                Arguments.of(asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(deflateDefault(), identity()), deflateDefault(), true),
+                Arguments.of(asList(identity(), gzipDefault()), asList(deflateDefault(), identity()),
+                        deflateDefault(), false),
+                Arguments.of(asList(identity(), deflateDefault()), asList(gzipDefault(), identity()),
+                        gzipDefault(), false),
+                Arguments.of(asList(identity(), deflateDefault()), asList(deflateDefault(), identity()),
+                        deflateDefault(), true),
+                Arguments.of(asList(identity(), deflateDefault()), null, identity(), true),
+                Arguments.of(singletonList(gzipDefault()), singletonList(identity()), identity(), true),
+                Arguments.of(singletonList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true),
+                Arguments.of(singletonList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true),
+                Arguments.of(singletonList(gzipDefault()), asList(gzipDefault(), identity()), gzipDefault(), true),
+                Arguments.of(singletonList(gzipDefault()), asList(deflateDefault(), gzipDefault()),
+                        gzipDefault(), true),
+                Arguments.of(null, asList(gzipDefault(), identity()), gzipDefault(), false),
+                Arguments.of(null, asList(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false),
+                Arguments.of(null, asList(gzipDefault(), identity()), identity(), true),
+                Arguments.of(singletonList(CUSTOM_ENCODING), singletonList(CUSTOM_ENCODING), CUSTOM_ENCODING, true)
+        );
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -406,8 +405,14 @@ public class GrpcMessageEncodingTest {
                         new ClientFactory());
     }
 
-    @Test
-    public void test() throws Throwable {
+    @ParameterizedTest(name = "server-supported-encodings={0} client-supported-encodings={1} " +
+                              "request-encoding={2} expected-success={3}")
+    @MethodSource("params")
+    void test(final List<ContentCodec> serverSupportedCodings,
+              final List<ContentCodec> clientSupportedCodings,
+              final ContentCodec requestEncoding,
+              final boolean expectedSuccess) throws Throwable {
+        setUp(serverSupportedCodings, clientSupportedCodings, requestEncoding);
         try {
             if (expectedSuccess) {
                 assertSuccessful(requestEncoding);
@@ -454,8 +459,8 @@ public class GrpcMessageEncodingTest {
                 from(request(), request(), request(), request(), request())).toFuture().get());
     }
 
-    private void assertThrowsGrpcStatusUnimplemented(final ThrowingRunnable runnable) {
-        ExecutionException ex = assertThrows(ExecutionException.class, runnable);
+    private void assertThrowsGrpcStatusUnimplemented(final Executable executable) {
+        ExecutionException ex = assertThrows(ExecutionException.class, executable);
         assertThat(ex.getCause(), is(instanceOf(GrpcStatusException.class)));
         assertGrpcStatusException((GrpcStatusException) ex.getCause());
     }

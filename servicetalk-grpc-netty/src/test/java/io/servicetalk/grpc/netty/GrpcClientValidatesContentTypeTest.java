@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcSerializationProvider;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.protobuf.ProtoBufSerializationProviderBuilder;
@@ -33,14 +32,14 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.function.Function;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -55,15 +54,15 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
 
-@RunWith(Parameterized.class)
-public final class GrpcClientValidatesContentTypeTest {
+final class GrpcClientValidatesContentTypeTest {
 
     private static final GrpcSerializationProvider SERIALIZATION_PROVIDER = new ProtoBufSerializationProviderBuilder()
             .registerMessageType(TestRequest.class, TestRequest.parser())
             .registerMessageType(TesterProto.TestResponse.class, TesterProto.TestResponse.parser())
             .build();
 
-    public static final Function<Boolean, HttpSerializer<TesterProto.TestResponse>> SERIALIZER_OVERRIDING_CONTENT_TYPE =
+    private static final Function<Boolean, HttpSerializer<TesterProto.TestResponse>>
+            SERIALIZER_OVERRIDING_CONTENT_TYPE =
             (withCharset) -> new HttpSerializer<TesterProto.TestResponse>() {
 
                 final HttpSerializer<TesterProto.TestResponse> delegate = SERIALIZATION_PROVIDER
@@ -113,13 +112,12 @@ public final class GrpcClientValidatesContentTypeTest {
                 }
             };
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private TesterProto.Tester.BlockingTesterClient client;
 
-    private final ServerContext serverContext;
-    private final TesterProto.Tester.BlockingTesterClient client;
-
-    public GrpcClientValidatesContentTypeTest(boolean streaming, boolean withCharset) throws Exception {
+    void setUp(boolean streaming, boolean withCharset) throws Exception {
         StreamingHttpService streamingService = (ctx, request, responseFactory) -> {
             final StreamingHttpResponse response = responseFactory.ok()
                     .version(request.version())
@@ -144,13 +142,16 @@ public final class GrpcClientValidatesContentTypeTest {
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "streaming={0} with-charset={1}")
-    public static Object[][] params() {
-        return new Object[][]{{false, false}, {false, true}, {true, true}, {true, false}};
+    static Stream<Arguments> params() {
+        return Stream.of(
+                Arguments.of(false, false),
+                Arguments.of(false, true),
+                Arguments.of(true, false),
+                Arguments.of(true, true));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -158,44 +159,60 @@ public final class GrpcClientValidatesContentTypeTest {
         }
     }
 
-    @Test
-    public void testBlockingAggregated() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testBlockingAggregated(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.test(request());
     }
 
-    @Test
-    public void testBlockingRequestStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testBlockingRequestStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.testRequestStream(singletonList(request()));
     }
 
-    @Test
-    public void testBlockingResponseStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testBlockingResponseStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.testResponseStream(request()).forEach(__ -> { /* noop */ });
     }
 
-    @Test
-    public void testBlockingBiDiStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testBlockingBiDiStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.testBiDiStream(singletonList(request()))
                 .forEach(__ -> { /* noop */ });
     }
 
-    @Test
-    public void testAggregated() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testAggregated(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.asClient().test(request()).toFuture().get();
     }
 
-    @Test
-    public void testRequestStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testRequestStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.asClient().testRequestStream(from(request())).toFuture().get();
     }
 
-    @Test
-    public void testResponseStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testResponseStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.asClient().testResponseStream(request()).toFuture().get();
     }
 
-    @Test
-    public void testBiDiStreaming() throws Exception {
+    @ParameterizedTest(name = "streaming={0} with-charset={1}")
+    @MethodSource("params")
+    void testBiDiStreaming(boolean streaming, boolean withCharset) throws Exception {
+        setUp(streaming, withCharset);
         client.asClient().testBiDiStream(from(request())).toFuture().get();
     }
 

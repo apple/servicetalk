@@ -15,7 +15,7 @@
  */
 package io.servicetalk.grpc.protoc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -23,29 +23,29 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class StringUtilsTest {
+class StringUtilsTest {
     @Test
-    public void emptyOptions() {
+    void emptyOptions() {
         Map<String, String> options = StringUtils.parseOptions("");
         assertThat(options.isEmpty(), is(true));
     }
 
     @Test
-    public void singleEntryNoValue() {
+    void singleEntryNoValue() {
         Map<String, String> options = StringUtils.parseOptions("foo");
         assertThat(options.size(), is(1));
         assertContainsNullValue(options, "foo");
     }
 
     @Test
-    public void singleEntryValue() {
+    void singleEntryValue() {
         Map<String, String> options = StringUtils.parseOptions("foo=bar");
         assertThat(options.size(), is(1));
         assertThat(options.get("foo"), is("bar"));
     }
 
     @Test
-    public void twoEntriesNoValues() {
+    void twoEntriesNoValues() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2");
         assertThat(options.size(), is(2));
         assertContainsNullValue(options, "foo1");
@@ -53,7 +53,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void twoEntriesFirstValue() {
+    void twoEntriesFirstValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2");
         assertThat(options.size(), is(2));
         assertThat(options.get("foo1"), is("bar1"));
@@ -61,7 +61,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void twoEntriesSecondValue() {
+    void twoEntriesSecondValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2=bar2");
         assertThat(options.size(), is(2));
         assertContainsNullValue(options, "foo1");
@@ -69,7 +69,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void twoEntriesBothValues() {
+    void twoEntriesBothValues() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2=bar2");
         assertThat(options.size(), is(2));
         assertThat(options.get("foo1"), is("bar1"));
@@ -77,7 +77,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesNoValues() {
+    void threeEntriesNoValues() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2,foo3");
         assertThat(options.size(), is(3));
         assertContainsNullValue(options, "foo1");
@@ -86,7 +86,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesFirstValue() {
+    void threeEntriesFirstValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2,foo3");
         assertThat(options.size(), is(3));
         assertThat(options.get("foo1"), is("bar1"));
@@ -95,7 +95,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesSecondValue() {
+    void threeEntriesSecondValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2=bar2,foo3");
         assertThat(options.size(), is(3));
         assertContainsNullValue(options, "foo1");
@@ -104,7 +104,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesThirdValue() {
+    void threeEntriesThirdValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2,foo3=bar3");
         assertThat(options.size(), is(3));
         assertContainsNullValue(options, "foo1");
@@ -113,7 +113,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesFirstSecondValue() {
+    void threeEntriesFirstSecondValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2=bar2,foo3");
         assertThat(options.size(), is(3));
         assertThat(options.get("foo1"), is("bar1"));
@@ -122,7 +122,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesFirstThirdValue() {
+    void threeEntriesFirstThirdValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2,foo3=bar3");
         assertThat(options.size(), is(3));
         assertThat(options.get("foo1"), is("bar1"));
@@ -131,7 +131,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesSecondThirdValue() {
+    void threeEntriesSecondThirdValue() {
         Map<String, String> options = StringUtils.parseOptions("foo1,foo2=bar2,foo3=bar3");
         assertThat(options.size(), is(3));
         assertContainsNullValue(options, "foo1");
@@ -140,7 +140,7 @@ public class StringUtilsTest {
     }
 
     @Test
-    public void threeEntriesValues() {
+    void threeEntriesValues() {
         Map<String, String> options = StringUtils.parseOptions("foo1=bar1,foo2=bar2,foo3=bar3");
         assertThat(options.size(), is(3));
         assertThat(options.get("foo1"), is("bar1"));

@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
@@ -35,10 +34,8 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TestRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -57,22 +54,19 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class GrpcRouterConfigurationTest {
+class GrpcRouterConfigurationTest {
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("test").build();
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Nullable
     private ServerContext serverContext;
     @Nullable
     private BlockingTesterClient client;
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             if (client != null) {
                 client.close();
@@ -95,7 +89,7 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testMissedRouteThrowsUnimplementedException() throws Exception {
+    void testMissedRouteThrowsUnimplementedException() throws Exception {
         BlockingTesterClient client = createGrpcClient(startGrpcServer(new ServiceFactory.Builder()
                 .test(DEFAULT_STRATEGY_ASYNC_SERVICE)
                 .build()));
@@ -108,7 +102,7 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testCanNotAppendFilterWithoutImplementingAllRoutes() {
+    void testCanNotAppendFilterWithoutImplementingAllRoutes() {
         Throwable t = assertThrows(IllegalArgumentException.class, () -> startGrpcServer(new ServiceFactory.Builder()
                 .test(DEFAULT_STRATEGY_ASYNC_SERVICE)
                 .build()
@@ -125,7 +119,7 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPath() {
+    void testCanNotOverrideAlreadyRegisteredPath() {
         final TesterService asyncService = DEFAULT_STRATEGY_ASYNC_SERVICE;
         final TesterService alternativeAsyncService = CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE;
         testCanNotOverrideAlreadyRegisteredPath(TestRpc.PATH, builder -> builder
@@ -164,7 +158,7 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherStrategy() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherStrategy() {
         final TesterService asyncService = DEFAULT_STRATEGY_ASYNC_SERVICE;
         testCanNotOverrideAlreadyRegisteredPath(TestRpc.PATH, builder -> builder
                 .test(asyncService)
@@ -201,7 +195,7 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherApi() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherApi() {
         final TesterService asyncService = DEFAULT_STRATEGY_ASYNC_SERVICE;
         final BlockingTesterService blockingService = DEFAULT_STRATEGY_BLOCKING_SERVICE;
 
@@ -248,25 +242,25 @@ public class GrpcRouterConfigurationTest {
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryAsyncAsync() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryAsyncAsync() {
         testCanNotOverrideAlreadyRegisteredPath(new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE),
                 new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE));
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryAsyncBlocking() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryAsyncBlocking() {
         testCanNotOverrideAlreadyRegisteredPath(new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE),
                 new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE));
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryBlockingBlocking() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryBlockingBlocking() {
         testCanNotOverrideAlreadyRegisteredPath(new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE),
                 new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE));
     }
 
     @Test
-    public void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryBlockingAsync() {
+    void testCanNotOverrideAlreadyRegisteredPathWithAnotherServiceFactoryBlockingAsync() {
         testCanNotOverrideAlreadyRegisteredPath(new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE),
                 new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE));
     }

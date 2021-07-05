@@ -28,17 +28,17 @@ import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.getUsingDefaultStrategyFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ExecutionStrategyConfigurationFailuresTest {
+class ExecutionStrategyConfigurationFailuresTest {
 
     @NoOffloadsRouteExecutionStrategy
     private static final class MisconfiguredService implements TesterService {
@@ -111,79 +111,78 @@ public class ExecutionStrategyConfigurationFailuresTest {
     private static final RouteExecutionStrategyFactory<GrpcExecutionStrategy> STRATEGY_FACTORY =
             id -> "test".equals(id) ? noOffloadsStrategy() : getUsingDefaultStrategyFactory(id);
 
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
-
     @Test
-    public void usingServiceFactoryAsyncService() throws Exception {
+    void usingServiceFactoryAsyncService() {
         usingServiceFactory(new ServiceFactory(MISCONFIGURED_SERVICE));
     }
 
     @Test
-    public void usingServiceFactoryBlockingService() throws Exception {
+    void usingServiceFactoryBlockingService() {
         usingServiceFactory(new ServiceFactory(MISCONFIGURED_BLOCKING_SERVICE));
     }
 
-    private void usingServiceFactory(final ServiceFactory serviceFactory) throws Exception {
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage(allOf(
-                containsString("test("),
-                containsString("testBiDiStream("),
-                containsString("testResponseStream("),
-                containsString("testRequestStream(")));
-
-        GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory);
+    private void usingServiceFactory(final ServiceFactory serviceFactory) {
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                     () -> GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory));
+        assertThat(ex.getMessage(), allOf(
+            containsString("test("),
+            containsString("testBiDiStream("),
+            containsString("testResponseStream("),
+            containsString("testRequestStream(")));
     }
 
     @Test
-    public void usingServiceFactoryWithStrategyFactoryAsyncService() throws Exception {
+    void usingServiceFactoryWithStrategyFactoryAsyncService() {
         usingServiceFactoryWithStrategyFactory(new ServiceFactory(MISCONFIGURED_SERVICE, STRATEGY_FACTORY));
     }
 
     @Test
-    public void usingServiceFactoryWithStrategyFactoryBlockingService() throws Exception {
+    void usingServiceFactoryWithStrategyFactoryBlockingService() {
         usingServiceFactoryWithStrategyFactory(new ServiceFactory(MISCONFIGURED_BLOCKING_SERVICE, STRATEGY_FACTORY));
     }
 
-    private void usingServiceFactoryWithStrategyFactory(final ServiceFactory serviceFactory) throws Exception {
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage(allOf(
+    private void usingServiceFactoryWithStrategyFactory(final ServiceFactory serviceFactory) {
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                                                () -> GrpcServers.forAddress(localAddress(0))
+                                                        .listenAndAwait(serviceFactory));
+        assertThat(ex.getMessage(), allOf(
+            allOf(
                 containsString("test("),
                 containsString("testBiDiStream("),
-                containsString("testResponseStream(")));
-
-        GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory);
+                containsString("testResponseStream("))));
     }
 
     @Test
-    public void usingServiceFactoryBuilderAsyncService() throws Exception {
+    void usingServiceFactoryBuilderAsyncService() {
         usingServiceFactoryBuilder(new ServiceFactory.Builder()
                 .testRequestStream(MISCONFIGURED_SERVICE).build());
     }
 
     @Test
-    public void usingServiceFactoryBuilderBlockingService() throws Exception {
+    void usingServiceFactoryBuilderBlockingService() {
         usingServiceFactoryBuilder(new ServiceFactory.Builder()
                 .testRequestStreamBlocking(MISCONFIGURED_BLOCKING_SERVICE).build());
     }
 
-    private void usingServiceFactoryBuilder(final ServiceFactory serviceFactory) throws Exception {
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage(allOf(
+    private void usingServiceFactoryBuilder(final ServiceFactory serviceFactory) {
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                                                () -> GrpcServers.forAddress(localAddress(0))
+                                                        .listenAndAwait(serviceFactory));
+        assertThat(ex.getMessage(), allOf(
+            allOf(
                 containsString("Failed to create an execution strategy for ID"),
-                containsString("testRequestStream(")));
-
-        GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory);
+                containsString("testRequestStream("))));
     }
 
     @Test
-    public void usingServiceFactoryBuilderWithStrategyFactoryAsyncService() throws Exception {
+    void usingServiceFactoryBuilderWithStrategyFactoryAsyncService() throws Exception {
         usingServiceFactoryBuilderWithStrategyFactory(new ServiceFactory.Builder(STRATEGY_FACTORY)
                 .testRequestStream(MISCONFIGURED_SERVICE).build());
     }
 
     @Test
-    public void usingServiceFactoryBuilderWithStrategyFactoryBlockingService() throws Exception {
+    void usingServiceFactoryBuilderWithStrategyFactoryBlockingService() throws Exception {
         usingServiceFactoryBuilderWithStrategyFactory(new ServiceFactory.Builder(STRATEGY_FACTORY)
                 .testRequestStreamBlocking(MISCONFIGURED_BLOCKING_SERVICE).build());
     }
