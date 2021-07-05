@@ -22,11 +22,10 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.net.ssl.SSLSession;
 
@@ -39,12 +38,12 @@ import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestU
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HttpRequestUriUtilsTest {
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+@ExtendWith(MockitoExtension.class)
+class HttpRequestUriUtilsTest {
 
     @Mock
     private ConnectionContext ctx;
@@ -53,7 +52,7 @@ public class HttpRequestUriUtilsTest {
             BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Test
-    public void originForm() {
+    void originForm() {
         when(ctx.localAddress()).thenReturn(createUnresolved("my.site.com", 80));
 
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
@@ -94,7 +93,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void originFormWithHostHeader() {
+    void originFormWithHostHeader() {
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
         req.headers().set(HOST, "my.site.com:8080");
 
@@ -118,7 +117,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void absoluteForm() {
+    void absoluteForm() {
         final StreamingHttpRequest req = reqRespFactory.get("https://my.site.com/some/path.html?query");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
@@ -157,7 +156,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void absoluteFormWithUserInfo() {
+    void absoluteFormWithUserInfo() {
         final StreamingHttpRequest req = reqRespFactory.get("https://jdoe@my.site.com/some/path.html?query");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, true),
@@ -200,7 +199,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void authorityForm() {
+    void authorityForm() {
         when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
 
         final StreamingHttpRequest req = reqRespFactory.newRequest(CONNECT, "my.site.com:9876");
@@ -241,7 +240,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void asteriskForm() {
+    void asteriskForm() {
         when(ctx.localAddress()).thenReturn(createUnresolved("my.site.com", 443));
         when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
 
@@ -267,7 +266,7 @@ public class HttpRequestUriUtilsTest {
     }
 
     @Test
-    public void asteriskFormWithHostHeader() {
+    void asteriskFormWithHostHeader() {
         final StreamingHttpRequest req = reqRespFactory.newRequest(OPTIONS, "*");
         req.headers().set(HOST, "my.site.com:8080");
 
@@ -306,15 +305,17 @@ public class HttpRequestUriUtilsTest {
                 is("http://jsmith@other.site.com:1234/"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void unsupportedFixedSchemeEffectiveRequestUri() {
+    @Test
+    void unsupportedFixedSchemeEffectiveRequestUri() {
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
-        getEffectiveRequestUri(ctx, req, "ftp", null, false);
+        assertThrows(IllegalArgumentException.class,
+                     () -> getEffectiveRequestUri(ctx, req, "ftp", null, false));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void unsupportedFixedSchemeBaseUri() {
+    @Test
+    void unsupportedFixedSchemeBaseUri() {
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
-        getBaseRequestUri(ctx, req, "ftp", null, false);
+        assertThrows(IllegalArgumentException.class,
+                     () -> getBaseRequestUri(ctx, req, "ftp", null, false));
     }
 }
