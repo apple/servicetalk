@@ -17,16 +17,16 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubscribeOnTest {
+class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubscribeOnTest {
 
     @Test
-    public void testNoOffload() throws InterruptedException {
+    void testNoOffload() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 0, // none
                 (c, e) -> c, offload.executor());
@@ -38,7 +38,7 @@ public class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubs
     }
 
     @Test
-    public void testPublishOn() throws InterruptedException {
+    void testPublishOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 2, // onSubscribe, onComplete
                 Completable::publishOn, offload.executor());
@@ -50,7 +50,7 @@ public class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubs
     }
 
     @Test
-    public void testSubscribeOn() throws InterruptedException {
+    void testSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(
                 1, // subscribe
                 Completable::subscribeOn, offload.executor());
@@ -62,7 +62,7 @@ public class PublishAndSubscribeOnTest extends AbstractCompletablePublishAndSubs
     }
 
     @Test
-    public void testSubscribeOnWithCancel() throws InterruptedException {
+    void testSubscribeOnWithCancel() throws InterruptedException {
         Thread[] capturedThreads = setupAndCancel(
                 2, // subscribe, cancel
                 Completable::subscribeOn, offload.executor());

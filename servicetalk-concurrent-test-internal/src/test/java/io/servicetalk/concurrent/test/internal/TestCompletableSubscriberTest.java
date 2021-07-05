@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.test.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -26,24 +26,24 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-public class TestCompletableSubscriberTest {
+class TestCompletableSubscriberTest {
     @Test
-    public void onSubscribe() {
+    void onSubscribe() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         doOnSubscribe(subscriber);
         assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
     }
 
     @Test
-    public void onSubscribeOnComplete() {
+    void onSubscribeOnComplete() {
         onSubscribeOnTerminal(true);
     }
 
     @Test
-    public void onSubscribeOnError() {
+    void onSubscribeOnError() {
         onSubscribeOnTerminal(false);
     }
 
@@ -55,7 +55,7 @@ public class TestCompletableSubscriberTest {
     }
 
     @Test
-    public void singleItem() {
+    void singleItem() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         doOnSubscribe(subscriber);
         subscriber.onComplete();
@@ -63,7 +63,7 @@ public class TestCompletableSubscriberTest {
     }
 
     @Test
-    public void singleItemCancelBefore() {
+    void singleItemCancelBefore() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         doOnSubscribe(subscriber).cancel();
         subscriber.onComplete();
@@ -71,7 +71,7 @@ public class TestCompletableSubscriberTest {
     }
 
     @Test
-    public void singleItemCancelAfter() {
+    void singleItemCancelAfter() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         Cancellable c = doOnSubscribe(subscriber);
         subscriber.onComplete();

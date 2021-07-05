@@ -29,7 +29,7 @@ import java.util.function.BiFunction;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public abstract class AbstractCompletablePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
+abstract class AbstractCompletablePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     static final int APP_THREAD = 0;
     static final int ON_SUBSCRIBE_THREAD = 1;

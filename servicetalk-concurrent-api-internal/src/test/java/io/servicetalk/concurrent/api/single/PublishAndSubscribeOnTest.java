@@ -17,16 +17,16 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribeOnTest {
+class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribeOnTest {
 
     @Test
-    public void testPublishOn() throws InterruptedException {
+    void testPublishOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(Single::publishOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,
@@ -36,7 +36,7 @@ public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribe
     }
 
     @Test
-    public void testSubscribeOn() throws InterruptedException {
+    void testSubscribeOn() throws InterruptedException {
         Thread[] capturedThreads = setupAndSubscribe(1, // subscribe
                 Single::subscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
@@ -47,7 +47,7 @@ public class PublishAndSubscribeOnTest extends AbstractSinglePublishAndSubscribe
     }
 
     @Test
-    public void testSubscribeOnWithCancel() throws InterruptedException {
+    void testSubscribeOnWithCancel() throws InterruptedException {
         Thread[] capturedThreads = setupForCancelAndSubscribe(Single::subscribeOn, offload.executor());
         String threads = Arrays.toString(capturedThreads);
         assertThat("Unexpected threads for original source " + threads,

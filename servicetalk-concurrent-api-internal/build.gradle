@@ -33,7 +33,9 @@ dependencies {
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-concurrent-test-internal")
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

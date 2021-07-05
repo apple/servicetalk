@@ -17,12 +17,10 @@ package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.RunnableFuture;
@@ -31,26 +29,26 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withExecutor;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
-    protected static final String APP_EXECUTOR_PREFIX = "app";
-    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
+    private static final String APP_EXECUTOR_PREFIX = "app";
+    private static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
     protected static final Matcher<Thread> APP_EXECUTOR = matchThreadNamePrefix(APP_EXECUTOR_PREFIX);
     protected static final Matcher<Thread> OFFLOAD_EXECUTOR = matchThreadNamePrefix(OFFLOAD_EXECUTOR_PREFIX);
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> app = ExecutorRule.withNamePrefix(APP_EXECUTOR_PREFIX);
-    protected AtomicInteger offloadsStarted = new AtomicInteger();
-    protected AtomicInteger offloadsFinished = new AtomicInteger();
+    @RegisterExtension
+    public final ExecutorExtension<Executor> app = withCachedExecutor(APP_EXECUTOR_PREFIX);
+    protected final AtomicInteger offloadsStarted = new AtomicInteger();
+    protected final AtomicInteger offloadsFinished = new AtomicInteger();
     protected volatile Runnable afterOffload;
     protected final ThreadPoolExecutor offloadExecutorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
             60L, TimeUnit.SECONDS,
-            new SynchronousQueue<Runnable>(),
+            new SynchronousQueue<>(),
             new DefaultThreadFactory(OFFLOAD_EXECUTOR_PREFIX)) {
 
         @Override
@@ -95,8 +93,8 @@ public abstract class AbstractPublishAndSubscribeOnTest {
             return super.newTaskFor(after);
         }
     };
-    @Rule
-    public final ExecutorRule<Executor> offload = ExecutorRule.withExecutor(() -> from(offloadExecutorService));
+    @RegisterExtension
+    public final ExecutorExtension<Executor> offload = withExecutor(() -> from(offloadExecutorService));
 
     protected final CaptureThreads capturedThreads;
 
