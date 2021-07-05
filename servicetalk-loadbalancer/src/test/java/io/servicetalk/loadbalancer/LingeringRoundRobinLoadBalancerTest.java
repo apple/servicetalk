@@ -76,30 +76,38 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void handleDiscoveryEvents() {
+    public void handleDiscoveryEventsForConnectedHosts() throws Exception {
         assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
         assertThat(lb.activeAddresses(), is(empty()));
 
+        final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
+
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-1");
+        // For an added host, connection needs to be initiated, otherwise the host is free to be deleted
+        lb.selectConnection(connectionFilter).toFuture().get();
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-1");
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
+        lb.selectConnection(connectionFilter).toFuture().get();
+
         assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        // At this moment in time, duplicates are allowed and the down event removes just one address
+        // At this moment in time, duplicates are allowed and the down event removes just the first address
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
+        // Because the first address has an open connection, both addresses stay in the collection
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-2"));
+        // This host has a connection open, so it stays.
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
@@ -108,6 +116,40 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
 
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-1", "address-2");
+    }
+
+    @Test
+    public void handleDiscoveryEventsForNotConnectedHosts() {
+        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertThat(lb.activeAddresses(), is(empty()));
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1");
+
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertAddresses(lb.activeAddresses(), "address-2");
+
+        sendServiceDiscoveryEvents(downEvent("address-3"));
+        assertAddresses(lb.activeAddresses(), "address-2");
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
+
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-2");
+
+        sendServiceDiscoveryEvents(downEvent("address-2"));
+        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+
+        // Let's make sure that an SD failure doesn't compromise LB's internal state
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1");
+
+        serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
+        assertAddresses(lb.activeAddresses(), "address-1");
     }
 
     @Override

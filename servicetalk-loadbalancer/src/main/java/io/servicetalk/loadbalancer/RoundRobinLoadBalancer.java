@@ -202,6 +202,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 for (Host<ResolvedAddress, C> host : oldHostsTyped) {
                                     if (host.address.equals(addr)) {
                                         host.isExpired = true;
+                                        if (host.connections.length == 0) {
+                                            host.closeAsyncGracefully().subscribe();
+                                        }
                                         break;
                                     }
                                 }
