@@ -20,7 +20,8 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractFilterInterceptorTest.UpperCaseInputStream;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -40,10 +41,7 @@ import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
-public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
-    public FilterStreamingJsonTest(final RouterApi api) {
-        super(api);
-    }
+class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Priority(ENTITY_CODER)
     @Provider
@@ -54,7 +52,7 @@ public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceT
         }
     }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -75,19 +73,23 @@ public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceT
         return new TestApplication();
     }
 
-    @Test
-    public void filterSingle() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(post(SingleJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                    OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void filterSingle(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() ->
+                sendAndAssertResponse(post(
+                                SingleJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                        OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null));
     }
 
-    @Test
-    public void filterPublisher() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(post(PublisherJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                    OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void filterPublisher(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(
+                        post(PublisherJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                        OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null));
     }
 }
