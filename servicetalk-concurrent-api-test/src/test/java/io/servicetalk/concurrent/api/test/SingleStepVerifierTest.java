@@ -65,7 +65,7 @@ public class SingleStepVerifierTest {
     public void expectCancellableTimeout() {
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> StepVerifiers.create(succeeded("foo").publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+            verifyException(() -> StepVerifiers.create(succeeded("foo").subscribeOn(EXECUTOR_RULE.executor()))
                     .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
@@ -306,7 +306,7 @@ public class SingleStepVerifierTest {
 
     @Test
     public void asyncContextOnSuccess() {
-        StepVerifiers.create(succeeded("foo").publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        StepVerifiers.create(succeeded("foo").subscribeOn(EXECUTOR_RULE.executor()))
                 .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
@@ -320,7 +320,7 @@ public class SingleStepVerifierTest {
 
     @Test
     public void asyncContextOnError() {
-        StepVerifiers.create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        StepVerifiers.create(failed(DELIBERATE_EXCEPTION).subscribeOn(EXECUTOR_RULE.executor()))
                 .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);

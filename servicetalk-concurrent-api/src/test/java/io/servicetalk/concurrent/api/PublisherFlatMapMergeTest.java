@@ -836,8 +836,9 @@ class PublisherFlatMapMergeTest {
         final int upstreamItems = 10000;
         final int mappedItems = 5;
         final TestPublisherSubscriber<IntPair> subscriber = new TestPublisherSubscriber<>();
-        Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
-                .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems);
+        Publisher<IntPair> publisher = range(0, upstreamItems).publishOn(executor)
+                .flatMapMerge(outer -> range(0, mappedItems).map(inner -> new IntPair(outer, inner)), upstreamItems)
+                .subscribeOn(executor);
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(upstreamItems * mappedItems);
 

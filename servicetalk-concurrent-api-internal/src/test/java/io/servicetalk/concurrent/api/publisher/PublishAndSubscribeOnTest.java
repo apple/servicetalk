@@ -48,16 +48,4 @@ public class PublishAndSubscribeOnTest extends AbstractPublisherPublishAndSubscr
         assertThat("Unexpected threads for offloaded source " + threads,
                 capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
     }
-
-    @Test
-    public void testPublishAndSubscribeOn() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishAndSubscribeOn, offload.executor());
-        String threads = Arrays.toString(capturedThreads);
-        assertThat("Unexpected threads for original source " + threads,
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], APP_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], OFFLOAD_EXECUTOR);
-        assertThat("Unexpected threads for offloaded source " + threads,
-                capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD], OFFLOAD_EXECUTOR);
-    }
 }

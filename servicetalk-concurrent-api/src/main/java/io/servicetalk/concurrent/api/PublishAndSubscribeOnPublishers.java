@@ -41,12 +41,6 @@ final class PublishAndSubscribeOnPublishers {
                 cause);
     }
 
-    static <T> Publisher<T> publishAndSubscribeOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new PublishAndSubscribeOn<>(original, executor);
-    }
-
     static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
         return original.executor() == executor || immediate() == executor ?
                 original :
@@ -71,30 +65,6 @@ final class PublishAndSubscribeOnPublishers {
         @Override
         final Executor executor() {
             return executor;
-        }
-    }
-
-    private static final class PublishAndSubscribeOn<T> extends OffloadingPublisher<T> {
-
-        PublishAndSubscribeOn(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            // We use executor to create the returned Publisher which means executor will be used
-            // to offload handleSubscribe as well as the Subscription that is sent to the subscriber here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)));
         }
     }
 
