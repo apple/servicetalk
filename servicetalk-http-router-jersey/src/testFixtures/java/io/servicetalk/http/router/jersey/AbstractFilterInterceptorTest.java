@@ -22,7 +22,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
@@ -63,9 +64,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStreamingHttpServiceTest {
-    public AbstractFilterInterceptorTest(final RouterApi api) {
-        super(api);
-    }
 
     @Priority(ENTITY_CODER)
     @Provider
@@ -78,7 +76,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         @SuppressWarnings("unchecked")
         @Override
         public void filter(final ContainerRequestContext requestCtx, final ContainerResponseContext responseCtx) {
-            // ContainerResponseFilter allows replacing the entity altogether so we can optimize
+            // ContainerResponseFilter allows replacing the entity altogether, so we can optimize
             // for cases when the resource has returned a Publisher, while making sure we correctly carry the
             // generic type of the entity so the correct response body writer will be used
             if (isSourceOfType(responseCtx.getEntityType(), Publisher.class, Buffer.class)) {
@@ -147,7 +145,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         @SuppressWarnings("unchecked")
         @Override
         public void aroundWriteTo(final WriterInterceptorContext writerInterceptorCtx) throws IOException {
-            // WriterInterceptor allows replacing the entity altogether so we can optimize
+            // WriterInterceptor allows replacing the entity altogether, so we can optimize
             // for cases when the resource has returned a Publisher
             if (isSourceOfType(writerInterceptorCtx.getGenericType(), Publisher.class, Buffer.class)) {
                 final Publisher<Buffer> contentWith0 = ((Publisher<Buffer>) writerInterceptorCtx.getEntity())
@@ -191,8 +189,10 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         }
     }
 
-    @Test
-    public void synchronousResource() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void synchronousResource(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post(SynchronousResources.PATH + "/text", "foo1", TEXT_PLAIN),
                     OK, TEXT_PLAIN, "G0T: F001");
@@ -210,8 +210,10 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         });
     }
 
-    @Test
-    public void publisherResources() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void publisherResources(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post(SynchronousResources.PATH + "/text-strin-pubout", "foo1", TEXT_PLAIN),
                     OK, TEXT_PLAIN, is("G0T: F001"), __ -> null);
@@ -224,16 +226,19 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         });
     }
 
-    @Test
-    public void oioStreamsResource() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-oio-streams", "bar", TEXT_PLAIN),
-                    OK, TEXT_PLAIN, "G0T: BAR");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void oioStreamsResource(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() ->
+                sendAndAssertResponse(post(SynchronousResources.PATH + "/text-oio-streams", "bar", TEXT_PLAIN),
+                                                              OK, TEXT_PLAIN, "G0T: BAR"));
     }
 
-    @Test
-    public void asynchronousResource() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void asynchronousResource(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post(AsynchronousResources.PATH + "/text", "baz1", TEXT_PLAIN),
                     OK, TEXT_PLAIN, "G0T: BAZ1");
@@ -243,8 +248,10 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         });
     }
 
-    @Test
-    public void singleResources() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void singleResources(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post(SynchronousResources.PATH + "/json-buf-sglin-sglout-response",
                     "{\"key\":\"val1\"}", APPLICATION_JSON), ACCEPTED, APPLICATION_JSON,
@@ -264,8 +271,10 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         });
     }
 
-    @Test
-    public void bufferResources() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void bufferResources(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
 
             sendAndAssertResponse(get(SynchronousResources.PATH + "/text-buffer"), OK, TEXT_PLAIN, "D0NE");
@@ -331,7 +340,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
     private static class Oto0OutputStream extends FilterOutputStream {
         private boolean closed;
 
-        protected Oto0OutputStream(final OutputStream out) {
+        Oto0OutputStream(final OutputStream out) {
             super(out);
         }
 

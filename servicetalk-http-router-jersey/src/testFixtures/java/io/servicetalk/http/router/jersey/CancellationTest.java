@@ -18,9 +18,8 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -32,12 +31,14 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.jersey.resources.CancellableResources;
 import io.servicetalk.transport.api.IoExecutor;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -74,7 +75,9 @@ import static org.mockito.Mockito.when;
 
 // This test doesn't extend AbstractJerseyHttpServiceTest because we're not starting an actual HTTP server but only
 // instantiates a Jersey router to have full control on the requests we pass to it, namely so we can cancel them.
-public class CancellationTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class CancellationTest {
     private static class TestCancellable implements Cancellable {
         private boolean cancelled;
 
@@ -90,14 +93,8 @@ public class CancellationTest {
 
     private static final CharSequence TEST_DATA = newLargePayload();
 
-    @Rule
-    public final ExecutorRule execRule = ExecutorRule.newRule();
-
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
-
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    final ExecutorExtension<Executor> execRule = ExecutorExtension.withCachedExecutor();
 
     @Mock
     private HttpServiceContext ctx;
@@ -108,8 +105,8 @@ public class CancellationTest {
     private CancellableResources cancellableResources;
     private StreamingHttpService jerseyRouter;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         final HttpExecutionContext execCtx = mock(HttpExecutionContext.class);
         when(ctx.executionContext()).thenReturn(execCtx);
         when(ctx.localAddress()).thenReturn(createUnresolved("localhost", 8080));
@@ -134,7 +131,7 @@ public class CancellationTest {
     }
 
     @Test
-    public void cancelSuspended() throws Exception {
+    void cancelSuspended() throws Exception {
         final TestCancellable cancellable = new TestCancellable();
         when(execMock.schedule(any(Runnable.class), eq(7L), eq(DAYS))).thenReturn(cancellable);
 
@@ -143,24 +140,24 @@ public class CancellationTest {
     }
 
     @Test
-    public void cancelSingle() throws Exception {
+    void cancelSingle() throws Exception {
         testCancelResponseSingle(get("/single"));
     }
 
     @Test
-    public void cancelOffload() throws Exception {
+    void cancelOffload() throws Exception {
         testCancelResponseSingle(get("/offload"));
     }
 
     @Test
-    public void cancelOioStreams() throws Exception {
+    void cancelOioStreams() throws Exception {
         testCancelResponsePayload(post("/oio-streams"));
         testCancelResponseSingle(post("/offload-oio-streams"));
         testCancelResponseSingle(post("/no-offloads-oio-streams"));
     }
 
     @Test
-    public void cancelRsStreams() throws Exception {
+    void cancelRsStreams() throws Exception {
         testCancelResponsePayload(post("/rs-streams"));
         testCancelResponsePayload(post("/rs-streams?subscribe=true"));
         testCancelResponseSingle(post("/offload-rs-streams"));
@@ -170,7 +167,7 @@ public class CancellationTest {
     }
 
     @Test
-    public void cancelSse() throws Exception {
+    void cancelSse() throws Exception {
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             return execRule.executor().schedule((Runnable) args[0], (long) args[1], (TimeUnit) args[2]);

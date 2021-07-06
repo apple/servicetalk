@@ -17,7 +17,8 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.security.Principal;
 import java.util.HashSet;
@@ -36,10 +37,7 @@ import static java.util.Arrays.asList;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
-    public SecurityFilterTest(final RouterApi api) {
-        super(api);
-    }
+class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Provider
     @Priority(AUTHENTICATION)
@@ -73,7 +71,7 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
         }
     }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -88,8 +86,10 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
         return new TestApplication();
     }
 
-    @Test
-    public void defaultSecurityContext() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void defaultSecurityContext(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context"), OK, APPLICATION_JSON,
                     jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true," +

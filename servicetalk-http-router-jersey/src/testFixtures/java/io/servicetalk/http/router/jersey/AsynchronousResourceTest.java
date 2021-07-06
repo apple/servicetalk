@@ -18,8 +18,10 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.concurrent.TimeoutException;
 
@@ -42,21 +44,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-public class AsynchronousResourceTest extends AbstractResourceTest {
-    public AsynchronousResourceTest(final boolean serverNoOffloads, final RouterApi api) {
-        super(serverNoOffloads, api);
-    }
-
+class AsynchronousResourceTest extends AbstractResourceTest {
     @Override
     String resourcePath() {
         return AsynchronousResources.PATH;
     }
 
-    @Test
-    public void getCompletable() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getCompletable(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             StreamingHttpResponse res =
                     sendAndAssertResponse(get("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
@@ -69,8 +69,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void getStringSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getStringSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/single-string"), OK, TEXT_PLAIN, "DONE");
 
@@ -78,8 +80,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void headStringSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headStringSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(head("/single-string"), OK, TEXT_PLAIN, isEmptyString(), 4);
 
@@ -87,8 +91,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void headCompletable() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headCompletable(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             StreamingHttpResponse res =
                     sendAndAssertResponse(head("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
@@ -101,8 +107,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void postJsonBufSingleInSingleOut() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void postJsonBufSingleInSingleOut(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post("/json-buf-sglin-sglout", "{\"key\":\"val5\"}", APPLICATION_JSON),
                     OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val5\",\"foo\":\"bar6\"}"), String::length);
@@ -112,8 +120,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void getResponseSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getResponseSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/single-response"), ACCEPTED, TEXT_PLAIN, "DONE");
 
@@ -121,8 +131,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void headResponseSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headResponseSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(head("/single-response"), ACCEPTED, TEXT_PLAIN, isEmptyString(), 4);
 
@@ -130,23 +142,29 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void getResponseSinglePublisherEntity() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/single-response-pub-entity?i=206"), PARTIAL_CONTENT, TEXT_PLAIN, "GOT: 206");
-        });
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getResponseSinglePublisherEntity(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(
+                        get("/single-response-pub-entity?i=206"), PARTIAL_CONTENT, TEXT_PLAIN, "GOT: 206"));
     }
 
-    @Test
-    public void headResponseSinglePublisherEntity() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(head("/single-response-pub-entity?i=206"), PARTIAL_CONTENT, TEXT_PLAIN,
-                    isEmptyString(), 8);
-        });
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headResponseSinglePublisherEntity(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(
+                        head("/single-response-pub-entity?i=206"), PARTIAL_CONTENT, TEXT_PLAIN,
+                        isEmptyString(), 8));
     }
 
-    @Test
-    public void getMapSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getMapSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/single-map"), OK, APPLICATION_JSON,
                     jsonEquals("{\"foo\":\"bar4\"}"), getJsonResponseContentLengthExtractor());
@@ -155,8 +173,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void headMapSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headMapSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(head("/single-map"), OK, APPLICATION_JSON, isEmptyString(),
                     getJsonResponseContentLengthExtractor().andThen(i -> i != null ? 14 : null));
@@ -165,8 +185,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void getPojoSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getPojoSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/single-pojo"), OK, APPLICATION_JSON,
                     jsonEquals("{\"aString\":\"boo\",\"anInt\":456}"), getJsonResponseContentLengthExtractor());
@@ -175,8 +197,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void headPojoSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void headPojoSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(head("/single-pojo"), OK, APPLICATION_JSON, isEmptyString(),
                     getJsonResponseContentLengthExtractor().andThen(i -> i != null ? 29 : null));
@@ -185,8 +209,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void postJsonPojoInPojoOutSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void postJsonPojoInPojoOutSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post("/json-pojoin-pojoout-single", "{\"aString\":\"val6\",\"anInt\":123}",
                     APPLICATION_JSON), OK, APPLICATION_JSON,
@@ -197,8 +223,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void postJsonPojoInPojoOutResponseSingle() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void postJsonPojoInPojoOutResponseSingle(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(post("/json-pojoin-pojoout-response-single", "{\"aString\":\"val7\",\"anInt\":123}",
                     APPLICATION_JSON), ACCEPTED, APPLICATION_JSON, jsonEquals("{\"aString\":\"val7x\",\"anInt\":124}"),
@@ -209,80 +237,93 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Ignore("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
+    @Disabled("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
     @Override
-    public void getJson() {
+    void getJson(final boolean serverNoOffloads, final RouterApi api) {
         // NOOP
     }
 
-    @Ignore("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
+    @Disabled("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
     @Override
-    public void putJsonResponse() {
+    void putJsonResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         // NOOP
     }
 
-    @Ignore("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
+    @Disabled("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
     @Override
-    public void postJson() {
+    void postJson(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         // NOOP
     }
 
-    @Ignore("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
+    @Disabled("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
     @Override
-    public void postJsonPojoInPojoOut() {
+    void postJsonPojoInPojoOut(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         // NOOP
     }
 
     @Override
-    public void explicitHead() {
+    void explicitHead(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.explicitHead();
+        super.explicitHead(serverNoOffloads, api);
     }
 
     @Override
-    public void getTextBuffer() {
+    void getTextBuffer(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.getTextBuffer();
+        super.getTextBuffer(serverNoOffloads, api);
     }
 
     @Override
-    public void postJsonBuffer() {
+    void postJsonBuffer(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postJsonBuffer();
+        super.postJsonBuffer(serverNoOffloads, api);
     }
 
     @Override
-    public void postJsonBytes() {
+    void postJsonBytes(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postJsonBytes();
+        super.postJsonBytes(serverNoOffloads, api);
     }
 
     @Override
-    public void postTextBuffer() {
+    void postTextBuffer(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postTextBuffer();
+        super.postTextBuffer(serverNoOffloads, api);
     }
 
     @Override
-    public void postTextBufferResponse() {
+    void postTextBufferResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postTextBufferResponse();
+        super.postTextBufferResponse(serverNoOffloads, api);
     }
 
     @Override
-    public void postTextBytes() {
+    void postTextBytes(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postTextBytes();
+        super.postTextBytes(serverNoOffloads, api);
     }
 
     @Override
-    public void postTextResponse() {
+    void postTextResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        super.postTextResponse();
+        super.postTextResponse(serverNoOffloads, api);
     }
 
-    @Test
-    public void getVoidCompletion() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getVoidCompletion(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/void-completion"), NO_CONTENT, null, isEmptyString(), __ -> null);
@@ -294,105 +335,125 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void failedText() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertNoResponse(get("/failed-text"), INTERNAL_SERVER_ERROR);
-        });
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void failedText(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
+        runTwiceToEnsureEndpointCache(() -> sendAndAssertNoResponse(get("/failed-text"), INTERNAL_SERVER_ERROR));
     }
 
-    @Test
-    public void cancelledDelayedText() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertNoResponse(get("/failed-text?cancel=true"), SERVICE_UNAVAILABLE);
-        });
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void cancelledDelayedText(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertNoResponse(get("/failed-text?cancel=true"), SERVICE_UNAVAILABLE));
     }
 
-    @Test
-    public void getDelayedText() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void getDelayedText(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/delayed-text?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/delayed-text?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE"));
     }
 
-    @Test
-    public void rsCancelDelayedText() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void rsCancelDelayedText(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        runTwiceToEnsureEndpointCache(() -> {
-            expected.expectCause(instanceOf(TimeoutException.class));
-            sendAndAssertResponse(get("/delayed-text?delay=1&unit=DAYS"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> {
+                    RuntimeException ex = assertThrows(RuntimeException.class,
+                            () -> sendAndAssertResponse(
+                                    get("/delayed-text?delay=1&unit=DAYS"), OK, TEXT_PLAIN, "DONE", 1, SECONDS));
+                    assertThat(ex.getCause(), instanceOf(TimeoutException.class));
+                }
+        );
     }
 
-    @Test
-    public void completedStageResponse() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void completedStageResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/response-comsta"), OK, TEXT_PLAIN, "DONE");
-        });
+        runTwiceToEnsureEndpointCache(() -> sendAndAssertResponse(get("/response-comsta"), OK, TEXT_PLAIN, "DONE"));
     }
 
-    @Test
-    public void delayedStageResponse() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void delayedStageResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(
+                        get("/delayed-response-comsta?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE"));
     }
 
-    @Test
-    public void rsCancelDelayedDelayedStageResponse() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void rsCancelDelayedDelayedStageResponse(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
-        runTwiceToEnsureEndpointCache(() -> {
-            expected.expectCause(instanceOf(TimeoutException.class));
-            sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=DAYS"),
-                    OK, TEXT_PLAIN, "DONE", 1, SECONDS);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> {
+                    RuntimeException ex = assertThrows(RuntimeException.class,
+                            () -> sendAndAssertResponse(
+                                    get("/delayed-response-comsta?delay=10&unit=DAYS"),
+                                    OK, TEXT_PLAIN, "DONE", 1, SECONDS));
+                    assertThat(ex.getCause(), instanceOf(TimeoutException.class));
+                });
     }
 
-    @Test
-    public void resumeSuspended() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void resumeSuspended(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/suspended/resume"), OK, TEXT_PLAIN, "DONE");
-        });
+        runTwiceToEnsureEndpointCache(() -> sendAndAssertResponse(get("/suspended/resume"), OK, TEXT_PLAIN, "DONE"));
     }
 
-    @Test
-    public void cancelSuspended() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void cancelSuspended(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertNoResponse(get("/suspended/cancel"), SERVICE_UNAVAILABLE);
-        });
+        runTwiceToEnsureEndpointCache(() -> sendAndAssertNoResponse(get("/suspended/cancel"), SERVICE_UNAVAILABLE));
     }
 
-    @Test
-    public void setTimeOutResumeSuspended() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void setTimeOutResumeSuspended(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/suspended/timeout-resume"), OK, TEXT_PLAIN, "DONE");
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/suspended/timeout-resume"), OK, TEXT_PLAIN, "DONE"));
     }
 
-    @Test
-    public void setTimeOutExpire() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void setTimeOutExpire(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertNoResponse(get("/suspended/timeout-expire"), SERVICE_UNAVAILABLE);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertNoResponse(get("/suspended/timeout-expire"), SERVICE_UNAVAILABLE));
     }
 
-    @Test
-    public void setTimeOutExpireHandled() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void setTimeOutExpireHandled(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertNoResponse(get("/suspended/timeout-expire-handled"), GATEWAY_TIMEOUT);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertNoResponse(get("/suspended/timeout-expire-handled"), GATEWAY_TIMEOUT));
     }
 
-    @Test
-    public void setTimeOutResumed() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void setTimeOutResumed(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
         runTwiceToEnsureEndpointCache(() -> {
             // Jersey catches and logs the exception that is raised internally when attempting
@@ -401,48 +462,59 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         });
     }
 
-    @Test
-    public void rsCancelSuspended() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void rsCancelSuspended(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            expected.expectCause(instanceOf(TimeoutException.class));
-            sendAndAssertResponse(get("/suspended/busy"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> {
+                    RuntimeException ex = assertThrows(RuntimeException.class,
+                            () -> sendAndAssertResponse(
+                                    get("/suspended/busy"), OK, TEXT_PLAIN, "DONE", 1, SECONDS));
+                    assertThat(ex.getCause(), instanceOf(TimeoutException.class));
+                });
     }
 
-    @Test
-    public void resumeSuspendedWithJson() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void resumeSuspendedWithJson(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.ASYNC_RESPONSE);
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/suspended/json"), OK, APPLICATION_JSON,
-                    jsonEquals("{\"foo\":\"bar3\"}"), getJsonResponseContentLengthExtractor());
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(
+                        get("/suspended/json"), OK, APPLICATION_JSON,
+                        jsonEquals("{\"foo\":\"bar3\"}"), getJsonResponseContentLengthExtractor()));
     }
 
-    @Test
-    public void sseStream() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void sseStream(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.SSE);
         assumeStreaming();
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/sse/stream"), OK, newAsciiString(SERVER_SENT_EVENTS),
-                    is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
-                    __ -> null);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/sse/stream"), OK, newAsciiString(SERVER_SENT_EVENTS),
+                        is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
+                        __ -> null));
     }
 
-    @Test
-    public void sseBroadcast() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void sseBroadcast(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.SSE);
         assumeStreaming();
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/sse/broadcast"), OK, newAsciiString(SERVER_SENT_EVENTS),
-                    is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
-                    __ -> null);
-        });
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/sse/broadcast"), OK, newAsciiString(SERVER_SENT_EVENTS),
+                        is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
+                        __ -> null));
     }
 
-    @Test
-    public void sseUnsupported() {
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("data")
+    void sseUnsupported(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.SSE);
         assumeStreaming();
         runTwiceToEnsureEndpointCache(() -> {
@@ -466,11 +538,11 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
     }
 
     private void assumeOffloads(final AssumeOffloadsReason reason) {
-        assumeThat(reason.message + " can't be used with noOffloads", serverNoOffloads(), is(false));
+        assumeFalse(serverNoOffloads(), () -> reason.message + " can't be used with noOffloads");
     }
 
     private void assumeStreaming() {
-        assumeTrue("not supported for aggregated APIs", api == RouterApi.ASYNC_STREAMING
-                || api == RouterApi.BLOCKING_STREAMING);
+        Assumptions.assumeTrue(api == RouterApi.ASYNC_STREAMING
+                               || api == RouterApi.BLOCKING_STREAMING, "not supported for aggregated APIs");
     }
 }

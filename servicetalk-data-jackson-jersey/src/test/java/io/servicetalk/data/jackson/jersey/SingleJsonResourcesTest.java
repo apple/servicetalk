@@ -15,24 +15,24 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 
-public class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
-    public SingleJsonResourcesTest(final RouterApi api) {
-        super(api);
-    }
+class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
 
     @Override
     protected String testUri(final String path) {
         return PATH + path;
     }
 
-    @Test
-    public void postTooManyJsonMaps() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postTooManyJsonMaps(RouterApi api) throws Exception {
+        setUp(api);
         sendAndAssertStatusOnly(post("/map", "{\"foo1\":\"bar1\"}{\"foo2\":\"bar2\"}", APPLICATION_JSON), BAD_REQUEST);
     }
 }
