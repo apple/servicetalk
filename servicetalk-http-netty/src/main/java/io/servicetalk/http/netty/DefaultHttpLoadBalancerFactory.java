@@ -34,7 +34,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static java.lang.Integer.MAX_VALUE;
@@ -109,8 +109,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
-            return from(RoundRobinLoadBalancerFactory
-                    .<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder().build());
+            return from(new RoundRobinLoadBalancerFactory
+                    .Builder<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>().build());
         }
 
         /**

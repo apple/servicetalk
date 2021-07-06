@@ -136,7 +136,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      *
      * @param eventPublisher    provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
+     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
+     * of {@link RoundRobinLoadBalancer}.
      */
+    @Deprecated
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
         this(eventPublisher, connectionFactory, false);
@@ -152,7 +155,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * for sending requests, but new connections will not be requested, allowing the server to drive
      * the connection closure and shifting traffic to other addresses.
      */
-    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+    RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final boolean eagerConnectionShutdown) {
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
@@ -290,13 +293,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     /**
      * Create a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
+     * of {@link RoundRobinLoadBalancer}.
      */
+    @Deprecated
     public static <ResolvedAddress, C extends LoadBalancedConnection>
     RoundRobinLoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
-        return new RoundRobinLoadBalancerFactory<>(new RoundRobinLoadBalancerFactory.Builder<>());
+        return new RoundRobinLoadBalancerFactory<>();
     }
 
     @Override
@@ -399,40 +406,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
+     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
+     * of {@link RoundRobinLoadBalancer}.
      */
+    @Deprecated
     public static final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
             implements LoadBalancerFactory<ResolvedAddress, C> {
-
-        private final boolean eagerConnectionShutdown;
-
-        private RoundRobinLoadBalancerFactory(Builder<ResolvedAddress, C> builder) {
-            this.eagerConnectionShutdown = builder.eagerConnectionShutdown;
-        }
 
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, eagerConnectionShutdown);
-        }
-
-        public static <ResolvedAddress, C extends LoadBalancedConnection> Builder<ResolvedAddress, C> builder() {
-            return new Builder<>();
-        }
-
-        public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-            private boolean eagerConnectionShutdown;
-
-            private Builder() { }
-
-            public Builder<ResolvedAddress, C> eagerConnectionShutdown(boolean eagerConnectionShutdown) {
-                this.eagerConnectionShutdown = eagerConnectionShutdown;
-                return this;
-            }
-
-            public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
-                return new RoundRobinLoadBalancerFactory<>(this);
-            }
+            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, false);
         }
     }
 
