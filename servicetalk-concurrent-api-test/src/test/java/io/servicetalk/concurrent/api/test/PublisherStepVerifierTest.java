@@ -19,14 +19,14 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.StepAssertionError;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -54,19 +54,19 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PublisherStepVerifierTest {
+class PublisherStepVerifierTest {
     private static final AsyncContextMap.Key<Integer> ASYNC_KEY = AsyncContextMap.Key.newKey();
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     @Test
-    public void expectSubscription() {
+    void expectSubscription() {
         StepVerifiers.create(from("foo"))
                 .expectSubscription()
                 .expectNext("foo")
@@ -75,7 +75,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectSubscriptionTimeout() {
+    void expectSubscriptionTimeout() {
         CountDownLatch latch = new CountDownLatch(1);
         try {
             verifyException(() ->
@@ -96,7 +96,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void emptyItemsNonEmptyPublisher() {
+    void emptyItemsNonEmptyPublisher() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNextSequence(emptyList())
                 .expectComplete()
@@ -104,7 +104,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void emptyItemsEmptyPublisher() {
+    void emptyItemsEmptyPublisher() {
         StepVerifiers.create(empty())
                 .expectNextSequence(emptyList())
                 .expectComplete()
@@ -112,7 +112,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void singleItem() {
+    void singleItem() {
         assertNotNull(StepVerifiers.create(from("foo"))
                 .expectNext("foo")
                 .expectComplete()
@@ -120,7 +120,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void singleItemNull() {
+    void singleItemNull() {
         assertNotNull(StepVerifiers.create(from((String) null))
                 .expectNext((String) null)
                 .expectComplete()
@@ -128,7 +128,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void singleItemDuplicateVerify() throws InterruptedException {
+    void singleItemDuplicateVerify() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         StepVerifier verifier = StepVerifiers.create(from("foo"))
                 .expectNextConsumed(next -> {
@@ -142,7 +142,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void singleItemLargeTimeout() {
+    void singleItemLargeTimeout() {
         assertNotNull(StepVerifiers.create(from("foo"))
                 .expectNext("foo")
                 .expectComplete()
@@ -150,7 +150,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void twoItems() {
+    void twoItems() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNext("foo", "bar")
                 .expectComplete()
@@ -158,7 +158,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void twoItemsIterable() {
+    void twoItemsIterable() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNextSequence(() -> asList("foo", "bar").iterator())
                 .expectComplete()
@@ -166,84 +166,84 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void justError() {
+    void justError() {
         StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectError()
                 .verify();
     }
 
     @Test
-    public void justErrorFail() {
+    void justErrorFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectError()
                 .verify(), "expectError");
     }
 
     @Test
-    public void justErrorClass() {
+    void justErrorClass() {
         StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectError(DeliberateException.class)
                 .verify();
     }
 
     @Test
-    public void justErrorClassFail() {
+    void justErrorClassFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectError(DeliberateException.class)
                 .verify(), "expectError");
     }
 
     @Test
-    public void justErrorPredicate() {
+    void justErrorPredicate() {
         StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectErrorMatches(cause -> cause instanceof DeliberateException)
                 .verify();
     }
 
     @Test
-    public void justErrorPredicateFail() {
+    void justErrorPredicateFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectErrorMatches(cause -> cause instanceof DeliberateException)
                 .verify(), "expectErrorMatches");
     }
 
     @Test
-    public void justErrorConsumer() {
+    void justErrorConsumer() {
         StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectErrorConsumed(cause -> assertThat(cause, instanceOf(DeliberateException.class)))
                 .verify();
     }
 
     @Test
-    public void justErrorConsumerFail() {
+    void justErrorConsumerFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectErrorConsumed(cause -> assertThat(cause, instanceOf(DeliberateException.class)))
                 .verify(), "expectErrorConsumed");
     }
 
     @Test
-    public void errorIgnoreNextFails() {
+    void errorIgnoreNextFails() {
         verifyException(() -> StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
                 .expectErrorMatches(cause -> cause instanceof DeliberateException)
                 .verify(), "expectErrorMatches");
     }
 
     @Test
-    public void completeIgnoreNextConsumer() {
+    void completeIgnoreNextConsumer() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectComplete()
                 .verify(), "expectComplete");
     }
 
     @Test
-    public void justErrorTimeout() {
+    void justErrorTimeout() {
         verifyException(() -> StepVerifiers.create(never())
                 .expectError(DeliberateException.class)
                 .verify(ofNanos(10)), "expectError");
     }
 
     @Test
-    public void onNextThenError() {
+    void onNextThenError() {
         StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
                 .expectNext("foo")
                 .expectError(DeliberateException.class)
@@ -251,7 +251,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void incorrectOnNextExpectation() {
+    void incorrectOnNextExpectation() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                     .expectNext("bar")
                     .expectComplete()
@@ -259,27 +259,27 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void timeoutOnNever() {
+    void timeoutOnNever() {
         verifyException(() -> StepVerifiers.create(never())
             .expectComplete()
             .verify(ofNanos(10)), "expectComplete");
     }
 
     @Test
-    public void expectNextCount() {
+    void expectNextCount() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNextCount(2)
                 .expectComplete()
                 .verify();
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void expectNextCountZeroInvalid() {
-        StepVerifiers.create(empty()).expectNextCount(0);
+    @Test
+    void expectNextCountZeroInvalid() {
+        assertThrows(IllegalArgumentException.class, () -> StepVerifiers.create(empty()).expectNextCount(0));
     }
 
     @Test
-    public void expectNextCountExpectAfter() {
+    void expectNextCountExpectAfter() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNextCount(1)
                 .expectNext("bar")
@@ -288,7 +288,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextCountFail() {
+    void expectNextCountFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNextCount(2)
                 .expectComplete()
@@ -296,7 +296,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextCountRange() {
+    void expectNextCountRange() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNextCount(0, 2)
                 .expectComplete()
@@ -304,7 +304,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextCountZeroRange() {
+    void expectNextCountZeroRange() {
         StepVerifiers.create(empty())
                 .expectNextCount(0, 2)
                 .expectComplete()
@@ -312,7 +312,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextCountRangeNotEnoughFail() {
+    void expectNextCountRangeNotEnoughFail() {
         verifyException(() -> StepVerifiers.create(from("foo", "bar"))
                 .expectNextCount(3, 4)
                 .expectComplete()
@@ -320,7 +320,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextCountRangeItemsAfterFail() {
+    void expectNextCountRangeItemsAfterFail() {
         verifyException(() -> StepVerifiers.create(from("foo", "bar", "baz"))
                 .expectNextCount(0, 2)
                 .expectComplete()
@@ -328,7 +328,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextPredicate() {
+    void expectNextPredicate() {
         StepVerifiers.create(from("foo"))
                 .expectNextMatches("foo"::equals)
                 .expectComplete()
@@ -336,7 +336,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextPredicateFail() {
+    void expectNextPredicateFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNextMatches("bar"::equals)
                 .expectComplete()
@@ -344,7 +344,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextConsumer() {
+    void expectNextConsumer() {
         StepVerifiers.create(from("foo"))
                 .expectNextConsumed(next -> assertEquals("foo", next))
                 .expectComplete()
@@ -352,7 +352,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextConsumerTimeout() {
+    void expectNextConsumerTimeout() {
         verifyException(() -> StepVerifiers.create(from("foo").concat(never()))
                 .expectNextConsumed(next -> assertEquals("foo", next))
                 .expectComplete()
@@ -360,7 +360,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextArrayMoreThanActual() {
+    void expectNextArrayMoreThanActual() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNext("foo", "bar")
                 .expectComplete()
@@ -368,7 +368,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextIterableMoreThanActual() {
+    void expectNextIterableMoreThanActual() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNextSequence(asList("foo", "bar"))
                 .expectComplete()
@@ -376,7 +376,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextArrayLessThanActual() {
+    void expectNextArrayLessThanActual() {
         verifyException(() ->
                 StepVerifiers.create(from("foo", "bar"))
                 .expectNext("foo")
@@ -385,7 +385,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextIterableLessThanActual() {
+    void expectNextIterableLessThanActual() {
         verifyException(() -> StepVerifiers.create(from("foo", "bar"))
                         .expectNextSequence(singletonList("foo"))
                         .expectComplete()
@@ -393,7 +393,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextConsumerFail() {
+    void expectNextConsumerFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNextConsumed(next -> assertEquals("bar", next))
                 .expectComplete()
@@ -401,7 +401,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextConsumerTypeNonAmbiguousA() {
+    void expectNextConsumerTypeNonAmbiguousA() {
         Consumer<String> item = n -> { };
         StepVerifiers.create(from(item))
                 .expectNext(item)
@@ -410,7 +410,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextConsumerTypeNonAmbiguousB() {
+    void expectNextConsumerTypeNonAmbiguousB() {
         Consumer<String> item = n -> { };
         StepVerifiers.create(from(item))
                 .expectNextConsumed(t -> assertSame(item, t))
@@ -419,7 +419,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumer() {
+    void expectNextMultiConsumer() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNext(2, nextIterable -> assertThat(nextIterable, contains("foo", "bar")))
                 .expectComplete()
@@ -427,7 +427,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumerFail() {
+    void expectNextMultiConsumerFail() {
         verifyException(() -> StepVerifiers.create(from("foo", "bar"))
                 .expectNext(2, nextIterable -> assertThat(nextIterable, contains("foo")))
                 .expectComplete()
@@ -435,7 +435,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumerMinComplete() {
+    void expectNextMultiConsumerMinComplete() {
         StepVerifiers.create(from("foo"))
                 .expectNext(1, 2, nextIterable -> assertThat(nextIterable, contains("foo")))
                 .expectComplete()
@@ -443,7 +443,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumerMinFail() {
+    void expectNextMultiConsumerMinFail() {
         StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
                 .expectNext(1, 2, nextIterable -> assertThat(nextIterable, contains("foo")))
                 .expectError(DeliberateException.class)
@@ -451,7 +451,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumerZero() {
+    void expectNextMultiConsumerZero() {
         StepVerifiers.create(empty())
                 .expectNext(0, 2, nextIterable -> assertThat(nextIterable, emptyIterable()))
                 .expectComplete()
@@ -459,7 +459,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectNextMultiConsumerTimeout() {
+    void expectNextMultiConsumerTimeout() {
         verifyException(() -> StepVerifiers.create(from("foo", "bar").concat(never()))
                 .expectNext(2, nextIterable -> assertThat(nextIterable, contains("foo", "bar")))
                 .expectComplete()
@@ -467,7 +467,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectOnErrorWhenOnComplete() {
+    void expectOnErrorWhenOnComplete() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNext("foo")
                 .expectError(DeliberateException.class)
@@ -475,14 +475,14 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void expectOnCompleteWhenOnError() {
+    void expectOnCompleteWhenOnError() {
         verifyException(() -> StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectComplete()
                 .verify(), "expectComplete");
     }
 
     @Test
-    public void noSignalsAfterNextThenCancelSucceeds() {
+    void noSignalsAfterNextThenCancelSucceeds() {
         StepVerifiers.create(from("foo").concat(never()))
                 .expectNext("foo")
                 .expectNoSignals(ofMillis(100))
@@ -491,7 +491,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void noSignalsSubscriptionCompleteFail() {
+    void noSignalsSubscriptionCompleteFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
@@ -499,7 +499,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void noSignalsSubscriptionCancelSucceeds() {
+    void noSignalsSubscriptionCancelSucceeds() {
         // expectNoSignals and subscription event are dequeued/processed sequentially on the Subscriber thread
         // and the scenario isn't instructed to expect the subscription so we pass the test.
         TestSubscription subscription = new TestSubscription();
@@ -514,7 +514,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void noSignalsCompleteFail() {
+    void noSignalsCompleteFail() {
         verifyException(() -> StepVerifiers.create(from("foo"))
                 .expectNext("foo")
                 .expectNoSignals(ofDays(1))
@@ -523,7 +523,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void noSignalsErrorFails() {
+    void noSignalsErrorFails() {
         verifyException(() -> StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .expectSubscription()
                 .expectNoSignals(ofDays(1))
@@ -532,7 +532,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void noSignalsAfterSubscriptionSucceeds() {
+    void noSignalsAfterSubscriptionSucceeds() {
         StepVerifiers.create(never())
                 .expectSubscription()
                 .expectNoSignals(ofMillis(100))
@@ -541,7 +541,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenCancelCompleted() {
+    void thenCancelCompleted() {
         StepVerifiers.create(from("foo", "bar"))
                 .expectNext("foo")
                 .thenCancel()
@@ -549,14 +549,14 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenCancelFailed() {
+    void thenCancelFailed() {
         StepVerifiers.create(failed(DELIBERATE_EXCEPTION))
                 .thenCancel()
                 .verify();
     }
 
     @Test
-    public void thenRequest() {
+    void thenRequest() {
         StepVerifiers.create(from("foo", "bar"))
                 .thenRequest(Long.MAX_VALUE)
                 .expectNext("foo", "bar")
@@ -565,12 +565,12 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenRequestInvalidZero() {
+    void thenRequestInvalidZero() {
         thenRequestInvalid(0);
     }
 
     @Test
-    public void thenRequestInvalidMin() {
+    void thenRequestInvalidMin() {
         thenRequestInvalid(Long.MIN_VALUE);
     }
 
@@ -582,7 +582,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void multipleRequests() {
+    void multipleRequests() {
         TestSubscription subscription = new TestSubscription();
         TestPublisher<String> publisher = new TestPublisher.Builder<String>()
                 .disableAutoOnSubscribe().build();
@@ -602,7 +602,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void requestThenCancel() {
+    void requestThenCancel() {
         TestSubscription subscription = new TestSubscription();
         TestPublisher<String> publisher = new TestPublisher.Builder<String>()
                 .disableAutoOnSubscribe().build();
@@ -620,7 +620,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenRun() {
+    void thenRun() {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         StepVerifiers.create(fromSource(processor))
                 .then(() -> {
@@ -633,18 +633,17 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = DeliberateException.class)
-    public void thenRunThrows() {
-        StepVerifiers.create(from("foo"))
+    void thenRunThrows() {
+        assertThrows(DeliberateException.class, () -> StepVerifiers.create(from("foo"))
                 .then(() -> {
                     throw DELIBERATE_EXCEPTION;
                 })
                 .expectComplete()
-                .verify();
+                .verify());
     }
 
     @Test
-    public void asyncContextOnComplete() {
+    void asyncContextOnComplete() {
         StepVerifiers.create(from("foo").subscribeOn(EXECUTOR_RULE.executor()))
                 .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
@@ -659,7 +658,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void asyncContextOnError() {
+    void asyncContextOnError() {
         StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION))
                         .subscribeOn(EXECUTOR_RULE.executor()))
                 .expectSubscriptionConsumed(s -> {
@@ -679,7 +678,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenAwaitExitsWhenVerifyComplete() {
+    void thenAwaitExitsWhenVerifyComplete() {
         StepVerifiers.create(from("foo"))
                 .thenAwait(ofDays(1))
                 .expectNext("foo")
@@ -688,7 +687,7 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenAwaitRespectsDelaysComplete() {
+    void thenAwaitRespectsDelaysComplete() {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         new InlinePublisherFirstStep<>(processor, new DefaultModifiableTimeSource())
                 .expectSubscription()
@@ -702,12 +701,12 @@ public class PublisherStepVerifierTest {
     }
 
     @Test
-    public void thenAwaitRespectsDelaysEqualsFail() {
+    void thenAwaitRespectsDelaysEqualsFail() {
         thenAwaitRespectsDelaysFail(true);
     }
 
     @Test
-    public void thenAwaitRespectsDelaysGTFail() {
+    void thenAwaitRespectsDelaysGTFail() {
         thenAwaitRespectsDelaysFail(false);
     }
 
@@ -736,7 +735,7 @@ public class PublisherStepVerifierTest {
                         stackTraceElements[0] + " error: " + error,
                 stackTraceElements[0].getClassName(), startsWith(classNamePrefix));
         StackTraceElement testMethodStackTrace = error.testMethodStackTrace();
-        assertEquals("unexpected test method failure: " + testMethodStackTrace, failedTestMethod,
-                testMethodStackTrace.getMethodName());
+        assertEquals(failedTestMethod,
+                testMethodStackTrace.getMethodName(), "unexpected test method failure: " + testMethodStackTrace);
     }
 }

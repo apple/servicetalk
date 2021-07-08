@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.CloseableIterator;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,16 +31,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CloseableIteratorBufferAsInputStreamTest {
-    @Rule
-    public final ExpectedException expected = none();
+class CloseableIteratorBufferAsInputStreamTest {
 
     @Test
-    public void streamEmitsAllDataInSingleRead() throws IOException {
+    void streamEmitsAllDataInSingleRead() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] data = new byte[4];
@@ -54,7 +49,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void streamEmitsAllDataInMultipleReads() throws IOException {
+    void streamEmitsAllDataInMultipleReads() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] data = new byte[2];
@@ -73,7 +68,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void incrementallyFillAnArray() throws IOException {
+    void incrementallyFillAnArray() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] data = new byte[4];
@@ -91,7 +86,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void readRequestMoreThanDataBuffer() throws IOException {
+    void readRequestMoreThanDataBuffer() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] data = new byte[16];
@@ -103,7 +98,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void readRequestLessThanDataBuffer() throws IOException {
+    void readRequestLessThanDataBuffer() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         byte[] data;
         int read;
@@ -116,7 +111,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void largerSizeItems() throws IOException {
+    void largerSizeItems() throws IOException {
         Buffer src1 = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         Buffer src2 = DEFAULT_RO_ALLOCATOR.fromAscii("45678");
         byte[] data;
@@ -132,17 +127,16 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void closeThenReadShouldBeInvalid() throws IOException {
+    void closeThenReadShouldBeInvalid() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             stream.close();
-            expected.expect(instanceOf(IOException.class));
-            stream.read();
+            assertThrows(IOException.class, stream::read);
         }
     }
 
     @Test
-    public void singleByteRead() throws IOException {
+    void singleByteRead() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             int read = stream.read();
@@ -152,7 +146,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void singleByteReadWithingRange() throws IOException {
+    void singleByteReadWithingRange() throws IOException {
         singleByteReadWithingRange((byte) 0, 0);
         singleByteReadWithingRange((byte) 255, 255);
         singleByteReadWithingRange((byte) -1, 255);
@@ -170,7 +164,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void singleByteReadWithEmptyIterable() throws IOException {
+    void singleByteReadWithEmptyIterable() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             assertThat("Unexpected bytes read.", stream.read(), is(-1));
@@ -182,7 +176,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void readWithEmptyIterable() throws IOException {
+    void readWithEmptyIterable() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] r = new byte[1];
@@ -195,7 +189,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void zeroLengthReadShouldBeValid() throws IOException {
+    void zeroLengthReadShouldBeValid() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             byte[] data = new byte[0];
@@ -206,7 +200,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
+    void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             assertThat("Unexpected available return type.", stream.available(), is(0));
@@ -219,7 +213,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
+    void completionAndEmptyReadShouldIndicateEOF() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
         int read;
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
@@ -230,7 +224,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void testNullAndEmptyIteratorValues() throws IOException {
+    void testNullAndEmptyIteratorValues() throws IOException {
         Buffer src1 = DEFAULT_RO_ALLOCATOR.fromAscii("hel");
         Buffer src2 = DEFAULT_RO_ALLOCATOR.fromAscii("");
         Buffer src3 = DEFAULT_RO_ALLOCATOR.fromAscii("lo!");

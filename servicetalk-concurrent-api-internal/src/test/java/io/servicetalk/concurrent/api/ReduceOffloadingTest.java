@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,12 +27,10 @@ import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOff
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class ReduceOffloadingTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class ReduceOffloadingTest {
 
     @Test
-    public void reduceShouldOffloadOnce() throws Exception {
+    void reduceShouldOffloadOnce() throws Exception {
         Executor executor = newFixedSizeExecutor(1);
         AtomicInteger taskCount = new AtomicInteger();
         Executor wrapped = new OffloaderAwareExecutor(from(task -> {
@@ -43,7 +38,7 @@ public class ReduceOffloadingTest {
             executor.execute(task);
         }), threadBasedOffloaderFactory());
         int sum = Publisher.from(1, 2, 3, 4).publishOn(wrapped)
-                .collect(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
+                .collect(() -> 0, Integer::sum).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));
         assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
         wrapped.closeAsync().toFuture().get();
