@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
@@ -43,14 +42,14 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     static final byte OFFLOAD_SEND = 4;
     @Nullable
     private final Executor executor;
-    private final boolean threadAffinity;
     private final byte offloads;
     private final MergeStrategy mergeStrategy;
+    private final boolean threadAffinity;
 
-    DefaultHttpExecutionStrategy(final @Nullable Executor executor, final byte offloads,
+    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads,
                                  final MergeStrategy mergeStrategy) {
         this.mergeStrategy = mergeStrategy;
-        this.executor = executor != immediate() ? executor : null;
+        this.executor = executor;
         this.offloads = offloads;
         this.threadAffinity = false;
     }

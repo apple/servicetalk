@@ -21,7 +21,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND;
@@ -165,7 +164,8 @@ public final class HttpExecutionStrategies {
     public static final class Builder {
 
         static final HttpExecutionStrategy DEFAULT = new Builder().offloadAll().mergeStrategy(ReturnOther).build();
-        private Executor executor = immediate();
+        @Nullable
+        private Executor executor;
         private byte offloads;
         @Nullable
         private MergeStrategy mergeStrategy;
@@ -262,7 +262,7 @@ public final class HttpExecutionStrategies {
          */
         public HttpExecutionStrategy build() {
             if (offloads == 0 && mergeStrategy == null) {
-                return executor == immediate() ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor);
+                return executor == null ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor);
             } else {
                 if (mergeStrategy == null) {
                     // User provided strategies will always be used without merging. Any custom behavior will be used at
