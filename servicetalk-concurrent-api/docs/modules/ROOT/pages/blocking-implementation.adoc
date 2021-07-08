@@ -46,18 +46,10 @@ its operators, and the `Executor`.
 
 image::executor-thread-selection.png[Executor inference]
 
-The above interaction has a few important points:
-
-- All operators inherit the `Executor` from the source, unless overridden explicitly by the user.
-- A link:{source-root}/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
- is chosen when a `Subscriber` subscribes to a source decorated by zero or more operators.
-- The chosen link:{source-root}/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
- is passed to all operators and then to the source, per `Subscriber`.
-
 The above interaction provides all operators and the source an opportunity to piggy-back on the same `Executor` for all
 interactions with the `Subscriber`. Any operator in a chain has two options while accepting a `Subscriber`:
 
-- Wrap the `Subscriber` such that all `Subscriber` and `Subscription` method calls are offloaded to the chosen
+- Wrap the `Subscriber` such that all `Subscriber` and `Subscription` method calls are offloaded to a chosen
 `Executor`. This mode is for operators that process signals from the original `Publisher` asynchronously.
 - Do not wrap the `Subscriber` and forward all `Subscriber` and `Subscription` methods directly on the calling thread to
 avoid the overhead of wrapping each and every `Subscriber` and `Subscription` in a chain. This mode is for operators
