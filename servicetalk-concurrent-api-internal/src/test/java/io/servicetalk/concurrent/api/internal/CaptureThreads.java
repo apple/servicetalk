@@ -89,7 +89,7 @@ public abstract class CaptureThreads<E extends Enum<E>> {
      * @param matcher the matcher which will be applied to the captured thread
      * @throws AssertionError if the captured value of the slot does not match
      */
-    public void assertCaptured(E slot, Matcher<Thread> matcher) throws AssertionError {
+    public void assertCaptured(E slot, Matcher<? super Thread> matcher) throws AssertionError {
         assertCaptured("Unexpected thread", slot, matcher);
     }
 
@@ -101,7 +101,7 @@ public abstract class CaptureThreads<E extends Enum<E>> {
      * @param matcher the matcher which will be applied to the captured thread
      * @throws AssertionError if the captured value of the slot does not match
      */
-    public void assertCaptured(String reason, E slot, Matcher<Thread> matcher) throws AssertionError {
+    public void assertCaptured(String reason, E slot, Matcher<? super Thread> matcher) throws AssertionError {
         org.hamcrest.MatcherAssert.assertThat(reason + " : " + this + " : " + slot, captured(slot), matcher);
     }
 

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withExecutor;
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -44,7 +45,7 @@ public abstract class AbstractOffloadingTest {
 
     protected static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException();
 
-    public enum CaptureSlot {
+    protected enum CaptureSlot {
         APP_THREAD,
         ORIGINAL_SUBSCRIBE_THREAD,
         OFFLOADED_SUBSCRIBE_THREAD,
@@ -66,11 +67,16 @@ public abstract class AbstractOffloadingTest {
     protected static final boolean APP_ISOLATION = true;
     protected static final String APP_EXECUTOR_PREFIX = "app";
     protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
-    protected static final Matcher<Thread> APP_EXECUTOR = matchThreadNamePrefix(APP_EXECUTOR_PREFIX);
+    protected static final Matcher<Thread> APP_EXECUTOR = APP_ISOLATION ?
+            matchThreadNamePrefix(APP_EXECUTOR_PREFIX) :
+            is(Thread.currentThread());
+
     protected static final Matcher<Thread> OFFLOAD_EXECUTOR = matchThreadNamePrefix(OFFLOAD_EXECUTOR_PREFIX);
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> app = withCachedExecutor(APP_EXECUTOR_PREFIX);
+    public final ExecutorExtension<Executor> app = APP_ISOLATION ?
+            withCachedExecutor(APP_EXECUTOR_PREFIX) :
+            ExecutorExtension.withExecutor(() -> immediate());
     protected final AtomicInteger offloadsStarted = new AtomicInteger();
     protected final AtomicInteger offloadsFinished = new AtomicInteger();
     protected volatile Runnable afterOffload;
@@ -126,13 +132,12 @@ public abstract class AbstractOffloadingTest {
     @RegisterExtension
     public final ExecutorExtension<Executor> offload = withExecutor(() -> from(offloadExecutorService));
 
-    protected final CaptureThreads capturedThreads;
+    protected final CaptureThreads<CaptureSlot> capturedThreads;
 
     protected AbstractOffloadingTest() {
         this(new CaptureThreads(CaptureSlot.class) {
             @Override
             public void assertCaptured() {
-                assertCaptured(CaptureSlot.APP_THREAD, APP_ISOLATION ? APP_EXECUTOR : is(Thread.currentThread()));
             }
         });
     }

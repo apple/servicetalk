@@ -15,121 +15,84 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Iterator;
+import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 class OffloadingTest extends AbstractPublisherOffloadingTest {
 
-    @Test
-    void testNoOffload() throws InterruptedException {
-        int offloads = testOffloading((c, e) -> c, TerminalOperation.COMPLETE);
-        assertThat("Unexpected offloads: none", offloads, CoreMatchers.is(0));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue());
+    enum OffloadCase {
+        NO_OFFLOAD_SUCCESS(0, "none",
+                (p, e) -> p, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        NO_OFFLOAD_ERROR(0, "none",
+                (p, e) -> p, TerminalOperation.ERROR,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        NO_OFFLOAD_CANCEL(0, "none",
+                (p, e) -> p, TerminalOperation.CANCEL,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, APP_EXECUTOR),
+        SUBSCRIBE_ON_SUCCESS(2, "subscribe, request",
+                Publisher::subscribeOn, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_ERROR(2, "subscribe, request",
+                Publisher::subscribeOn, TerminalOperation.ERROR,
+                APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_CANCEL(3, "subscribe, request, cancel",
+                Publisher::subscribeOn, TerminalOperation.CANCEL,
+                APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, OFFLOAD_EXECUTOR),
+        PUBLISH_ON_SUCCESS(3, "onSubscribe, onNext, onComplete",
+                Publisher::publishOn, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_ERROR(2, "onSubscribe, onError",
+                Publisher::publishOn, TerminalOperation.ERROR,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CANCEL(1, "onSubscribe",
+                Publisher::publishOn, TerminalOperation.CANCEL,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, APP_EXECUTOR);
+
+        final int offloadsExpected;
+        final String expectedOffloads;
+        final BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator;
+        final TerminalOperation terminal;
+        final EnumMap<CaptureSlot, Matcher<? super Thread>> matchers = new EnumMap<>(CaptureSlot.class);
+
+        OffloadCase(int offloadsExpected, String expectedOffloads,
+                    BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator,
+                    TerminalOperation terminal,
+                    Matcher<? super Thread>... matchers) {
+            this.offloadsExpected = offloadsExpected;
+            this.expectedOffloads = expectedOffloads;
+            this.offloadOperator = offloadOperator;
+            this.terminal = terminal;
+            Iterator<Matcher<? super Thread>> eachMatcher = Arrays.asList(matchers).iterator();
+            for (CaptureSlot slot : CaptureSlot.values()) {
+                if (!eachMatcher.hasNext()) {
+                    break;
+                }
+                this.matchers.put(slot, eachMatcher.next());
+            }
+        }
     }
 
-    @Test
-    void testNoOffloadCancel() throws InterruptedException {
-        int offloads = testOffloading((c, e) -> c, TerminalOperation.CANCEL);
-        assertThat("Unexpected offloads: none", offloads, CoreMatchers.is(0));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, APP_EXECUTOR);
-    }
-
-    @Test
-    void testNoOffloadError() throws InterruptedException {
-        int offloads = testOffloading((c, e) -> c, TerminalOperation.ERROR);
-        assertThat("Unexpected offloads: none", offloads, CoreMatchers.is(0));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue());
-    }
-
-    @Test
-    void testPublishOn() throws InterruptedException {
-        int offloads = testOffloading(Publisher::publishOn, TerminalOperation.COMPLETE);
-        assertThat("Unexpected offloads: onSubscribe, onNext, onComplete", offloads, CoreMatchers.is(3));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, OFFLOAD_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue(Thread.class));
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue(Thread.class));
-    }
-
-    @Test
-    void testPublishOnCancel() throws InterruptedException {
-        int offloads = testOffloading(Publisher::publishOn, TerminalOperation.CANCEL);
-        assertThat("Unexpected offloads: onSubscribe", offloads, CoreMatchers.is(1));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, APP_EXECUTOR);
-    }
-
-    @Test
-    void testPublishOnError() throws InterruptedException {
-        int offloads = testOffloading(Publisher::publishOn, TerminalOperation.ERROR);
-        assertThat("Unexpected offloads: onSubscribe, onError", offloads, CoreMatchers.is(2));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, OFFLOAD_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue());
-    }
-
-    @Test
-    void testSubscribeOn() throws InterruptedException {
-        int offloads = testOffloading(Publisher::subscribeOn, TerminalOperation.COMPLETE);
-        assertThat("Unexpected offloads: 2, subscribe, request", offloads, CoreMatchers.is(2));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, OFFLOAD_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue());
-    }
-
-    @Test
-    void testSubscribeOnCancel() throws InterruptedException {
-        int offloads = testOffloading(Publisher::subscribeOn, TerminalOperation.CANCEL);
-        assertThat("Unexpected offloads: subscribe, request, cancel", offloads, CoreMatchers.is(3));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, OFFLOAD_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, OFFLOAD_EXECUTOR);
-    }
-
-    @Test
-    void testSubscribeOnError() throws InterruptedException {
-        int offloads = testOffloading(Publisher::subscribeOn, TerminalOperation.ERROR);
-        assertThat("Unexpected offloads: subscribe, request", offloads, CoreMatchers.is(2));
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD, OFFLOAD_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD, APP_EXECUTOR);
-        capturedThreads.assertCaptured(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD, nullValue());
-        capturedThreads.assertCaptured(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD, nullValue());
+    @ParameterizedTest
+    @EnumSource(OffloadCase.class)
+    void testOffloading(OffloadCase offloadCase) throws InterruptedException {
+        int offloads = testOffloading(offloadCase.offloadOperator, offloadCase.terminal);
+        assertThat("Unexpected offloads: " + offloadCase.expectedOffloads,
+                offloads, CoreMatchers.is(offloadCase.offloadsExpected));
+        offloadCase.matchers.entrySet().stream()
+                .forEach(slotMatcher -> capturedThreads.assertCaptured(slotMatcher.getKey(), slotMatcher.getValue()));
     }
 }

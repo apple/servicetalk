@@ -123,11 +123,7 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                 testSubscriber.onError(all);
             }
         };
-        if (APP_ISOLATION) {
-            app.executor().execute(appCode);
-        } else {
-            appCode.run();
-        }
+        app.executor().execute(appCode);
 
         // Ensure we reached the correct terminal condition
         switch (terminal) {
