@@ -17,12 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.test.internal.AwaitUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -53,6 +55,7 @@ public final class TestCompletable extends Completable implements CompletableSou
     private final Function<Subscriber, Subscriber> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
     private volatile Subscriber subscriber = new WaitingSubscriber();
+    private final CountDownLatch subscriberLatch = new CountDownLatch(1);
 
     /**
      * Create a {@code TestCompletable} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -74,6 +77,14 @@ public final class TestCompletable extends Completable implements CompletableSou
         return !(subscriber instanceof WaitingSubscriber);
     }
 
+    /**
+     * Awaits until this {@link TestCompletable} is subscribed, even if interrupted. If interrupted the
+     * {@link Thread#isInterrupted()} will be set upon return.
+     */
+    public void awaitSubscribed() {
+        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+    }
+
     @Override
     protected void handleSubscribe(final Subscriber subscriber) {
         try {
@@ -85,6 +96,7 @@ public final class TestCompletable extends Completable implements CompletableSou
                         final WaitingSubscriber waiter = (WaitingSubscriber) currSubscriber;
                         waiter.realSubscriber(newSubscriber);
                     }
+                    subscriberLatch.countDown();
                     break;
                 }
             }
