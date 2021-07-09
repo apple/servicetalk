@@ -305,7 +305,8 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                         return;
                     }
                 } else if (NextAccumulatorHolder.class.equals(cMaybeAccumulator.getClass())) {
-                    // Hand-off emission of one more nextAccumulator to the thread that is still ADDING, discarding it.
+                    // One more boundary is received when we already have a "queued" next boundary (we are in ADDING
+                    // state or delivering the previous boundary), discarding it.
                     // Since we did not emit the accumulator we request one more to observe the next boundary:
                     bSubscription.request(1);
                     return;
@@ -325,7 +326,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                                 @SuppressWarnings("unchecked")
                                 final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) nextState;
                                 // Deliver the last boundary only if there are some items pending and demand is present
-                                final Accumulator<T, B> accumulator = it.accumulator.size() > 0 &&
+                                final Accumulator<T, B> accumulator = !it.accumulator.isEmpty() &&
                                         pendingUpdater.decrementAndGet(this) >= 0L ? it.accumulator : null;
                                 terminateTarget(accumulator, target, it.terminalNotification, bSubscription);
                             }
@@ -360,7 +361,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     // Deliver the last boundary only if there are some items pending and demand is present
                     @SuppressWarnings("unchecked")
                     final CountingAccumulator<T, B> accumulator = (CountingAccumulator<T, B>) cMaybeAccumulator;
-                    terminateTarget(accumulator.size() > 0 && pendingUpdater.decrementAndGet(this) >= 0 ?
+                    terminateTarget(!accumulator.isEmpty() && pendingUpdater.decrementAndGet(this) >= 0 ?
                             accumulator : null, target, terminalNotification, bCancellable);
                     return;
                 }

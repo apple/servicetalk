@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR;
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static java.util.Objects.requireNonNull;
@@ -287,7 +286,11 @@ public final class BufferStrategies {
 
         @Override
         public void accumulate(@Nullable final T item) {
-            size = addWithOverflowProtection(size, 1);
+            if (sizeThreshold > 0 || isEmpty()) {
+                // Increment `size` only when the `sizeThreshold` is used or for the first accumulation
+                ++size;
+                assert size > 0;
+            }
             delegate.accumulate(item);
             if (size == sizeThreshold) {
                 assert state != null;
@@ -300,8 +303,8 @@ public final class BufferStrategies {
             return delegate.finish();
         }
 
-        int size() {
-            return size;
+        boolean isEmpty() {
+            return size == 0;
         }
     }
 

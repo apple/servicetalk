@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,19 @@ import javax.annotation.Nullable;
 public interface BufferStrategy<T, BC extends Accumulator<T, B>, B> {
 
     /**
-     * Returns a {@link Publisher} representing asynchronous buffer boundaries. This {@link Publisher} is expected to be
-     * an infinite {@link Publisher}. Hence, it should never terminate any {@link Subscriber} subscribed to it. Instead
-     * {@link Subscriber}s will always {@link Subscription#cancel() cancel} their {@link Subscription}. If this
-     * expectation is violated, buffered items may be discarded.
+     * Returns a {@link Publisher} representing asynchronous buffer boundaries.
+     * <p>
+     * Notes:
+     * <ol>
+     *     <li>This {@link Publisher} is expected to be an infinite {@link Publisher}. Hence, it should never terminate
+     *     any {@link Subscriber} subscribed to it. Instead {@link Subscriber}s will always
+     *     {@link Subscription#cancel() cancel} their {@link Subscription}. If this expectation is violated, buffered
+     *     items may be discarded.</li>
+     *     <li>If this {@link Publisher} returns more boundaries faster than accumulation or emission of the previous
+     *     boundary can be processed, these new boundaries may be discarded without invocation of either
+     *     {@link Accumulator#accumulate(Object)} or {@link Accumulator#finish()} methods. Avoid initializing expensive
+     *     state before any of the {@link Accumulator} methods are invoked.</li>
+     * </ol>
      *
      * @return A {@link Publisher} representing asynchronous buffer boundaries.
      */

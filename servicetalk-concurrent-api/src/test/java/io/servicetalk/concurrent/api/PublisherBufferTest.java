@@ -55,7 +55,7 @@ class PublisherBufferTest {
     PublisherBufferTest() {
         toSource(original.buffer(new TestBufferStrategy(boundaries, BUFFER_SIZE_HINT))).subscribe(bufferSubscriber);
         bufferSubscriber.awaitSubscription().request(1); // get first boundary
-        boundaries.onNext(new SumAccumulator());
+        emitBoundary();
         assertThat(bufferSubscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
@@ -359,9 +359,9 @@ class PublisherBufferTest {
                 }
                 sum += item;
                 // Emit more than one boundary while accumulating
-                boundaries.onNext(new SumAccumulator());
-                boundaries.onNext(new SumAccumulator());
-                boundaries.onNext(new SumAccumulator());
+                emitBoundary();
+                emitBoundary();
+                emitBoundary();
             }
 
             @Override
