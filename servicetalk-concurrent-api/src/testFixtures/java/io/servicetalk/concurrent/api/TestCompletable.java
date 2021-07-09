@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.test.internal.Utils;
+import io.servicetalk.concurrent.test.internal.AwaitUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public final class TestCompletable extends Completable implements CompletableSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        Utils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.awaitUninterruptibly(subscriberLatch);
     }
 
     @Override

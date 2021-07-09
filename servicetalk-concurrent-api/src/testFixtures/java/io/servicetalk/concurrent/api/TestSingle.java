@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.test.internal.Utils.awaitUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -34,9 +34,9 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.concurrent.test.internal.Utils.awaitUninterruptibly;
-import static io.servicetalk.concurrent.test.internal.Utils.pollUninterruptibly;
-import static io.servicetalk.concurrent.test.internal.Utils.takeUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.pollUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.takeUninterruptibly;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 

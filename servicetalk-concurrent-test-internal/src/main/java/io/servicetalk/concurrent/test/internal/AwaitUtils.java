@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-public final class Utils {
-    private Utils() {
+public final class AwaitUtils {
+    private AwaitUtils() {
         // no instances
     }
 

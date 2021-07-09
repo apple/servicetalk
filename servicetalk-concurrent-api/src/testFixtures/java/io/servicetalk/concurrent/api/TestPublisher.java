@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.test.internal.Utils;
+import io.servicetalk.concurrent.test.internal.AwaitUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +84,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        Utils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.awaitUninterruptibly(subscriberLatch);
     }
 
     @Override

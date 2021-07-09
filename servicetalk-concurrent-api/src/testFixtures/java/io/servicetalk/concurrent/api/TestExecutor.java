@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.SortedMap;
@@ -30,11 +31,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -43,14 +45,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 public class TestExecutor implements Executor {
 
+    private static final AtomicInteger INSTANCES = new AtomicInteger();
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
     private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano =
             new ConcurrentSkipListMap<>();
     private final long nanoOffset;
     private long currentNanos;
-    private CompletableProcessor closeProcessor = new CompletableProcessor();
-    private AtomicInteger tasksExecuted = new AtomicInteger();
-    private AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    private final CompletableProcessor closeProcessor = new CompletableProcessor();
+    private final AtomicInteger tasksExecuted = new AtomicInteger();
+    private final AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    String instanceName = getClass().getSimpleName() + "-" + INSTANCES.incrementAndGet();
 
     /**
      * Create a new instance.
@@ -66,7 +70,7 @@ public class TestExecutor implements Executor {
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         tasks.add(wrappedTask);
         return () -> tasks.remove(wrappedTask);
     }
@@ -74,7 +78,7 @@ public class TestExecutor implements Executor {
     @Override
     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
             throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         final long scheduledNanos = currentScheduledNanos() + unit.toNanos(delay);
         final Queue<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
                 k -> new ConcurrentLinkedQueue<>());
@@ -320,15 +324,18 @@ public class TestExecutor implements Executor {
     /**
      *  Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
      *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
-     *  Sets the thread name to {@code TestExecutor} while running the task so that capturing the thread name makes
+     *  Sets the thread name to {@code TestExecutor-#} while running the task so that capturing the thread name makes
      *  sense and during debugging the execution context is more obvious.
-     *  Pessimistically set the {@link AsyncContextMap} to null to ensure that any use of {@link AsyncContextMap}
-     *  within the context of the Runnable includes appropriate setting/restoring.
+     *  Adversarially set the {@link AsyncContextMap} to a hostile instance to ensure that any use of
+     *  {@link AsyncContextMap} within the context of the Runnable includes appropriate setting/restoring of the
+     *  context.
      */
     private static final class RunnableWrapper implements Runnable {
+        private final String threadName;
         private final Runnable delegate;
 
-        private RunnableWrapper(final Runnable delegate) {
+        private RunnableWrapper(final String threadName, final Runnable delegate) {
+            this.threadName = threadName;
             this.delegate = delegate;
         }
 
@@ -336,27 +343,96 @@ public class TestExecutor implements Executor {
         public void run() {
             Thread current = Thread.currentThread();
             String oldName = current.getName();
-            current.setName("TestExecutor");
+            current.setName(threadName);
             AsyncContextMap tlPrev = contextThreadLocal.get();
+            contextThreadLocal.set(InvalidAsyncContextMap.INSTANCE);
             try {
                 if (current instanceof AsyncContextMapHolder) {
                     final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) current;
                     AsyncContextMap acmhPrev = asyncContextMapHolder.asyncContextMap();
                     try {
-                        asyncContextMapHolder.asyncContextMap(null);
+                        asyncContextMapHolder.asyncContextMap(InvalidAsyncContextMap.INSTANCE);
                         delegate.run();
                         assertThat("ContextMap was not restored",
-                                asyncContextMapHolder.asyncContextMap(), nullValue());
+                                asyncContextMapHolder.asyncContextMap(), sameInstance(InvalidAsyncContextMap.INSTANCE));
                     } finally {
                         asyncContextMapHolder.asyncContextMap(acmhPrev);
                     }
                 } else {
                     delegate.run();
                 }
+                assertThat("ContextMap was not restored",
+                        contextThreadLocal.get(), sameInstance(InvalidAsyncContextMap.INSTANCE));
             } finally {
                 contextThreadLocal.set(tlPrev);
                 current.setName(oldName);
             }
+        }
+    }
+
+    private static final class InvalidAsyncContextMap implements AsyncContextMap {
+        static final AsyncContextMap INSTANCE = new InvalidAsyncContextMap();
+
+        private InvalidAsyncContextMap() {
+            // singleton
+        }
+
+        @Nullable
+        @Override
+        public <T> T get(final Key<T> key) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public boolean containsKey(final Key<?> key) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public boolean isEmpty() {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public int size() {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Nullable
+        @Override
+        public <T> T put(final Key<T> key, @Nullable final T value) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public void putAll(final Map<Key<?>, Object> map) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public <T> T remove(final Key<T> key) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public boolean removeAll(final Iterable<Key<?>> entries) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public void clear() {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Nullable
+        @Override
+        public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
+            throw new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Override
+        public AsyncContextMap copy() {
+            throw new AssertionError("Invalid access of AsyncContextMap");
         }
     }
 }
