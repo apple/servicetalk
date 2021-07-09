@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
@@ -28,15 +27,13 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -45,34 +42,30 @@ import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@RunWith(Parameterized.class)
-public class PendingStreamingClosureTest {
+class PendingStreamingClosureTest {
 
-    private final TesterClient client;
-    private final ServerContext ctx;
+    @Nullable
+    private TesterClient client;
+    @Nullable
+    private ServerContext ctx;
+    private boolean graceful;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final boolean graceful;
-
-    public PendingStreamingClosureTest(boolean graceful) throws Exception {
+    private void setUp(boolean graceful) {
         this.graceful = graceful;
+    }
+
+    @BeforeEach
+    void beforeEach() throws Exception {
         ctx = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait(new ServiceFactory(new DefaultService()));
         client = GrpcClients.forAddress(serverHostAndPort(ctx))
                 .build(new ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "graceful? {0}")
-    public static Collection<Boolean> data() {
-        return asList(true, false);
-    }
-
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeable = newCompositeCloseable().appendAll(client, ctx);
         if (graceful) {
             closeAsyncGracefully(closeable, 1, SECONDS).toFuture().get();
@@ -81,8 +74,10 @@ public class PendingStreamingClosureTest {
         }
     }
 
-    @Test
-    public void biDiStream() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void biDiStream(boolean graceful) throws Exception {
+        setUp(graceful);
         CountDownLatch latch = new CountDownLatch(1);
         client.testBiDiStream(succeeded(TestRequest.newBuilder().setName("name").build()).concat(never()))
                 .beforeOnNext(__ -> latch.countDown())
@@ -91,8 +86,10 @@ public class PendingStreamingClosureTest {
         latch.await();
     }
 
-    @Test
-    public void requestStream() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void requestStream(boolean graceful) throws Exception {
+        setUp(graceful);
         CountDownLatch latch = new CountDownLatch(1);
         client.testRequestStream(succeeded(TestRequest.newBuilder().setName("name").build())
                 .concat(defer(() -> {
@@ -104,8 +101,10 @@ public class PendingStreamingClosureTest {
         latch.await();
     }
 
-    @Test
-    public void responseStream() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void responseStream(boolean graceful) throws Exception {
+        setUp(graceful);
         CountDownLatch latch = new CountDownLatch(1);
         client.testResponseStream(TestRequest.newBuilder().setName("name").build())
                 .beforeOnNext(__ -> latch.countDown())

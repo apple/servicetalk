@@ -21,8 +21,8 @@ import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.util.concurrent.ExecutionException;
 
@@ -37,17 +37,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class HttpResponseUponGrpcRequestTest {
+final class HttpResponseUponGrpcRequestTest {
 
-    private ServerContext serverContext;
-    private TesterProto.Tester.BlockingTesterClient client;
+    private final TesterProto.Tester.BlockingTesterClient client;
 
-    public HttpResponseUponGrpcRequestTest() throws Exception {
+    HttpResponseUponGrpcRequestTest() throws Exception {
         final String responsePayload = "non-grpc error!";
-        serverContext = HttpServers.forAddress(localAddress(0))
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2Default())
                 .listenAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.badRequest().payloadBody(responsePayload, textSerializer())));
@@ -57,43 +56,43 @@ public final class HttpResponseUponGrpcRequestTest {
     }
 
     @Test
-    public void testBlockingAggregated() {
+    void testBlockingAggregated() {
         assertThrowsGrpcStatusException(() -> client.test(request()));
     }
 
     @Test
-    public void testBlockingRequestStreaming() {
+    void testBlockingRequestStreaming() {
         assertThrowsGrpcStatusException(() -> client.testRequestStream(singletonList(request())));
     }
 
     @Test
-    public void testBlockingResponseStreaming() {
+    void testBlockingResponseStreaming() {
         assertThrowsGrpcStatusException(() -> client.testResponseStream(request()).forEach(__ -> { /* noop */ }));
     }
 
     @Test
-    public void testBlockingBiDiStreaming() {
+    void testBlockingBiDiStreaming() {
         assertThrowsGrpcStatusException(() -> client.testBiDiStream(singletonList(request()))
                 .forEach(__ -> { /* noop */ }));
     }
 
     @Test
-    public void testAggregated() {
+    void testAggregated() {
         assertThrowsExecutionException(() -> client.asClient().test(request()).toFuture().get());
     }
 
     @Test
-    public void testRequestStreaming() {
+    void testRequestStreaming() {
         assertThrowsExecutionException(() -> client.asClient().testRequestStream(from(request())).toFuture().get());
     }
 
     @Test
-    public void testResponseStreaming() {
+    void testResponseStreaming() {
         assertThrowsExecutionException(() -> client.asClient().testResponseStream(request()).toFuture().get());
     }
 
     @Test
-    public void testBiDiStreaming() {
+    void testBiDiStreaming() {
         assertThrowsExecutionException(() -> client.asClient().testBiDiStream(from(request())).toFuture().get());
     }
 
@@ -101,14 +100,14 @@ public final class HttpResponseUponGrpcRequestTest {
         return TestRequest.newBuilder().setName("request").build();
     }
 
-    private static void assertThrowsExecutionException(ThrowingRunnable runnable) {
-        ExecutionException ex = assertThrows(ExecutionException.class, runnable);
+    private static void assertThrowsExecutionException(Executable executable) {
+        ExecutionException ex = assertThrows(ExecutionException.class, executable);
         assertThat(ex.getCause(), is(instanceOf(GrpcStatusException.class)));
         assertGrpcStatusException((GrpcStatusException) ex.getCause());
     }
 
-    private static void assertThrowsGrpcStatusException(ThrowingRunnable runnable) {
-        assertGrpcStatusException(assertThrows(GrpcStatusException.class, runnable));
+    private static void assertThrowsGrpcStatusException(Executable executable) {
+        assertGrpcStatusException(assertThrows(GrpcStatusException.class, executable));
     }
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {

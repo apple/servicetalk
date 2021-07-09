@@ -19,15 +19,15 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.Test.TestService;
 import io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.TestRpc.TestRpcService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.TestReply;
 
-public class TestConflictRpc {
+class TestConflictRpc {
     @Test
-    public void conflictRpcServiceGenerated() throws ExecutionException, InterruptedException {
+    void conflictRpcServiceGenerated() throws ExecutionException, InterruptedException {
         TestService service = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
         TestRpcService rpcService = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
 
