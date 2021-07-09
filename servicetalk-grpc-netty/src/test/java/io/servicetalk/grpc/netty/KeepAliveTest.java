@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -28,129 +27,143 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.netty.H2ProtocolConfig;
-import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
+import static io.servicetalk.grpc.netty.TesterProto.TestRequest.newBuilder;
+import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.whenIdleFor;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.fail;
 
-@RunWith(Parameterized.class)
-public class KeepAliveTest {
+@Timeout(value = 1, unit = MINUTES)
+class KeepAliveTest {
 
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached("server-io", "server-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor");
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(1, MINUTES);
+    @Nullable
+    private TesterClient client;
+    @Nullable
+    private ServerContext ctx;
+    private long idleTimeoutMillis;
 
-    private final TesterClient client;
-    private final ServerContext ctx;
-    private final long idleTimeoutMillis;
-
-    public KeepAliveTest(final boolean keepAlivesFromClient,
-                         final Duration keepAliveIdleFor,
-                         final Duration idleTimeout) throws Exception {
+    private void setUp(final boolean keepAlivesFromClient,
+                       final Duration keepAliveIdleFor,
+                       final Duration idleTimeout) throws Exception {
         this.idleTimeoutMillis = idleTimeout.toMillis();
-        GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()));
+        GrpcServerBuilder serverBuilder = forAddress(localAddress(0))
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(SERVER_CTX.executor()));
         if (!keepAlivesFromClient) {
             serverBuilder.protocols(h2Config(keepAliveIdleFor));
         } else {
             serverBuilder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
-                    .protocols(h2Config(null));
+                .protocols(h2Config(null));
         }
         ctx = serverBuilder.listenAndAwait(new ServiceFactory(new InfiniteStreamsService()));
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(ctx))
-                        .ioExecutor(CLIENT_CTX.ioExecutor())
-                        .executionStrategy(defaultStrategy(CLIENT_CTX.executor()));
+            GrpcClients.forAddress(serverHostAndPort(ctx))
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executionStrategy(defaultStrategy(CLIENT_CTX.executor()));
         if (keepAlivesFromClient) {
             clientBuilder.protocols(h2Config(keepAliveIdleFor));
         } else {
             clientBuilder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
-                    .protocols(h2Config(null));
+                .protocols(h2Config(null));
         }
-        client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
+        client = clientBuilder.build(new ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "keepAlivesFromClient? {0}, keepAliveIdleFor: {1}, idleTimeout: {2}")
-    public static Object[][] data() {
-        return new Object[][] {
-                new Object[] {true, ofSeconds(1), ofSeconds(2)},
-                new Object[] {false, ofSeconds(1), ofSeconds(2)},
-        };
+    static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of(true, ofSeconds(1), ofSeconds(2)),
+                Arguments.of(false, ofSeconds(1), ofSeconds(2))
+        );
     }
 
     private static H2ProtocolConfig h2Config(@Nullable final Duration keepAliveIdleFor) {
-        return HttpProtocolConfigs.h2()
-                .enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
-                .keepAlivePolicy(keepAliveIdleFor == null ? disabled() : whenIdleFor(keepAliveIdleFor))
-                .build();
+        return h2()
+            .enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
+            .keepAlivePolicy(keepAliveIdleFor == null ? disabled() : whenIdleFor(keepAliveIdleFor))
+            .build();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         CompositeCloseable closeable = newCompositeCloseable().appendAll(client, ctx);
         closeable.close();
     }
 
-    @Test
-    public void bidiStream() throws Exception {
+    @ParameterizedTest(name = "keepAlivesFromClient? {0}, keepAliveIdleFor: {1}, idleTimeout: {2}")
+    @MethodSource("data")
+    void bidiStream(final boolean keepAlivesFromClient,
+                    final Duration keepAliveIdleFor,
+                    final Duration idleTimeout) throws Exception {
+        setUp(keepAlivesFromClient, keepAliveIdleFor, idleTimeout);
         try {
             client.testBiDiStream(never()).toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
-            fail("Unexpected response available.");
+            Assertions.fail("Unexpected response available.");
         } catch (TimeoutException e) {
             // expected
         }
     }
 
-    @Test
-    public void requestStream() throws Exception {
+    @ParameterizedTest(name = "keepAlivesFromClient? {0}, keepAliveIdleFor: {1}, idleTimeout: {2}")
+    @MethodSource("data")
+    void requestStream(final boolean keepAlivesFromClient,
+                       final Duration keepAliveIdleFor,
+                       final Duration idleTimeout) throws Exception {
+        setUp(keepAlivesFromClient, keepAliveIdleFor, idleTimeout);
         try {
             client.testRequestStream(never()).toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
-            fail("Unexpected response available.");
+            Assertions.fail("Unexpected response available.");
         } catch (TimeoutException e) {
             // expected
         }
     }
 
-    @Test
-    public void responseStream() throws Exception {
+    @ParameterizedTest(name = "keepAlivesFromClient? {0}, keepAliveIdleFor: {1}, idleTimeout: {2}")
+    @MethodSource("data")
+    void responseStream(final boolean keepAlivesFromClient,
+                        final Duration keepAliveIdleFor,
+                        final Duration idleTimeout) throws Exception {
+        setUp(keepAlivesFromClient, keepAliveIdleFor, idleTimeout);
         try {
-            client.testResponseStream(TestRequest.newBuilder().build())
-                    .toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
-            fail("Unexpected response available.");
+            client.testResponseStream(newBuilder().build())
+                .toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
+            Assertions.fail("Unexpected response available.");
         } catch (TimeoutException e) {
             // expected
         }
@@ -168,7 +181,7 @@ public class KeepAliveTest {
         public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,
                                                       final Publisher<TestRequest> request) {
             return request.collect(() -> null, (testResponse, testRequest) -> null)
-                    .map(__ -> TestResponse.newBuilder().build());
+                .map(__ -> TestResponse.newBuilder().build());
         }
 
         @Override

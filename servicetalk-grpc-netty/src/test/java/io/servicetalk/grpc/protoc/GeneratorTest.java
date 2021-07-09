@@ -17,7 +17,7 @@ package io.servicetalk.grpc.protoc;
 
 import io.servicetalk.grpc.netty.TesterProto.Tester;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -28,10 +28,10 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class GeneratorTest {
+class GeneratorTest {
 
     @Test
-    public void testGeneratedFunctionalInterfaces() {
+    void testGeneratedFunctionalInterfaces() {
 
         final List<Class<?>> generatedRpcInterfaces = stream(Tester.class.getDeclaredClasses())
                 .filter(declaredClass -> declaredClass.getAnnotation(FunctionalInterface.class) != null

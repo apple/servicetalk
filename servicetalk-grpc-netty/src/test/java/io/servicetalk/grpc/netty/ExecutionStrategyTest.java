@@ -18,8 +18,7 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.netty.ExecutionStrategyTestServices.ThreadInfo;
@@ -33,18 +32,18 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
@@ -68,23 +67,23 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assume.assumeFalse;
 
-@RunWith(Parameterized.class)
-public class ExecutionStrategyTest {
+class ExecutionStrategyTest {
 
     private static final String BUILDER_EXEC_NAME_PREFIX = "builder-executor";
     private static final String ROUTE_EXEC_NAME_PREFIX = "route-executor";
     private static final String FILTER_EXEC_NAME_PREFIX = "filter-executor";
 
-    @ClassRule
-    public static final ExecutorRule<Executor> BUILDER_EXEC = ExecutorRule.withNamePrefix(BUILDER_EXEC_NAME_PREFIX);
+    @RegisterExtension
+    static final ExecutorExtension<Executor> BUILDER_EXEC =
+            ExecutorExtension.withCachedExecutor(BUILDER_EXEC_NAME_PREFIX);
 
-    @ClassRule
-    public static final ExecutorRule<Executor> ROUTE_EXEC = ExecutorRule.withNamePrefix(ROUTE_EXEC_NAME_PREFIX);
+    @RegisterExtension
+    static final ExecutorExtension<Executor> ROUTE_EXEC = ExecutorExtension.withCachedExecutor(ROUTE_EXEC_NAME_PREFIX);
 
-    @ClassRule
-    public static final ExecutorRule<Executor> FILTER_EXEC = ExecutorRule.withNamePrefix(FILTER_EXEC_NAME_PREFIX);
+    @RegisterExtension
+    static final ExecutorExtension<Executor> FILTER_EXEC =
+            ExecutorExtension.withCachedExecutor(FILTER_EXEC_NAME_PREFIX);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 
@@ -279,19 +278,21 @@ public class ExecutionStrategyTest {
         }
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Nullable
+    private BuilderExecutionStrategy builderStrategy;
+    @Nullable
+    private RouteExecutionStrategy routeStrategy;
+    @Nullable
+    private RouteApi routeApi;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private BlockingTesterClient client;
 
-    private final BuilderExecutionStrategy builderStrategy;
-    private final RouteExecutionStrategy routeStrategy;
-    private final RouteApi routeApi;
-    private final ServerContext serverContext;
-    private final BlockingTesterClient client;
-
-    public ExecutionStrategyTest(BuilderExecutionStrategy builderStrategy,
-                                 RouteExecutionStrategy routeStrategy,
-                                 RouteApi routeApi,
-                                 FilterConfiguration filterConfiguration) throws Exception {
+    private void setUp(BuilderExecutionStrategy builderStrategy,
+                       RouteExecutionStrategy routeStrategy,
+                       RouteApi routeApi,
+                       FilterConfiguration filterConfiguration) throws Exception {
         this.builderStrategy = builderStrategy;
         this.routeStrategy = routeStrategy;
         this.routeApi = routeApi;
@@ -305,14 +306,13 @@ public class ExecutionStrategyTest {
                 .buildBlocking(new ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "builder={0} route={1}, api={2}, filterConfiguration={3}")
-    public static Collection<Object[]> data() {
-        List<Object[]> parameters = new ArrayList<>();
+    static Collection<Arguments> data() {
+        List<Arguments> parameters = new ArrayList<>();
         for (BuilderExecutionStrategy builderEs : BuilderExecutionStrategy.values()) {
             for (RouteExecutionStrategy routeEs : RouteExecutionStrategy.values()) {
                 for (RouteApi routeApi : RouteApi.values()) {
                     for (FilterConfiguration filterConfiguration : FilterConfiguration.values()) {
-                        parameters.add(new Object[] {builderEs, routeEs, routeApi, filterConfiguration});
+                        parameters.add(Arguments.of(builderEs, routeEs, routeApi, filterConfiguration));
                     }
                 }
             }
@@ -320,8 +320,8 @@ public class ExecutionStrategyTest {
         return unmodifiableList(parameters);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -346,9 +346,14 @@ public class ExecutionStrategyTest {
         return false;
     }
 
-    @Test
-    public void testRoute() throws Exception {
-        assumeFalse("BlockingStreaming + noOffloads = deadlock", isDeadlockConfig());
+    @ParameterizedTest(name = "builder={0} route={1}, api={2}, filterConfiguration={3}")
+    @MethodSource("data")
+    void testRoute(BuilderExecutionStrategy builderStrategy,
+                   RouteExecutionStrategy routeStrategy,
+                   RouteApi routeApi,
+                   FilterConfiguration filterConfiguration) throws Exception {
+        setUp(builderStrategy, routeStrategy, routeApi, filterConfiguration);
+        Assumptions.assumeFalse(isDeadlockConfig(), "BlockingStreaming + noOffloads = deadlock");
 
         final ThreadInfo threadInfo = parse(routeApi.execute(client));
         final ThreadInfo expected;

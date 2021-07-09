@@ -15,14 +15,14 @@
  */
 package io.servicetalk.grpc.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 
-public class CatchAllHttpServiceFilterTest {
+class CatchAllHttpServiceFilterTest {
 
     @Test
-    public void verifyAsyncContext() throws Exception {
+    void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(GrpcServerBuilder.CatchAllHttpServiceFilter::new);
     }
 }
