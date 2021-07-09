@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,18 +31,18 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public abstract class AbstractPublisherPublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
-    protected static final String ITEM_VALUE = "Hello";
+abstract class AbstractPublisherPublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
+    private static final String ITEM_VALUE = "Hello";
 
-    protected static final int APP_THREAD = 0;
-    protected static final int ORIGINAL_SUBSCRIBER_THREAD = 1;
-    protected static final int ORIGINAL_SUBSCRIPTION_THREAD = 2;
-    protected static final int OFFLOADED_SUBSCRIBER_THREAD = 3;
-    protected static final int OFFLOADED_SUBSCRIPTION_THREAD = 4;
+    private static final int APP_THREAD = 0;
+    static final int ORIGINAL_SUBSCRIBER_THREAD = 1;
+    private static final int ORIGINAL_SUBSCRIPTION_THREAD = 2;
+    static final int OFFLOADED_SUBSCRIBER_THREAD = 3;
+    static final int OFFLOADED_SUBSCRIPTION_THREAD = 4;
 
-    protected AbstractPublisherPublishAndSubscribeOnTest() {
+    AbstractPublisherPublishAndSubscribeOnTest() {
         super(new CaptureThreads(5) {
             @Override
             public Thread[] verify() {
@@ -55,15 +55,15 @@ public abstract class AbstractPublisherPublishAndSubscribeOnTest extends Abstrac
         });
     }
 
-    protected Thread[] setupAndSubscribe(
+    Thread[] setupAndSubscribe(
             BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)
             throws InterruptedException {
         return setupAndSubscribe(-1, offloadingFunction, executor);
     }
 
-    protected Thread[] setupAndSubscribe(int offloadsExpected,
-                                         BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction,
-                                         Executor executor)
+    private Thread[] setupAndSubscribe(int offloadsExpected,
+                                       BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction,
+                                       Executor executor)
             throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
 

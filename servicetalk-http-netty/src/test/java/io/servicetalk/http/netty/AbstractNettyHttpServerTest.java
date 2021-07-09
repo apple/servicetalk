@@ -90,7 +90,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public abstract class AbstractNettyHttpServerTest {
+abstract class AbstractNettyHttpServerTest {
 
     enum ExecutorSupplier {
         IMMEDIATE(Executors::immediate),

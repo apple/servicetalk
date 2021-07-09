@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,13 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
-
 import org.testng.annotations.Test;
 
 @Test
-public class CompletablePublishAndSubscribeOnTckTest extends CompletableAbstractOffloaderTckTest {
+public class SingleConcatWithPublisherDeferSubscribeTckTest extends SingleConcatWithPublisherTckTest {
+
     @Override
-    Completable applyOffload(final Completable original, final Executor executor) {
-        return original.publishAndSubscribeOn(executor);
+    boolean deferSubscribe() {
+        return true;
     }
 }

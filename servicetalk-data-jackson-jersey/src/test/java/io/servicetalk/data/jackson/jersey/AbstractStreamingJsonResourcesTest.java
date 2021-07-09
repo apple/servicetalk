@@ -20,7 +20,8 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -39,11 +40,8 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
 public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyStreamingHttpServiceTest {
-    public AbstractStreamingJsonResourcesTest(final RouterApi api) {
-        super(api);
-    }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -63,18 +61,18 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
         return new TestApplication();
     }
 
-    @Test
-    public void postJsonMap() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonMap("/map", OK);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonMap(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonMap("/map", OK));
     }
 
-    @Test
-    public void postJsonMapResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonMap("/map-response", ACCEPTED);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonMapResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonMap("/map-response", ACCEPTED));
     }
 
     private void testPostJsonMap(final String path, final HttpResponseStatus expectedStatus) {
@@ -82,18 +80,18 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
                 expectedStatus, APPLICATION_JSON, jsonEquals("{\"got\":{\"foo\":\"bar\"}}"), __ -> null);
     }
 
-    @Test
-    public void postJsonMapFailure() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonMapFailure("/map");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonMapFailure(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonMapFailure("/map"));
     }
 
-    @Test
-    public void postJsonMapResponseFailure() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonMapFailure("/map-response");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonMapResponseFailure(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonMapFailure("/map-response"));
     }
 
     private void testPostJsonMapFailure(final String path) {
@@ -101,36 +99,36 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
                 INTERNAL_SERVER_ERROR);
     }
 
-    @Test
-    public void postBrokenJsonMap() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostBrokenJsonMap("/map");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postBrokenJsonMap(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostBrokenJsonMap("/map"));
     }
 
-    @Test
-    public void postBrokenJsonMapResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostBrokenJsonMap("/map-response");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postBrokenJsonMapResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostBrokenJsonMap("/map-response"));
     }
 
     private void testPostBrokenJsonMap(final String path) {
         sendAndAssertStatusOnly(post(path, "{key:789}", APPLICATION_JSON), BAD_REQUEST);
     }
 
-    @Test
-    public void postJsonPojo() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonPojo("/pojo", OK);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonPojo(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonPojo("/pojo", OK));
     }
 
-    @Test
-    public void postJsonPojoResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonPojo("/pojo-response", ACCEPTED);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonPojoResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonPojo("/pojo-response", ACCEPTED));
     }
 
     private void testPostJsonPojo(final String path, final HttpResponseStatus expectedStatus) {
@@ -138,18 +136,18 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
                 expectedStatus, APPLICATION_JSON, jsonEquals("{\"aString\":\"foox\",\"anInt\":124}"), __ -> null);
     }
 
-    @Test
-    public void postJsonPojoFailure() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonPojoFailure("/pojo");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonPojoFailure(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonPojoFailure("/pojo"));
     }
 
-    @Test
-    public void postJsonPojoResponseFailure() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostJsonPojoFailure("/pojo-response");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postJsonPojoResponseFailure(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostJsonPojoFailure("/pojo-response"));
     }
 
     private void testPostJsonPojoFailure(final String path) {
@@ -157,36 +155,36 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
                 INTERNAL_SERVER_ERROR);
     }
 
-    @Test
-    public void postBrokenJsonPojo() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostBrokenJsonPojo("/pojo");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postBrokenJsonPojo(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostBrokenJsonPojo("/pojo"));
     }
 
-    @Test
-    public void postBrokenJsonPojoResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostBrokenJsonPojo("/pojo-response");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postBrokenJsonPojoResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostBrokenJsonPojo("/pojo-response"));
     }
 
     private void testPostBrokenJsonPojo(final String path) {
         sendAndAssertStatusOnly(post(path, "{key:789}", APPLICATION_JSON), BAD_REQUEST);
     }
 
-    @Test
-    public void postInvalidJsonPojo() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostInvalidJsonPojo("/pojo");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postInvalidJsonPojo(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostInvalidJsonPojo("/pojo"));
     }
 
-    @Test
-    public void postInvalidJsonPojoResponse() {
-        runTwiceToEnsureEndpointCache(() -> {
-            testPostInvalidJsonPojo("/pojo-response");
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postInvalidJsonPojoResponse(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(() -> testPostInvalidJsonPojo("/pojo-response"));
     }
 
     private void testPostInvalidJsonPojo(final String path) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,16 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.DelegatingSignalOffloader;
 import io.servicetalk.concurrent.internal.DelegatingSignalOffloaderFactory;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.ExecutorRule.withExecutor;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withExecutor;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,22 +39,20 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 public abstract class AbstractHandleSubscribeOffloadedTest {
-    public static final String OFFLOAD_THREAD_NAME_PREFIX = "offload-thread";
-    public static final String TIMER_THREAD_NAME_PREFIX = "timer-thread";
-    @Rule
-    public final ExecutorRule executorForOffloadRule =
+    private static final String OFFLOAD_THREAD_NAME_PREFIX = "offload-thread";
+    private static final String TIMER_THREAD_NAME_PREFIX = "timer-thread";
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorForOffloadRule =
             withExecutor(() -> newCachedThreadExecutor(new DefaultThreadFactory(OFFLOAD_THREAD_NAME_PREFIX)));
-    @Rule
-    public final ExecutorRule executorForTimerRule =
+    @RegisterExtension
+    protected final ExecutorExtension<Executor> executorForTimerRule =
             withExecutor(() -> newCachedThreadExecutor(new DefaultThreadFactory(TIMER_THREAD_NAME_PREFIX)));
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     protected final AtomicReference<Thread> handleSubscribeInvokerRef = new AtomicReference<>();
-    protected final AtomicInteger offloadPublisherSubscribeCalled = new AtomicInteger();
-    protected final AtomicInteger offloadSingleSubscribeCalled = new AtomicInteger();
-    protected final AtomicInteger offloadCompletableSubscribeCalled = new AtomicInteger();
-    protected final AtomicInteger signalOffloaderCreated = new AtomicInteger();
-    protected final SignalOffloaderFactory factory;
+    private final AtomicInteger offloadPublisherSubscribeCalled = new AtomicInteger();
+    private final AtomicInteger offloadSingleSubscribeCalled = new AtomicInteger();
+    private final AtomicInteger offloadCompletableSubscribeCalled = new AtomicInteger();
+    private final AtomicInteger signalOffloaderCreated = new AtomicInteger();
+    private final SignalOffloaderFactory factory;
 
     protected AbstractHandleSubscribeOffloadedTest() {
         factory = new DelegatingSignalOffloaderFactory(defaultOffloaderFactory()) {

@@ -40,12 +40,6 @@ final class PublishAndSubscribeOnSingles {
                 signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap)), cause);
     }
 
-    static <T> Single<T> publishAndSubscribeOn(Single<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new PublishAndSubscribeOn<>(original, executor);
-    }
-
     static <T> Single<T> publishOn(Single<T> original, Executor executor) {
         return original.executor() == executor || immediate() == executor ?
                 original :
@@ -70,45 +64,6 @@ final class PublishAndSubscribeOnSingles {
         @Override
         final Executor executor() {
             return executor;
-        }
-    }
-
-    private abstract static class OffloadingOverrideSingle<T> extends AbstractSynchronousSingleOperator<T, T> {
-        protected final Executor executor;
-
-        protected OffloadingOverrideSingle(final Single<T> original, final Executor executor) {
-            super(original);
-            this.executor = executor;
-        }
-
-        @Override
-        final Executor executor() {
-            return executor;
-        }
-    }
-
-    private static final class PublishAndSubscribeOn<T> extends OffloadingSingle<T> {
-
-        PublishAndSubscribeOn(final Single<T> original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Single that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            // We use executor to create the returned Single which means executor will be used
-            // to offload handleSubscribe as well as the Subscription that is sent to the subscriber here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(
-                            contextProvider.wrapSingleSubscriber(subscriber, contextMap)), contextProvider);
         }
     }
 
@@ -154,26 +109,6 @@ final class PublishAndSubscribeOnSingles {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(subscriber, contextProvider);
-        }
-    }
-
-    /**
-     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
-     * normal mode of operation if we create a {@link Single} with an {@link Executor}, i.e. all operators behave the
-     * same way.
-     * Hence, we simply use {@link AbstractSynchronousSingleOperator} which does not do any extra offloading, it just
-     * overrides the {@link Executor} that will be used to do the offloading.
-     */
-    private static final class SubscribeOnOverride<T> extends OffloadingOverrideSingle<T> {
-        SubscribeOnOverride(final Single<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
-        }
-
-        @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            // We are using AbstractSynchronousSingleOperator just to override the Executor. We do not intend to
-            // do any extra offloading that is done by a regular Single created with an Executor.
-            return subscriber;
         }
     }
 }

@@ -17,7 +17,8 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -37,10 +38,7 @@ import static javax.ws.rs.core.Response.Status.PAYMENT_REQUIRED;
 import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServiceTest {
-    public IllBehavedRequestFilterTest(final RouterApi api) {
-        super(api);
-    }
+class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Provider
     @Priority(AUTHENTICATION)
@@ -48,7 +46,7 @@ public class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServ
         @Override
         public void filter(final ContainerRequestContext requestCtx) throws IOException {
             // ContainerRequestFilter should replace the entity stream with a filtered one based on the original entity
-            // stream (see AbstractFilterInterceptorTest for examples of well behaved filters).
+            // stream (see AbstractFilterInterceptorTest for examples of well-behaved filters).
             int read = requestCtx.getEntityStream().read();
             if (read != 'x') {
                 // 402 so it's distinguishable from 400 and 500 that the server could respond
@@ -57,7 +55,7 @@ public class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServ
         }
     }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -72,14 +70,18 @@ public class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServ
         return new TestApplication();
     }
 
-    @Test
-    public void inputStreamConsumingResource() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void inputStreamConsumingResource(RouterApi api) throws Exception {
+        setUp(api);
         sendAndAssertResponse(post(SynchronousResources.PATH + "/json-mapin-pubout", "x{\"key\":\"val2\"}",
                 APPLICATION_JSON), OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val2\",\"foo\":\"bar3\"}"), __ -> null);
     }
 
-    @Test
-    public void publisherConsumingResource() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void publisherConsumingResource(RouterApi api) throws Exception {
+        setUp(api);
         sendAndAssertNoResponse(post(SynchronousResources.PATH + "/json-pubin-pubout", "x{\"key\":\"val4\"}",
                 APPLICATION_JSON), INTERNAL_SERVER_ERROR);
     }

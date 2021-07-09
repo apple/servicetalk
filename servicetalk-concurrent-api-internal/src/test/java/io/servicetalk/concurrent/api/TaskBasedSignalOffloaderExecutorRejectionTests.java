@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -41,21 +41,21 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TaskBasedSignalOffloaderExecutorRejectionTests {
+class TaskBasedSignalOffloaderExecutorRejectionTests {
 
     private final AtomicBoolean rejectNextTask = new AtomicBoolean();
     private final AtomicInteger rejectTaskCount = new AtomicInteger();
     private final Executor mockExecutor;
     private final OffloaderAwareExecutor executor;
 
-    public TaskBasedSignalOffloaderExecutorRejectionTests() {
+    TaskBasedSignalOffloaderExecutorRejectionTests() {
         mockExecutor = mock(Executor.class);
         executor = new OffloaderAwareExecutor(mockExecutor, taskBasedOffloaderFactory());
         when(executor.execute(any())).then(invocation -> {
@@ -70,90 +70,90 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     }
 
     @Test
-    public void publisherSubscribeRejects() throws Exception {
+    void publisherSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(from(1).subscribeOn(executor).toFuture());
     }
 
     @Test
-    public void singleSubscribeRejects() throws Exception {
+    void singleSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(succeeded(1).subscribeOn(executor).toFuture());
     }
 
     @Test
-    public void completableSubscribeRejects() throws Exception {
+    void completableSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(completed().subscribeOn(executor).toFuture());
     }
 
     @Test
-    public void publisherOnSubscribeRejects() throws Exception {
+    void publisherOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(Publisher.never().publishOn(executor).toFuture());
     }
 
     @Test
-    public void singleOnSubscribeRejects() throws Exception {
+    void singleOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(Single.never().publishOn(executor).toFuture());
     }
 
     @Test
-    public void completableOnSubscribeRejects() throws Exception {
+    void completableOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectFailureAndVerify(Completable.never().publishOn(executor).toFuture());
     }
 
     @Test
-    public void publisherOnNextRejects() {
+    void publisherOnNextRejects() {
         publisherPublishOnThrows(source -> source.onNext(1));
     }
 
     @Test
-    public void publisherOnCompleteRejects() {
+    void publisherOnCompleteRejects() {
         publisherPublishOnThrows(TestPublisher::onComplete);
     }
 
     @Test
-    public void publisherOnErrorRejects() {
+    void publisherOnErrorRejects() {
         publisherPublishOnThrows(source -> source.onError(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void singleOnSuccessRejects() {
+    void singleOnSuccessRejects() {
         singlePublishOnThrows(source -> source.onSuccess(1));
     }
 
     @Test
-    public void singleOnErrorRejects() {
+    void singleOnErrorRejects() {
         singlePublishOnThrows(source -> source.onError(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void completableOnCompleteRejects() {
+    void completableOnCompleteRejects() {
         completablePublishOnThrows(TestCompletable::onComplete);
     }
 
     @Test
-    public void completableOnErrorRejects() {
+    void completableOnErrorRejects() {
         completablePublishOnThrows(source -> source.onError(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void requestNRejects() {
+    void requestNRejects() {
         TestSubscription subscription = subscriptionRejects(s -> s.awaitSubscription().request(1));
         assertThat("Unexpected items requested from Subscription.", subscription.requested(), is(1L));
     }
 
     @Test
-    public void publisherCancelRejects() {
+    void publisherCancelRejects() {
         TestSubscription subscription = subscriptionRejects(sub -> sub.awaitSubscription().cancel());
         assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test
-    public void singleCancelRejects() {
+    void singleCancelRejects() {
         TestSingle<Integer> single = new TestSingle<>();
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         toSource(single.subscribeOn(executor)).subscribe(subscriber);
@@ -167,7 +167,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     }
 
     @Test
-    public void completableCancelRejects() {
+    void completableCancelRejects() {
         TestCompletable single = new TestCompletable();
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(single.subscribeOn(executor)).subscribe(subscriber);

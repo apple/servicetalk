@@ -51,7 +51,17 @@ for (location in ["local", "remote"]) {
   def configureValidateHtmlFilesTask = "configureValidate${capitalizedLocation}HtmlFiles"
   def validateHtmlLinksTask = "validate${capitalizedLocation}HtmlLinks"
 
-  def htmlFiles = fileTree("$buildDir/$location").matching { include "**/SNAPSHOT/*.html" }
+  def htmlFiles
+  if (location == "local") {
+        htmlFiles = fileTree("$buildDir/$location").matching {
+        include "**/*.html"
+        }
+  } else {
+        // only check the currently generated docs, ignore legacy docs
+        htmlFiles = fileTree("$buildDir/$location").matching {
+        include "**/SNAPSHOT/*.html"
+        }
+  }
 
   task(validateSiteTask) {
     dependsOn validateHtmlFilesTask, validateHtmlLinksTask

@@ -36,7 +36,7 @@ dependencies {
   implementation "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
@@ -53,10 +53,15 @@ dependencies {
   testFixturesImplementation project(":servicetalk-transport-netty")
   testFixturesImplementation project(":servicetalk-transport-netty-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "junit:junit:$junitVersion"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+  testFixturesImplementation "org.junit.platform:junit-platform-suite:$junitPlatformVersion"
   testFixturesImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
   testFixturesImplementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
   testFixturesImplementation "org.glassfish.jersey.media:jersey-media-sse:$jerseyVersion"
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -22,10 +22,16 @@ import java.nio.channels.ClosedChannelException;
 /**
  * Indicates that an error happened due to connection closure, but is retryable.
  */
-class RetryableClosureException extends ClosedChannelException implements RetryableException {
+final class RetryableClosedChannelException extends ClosedChannelException implements RetryableException {
     private static final long serialVersionUID = 2006969744518089407L;
 
-    RetryableClosureException(final Throwable cause) {
+    RetryableClosedChannelException(final ClosedChannelException cause) {
         initCause(cause);
+    }
+
+    @Override
+    public Throwable fillInStackTrace() {
+        // We don't need stack trace because it's just a retryable wrapper for original ClosedChannelException
+        return this;
     }
 }

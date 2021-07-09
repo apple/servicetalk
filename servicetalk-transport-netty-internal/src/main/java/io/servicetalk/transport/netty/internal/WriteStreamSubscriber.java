@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
@@ -35,9 +35,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -63,7 +63,7 @@ import static java.util.Objects.requireNonNull;
  * (determined by {@link Channel#bytesBeforeUnwritable()}).
  * <p>
  *
- *  If previous request for more items has been fulfilled i.e. if {@code n} items were requested then
+ * If previous request for more items has been fulfilled i.e. if {@code n} items were requested then
  * {@link #onNext(Object)} has been invoked {@code n} times. Then capacity equals
  * {@link Channel#bytesBeforeUnwritable()}.
  * <p>
@@ -82,8 +82,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final Subscription CANCELLED = newEmptySubscription();
-    private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
-            AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
             AtomicReferenceFieldUpdater.newUpdater(WriteStreamSubscriber.class, Subscription.class, "subscription");
     private final Subscriber subscriber;
@@ -95,11 +93,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final EventExecutor eventLoop;
     private final WriteDemandEstimator demandEstimator;
     private final AllWritesPromise promise;
-    @SuppressWarnings("unused")
     @Nullable
     private volatile Subscription subscription;
-    @SuppressWarnings("unused")
-    private volatile long requested;
 
     /**
      * This is invoked from the context of on* methods. ReactiveStreams spec says that invocations to Subscriber's on*
@@ -108,16 +103,18 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      */
     private boolean enqueueWrites;
     private final CloseHandler closeHandler;
+    private final boolean isClient;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler, WriteObserver observer,
-                          UnaryOperator<Throwable> enrichProtocolError) {
+                          UnaryOperator<Throwable> enrichProtocolError, boolean isClient) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
         this.demandEstimator = demandEstimator;
         promise = new AllWritesPromise(channel, observer, enrichProtocolError);
         this.closeHandler = closeHandler;
+        this.isClient = isClient;
     }
 
     @Override
@@ -131,15 +128,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
         subscriber.onSubscribe(concurrentSubscription);
         if (eventLoop.inEventLoop()) {
-            requestMoreIfRequired(concurrentSubscription);
+            initialRequestN(concurrentSubscription);
         } else {
-            eventLoop.execute(() -> requestMoreIfRequired(concurrentSubscription));
+            eventLoop.execute(() -> initialRequestN(concurrentSubscription));
         }
     }
 
     @Override
     public void onNext(Object o) {
-        requestedUpdater.decrementAndGet(this);
         if (!enqueueWrites && !eventLoop.inEventLoop()) {
             /*
              * If any onNext comes from out of the eventloop, we should enqueue all subsequent writes and terminal
@@ -154,13 +150,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             enqueueWrites = true;
         }
         if (enqueueWrites) {
-            eventLoop.execute(() -> {
-                doWrite(o);
-                requestMoreIfRequired(subscription);
-            });
+            eventLoop.execute(() -> doWrite(o));
         } else {
             doWrite(o);
-            requestMoreIfRequired(subscription);
         }
     }
 
@@ -171,6 +163,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             promise.writeNext(msg);
             long capacityAfter = channel.bytesBeforeUnwritable();
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
+            requestMoreIfRequired(subscription, capacityAfter);
         }
     }
 
@@ -196,7 +189,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     @Override
     public void channelWritable() {
         assert eventLoop.inEventLoop();
-        requestMoreIfRequired(subscription);
+        requestMoreIfRequired(subscription, -1L);
     }
 
     @Override
@@ -246,16 +239,26 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
     }
 
-    private void requestMoreIfRequired(@Nullable Subscription subscription) {
+    private void initialRequestN(Subscription subscription) {
+        if (isClient) {
+            if (promise.isWritable()) {
+                subscription.request(1L);   // Request meta-data only
+            }
+        } else {
+            requestMoreIfRequired(subscription, -1L);
+        }
+    }
+
+    private void requestMoreIfRequired(@Nullable Subscription subscription, long bytesBeforeUnwritable) {
         // subscription could be null if channelWritable is invoked before onSubscribe.
         // If promise is not writable, then we will not be able to write anyways, so do not request more.
         if (subscription == null || subscription == CANCELLED || !promise.isWritable()) {
             return;
         }
 
-        long n = demandEstimator.estimateRequestN(channel.bytesBeforeUnwritable());
+        long n = demandEstimator.estimateRequestN(bytesBeforeUnwritable >= 0 ? bytesBeforeUnwritable :
+                channel.bytesBeforeUnwritable());
         if (n > 0) {
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             subscription.request(n);
         }
     }
@@ -339,12 +342,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void writeNext(Object msg) {
             assert eventLoop.inEventLoop();
-            if (!written) {
-                written = true;
-            }
             activeWrites++;
             listenersOnWriteBoundaries.addLast(WRITE_BOUNDARY);
             channel.write(msg, this);
+            if (!written) {
+                written = true;
+            }
         }
 
         void sourceTerminated(@Nullable Throwable cause) {
@@ -390,7 +393,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 setFlag(CHANNEL_CLOSED);
                 // subscriber has not terminated, no writes are pending and channel has closed so terminate the
                 // subscriber with a failure.
-                tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
+                tryFailure(cause);
             }
         }
 
@@ -481,17 +484,19 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     closeHandler.closeChannelOutbound(channel);
                 }
             } else {
-                final Throwable enrichedCause = enrichProtocolError.apply(cause);
+                Throwable enrichedCause = enrichProtocolError.apply(cause);
+                assignConnectionError(channel, enrichedCause);
+                enrichedCause = !written ? new AbortedFirstWriteException(enrichedCause) : enrichedCause;
                 try {
                     observer.writeFailed(enrichedCause);
-                    assignConnectionError(channel, enrichedCause);
                     subscriber.onError(enrichedCause);
                 } catch (Throwable t) {
+                    t.addSuppressed(enrichedCause);
                     tryFailureOrLog(t);
                 }
                 if (!hasFlag(CHANNEL_CLOSED)) {
-                    // Close channel on error.
-                    ChannelCloseUtils.close(channel, enrichedCause);
+                    // Close channel on error, connection error is already assigned to the channel's attribute
+                    channel.close();
                 }
             }
             // Notify listeners after the subscriber is terminated. Otherwise, WriteStreamSubscriber#channelClosed may
@@ -542,9 +547,16 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
     }
 
-    static final class AbortedFirstWrite extends Exception {
-        AbortedFirstWrite(final Throwable cause) {
-            super(null, cause, false, false);
+    static final class AbortedFirstWriteException extends IOException implements RetryableException {
+        private static final long serialVersionUID = -5626706348233302247L;
+
+        AbortedFirstWriteException(final Throwable cause) {
+            super(cause);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
         }
     }
 }

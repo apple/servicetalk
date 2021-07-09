@@ -15,15 +15,14 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestApplication;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceInvalidExecStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceUnsupportedAsync;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Set;
 import javax.ws.rs.core.Application;
@@ -32,57 +31,59 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.asFactory;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ExecutionStrategyConfigurationFailuresTest {
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
+class ExecutionStrategyConfigurationFailuresTest {
 
-    @ClassRule
-    public static final ExecutorRule TEST_EXEC = ExecutorRule.withNamePrefix("test");
+    @RegisterExtension
+    static final ExecutorExtension<Executor> TEST_EXEC = ExecutorExtension.withCachedExecutor("test");
 
     @Test
-    public void invalidStrategies() {
-        expected.expect(IllegalArgumentException.class);
-        expected.expectMessage(both(containsString("emptyId()"))
-                .and(containsString("ResourceInvalidExecStrategy")));
+    void invalidStrategies() {
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> new HttpJerseyRouterBuilder().buildStreaming(new Application() {
+                @Override
+                public Set<Class<?>> getClasses() {
+                    return singleton(ResourceInvalidExecStrategy.class);
+                }
+            }));
 
-        new HttpJerseyRouterBuilder().buildStreaming(new Application() {
-            @Override
-            public Set<Class<?>> getClasses() {
-                return singleton(ResourceInvalidExecStrategy.class);
-            }
-        });
+        assertThat(ex.getMessage(), both(containsString("emptyId()"))
+            .and(containsString("ResourceInvalidExecStrategy")));
     }
 
     @Test
-    public void missingRouteExecId() {
-        expected.expect(IllegalArgumentException.class);
-        expected.expectMessage(both(containsString("subResourceDefault()"))
-                .and(containsString("subResourceRouteExecId()")));
-
-        new HttpJerseyRouterBuilder().buildStreaming(new TestApplication());
+    void missingRouteExecId() {
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> new HttpJerseyRouterBuilder().buildStreaming(new TestApplication()));
+        assertThat(ex.getMessage(), both(containsString("subResourceDefault()"))
+            .and(containsString("subResourceRouteExecId()")));
     }
 
     @Test
-    public void jaxRsAsync() {
-        expected.expect(IllegalArgumentException.class);
-        expected.expectMessage(allOf(
-                containsString("suspended("),
-                containsString("sse("),
-                containsString("managed()"),
-                containsString("cf()")));
-
-        new HttpJerseyRouterBuilder()
+    void jaxRsAsync() {
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                        singletonMap("test", defaultStrategy(TEST_EXEC.executor()))))
+                    singletonMap("test", defaultStrategy(TEST_EXEC.executor()))))
                 .buildStreaming(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {
                         return singleton(ResourceUnsupportedAsync.class);
                     }
-                });
+                }));
+
+        assertThat(ex.getMessage(), allOf(
+            containsString("suspended("),
+            containsString("sse("),
+            containsString("managed()"),
+            containsString("cf()")));
     }
 }

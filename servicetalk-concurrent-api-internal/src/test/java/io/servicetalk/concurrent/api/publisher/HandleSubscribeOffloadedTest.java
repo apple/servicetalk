@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import io.servicetalk.concurrent.api.AbstractHandleSubscribeOffloadedTest;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
 import static java.lang.Thread.currentThread;
 
-public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
+class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
     private final Publisher<Integer> source = new Publisher<Integer>() {
         @Override
         protected void handleSubscribe(final PublisherSource.Subscriber<? super Integer> subscriber) {
@@ -36,28 +36,28 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     };
 
     @Test
-    public void simpleSource() throws Exception {
+    void simpleSource() throws Exception {
         awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
 
     @Test
-    public void withSyncOperatorsAddedAfter() throws Exception {
+    void withSyncOperatorsAddedAfter() throws Exception {
         awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()).beforeOnNext(__ -> { }));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
 
     @Test
-    public void withSyncOperatorsAddedBefore() throws Exception {
+    void withSyncOperatorsAddedBefore() throws Exception {
         awaitTermination(source.beforeOnNext(__ -> { }).subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
 
     @Test
-    public void withAsyncOperatorsAddedAfter() throws Exception {
+    void withAsyncOperatorsAddedAfter() throws Exception {
         awaitTermination(source.subscribeOn(newOffloadingAwareExecutor())
                 .flatMapMergeSingle(t -> executorForTimerRule.executor().submit(() -> t)));
         verifyHandleSubscribeInvoker();
@@ -65,7 +65,7 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     }
 
     @Test
-    public void withAsyncOperatorsAddedBefore() throws Exception {
+    void withAsyncOperatorsAddedBefore() throws Exception {
         awaitTermination(source.flatMapMergeSingle(t -> executorForTimerRule.executor().submit(() -> t))
                 .subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();

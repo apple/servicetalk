@@ -181,7 +181,7 @@ public abstract class Single<T> {
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> Single.succeeded(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)));
     }
 
     /**
@@ -727,6 +727,10 @@ public abstract class Single<T> {
      * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
      * {@link Publisher} is forwarded to the returned {@link Publisher}.
      * <p>
+     * Note: this method is an overload for {@link #concat(Publisher, boolean)} with {@code deferSubscribe} equal to
+     * {@code false}, which triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully.
+     * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
      * <pre>{@code
@@ -738,9 +742,37 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Publisher, boolean)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return new SingleConcatWithPublisher<>(this, next, executor());
+        return new SingleConcatWithPublisher<>(this, next, false);
+    }
+
+    /**
+     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all
+     * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
+     * {@link Publisher} is forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     results.add(resultOfThisSingle());
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
+     * @param next {@link Publisher} to concat.
+     * @param deferSubscribe if {@code true} subscribe to the {@code next} {@link Publisher} will be deferred until
+     * demand is received. Otherwise, it subscribes to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully. Choosing the deferred ({@code true}) behavior is important if the
+     * {@code next} {@link Publisher} does not or might not support multiple subscribers (non-replayable). Choosing the
+     * immediate subscribe ({@code false}) behavior may have better performance and may be a preferable choice for
+     * replayable {@link Publisher}(s) or when eager subscribe is beneficial.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * all elements from {@code next} {@link Publisher}.
+     */
+    public final Publisher<T> concat(Publisher<? extends T> next, boolean deferSubscribe) {
+        return new SingleConcatWithPublisher<>(this, next, deferSubscribe);
     }
 
     /**
@@ -1352,25 +1384,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
-     * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     */
-    public final Single<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
-    }
-
-    /**
      * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
@@ -1582,8 +1595,8 @@ public abstract class Single<T> {
      * emitted by the {@link Callable} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param callable {@link Callable} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -1600,8 +1613,8 @@ public abstract class Single<T> {
      * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     *      * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     *      * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.

@@ -40,10 +40,6 @@ final class PublishAndSubscribeOnCompletables {
                 cause);
     }
 
-    static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOn(original, executor);
-    }
-
     static Completable publishOn(Completable original, Executor executor) {
         return original.executor() == executor ? original : new PublishOn(original, executor);
     }
@@ -64,31 +60,6 @@ final class PublishAndSubscribeOnCompletables {
         @Override
         final Executor executor() {
             return executor;
-        }
-    }
-
-    private static final class PublishAndSubscribeOn extends OffloadingCompletable {
-
-        PublishAndSubscribeOn(final Completable original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            // We use executor to create the returned Completable which means executor will be used
-            // to offload handleSubscribe as well as the Subscription that is sent to the subscriber here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(
-                            contextProvider.wrapCompletableSubscriber(subscriber, contextMap)), contextProvider);
         }
     }
 

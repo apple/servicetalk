@@ -1,7 +1,7 @@
 name: PR Quality
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, '0.41' ]
 jobs:
   quality:
     runs-on: ubuntu-latest
