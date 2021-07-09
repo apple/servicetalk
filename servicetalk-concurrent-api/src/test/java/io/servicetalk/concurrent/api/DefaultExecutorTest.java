@@ -159,7 +159,7 @@ final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    public void executeRecursive(ExecutorParam executorParam) throws Throwable {
+    void executeRecursive(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         assumeTrue(executorParam.supportsImmediateExecutionDuringExecute() || executorParam.size() >= 2,
                 () -> "Ignoring incompatible executor: " + executorParam);
