@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.api.internal.AbstractOffloadingTest;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -34,6 +33,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 public abstract class AbstractPublisherOffloadingTest extends AbstractOffloadingTest {
     protected static final String ITEM_VALUE = "Hello";
@@ -52,58 +52,64 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedThreads.capture(CaptureSlot.APP_THREAD);
+                capturedReferences.capture(CaptureSlot.APP_THREAD);
 
                 // Add thread recording test points
                 final Publisher<String> original = testPublisher
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
+                            capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
                             }
                         });
 
                 // Perform offloading and add more thread recording test points
-                Publisher<String> offloaded = offloadingFunction.apply(original, offload.executor())
+                Publisher<String> offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
+                            capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
                             }
                         });
 
                 // subscribe
                 toSource(offloaded).subscribe(testSubscriber);
+                assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                        testExecutor.executor().queuedTasksPending(), lessThan(2));
+                if (1 == testExecutor.executor().queuedTasksPending()) {
+                    // execute offloaded subscribe
+                    testExecutor.executor().executeNextTask();
+                }
                 PublisherSource.Subscription subscription = testSubscriber.awaitSubscription();
                 assertThat("No Subscription", subscription, notNullValue());
                 testPublisher.awaitSubscribed();
@@ -112,6 +118,12 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
 
                 // generate demand
                 subscription.request(MAX_VALUE);
+                assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                        testExecutor.executor().queuedTasksPending(), lessThan(2));
+                if (1 == testExecutor.executor().queuedTasksPending()) {
+                    // execute offloaded request
+                    testExecutor.executor().executeNextTask();
+                }
                 testSubscription.awaitRequestN(1);
 
                 // perform terminal
@@ -121,6 +133,12 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                         break;
                     case COMPLETE:
                         testPublisher.onNext(ITEM_VALUE);
+                        assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                                testExecutor.executor().queuedTasksPending(), lessThan(2));
+                        if (1 == testExecutor.executor().queuedTasksPending()) {
+                            // execute offloaded onNext
+                            testExecutor.executor().executeNextTask();
+                        }
                         String result = testSubscriber.takeOnNext();
                         assertThat("result is unexpected value", result, sameInstance(ITEM_VALUE));
                         testPublisher.onComplete();
@@ -130,6 +148,12 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                         break;
                     default:
                         throw new AssertionError("unexpected terminal mode");
+                }
+                assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                        testExecutor.executor().queuedTasksPending(), lessThan(2));
+                if (1 == testExecutor.executor().queuedTasksPending()) {
+                    // execute offloaded terminal
+                    testExecutor.executor().executeNextTask();
                 }
             } catch (Throwable all) {
                 AbstractOffloadingTest.LOGGER.warn("Unexpected throwable", all);
@@ -154,15 +178,9 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                 throw new AssertionError("unexpected terminal mode");
         }
 
-        // Ensure that all offloading completed.
-        offloadExecutorService.shutdown();
-        boolean shutdown = offloadExecutorService.awaitTermination(5, TimeUnit.SECONDS);
-        assertThat("Executor still active " + offloadExecutorService, shutdown, is(true));
+        capturedReferences.assertCaptured();
 
-        assertThat("Started offloads != finished", offloadsFinished.intValue(), is(offloadsStarted.intValue()));
-
-        capturedThreads.assertCaptured();
-
-        return offloadsFinished.intValue();
+        assertThat("Pending offloading", testExecutor.executor().queuedTasksPending(), is(0));
+        return testExecutor.executor().queuedTasksExecuted();
     }
 }

@@ -66,17 +66,17 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         final String expectedOffloads;
         final BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator;
         final TerminalOperation terminal;
-        final EnumMap<CaptureSlot, Matcher<? super Thread>> matchers = new EnumMap<>(CaptureSlot.class);
+        final EnumMap<CaptureSlot, Matcher<? super String>> matchers = new EnumMap<>(CaptureSlot.class);
 
         OffloadCase(int offloadsExpected, String expectedOffloads,
                     BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator,
                     TerminalOperation terminal,
-                    Matcher<? super Thread>... matchers) {
+                    Matcher<? super String>... matchers) {
             this.offloadsExpected = offloadsExpected;
             this.expectedOffloads = expectedOffloads;
             this.offloadOperator = offloadOperator;
             this.terminal = terminal;
-            Iterator<Matcher<? super Thread>> eachMatcher = Arrays.asList(matchers).iterator();
+            Iterator<Matcher<? super String>> eachMatcher = Arrays.asList(matchers).iterator();
             for (CaptureSlot slot : CaptureSlot.values()) {
                 if (!eachMatcher.hasNext()) {
                     break;
@@ -93,6 +93,6 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         assertThat("Unexpected offloads: " + offloadCase.expectedOffloads,
                 offloads, CoreMatchers.is(offloadCase.offloadsExpected));
         offloadCase.matchers.entrySet().stream()
-                .forEach(slotMatcher -> capturedThreads.assertCaptured(slotMatcher.getKey(), slotMatcher.getValue()));
+                .forEach(slotMatch -> capturedReferences.assertCaptured(slotMatch.getKey(), slotMatch.getValue()));
     }
 }

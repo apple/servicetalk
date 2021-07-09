@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.internal.AbstractOffloadingTest;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -32,6 +31,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadingTest {
 
@@ -48,58 +48,64 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedThreads.capture(CaptureSlot.APP_THREAD);
+                capturedReferences.capture(CaptureSlot.APP_THREAD);
 
                 // Add thread recording test points
                 final Completable original = testCompletable
                         .liftSync(subscriber -> {
-                            capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
+                            capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
                             }
                         });
 
                 // Perform offloading and add more thread recording test points
-                Completable offloaded = offloadingFunction.apply(original, offload.executor())
+                Completable offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync(subscriber -> {
-                            capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
+                            capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
+                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
                             }
                         });
 
                 // subscribe and generate terminal
                 toSource(offloaded).subscribe(testSubscriber);
+                assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                        testExecutor.executor().queuedTasksPending(), lessThan(2));
+                if (1 == testExecutor.executor().queuedTasksPending()) {
+                    // execute offloaded subscribe
+                    testExecutor.executor().executeNextTask();
+                }
                 Cancellable cancellable = testSubscriber.awaitSubscription();
                 assertThat("No Cancellable", cancellable, notNullValue());
                 testCompletable.awaitSubscribed();
@@ -117,6 +123,12 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                         break;
                     default:
                         throw new AssertionError("unexpected terminal mode");
+                }
+                assertThat("Unexpected tasks " + testExecutor.executor().queuedTasksPending(),
+                        testExecutor.executor().queuedTasksPending(), lessThan(2));
+                if (1 == testExecutor.executor().queuedTasksPending()) {
+                    // execute offloaded terminal
+                    testExecutor.executor().executeNextTask();
                 }
             } catch (Throwable all) {
                 AbstractOffloadingTest.LOGGER.warn("Unexpected throwable", all);
@@ -141,15 +153,10 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                 throw new AssertionError("unexpected terminal mode");
         }
 
+        capturedReferences.assertCaptured();
+
         // Ensure that all offloading completed.
-        offloadExecutorService.shutdown();
-        boolean shutdown = offloadExecutorService.awaitTermination(5, TimeUnit.SECONDS);
-        assertThat("Executor still active " + offloadExecutorService, shutdown, is(true));
-
-        assertThat("Started offloads != finished", offloadsFinished.intValue(), is(offloadsStarted.intValue()));
-
-        capturedThreads.assertCaptured();
-
-        return offloadsFinished.intValue();
+        assertThat("Offloading pending", testExecutor.executor().queuedTasksPending(), is(0));
+        return testExecutor.executor().queuedTasksExecuted();
     }
 }

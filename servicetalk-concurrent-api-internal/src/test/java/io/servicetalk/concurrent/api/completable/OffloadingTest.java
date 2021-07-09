@@ -43,13 +43,13 @@ class OffloadingTest extends AbstractCompletableOffloadingTest {
         NO_OFFLOAD_CANCEL(0, "none",
                 (c, e) -> c, TerminalOperation.CANCEL,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, APP_EXECUTOR),
-        SUBSCRIBE_ON_SUCCESS(1, "subscribe, request",
+        SUBSCRIBE_ON_SUCCESS(1, "subscribe",
                 Completable::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
-        SUBSCRIBE_ON_ERROR(1, "subscribe, request",
+        SUBSCRIBE_ON_ERROR(1, "subscribe",
                 Completable::subscribeOn, TerminalOperation.ERROR,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
-        SUBSCRIBE_ON_CANCEL(2, "subscribe, request, cancel",
+        SUBSCRIBE_ON_CANCEL(2, "subscribe, cancel",
                 Completable::subscribeOn, TerminalOperation.CANCEL,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, OFFLOAD_EXECUTOR),
         PUBLISH_ON_SUCCESS(2, "onSubscribe, onComplete",
@@ -66,17 +66,17 @@ class OffloadingTest extends AbstractCompletableOffloadingTest {
         final String expectedOffloads;
         final BiFunction<Completable, Executor, Completable> offloadOperator;
         final TerminalOperation terminal;
-        final EnumMap<CaptureSlot, Matcher<? super Thread>> matchers = new EnumMap<>(CaptureSlot.class);
+        final EnumMap<CaptureSlot, Matcher<? super String>> matchers = new EnumMap<>(CaptureSlot.class);
 
         OffloadCase(int offloadsExpected, String expectedOffloads,
                     BiFunction<Completable, Executor, Completable> offloadOperator,
                     TerminalOperation terminal,
-                    Matcher<? super Thread>... matchers) {
+                    Matcher<? super String>... matchers) {
             this.offloadsExpected = offloadsExpected;
             this.expectedOffloads = expectedOffloads;
             this.offloadOperator = offloadOperator;
             this.terminal = terminal;
-            Iterator<Matcher<? super Thread>> eachMatcher = Arrays.asList(matchers).iterator();
+            Iterator<Matcher<? super String>> eachMatcher = Arrays.asList(matchers).iterator();
             for (CaptureSlot slot : CaptureSlot.values()) {
                 if (!eachMatcher.hasNext()) {
                     break;
@@ -93,6 +93,6 @@ class OffloadingTest extends AbstractCompletableOffloadingTest {
         assertThat("Unexpected offloads: " + offloadCase.expectedOffloads,
                 offloads, CoreMatchers.is(offloadCase.offloadsExpected));
         offloadCase.matchers.entrySet().stream()
-                .forEach(slotMatcher -> capturedThreads.assertCaptured(slotMatcher.getKey(), slotMatcher.getValue()));
+                .forEach(slotMatch -> capturedReferences.assertCaptured(slotMatch.getKey(), slotMatch.getValue()));
     }
 }
