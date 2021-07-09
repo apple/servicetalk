@@ -32,7 +32,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * An {@link Executor} implementation that provides methods for controlling execution of queued and schedules tasks,
@@ -314,8 +317,14 @@ public class TestExecutor implements Executor {
         return false;
     }
 
-    // Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
-    // Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+    /**
+     *  Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
+     *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+     *  Sets the thread name to {@code TestExecutor} while running the task so that capturing the thread name makes
+     *  sense and during debugging the execution context is more obvious.
+     *  Pessimistically set the {@link AsyncContextMap} to null to ensure that any use of {@link AsyncContextMap}
+     *  within the context of the Runnable includes appropriate setting/restoring.
+     */
     private static final class RunnableWrapper implements Runnable {
         private final Runnable delegate;
 
@@ -325,7 +334,29 @@ public class TestExecutor implements Executor {
 
         @Override
         public void run() {
-            delegate.run();
+            Thread current = Thread.currentThread();
+            String oldName = current.getName();
+            current.setName("TestExecutor");
+            AsyncContextMap tlPrev = contextThreadLocal.get();
+            try {
+                if (current instanceof AsyncContextMapHolder) {
+                    final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) current;
+                    AsyncContextMap acmhPrev = asyncContextMapHolder.asyncContextMap();
+                    try {
+                        asyncContextMapHolder.asyncContextMap(null);
+                        delegate.run();
+                        assertThat("ContextMap was not restored",
+                                asyncContextMapHolder.asyncContextMap(), nullValue());
+                    } finally {
+                        asyncContextMapHolder.asyncContextMap(acmhPrev);
+                    }
+                } else {
+                    delegate.run();
+                }
+            } finally {
+                contextThreadLocal.set(tlPrev);
+                current.setName(oldName);
+            }
         }
     }
 }
