@@ -51,7 +51,7 @@ public class TestExecutor implements Executor {
     private final CompletableProcessor closeProcessor = new CompletableProcessor();
     private final AtomicInteger tasksExecuted = new AtomicInteger();
     private final AtomicInteger scheduledTasksExecuted = new AtomicInteger();
-    final String instanceName = getClass().getSimpleName() + "-" + INSTANCES.incrementAndGet();
+    private final String instanceName = getClass().getSimpleName() + "-" + INSTANCES.incrementAndGet();
 
     /**
      * Create a new instance.
