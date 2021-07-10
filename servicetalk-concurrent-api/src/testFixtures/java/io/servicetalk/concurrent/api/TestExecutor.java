@@ -34,10 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * An {@link Executor} implementation that provides methods for controlling execution of queued and schedules tasks,
@@ -328,7 +325,7 @@ public class TestExecutor implements Executor {
      *  sense and during debugging the execution context is more obvious.
      *  Adversarially set the {@link AsyncContextMap} to a hostile instance to ensure that any use of
      *  {@link AsyncContextMap} within the context of the Runnable includes appropriate setting/restoring of the
-     *  context.
+     *  context by the task.
      */
     private static final class RunnableWrapper implements Runnable {
         private final String threadName;
@@ -344,32 +341,17 @@ public class TestExecutor implements Executor {
             Thread current = Thread.currentThread();
             String oldName = current.getName();
             current.setName(threadName);
-            AsyncContextMap tlPrev = contextThreadLocal.get();
-            contextThreadLocal.set(InvalidAsyncContextMap.INSTANCE);
             try {
-                if (current instanceof AsyncContextMapHolder) {
-                    final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) current;
-                    AsyncContextMap acmhPrev = asyncContextMapHolder.asyncContextMap();
-                    try {
-                        asyncContextMapHolder.asyncContextMap(InvalidAsyncContextMap.INSTANCE);
-                        delegate.run();
-                        assertThat("ContextMap was not restored",
-                                asyncContextMapHolder.asyncContextMap(), sameInstance(InvalidAsyncContextMap.INSTANCE));
-                    } finally {
-                        asyncContextMapHolder.asyncContextMap(acmhPrev);
-                    }
-                } else {
-                    delegate.run();
-                }
-                assertThat("ContextMap was not restored",
-                        contextThreadLocal.get(), sameInstance(InvalidAsyncContextMap.INSTANCE));
+                AsyncContext.provider().wrapRunnable(delegate, InvalidAsyncContextMap.INSTANCE).run();
             } finally {
-                contextThreadLocal.set(tlPrev);
                 current.setName(oldName);
             }
         }
     }
 
+    /**
+     * Any access of this {@link AsyncContextMap} instance is invalid and was meant for some other instance.
+     */
     private static final class InvalidAsyncContextMap implements AsyncContextMap {
         static final AsyncContextMap INSTANCE = new InvalidAsyncContextMap();
 
@@ -377,62 +359,66 @@ public class TestExecutor implements Executor {
             // singleton
         }
 
+        private AssertionError invalidAccess() {
+            return new AssertionError("Invalid access of AsyncContextMap");
+        }
+
         @Nullable
         @Override
         public <T> T get(final Key<T> key) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public boolean containsKey(final Key<?> key) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public boolean isEmpty() {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public int size() {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Nullable
         @Override
         public <T> T put(final Key<T> key, @Nullable final T value) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public void putAll(final Map<Key<?>, Object> map) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public <T> T remove(final Key<T> key) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public boolean removeAll(final Iterable<Key<?>> entries) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public void clear() {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Nullable
         @Override
         public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
 
         @Override
         public AsyncContextMap copy() {
-            throw new AssertionError("Invalid access of AsyncContextMap");
+            throw invalidAccess();
         }
     }
 }
