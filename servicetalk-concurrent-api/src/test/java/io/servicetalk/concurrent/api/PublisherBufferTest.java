@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -48,13 +49,24 @@ class PublisherBufferTest {
 
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
     static final int BUFFER_SIZE_HINT = 8;
-    private final TestPublisher<Integer> original = new TestPublisher<>();
-    private final TestPublisher<Accumulator<Integer, Integer>> boundaries = new TestPublisher<>();
+    private final TestSubscription tSubscription = new TestSubscription("tSubscription");
+    private final TestPublisher<Integer> original = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe()
+            .build(sub -> {
+                sub.onSubscribe(tSubscription);
+                return sub;
+            });
+    private final TestSubscription bSubscription = new TestSubscription("bSubscription");
+    private final TestPublisher<Accumulator<Integer, Integer>> boundaries =
+            new TestPublisher.Builder<Accumulator<Integer, Integer>>().disableAutoOnSubscribe().build(sub -> {
+                sub.onSubscribe(bSubscription);
+                return sub;
+            });
     private final TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
 
-    PublisherBufferTest() {
+    PublisherBufferTest() throws Exception {
         toSource(original.buffer(new TestBufferStrategy(boundaries, BUFFER_SIZE_HINT))).subscribe(bufferSubscriber);
         bufferSubscriber.awaitSubscription().request(1); // get first boundary
+        bSubscription.awaitRequestN(1);
         emitBoundary();
         assertThat(bufferSubscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
@@ -241,7 +253,7 @@ class PublisherBufferTest {
         emitBoundary();
         assertThat(bufferSubscriber.pollAllOnNext(), empty());
         verifyBufferSubCompleted();
-        verifyCancelled(boundaries);
+        verifyCancelled(bSubscription);
     }
 
     @Test
@@ -251,7 +263,7 @@ class PublisherBufferTest {
         emitBoundary();
         assertThat(bufferSubscriber.pollAllOnNext(), empty());
         verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
-        verifyCancelled(boundaries);
+        verifyCancelled(bSubscription);
     }
 
     @Test
@@ -273,8 +285,8 @@ class PublisherBufferTest {
     @Test
     void bufferSubCancel() {
         bufferSubscriber.awaitSubscription().cancel();
-        verifyCancelled(original);
-        verifyCancelled(boundaries);
+        verifyCancelled(tSubscription);
+        verifyCancelled(bSubscription);
     }
 
     @Test
@@ -297,7 +309,7 @@ class PublisherBufferTest {
         emitBoundary();
         assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
         verifyBufferSubCompleted();
-        verifyCancelled(boundaries);
+        verifyCancelled(bSubscription);
     }
 
     @Test
@@ -310,7 +322,7 @@ class PublisherBufferTest {
         emitBoundary();
         assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
         verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
-        verifyCancelled(boundaries);
+        verifyCancelled(bSubscription);
     }
 
     @Test
@@ -321,7 +333,7 @@ class PublisherBufferTest {
         boundaries.onComplete();
         verifyBufferSubFailed(instanceOf(IllegalStateException.class));
 
-        verifyCancelled(original);
+        verifyCancelled(tSubscription);
     }
 
     @Test
@@ -331,7 +343,7 @@ class PublisherBufferTest {
         original.onNext(1, 2, 3, 4);
         boundaries.onError(DELIBERATE_EXCEPTION);
         verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
-        verifyCancelled(original);
+        verifyCancelled(tSubscription);
     }
 
     @Test
@@ -345,10 +357,6 @@ class PublisherBufferTest {
 
     @Test
     void nextAccumulatorsAreIgnoredWhileAccumulating() {
-        TestSubscription bSubscription = new TestSubscription();
-        boundaries.onSubscribe(bSubscription);
-
-        bufferSubscriber.awaitSubscription().request(1);
         boundaries.onNext(new Accumulator<Integer, Integer>() {
             private int sum;
 
@@ -358,8 +366,8 @@ class PublisherBufferTest {
                     return;
                 }
                 sum += item;
-                // Emit more than one boundary while accumulating
                 emitBoundary();
+                // Emit two more boundaries while accumulating
                 emitBoundary();
                 emitBoundary();
             }
@@ -369,11 +377,13 @@ class PublisherBufferTest {
                 return sum;
             }
         });
-        assertThat(bufferSubscriber.takeOnNext(), is(-1));  // discard first boundary
+        verifyEmptyBufferReceived();    // discard first boundary
+        bufferSubscriber.awaitSubscription().request(1);    // request one more boundary
         original.onNext(1);
-        // 1 requested + 1 for `null` state + 2 requests for `NextAccumulatorHolder` state from `accumulate`
-        assertThat(bSubscription.requested(), is(4L));
-        assertThat(bufferSubscriber.takeOnNext(), is(1));
+        original.onComplete();
+        // 2 requested + 1 for `null` state + 2 requests for `NextAccumulatorHolder` state from `accumulate`
+        assertThat(bSubscription.requested(), is(5L));
+        assertThat(bufferSubscriber.pollAllOnNext(), contains(1));
     }
 
     @Test
@@ -504,10 +514,8 @@ class PublisherBufferTest {
         assertThat(terminal.get(), is(complete()));
     }
 
-    private static void verifyCancelled(TestPublisher<?> source) {
-        TestSubscription subscription = new TestSubscription();
-        source.onSubscribe(subscription);
-        assertThat("Original source not cancelled.", subscription.isCancelled(), is(true));
+    private static void verifyCancelled(TestSubscription subscription) {
+        assertThat("Original source not cancelled: " + subscription, subscription.isCancelled(), is(true));
     }
 
     private void verifyEmptyBufferReceived() {
