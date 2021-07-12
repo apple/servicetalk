@@ -449,7 +449,7 @@ class PublisherBufferTest {
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onSubscribe(Subscription s) {
-                        s.request(1);
+                        s.request(2);
                     }
 
                     @Override
@@ -473,8 +473,8 @@ class PublisherBufferTest {
         bPublisher.onNext(new SumAccumulator());
         tPublisher.onComplete();
 
-        assertThat(buffers, hasSize(1));
-        assertThat(buffers.poll(), is(-1));
+        assertThat(buffers, hasSize(2));
+        assertThat(buffers, contains(-1, 1));
         assertThat(terminal.get(), is(complete()));
     }
 
@@ -534,6 +534,42 @@ class PublisherBufferTest {
             bufferSubscriber.awaitOnComplete();
         }
         assertThat(bufferSubscriber.pollAllOnNext(), empty());
+    }
+
+    @Test
+    void terminalBeforeRequestedDelivers() throws Exception {
+        Executor executor = Executors.newCachedThreadExecutor();
+        try {
+            executor.submit(() -> {
+                try {
+                    tSubscription.awaitRequestN(3);
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+
+                original.onNext(1);
+
+                try {
+                    bSubscription.awaitRequestN(2); // 1 original + 1 synthetic for `null` state
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                emitBoundary();
+
+                original.onNext(2);
+                original.onComplete();
+            }).toFuture().get();
+
+            assertThat(bufferSubscriber.pollAllOnNext(), contains(1));
+            assertThat(bSubscription.requested(), is(2L));   // 1 original + 1 synthetic for `null` state
+            verifyCancelled(bSubscription);
+            verifyNoBuffersNoTerminal();
+            bufferSubscriber.awaitSubscription().request(1);    // request the last buffer
+            assertThat(bufferSubscriber.pollAllOnNext(), contains(2));
+            verifyBufferSubCompleted();
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
     }
 
     private static void verifyCancelled(TestSubscription subscription) {
