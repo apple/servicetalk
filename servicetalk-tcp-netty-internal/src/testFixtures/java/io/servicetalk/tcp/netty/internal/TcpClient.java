@@ -47,12 +47,12 @@ import static io.servicetalk.transport.netty.internal.DefaultNettyConnection.ini
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * A utility to create a TCP clients for tests.
  */
-public final class TcpClient {
+final class TcpClient {
 
     private final ReadOnlyTcpClientConfig config;
     private final TransportObserver observer;
@@ -63,7 +63,7 @@ public final class TcpClient {
      * @param config for the client.
      * @param observer {@link TransportObserver} for the newly created connection.
      */
-    public TcpClient(TcpClientConfig config, TransportObserver observer) {
+    TcpClient(TcpClientConfig config, TransportObserver observer) {
         this.config = config.asReadOnly();
         this.observer = requireNonNull(observer);
     }

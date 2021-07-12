@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -25,16 +24,11 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.AddressUtils;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
 import java.util.function.Function;
@@ -42,27 +36,26 @@ import java.util.function.Function;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.NoopTransportObserver.INSTANCE;
 
 public abstract class AbstractTcpServerTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached("server-io", "server-executor");
+    @RegisterExtension
+    public static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor");
 
     private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
-            conn -> conn.write(conn.read());
+        conn -> conn.write(conn.read());
     private boolean sslEnabled;
 
-    protected ServerContext serverContext;
-    protected InetSocketAddress serverAddress;
-    protected TcpClient client;
-    protected TcpServer server;
+    ServerContext serverContext;
+    InetSocketAddress serverAddress;
+    TcpClient client;
 
     void connectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
         this.connectionAcceptor = connectionAcceptor;
@@ -80,16 +73,15 @@ public abstract class AbstractTcpServerTest {
         return sslEnabled;
     }
 
-    @Before
-    public void startServer() throws Exception {
-        server = createServer();
+    void setUp() throws Exception {
+        TcpServer server = createServer();
         serverContext = server.bind(SERVER_CTX, 0, connectionAcceptor, service, SERVER_CTX.executionStrategy());
         serverAddress = (InetSocketAddress) serverContext.listenAddress();
         client = createClient();
     }
 
     // Visible for overriding.
-    TcpClient createClient() {
+    private TcpClient createClient() {
         return new TcpClient(getTcpClientConfig(), getClientTransportObserver());
     }
 
@@ -97,11 +89,11 @@ public abstract class AbstractTcpServerTest {
     TcpClientConfig getTcpClientConfig() {
         TcpClientConfig tcpClientConfig = new TcpClientConfig();
         if (sslEnabled) {
-            HostAndPort serverHostAndPort = AddressUtils.serverHostAndPort(serverContext);
+            HostAndPort serverHostAndPort = serverHostAndPort(serverContext);
             tcpClientConfig.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                    .peerHost(serverPemHostname())
-                    .peerPort(serverHostAndPort.port())
-                    .build());
+                                          .peerHost(serverPemHostname())
+                                          .peerPort(serverHostAndPort.port())
+                                          .build());
         }
         tcpClientConfig.enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         return tcpClientConfig;
@@ -109,7 +101,7 @@ public abstract class AbstractTcpServerTest {
 
     // Visible for overriding.
     TransportObserver getClientTransportObserver() {
-        return NoopTransportObserver.INSTANCE;
+        return INSTANCE;
     }
 
     // Visible for overriding.
@@ -122,13 +114,13 @@ public abstract class AbstractTcpServerTest {
         TcpServerConfig tcpServerConfig = new TcpServerConfig();
         if (sslEnabled) {
             tcpServerConfig.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey).build());
+                                                                 DefaultTestCerts::loadServerKey).build());
         }
         tcpServerConfig.enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         return tcpServerConfig;
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception {
         serverContext.close();
     }

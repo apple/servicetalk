@@ -23,9 +23,9 @@ import javax.annotation.Nullable;
 
 import static java.lang.Math.abs;
 import static java.util.Objects.hash;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * An {@link Object} for testing JSON serialization.
@@ -98,7 +98,8 @@ public final class TestPojo {
 
     @Override
     public int hashCode() {
-        return hash(myBoolean, myByte, myShort, myChar, myInt, myLong, myFloat, myDouble, myString, myStringArray,
+        return hash(myBoolean, myByte, myShort, myChar, myInt, myLong, myFloat, myDouble, myString,
+                Arrays.hashCode(myStringArray),
                 myPojo);
     }
 

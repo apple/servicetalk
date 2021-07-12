@@ -21,9 +21,7 @@ import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.TypeHolder;
 
 import com.google.protobuf.Parser;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,74 +33,70 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.internal.util.collections.Iterables.firstOf;
 
-public class ProtobufSerializationProviderTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class ProtobufSerializationProviderTest {
 
     private final ProtobufSerializationProvider provider = new ProtobufSerializationProvider();
 
     private final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
     private final byte[] testMessageBytes = testMessage.toByteArray();
-    TypeHolder<DummyMessage> typeHolder = new TypeHolder<DummyMessage>() { };
+    private final TypeHolder<DummyMessage> typeHolder = new TypeHolder<DummyMessage>() { };
 
     @Test
-    public void serializeMessageByClass() {
+    void serializeMessageByClass() {
         Buffer buffer = newBuffer();
         provider.getSerializer(DummyMessage.class).serialize(testMessage, buffer);
         assertThat(toBytes(buffer), equalTo(testMessageBytes));
     }
 
     @Test
-    public void serializeMessageByType() {
+    void serializeMessageByType() {
         Buffer buffer = newBuffer();
         provider.getSerializer(typeHolder).serialize(testMessage, buffer);
         assertThat(toBytes(buffer), equalTo(testMessageBytes));
     }
 
     @Test
-    public void invalidSerializerClassException() {
-        expectedException.expect(SerializationException.class);
-        provider.getSerializer(String.class);
+    void invalidSerializerClassException() {
+        assertThrows(SerializationException.class, () -> provider.getSerializer(String.class));
     }
 
     @Test
-    public void findParserWithReflection() {
+    void findParserWithReflection() {
         Parser<DummyMessage> parser = ProtobufSerializationProvider.reflectionParserFor(DummyMessage.class);
         assertThat(parser, sameInstance(testMessage.getParserForType()));
     }
 
     @Test
-    public void deserializeMessageByClass() {
+    void deserializeMessageByClass() {
         Buffer buffer = wrap(testMessageBytes);
         DummyMessage message = firstOf(provider.getDeserializer(DummyMessage.class).deserialize(buffer));
         assertThat(message, equalTo(testMessage));
     }
 
     @Test
-    public void deserializeMessageByType() {
+    void deserializeMessageByType() {
         Buffer buffer = wrap(testMessageBytes);
         DummyMessage message = firstOf(provider.getDeserializer(typeHolder).deserialize(buffer));
         assertThat(message, equalTo(testMessage));
     }
 
     @Test
-    public void invalidDeserializerClassException() {
-        expectedException.expect(SerializationException.class);
-        provider.getDeserializer(String.class);
+    void invalidDeserializerClassException() {
+        assertThrows(SerializationException.class, () -> provider.getDeserializer(String.class));
     }
 
     @Test
-    public void deserializeExceptionTruncatedBytes() {
+    void deserializeExceptionTruncatedBytes() {
         Buffer badBuffer = newBuffer().writeBytes(testMessageBytes, 0, testMessageBytes.length / 2);
-        expectedException.expect(SerializationException.class);
-        provider.getDeserializer(DummyMessage.class).deserialize(badBuffer);
+        assertThrows(SerializationException.class,
+                () -> provider.getDeserializer(DummyMessage.class).deserialize(badBuffer));
     }
 
     @Test
-    public void deserializeDoubledBytes() {
+    void deserializeDoubledBytes() {
         DummyMessage overwrite = DummyMessage.newBuilder().setMessage("supplanted").build();
         Buffer buffer = newBuffer().writeBytes(testMessageBytes).writeBytes(overwrite.toByteArray());
         List<DummyMessage> messages = toList(provider.getDeserializer(DummyMessage.class).deserialize(buffer));
@@ -111,14 +105,14 @@ public class ProtobufSerializationProviderTest {
     }
 
     @Test
-    public void deserializeEmptyBuffer() {
+    void deserializeEmptyBuffer() {
         DummyMessage emptyMessage = DummyMessage.newBuilder().build();
         DummyMessage message = firstOf(provider.getDeserializer(DummyMessage.class).deserialize(newBuffer()));
         assertThat(message, equalTo(emptyMessage));
     }
 
     @Test
-    public void cacheParsers() {
+    void cacheParsers() {
         AtomicInteger providerCounter = new AtomicInteger(0);
         ProtobufSerializationProvider p = new ProtobufSerializationProvider(aClass -> {
             providerCounter.getAndIncrement();
