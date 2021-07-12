@@ -20,18 +20,15 @@ import io.servicetalk.http.security.auth.basic.jersey.resources.RoleProtectedRes
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
 
-public class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
-    public RoleProtectedBasicAuthSecurityContextFilterTest(final boolean withUserInfo) {
-        super(withUserInfo);
-    }
-
+class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
     @Override
     protected Application application(@Nullable final Key<BasicUserInfo> userInfoKey) {
         return new ResourceConfig(RoleProtectedResource.class)
@@ -48,18 +45,24 @@ public class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBas
                                 .build());
     }
 
-    @Test
-    public void authorized() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void authorized(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextPresent(RoleProtectedResource.PATH + "/user");
     }
 
-    @Test
-    public void notAuthorized() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void notAuthorized(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(RoleProtectedResource.PATH + "/admin", true, FORBIDDEN);
     }
 
-    @Test
-    public void notAuthenticated() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void notAuthenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(RoleProtectedResource.PATH + "/user", false);
         assertBasicAuthSecurityContextAbsent(RoleProtectedResource.PATH + "/admin", false);
     }

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -27,12 +27,12 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTest {
+class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Test
-    public void testDefaultFallbackService() throws Exception {
+    void testDefaultFallbackService() throws Exception {
         final StreamingHttpService fixture = DefaultFallbackServiceStreaming.instance();
 
         final Single<StreamingHttpResponse> responseSingle = fixture.handle(ctx, request, reqRespFactory);

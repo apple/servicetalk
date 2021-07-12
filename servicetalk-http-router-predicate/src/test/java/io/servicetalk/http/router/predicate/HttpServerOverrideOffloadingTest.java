@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,10 +30,8 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,11 +55,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class HttpServerOverrideOffloadingTest {
+class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final IoExecutor ioExecutor;
     private final Executor executor;
@@ -71,7 +65,7 @@ public class HttpServerOverrideOffloadingTest {
     private final HttpClient client;
     private final ServerContext server;
 
-    public HttpServerOverrideOffloadingTest() throws Exception {
+    HttpServerOverrideOffloadingTest() throws Exception {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY));
         executor = newCachedThreadExecutor();
@@ -88,8 +82,8 @@ public class HttpServerOverrideOffloadingTest {
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
     }
 
@@ -98,7 +92,7 @@ public class HttpServerOverrideOffloadingTest {
     }
 
     @Test
-    public void offloadDifferentRoutes() throws Exception {
+    void offloadDifferentRoutes() throws Exception {
         client.request(client.get("/service1")).toFuture().get();
         assertThat("Service-1 unexpected invocation count.", service1.invoked.get(), is(1));
         assertThat("Service-1, unexpected errors: " + service1.errors, service1.errors, hasSize(0));

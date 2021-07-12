@@ -18,7 +18,6 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -31,13 +30,12 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.TestHttpServiceContext;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
@@ -53,32 +51,27 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class BaseHttpPredicateRouterBuilderTest {
-    static final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+    private static final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
     static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule().silent();
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Mock
+    @Mock(lenient = true)
     StreamingHttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
-    @Mock
+    @Mock(lenient = true)
     HttpExecutionContext executionCtx;
-    @Mock
+    @Mock(lenient = true)
     TestHttpServiceContext ctx;
-    @Mock
+    @Mock(lenient = true)
     StreamingHttpRequest request;
     @Mock
     HttpHeaders headers;
     @Mock
     Single<StreamingHttpResponse> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(executionCtx.executor()).thenReturn(immediate());
         when(executionCtx.executionStrategy()).thenReturn(defaultStrategy());

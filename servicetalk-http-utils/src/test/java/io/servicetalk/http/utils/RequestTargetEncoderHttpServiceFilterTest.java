@@ -26,8 +26,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.TestHttpServiceContext;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RequestTargetEncoderHttpServiceFilterTest {
+class RequestTargetEncoderHttpServiceFilterTest {
     private final StreamingHttpService mockService = mock(StreamingHttpService.class);
     private final HttpExecutionContext mockExecutionCtx = mock(HttpExecutionContext.class);
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
@@ -52,8 +52,8 @@ public class RequestTargetEncoderHttpServiceFilterTest {
     private final HttpServiceContext mockCtx = new TestHttpServiceContext(DefaultHttpHeadersFactory.INSTANCE,
             reqRespFactory, mockExecutionCtx);
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         doAnswer((Answer<Single<StreamingHttpResponse>>) invocation -> {
             StreamingHttpRequest request = invocation.getArgument(1);
             StreamingHttpResponse response = mock(StreamingHttpResponse.class);
@@ -64,24 +64,24 @@ public class RequestTargetEncoderHttpServiceFilterTest {
     }
 
     @Test
-    public void noEncodeRequired() throws Exception {
+    void noEncodeRequired() throws Exception {
         String requestTarget = "/path?key=value";
         invokeServiceAssertValue(requestTarget, requestTarget);
     }
 
     @Test
-    public void equalsPreservedForKeyValues() throws Exception {
+    void equalsPreservedForKeyValues() throws Exception {
         invokeServiceAssertValue("/path?key=<value>&key2=value2", "/path?key=%3Cvalue%3E&key2=value2");
     }
 
     @Test
-    public void preexistingEncodePreserved() throws Exception {
+    void preexistingEncodePreserved() throws Exception {
         String requestTarget = "/path?key=a%20b";
         invokeServiceAssertValue(requestTarget, requestTarget);
     }
 
     @Test
-    public void upToSpaceCharsEscaped() throws Exception {
+    void upToSpaceCharsEscaped() throws Exception {
         StringBuilder requestTargetBuilder = new StringBuilder();
         StringBuilder expectedBuilder = new StringBuilder();
         requestTargetBuilder.append("/path?");

@@ -25,20 +25,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,32 +52,29 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-@RunWith(MockitoJUnitRunner.class)
-public class BeforeFinallyHttpOperatorTest {
+@ExtendWith(MockitoExtension.class)
+class BeforeFinallyHttpOperatorTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
     private TerminalSignalConsumer beforeFinally;
 
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         operator = new BeforeFinallyHttpOperator(beforeFinally);
     }
 
     @Test
-    public void nullAsSuccess() {
+    void nullAsSuccess() {
         final ResponseSubscriber subscriber = new ResponseSubscriber();
 
         toSource(Single.<StreamingHttpResponse>succeeded(null).liftSync(operator)).subscribe(subscriber);
@@ -93,7 +86,7 @@ public class BeforeFinallyHttpOperatorTest {
     }
 
     @Test
-    public void duplicateOnSuccess() {
+    void duplicateOnSuccess() {
         AtomicReference<SingleSource.Subscriber<? super StreamingHttpResponse>> subRef = new AtomicReference<>();
 
         Single<StreamingHttpResponse> original = new Single<StreamingHttpResponse>() {
@@ -129,7 +122,7 @@ public class BeforeFinallyHttpOperatorTest {
     }
 
     @Test
-    public void cancelBeforeOnSuccess() throws Exception {
+    void cancelBeforeOnSuccess() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
@@ -145,12 +138,12 @@ public class BeforeFinallyHttpOperatorTest {
         subscriber.verifyResponseReceived();
         verifyNoMoreInteractions(beforeFinally);
         assert subscriber.response != null;
-        expectedException.expectCause(instanceOf(CancellationException.class));
-        subscriber.response.payloadBody().toFuture().get();
+        Exception ex = assertThrows(Exception.class, () -> subscriber.response.payloadBody().toFuture().get());
+        assertThat(ex.getCause(), instanceOf(CancellationException.class));
     }
 
     @Test
-    public void cancelBeforeOnError() {
+    void cancelBeforeOnError() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
@@ -166,7 +159,7 @@ public class BeforeFinallyHttpOperatorTest {
     }
 
     @Test
-    public void cancelAfterOnSuccess() {
+    void cancelAfterOnSuccess() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
@@ -186,7 +179,7 @@ public class BeforeFinallyHttpOperatorTest {
     }
 
     @Test
-    public void cancelAfterOnError() {
+    void cancelAfterOnError() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
@@ -204,7 +197,7 @@ public class BeforeFinallyHttpOperatorTest {
     }
 
     @Test
-    public void payloadComplete() {
+    void payloadComplete() {
         TestPublisher<Buffer> payload = new TestPublisher<>();
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
