@@ -204,7 +204,6 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
 
     private static final class State {
         private static final Object ADDING = new Object();
-        private static final Object TERMINATING = new Object();
         private static final Object TERMINATED = new Object();
         private static final AtomicReferenceFieldUpdater<State, Object> maybeAccumulatorUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(State.class, Object.class, "maybeAccumulator");
@@ -222,7 +221,6 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
          *     finishing current {@link Accumulator}.</li>
          *     <li>{@link ItemsTerminated} if the items source terminated but the target is not yet terminated because
          *     we were delivering onNext or because where was not demand.</li>
-         *     <li>{@link #TERMINATING} if the items terminated but demand was not checked.</li>
          *     <li>{@link #TERMINATED} if the target subscriber has been terminated (or cancelled).</li>
          * </ul>
          */
@@ -241,17 +239,11 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             final long pending = pendingUpdater.accumulateAndGet(this, n, (prev, nValue) ->
                     prev == MIN_VALUE || nValue <= 0L ? prev : addWithOverflowProtection(prev, nValue));
             if (pending == MIN_VALUE && n > 0L) {
-                for (;;) {
-                    final Object cMaybeAccumulator = maybeAccumulator;
-                    assert cMaybeAccumulator != null;
-                    if (ItemsTerminated.class.equals(cMaybeAccumulator.getClass()))  {
-                        @SuppressWarnings("unchecked")
-                        final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) cMaybeAccumulator;
-                        maybeAccumulator = TERMINATED;
-                        terminateTarget(it.accumulator, target, it.terminalNotification);
-                        return;
-                    }
-                }
+                @SuppressWarnings("unchecked")
+                final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) maybeAccumulator;
+                assert it != null;
+                maybeAccumulator = TERMINATED;
+                terminateTarget(it.accumulator, target, it.terminalNotification);
             }
         }
 
@@ -261,7 +253,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                 final Object cMaybeAccumulator = maybeAccumulator;
                 assert cMaybeAccumulator != null;   // without the first accumulator there is no demand for items
                 // no accumulation is expected after termination:
-                assert cMaybeAccumulator != TERMINATING && !(cMaybeAccumulator instanceof ItemsTerminated);
+                assert !(cMaybeAccumulator instanceof ItemsTerminated);
 
                 // This method is called when a new item is received.
                 // The subscription for items source is local to this operator and could never be interacted from an
@@ -305,7 +297,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             requireNonNull(nextAccumulator);
             for (;;) {
                 final Object cMaybeAccumulator = maybeAccumulator;
-                if (cMaybeAccumulator == TERMINATING || cMaybeAccumulator == TERMINATED) {
+                if (cMaybeAccumulator == TERMINATED) {
                     return;
                 }
                 if (cMaybeAccumulator == null) {
@@ -349,18 +341,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                             if (ItemsTerminated.class.equals(nextState.getClass())) {
                                 @SuppressWarnings("unchecked")
                                 final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) nextState;
-                                // Deliver the last boundary only if there are some items pending and demand is present
-                                if (it.accumulator.isEmpty()) {
-                                    maybeAccumulator = TERMINATED;
-                                    terminateTarget(null, target, it.terminalNotification);
-                                } else {
-                                    final long demand = pendingUpdater.accumulateAndGet(this, MIN_VALUE,
-                                            (prev, next) -> prev > 0L ? prev : next);
-                                    if (demand > 0L) {
-                                        maybeAccumulator = TERMINATED;
-                                        terminateTarget(it.accumulator, target, it.terminalNotification);
-                                    }
-                                }
+                                terminateIfPossible(it.accumulator, target, it.terminalNotification);
                             }
                         }
                         return;
@@ -388,33 +369,22 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                         bCancellable.cancel();
                         return;
                     }
-                } else if (cMaybeAccumulator == null &&
-                        maybeAccumulatorUpdater.compareAndSet(this, null, TERMINATED)) {
-                    // Terminated without any produced items or boundaries
-                    terminateTarget(null, target, terminalNotification);
-                    bCancellable.cancel();
-                    return;
-                } else if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, TERMINATING)) {
-                    assert cMaybeAccumulator instanceof CountingAccumulator;
-                    bCancellable.cancel();
-                    // Deliver the last boundary only if there are some items pending and demand is present
+                } else if (cMaybeAccumulator == null) {
+                    if (maybeAccumulatorUpdater.compareAndSet(this, null, TERMINATED)) {
+                        // Terminated without any produced items or boundaries
+                        terminateTarget(null, target, terminalNotification);
+                        bCancellable.cancel();
+                        return;
+                    }
+                } else {
                     @SuppressWarnings("unchecked")
                     final CountingAccumulator<T, B> accumulator = (CountingAccumulator<T, B>) cMaybeAccumulator;
-                    if (accumulator.isEmpty()) {
-                        maybeAccumulator = TERMINATED;
-                        terminateTarget(null, target, terminalNotification);
-                    } else {
-                        //
-                        final long demand = pendingUpdater.accumulateAndGet(this, MIN_VALUE,
-                                (prev, next) -> prev > 0L ? prev : next);
-                        if (demand > 0L) {
-                            maybeAccumulator = TERMINATED;
-                            terminateTarget(accumulator, target, terminalNotification);
-                        } else {
-                            maybeAccumulator = new ItemsTerminated<>(accumulator, terminalNotification);
-                        }
+                    if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator,
+                            new ItemsTerminated<>(accumulator, terminalNotification))) {
+                        bCancellable.cancel();
+                        terminateIfPossible(accumulator, target, terminalNotification);
+                        return;
                     }
-                    return;
                 }
             }
         }
@@ -448,6 +418,23 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                 bCancellable.cancel();
             } finally {
                 tCancellable.cancel();
+            }
+        }
+
+        private <T, B> void terminateIfPossible(final CountingAccumulator<T, B> accumulator,
+                                                final Subscriber<? super B> target,
+                                                final TerminalNotification terminalNotification) {
+            // Deliver the last boundary only if there are some items pending and demand is present
+            if (accumulator.isEmpty()) {
+                maybeAccumulator = TERMINATED;
+                terminateTarget(null, target, terminalNotification);
+            } else {
+                final long demand = pendingUpdater.accumulateAndGet(this, MIN_VALUE,
+                        (prev, next) -> prev > 0L ? prev : next);
+                if (demand > 0L) {
+                    maybeAccumulator = TERMINATED;
+                    terminateTarget(accumulator, target, terminalNotification);
+                }
             }
         }
 
