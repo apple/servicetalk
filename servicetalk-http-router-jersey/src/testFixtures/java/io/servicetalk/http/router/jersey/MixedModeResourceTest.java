@@ -24,7 +24,8 @@ import io.servicetalk.http.router.jersey.resources.MixedModeResources;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Set;
 import javax.ws.rs.core.Application;
@@ -37,9 +38,9 @@ import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
-public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
-    public MixedModeResourceTest(final RouterApi api) {
-        super(api);
+class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
+    protected void setUp(final RouterApi api) throws Exception {
+        super.setUp(api);
         assumeSafeToDisableOffloading(true, api);
     }
 
@@ -54,15 +55,15 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
     }
 
     @Override
-    protected void configureBuilders(final HttpServerBuilder serverBuilder,
-                                     final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+    void configureBuilders(final HttpServerBuilder serverBuilder,
+                           final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         super.configureBuilders(serverBuilder, jerseyRouterBuilder);
         serverBuilder.executionStrategy(noOffloadsStrategy());
     }
 
     @Override
-    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                                        final HttpService router) throws Exception {
+    ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                              final HttpService router) throws Exception {
         return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
@@ -76,8 +77,8 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
     }
 
     @Override
-    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                                        final StreamingHttpService router) throws Exception {
+    ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                              final StreamingHttpService router) throws Exception {
         return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
@@ -91,8 +92,8 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
     }
 
     @Override
-    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                                        final BlockingHttpService router) throws Exception {
+    ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                              final BlockingHttpService router) throws Exception {
         return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
@@ -106,8 +107,8 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
     }
 
     @Override
-    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                                        final BlockingStreamingHttpService router) throws Exception {
+    ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                              final BlockingStreamingHttpService router) throws Exception {
         return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
@@ -125,8 +126,10 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
         return MixedModeResources.PATH + path;
     }
 
-    @Test
-    public void noOffloadsIsSupported() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void noOffloadsIsSupported(RouterApi api) throws Exception {
+        setUp(api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/string"), OK, TEXT_PLAIN,
                     stringContainsInOrder(singleton("stserverio")), String::length);
@@ -136,11 +139,12 @@ public class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTes
         });
     }
 
-    @Test
-    public void noOffloadsOverrideIsSupported() {
-        runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/cs-string"), OK, TEXT_PLAIN,
-                    not(stringContainsInOrder(singleton("stserverio"))), String::length);
-        });
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void noOffloadsOverrideIsSupported(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/cs-string"), OK, TEXT_PLAIN,
+                        not(stringContainsInOrder(singleton("stserverio"))), String::length));
     }
 }

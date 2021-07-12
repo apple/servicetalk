@@ -21,6 +21,8 @@ dependencies {
   implementation project(":servicetalk-log4j2-mdc-utils")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

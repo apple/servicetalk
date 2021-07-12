@@ -17,18 +17,8 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.http.router.jersey.BaseJerseyRouterTestSuite;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import org.junit.platform.suite.api.SuiteDisplayName;
 
-@RunWith(Suite.class)
-@SuiteClasses({
-        SingleJsonResourcesTest.class,
-        PublisherJsonResourcesTest.class,
-        JsonMicroformatResourcesTest.class,
-        CustomJacksonSerializationProviderTest.class,
-        FilterStreamingJsonTest.class,
-        BaseJerseyRouterTestSuite.class
-})
-public class JerseyDataJacksonTestSuite {
+@SuiteDisplayName("Run JerseyRouterTestSuite with ServiceTalkJacksonSerializerAutoDiscoverable")
+public class JerseyDataJacksonTestSuite extends BaseJerseyRouterTestSuite {
 }

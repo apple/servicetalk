@@ -109,7 +109,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             if (canAddRequestContentLength(request)) {
                 flatRequest = setRequestContentLength(request);
             } else {
-                flatRequest = Publisher.<Object>from(request).concat(request.messageBody())
+                flatRequest = Single.<Object>succeeded(request).concat(request.messageBody(), true)
                         .scanWith(HeaderUtils::insertTrailersMapper);
                 addRequestTransferEncodingIfNecessary(request);
             }

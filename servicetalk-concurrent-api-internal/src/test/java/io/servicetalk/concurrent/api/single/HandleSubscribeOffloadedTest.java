@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AbstractHandleSubscribeOffloadedTest;
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.lang.Thread.currentThread;
 
-public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
+class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
 
     private final Single<Integer> source = new Single<Integer>() {
         @Override
@@ -36,28 +36,28 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     };
 
     @Test
-    public void simpleSource() throws Exception {
+    void simpleSource() throws Exception {
         source.subscribeOn(newOffloadingAwareExecutor()).toFuture().get();
         verifyHandleSubscribeInvoker();
         verifySingleOffloadCount();
     }
 
     @Test
-    public void withSyncOperatorsAddedAfter() throws Exception {
+    void withSyncOperatorsAddedAfter() throws Exception {
         source.subscribeOn(newOffloadingAwareExecutor()).beforeOnSuccess(__ -> { }).toFuture().get();
         verifyHandleSubscribeInvoker();
         verifySingleOffloadCount();
     }
 
     @Test
-    public void withSyncOperatorsAddedBefore() throws Exception {
+    void withSyncOperatorsAddedBefore() throws Exception {
         source.beforeOnSuccess(__ -> { }).subscribeOn(newOffloadingAwareExecutor()).toFuture().get();
         verifyHandleSubscribeInvoker();
         verifySingleOffloadCount();
     }
 
     @Test
-    public void withAsyncOperatorsAddedAfter() throws Exception {
+    void withAsyncOperatorsAddedAfter() throws Exception {
         source.subscribeOn(newOffloadingAwareExecutor())
                 .flatMap(t -> executorForTimerRule.executor().submit(() -> t))
                 .toFuture().get();
@@ -66,7 +66,7 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     }
 
     @Test
-    public void withAsyncOperatorsAddedBefore() throws Exception {
+    void withAsyncOperatorsAddedBefore() throws Exception {
         source.flatMap(t -> executorForTimerRule.executor().submit(() -> t))
                 .subscribeOn(newOffloadingAwareExecutor())
                 .toFuture().get();

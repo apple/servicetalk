@@ -19,7 +19,8 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Map;
 import java.util.Set;
@@ -36,12 +37,9 @@ import static java.util.Collections.singletonMap;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
-public class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
-    public CustomJacksonSerializationProviderTest(final RouterApi api) {
-        super(api);
-    }
+class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return singleton(SingleJsonResources.class);
@@ -68,8 +66,10 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
         return PATH + path;
     }
 
-    @Test
-    public void postInvalidJsonPojo() {
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void postInvalidJsonPojo(final RouterApi api) throws Exception {
+        setUp(api);
         sendAndAssertResponse(post("/pojo", "{\"foo\":\"bar\"}", APPLICATION_JSON),
                 OK, APPLICATION_JSON, jsonEquals("{\"aString\":\"nullx\",\"anInt\":1}"), __ -> null);
     }

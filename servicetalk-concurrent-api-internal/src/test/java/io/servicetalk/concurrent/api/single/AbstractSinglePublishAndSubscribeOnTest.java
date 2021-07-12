@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,17 @@ import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public abstract class AbstractSinglePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
+abstract class AbstractSinglePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
-    protected static final String ITEM_VALUE = "Hello";
+    private static final String ITEM_VALUE = "Hello";
 
-    static final int APP_THREAD = 0;
+    private static final int APP_THREAD = 0;
     static final int ORIGINAL_SUBSCRIBER_THREAD = 1;
     static final int TERMINAL_SIGNAL_THREAD = 2;
 
-    protected AbstractSinglePublishAndSubscribeOnTest() {
+    AbstractSinglePublishAndSubscribeOnTest() {
         super(new CaptureThreads(3) {
             @Override
             public Thread[] verify() {
@@ -51,14 +51,14 @@ public abstract class AbstractSinglePublishAndSubscribeOnTest extends AbstractPu
         });
     }
 
-    protected Thread[] setupAndSubscribe(BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
-                                         Executor executor) throws InterruptedException {
+    Thread[] setupAndSubscribe(BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
+                               Executor executor) throws InterruptedException {
         return setupAndSubscribe(-1, offloadingFunction, executor);
     }
 
-    protected Thread[] setupAndSubscribe(int offloadsExpected,
-                                         BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
-                                         Executor executor) throws InterruptedException {
+    Thread[] setupAndSubscribe(int offloadsExpected,
+                               BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
+                               Executor executor) throws InterruptedException {
         TestSingle<String> source = new TestSingle.Builder<String>().singleSubscriber().build();
         CountDownLatch subscribed = new CountDownLatch(1 + (offloadsExpected > 0 ? (offloadsExpected - 1) : 0));
         CountDownLatch allDone = new CountDownLatch(1);
@@ -111,15 +111,15 @@ public abstract class AbstractSinglePublishAndSubscribeOnTest extends AbstractPu
         return capturedThreads.verify();
     }
 
-    protected Thread[] setupForCancelAndSubscribe(
+    Thread[] setupForCancelAndSubscribe(
             BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
             Executor executor) throws InterruptedException {
         return setupForCancelAndSubscribe(-1, offloadingFunction, executor);
     }
 
-    protected Thread[] setupForCancelAndSubscribe(int offloadsExpected,
-            BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
-            Executor executor) throws InterruptedException {
+    private Thread[] setupForCancelAndSubscribe(int offloadsExpected,
+                                                BiFunction<Single<String>, Executor, Single<String>> offloadingFunction,
+                                                Executor executor) throws InterruptedException {
         TestSingle<String> source = new TestSingle.Builder<String>().singleSubscriber().build();
         CountDownLatch subscribed = new CountDownLatch(1 + (offloadsExpected > 0 ? (offloadsExpected - 1) : 0));
         CountDownLatch allDone = new CountDownLatch(1);

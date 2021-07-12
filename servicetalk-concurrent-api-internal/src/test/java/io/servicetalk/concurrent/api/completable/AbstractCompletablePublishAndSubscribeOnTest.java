@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.util.function.BiFunction;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public abstract class AbstractCompletablePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
+abstract class AbstractCompletablePublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     static final int APP_THREAD = 0;
     static final int ON_SUBSCRIBE_THREAD = 1;

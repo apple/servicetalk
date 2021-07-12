@@ -23,7 +23,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
@@ -37,21 +38,20 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuilderTest {
-    final CompleteTestCompletable completableA = new CompleteTestCompletable();
-    final CompleteTestCompletable completableB = new CompleteTestCompletable();
-    final CompleteTestCompletable completableC = new CompleteTestCompletable();
-    final FailCompletable failCompletable = new FailCompletable();
+class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuilderTest {
+    private final CompleteTestCompletable completableA = new CompleteTestCompletable();
+    private final CompleteTestCompletable completableB = new CompleteTestCompletable();
+    private final CompleteTestCompletable completableC = new CompleteTestCompletable();
+    private final FailCompletable failCompletable = new FailCompletable();
 
     @Test
-    public void testFallback() {
+    void testFallback() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
@@ -60,7 +60,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testDefaultFallback() throws Exception {
+    void testDefaultFallback() throws Exception {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .buildStreaming();
 
@@ -71,7 +71,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenMethod() {
+    void testWhenMethod() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(POST).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -85,7 +85,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenMethodIsOneOf() {
+    void testWhenMethodIsOneOf() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethodIsOneOf(POST, PUT).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -102,7 +102,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPathEquals() {
+    void testWhenPathEquals() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathEquals("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -116,7 +116,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPathIsOneOf() {
+    void testWhenPathIsOneOf() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathIsOneOf("/abc", "/def").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -133,7 +133,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPathStartsWith() {
+    void testWhenPathStartsWith() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathStartsWith("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -150,7 +150,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPathMatches() {
+    void testWhenPathMatches() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(".*abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -170,7 +170,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPathMatchesPattern() {
+    void testWhenPathMatchesPattern() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(Pattern.compile(".*ABC", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -187,7 +187,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenIsSsl() {
+    void testWhenIsSsl() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenIsSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -201,7 +201,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenIsNotSsl() {
+    void testWhenIsNotSsl() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenIsNotSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -215,7 +215,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenPredicate() {
+    void testWhenPredicate() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .when(req -> HTTP_1_1.equals(req.version())).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -228,7 +228,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testWhenBiPredicate() {
+    void testWhenBiPredicate() {
         final SocketAddress addr1 = mock(SocketAddress.class);
         final SocketAddress addr2 = mock(SocketAddress.class);
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
@@ -244,7 +244,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testCloseAsyncClosesAllServices() throws Exception {
+    void testCloseAsyncClosesAllServices() throws Exception {
         when(serviceA.closeAsync()).thenReturn(completableA);
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
@@ -271,7 +271,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     }
 
     @Test
-    public void testCloseAsyncClosesAllServicesWhenFirstOneIsError() throws Exception {
+    void testCloseAsyncClosesAllServicesWhenFirstOneIsError() throws Exception {
         when(serviceA.closeAsync()).thenReturn(failCompletable);
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
@@ -285,7 +285,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         try {
             final Completable completable = service.closeAsync();
             completable.toFuture().get();
-            fail("Expected an exception from `await`");
+            Assertions.fail("Expected an exception from `await`");
         } catch (final ExecutionException e) {
             assertSame(DELIBERATE_EXCEPTION, e.getCause());
         }
@@ -303,7 +303,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         completableC.verifyListenCalled();
     }
 
-    public static class CompleteTestCompletable extends LegacyTestCompletable {
+    static class CompleteTestCompletable extends LegacyTestCompletable {
         @Override
         public void handleSubscribe(final Subscriber subscriber) {
             super.handleSubscribe(subscriber);
@@ -311,7 +311,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         }
     }
 
-    public static class FailCompletable extends LegacyTestCompletable {
+    static class FailCompletable extends LegacyTestCompletable {
         @Override
         public void handleSubscribe(final Subscriber subscriber) {
             super.handleSubscribe(subscriber);

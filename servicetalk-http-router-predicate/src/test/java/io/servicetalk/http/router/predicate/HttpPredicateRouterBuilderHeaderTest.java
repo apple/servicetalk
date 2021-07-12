@@ -17,22 +17,22 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.regex.Pattern;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRouterBuilderTest {
+class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Test
-    public void testWhenHeaderIsPresent() {
+    void testWhenHeaderIsPresent() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -46,7 +46,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenHeaderFirstValue() {
+    void testWhenHeaderFirstValue() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("localhost").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -69,7 +69,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenHeaderFirstValueMatches() {
+    void testWhenHeaderFirstValueMatches() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches("127\\..*").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -89,7 +89,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenHeaderFirstValueMatchesPattern() {
+    void testWhenHeaderFirstValueMatchesPattern() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches(Pattern.compile("127\\..*", CASE_INSENSITIVE))
                 .thenRouteTo(serviceA)
@@ -110,7 +110,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenHeaderValues() {
+    void testWhenHeaderValues() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").values(new AnyMatchPredicate<>("localhost")).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -130,7 +130,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testMultipleHeaderRoutes() {
+    void testMultipleHeaderRoutes() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("a.com").thenRouteTo(serviceA)
                 .whenHeader("host").firstValue("b.com").thenRouteTo(serviceB)

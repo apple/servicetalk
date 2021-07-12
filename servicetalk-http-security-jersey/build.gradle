@@ -30,12 +30,15 @@ dependencies {
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-http-router-jersey")
   testImplementation project(":servicetalk-http-utils")
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
   testImplementation "net.javacrumbs.json-unit:json-unit-fluent:$jsonUnitVersion"
   testImplementation "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
   testImplementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
   testRuntimeOnly project(":servicetalk-test-resources")
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -40,18 +39,17 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -67,21 +65,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-@RunWith(Parameterized.class)
-public class SingleRequestOrResponseApiTest {
+class SingleRequestOrResponseApiTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private boolean streamingService;
+    private boolean streamingClient;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;
 
-    private final boolean streamingService;
-    private final boolean streamingClient;
-    private final ServerContext serverContext;
-    private final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;
-
-    public SingleRequestOrResponseApiTest(boolean streamingService, boolean streamingClient) throws Exception {
+    private void setUp(boolean streamingService, boolean streamingClient) throws Exception {
         this.streamingService = streamingService;
         this.streamingClient = streamingClient;
 
@@ -106,24 +102,33 @@ public class SingleRequestOrResponseApiTest {
                 });
     }
 
-    @Parameters(name = "streamingService={0}, streamingClient={1}")
-    public static Object[][] params() {
-        return new Object[][]{{false, false}, {false, true}, {true, false}};
+    private static Stream<Arguments> params() {
+        return Stream.of(
+            Arguments.of(false, false),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(true, true));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         serverContext.close();
     }
 
-    @Test
-    public void serverResponseStreamingRouteFailsWithZeroRequestItems() throws Exception {
+    @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
+    @MethodSource("params")
+    void serverResponseStreamingRouteFailsWithZeroRequestItems(boolean streamingService,
+                                                               boolean streamingClient) throws Exception {
+        setUp(streamingService, streamingClient);
         serverResponseStreamingRouteFailsWithInvalidArgument(emptyList(),
                 "Single request message was expected, but none was received");
     }
 
-    @Test
-    public void serverResponseStreamingRouteFailsOnSecondRequestItem() throws Exception {
+    @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
+    @MethodSource("params")
+    void serverResponseStreamingRouteFailsOnSecondRequestItem(boolean streamingService,
+                                                              boolean streamingClient) throws Exception {
+        setUp(streamingService, streamingClient);
         serverResponseStreamingRouteFailsWithInvalidArgument(asList(newRequest(0), newRequest(0)),
                 "More than one request message received");
     }
@@ -139,13 +144,19 @@ public class SingleRequestOrResponseApiTest {
         }
     }
 
-    @Test
-    public void clientRequestStreamingCallFailsWithZeroResponseItems() throws Exception {
+    @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
+    @MethodSource("params")
+    void clientRequestStreamingCallFailsWithZeroResponseItems(boolean streamingService,
+                                                              boolean streamingClient) throws Exception {
+        setUp(streamingService, streamingClient);
         clientRequestStreamingCallFailsOnInvalidResponse(0, NoSuchElementException.class);
     }
 
-    @Test
-    public void clientRequestStreamingCallFailsOnSecondResponseItem() throws Exception {
+    @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
+    @MethodSource("params")
+    void clientRequestStreamingCallFailsOnSecondResponseItem(boolean streamingService,
+                                                             boolean streamingClient) throws Exception {
+        setUp(streamingService, streamingClient);
         clientRequestStreamingCallFailsOnInvalidResponse(2, IllegalArgumentException.class);
     }
 

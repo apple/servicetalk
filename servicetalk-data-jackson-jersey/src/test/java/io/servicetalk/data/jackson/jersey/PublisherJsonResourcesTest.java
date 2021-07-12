@@ -18,7 +18,8 @@ package io.servicetalk.data.jackson.jersey;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.router.jersey.TestUtils.ContentReadException;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.function.Executable;
 
 import javax.annotation.Nullable;
 
@@ -26,17 +27,15 @@ import static io.servicetalk.data.jackson.jersey.resources.PublisherJsonResource
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.ASYNC_AGGREGATED;
-import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.ASYNC_STREAMING;
-import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_AGGREGATED;
-import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
-import static org.junit.Assume.assumeTrue;
+import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.ASYNC_AGGREGATED;
+import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.ASYNC_STREAMING;
+import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_AGGREGATED;
+import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
-
-    public PublisherJsonResourcesTest(final RouterApi api) {
-        super(api);
-    }
 
     @Override
     protected String testUri(final String path) {
@@ -61,77 +60,83 @@ public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTe
         assumeTrue(api != ASYNC_AGGREGATED && api != BLOCKING_AGGREGATED);
     }
 
-    private void expectReadFailureWhenNotAggregating() {
+    private void expectReadFailureWhenNotAggregating(Executable executable) {
         if (api == ASYNC_AGGREGATED || api == BLOCKING_AGGREGATED) {
-            return;
+            assertDoesNotThrow(executable);
+        } else {
+            assertThrows(ContentReadException.class, executable);
         }
-        expected.expect(ContentReadException.class);
     }
 
     @Override
-    public void postJsonMapFailure() {
+    void postJsonMapFailure(RouterApi api) throws Exception {
+        setUp(api);
         skipWhenAggregatingDueToOffloadingIssueInCombinationWithJacksonAndAggregated();
-        expectReadFailureWhenNotAggregating();
-        sendAndAssertResponse(post("/map?fail=true", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                statusForFailedSerialization(), contentTypeForFailedSerialization(), "");
+        expectReadFailureWhenNotAggregating(() ->
+                sendAndAssertResponse(post("/map?fail=true", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                        statusForFailedSerialization(), contentTypeForFailedSerialization(), ""));
     }
 
     @Override
-    public void postBrokenJsonMap() {
-        expectReadFailureWhenNotAggregating();
-        sendAndAssertResponse(post("/map", "{key:789}", APPLICATION_JSON), statusForFailedSerialization(),
-                contentTypeForFailedSerialization(), "");
+    void postBrokenJsonMap(RouterApi api) throws Exception {
+        setUp(api);
+        expectReadFailureWhenNotAggregating(() ->
+                sendAndAssertResponse(post("/map", "{key:789}", APPLICATION_JSON), statusForFailedSerialization(),
+                contentTypeForFailedSerialization(), ""));
     }
 
     @Override
-    public void postJsonPojoFailure() {
+    void postJsonPojoFailure(RouterApi api) throws Exception {
+        setUp(api);
         skipWhenAggregatingDueToOffloadingIssueInCombinationWithJacksonAndAggregated();
-        expectReadFailureWhenNotAggregating();
-        sendAndAssertResponse(post("/pojo?fail=true", "{\"aString\":\"foo\",\"anInt\":123}", APPLICATION_JSON),
-                statusForFailedSerialization(), contentTypeForFailedSerialization(), "");
+        expectReadFailureWhenNotAggregating(() ->
+                sendAndAssertResponse(post("/pojo?fail=true", "{\"aString\":\"foo\",\"anInt\":123}", APPLICATION_JSON),
+                        statusForFailedSerialization(), contentTypeForFailedSerialization(), ""));
     }
 
     @Override
-    public void postBrokenJsonPojo() {
-        expectReadFailureWhenNotAggregating();
-        sendAndAssertResponse(post("/pojo", "{key:789}", APPLICATION_JSON),
-                statusForFailedSerialization(), contentTypeForFailedSerialization(), "");
+    void postBrokenJsonPojo(RouterApi api) throws Exception {
+        setUp(api);
+        expectReadFailureWhenNotAggregating(() ->
+                sendAndAssertResponse(post("/pojo", "{key:789}", APPLICATION_JSON),
+                        statusForFailedSerialization(), contentTypeForFailedSerialization(), ""));
     }
 
     @Override
-    public void postInvalidJsonPojo() {
-        expectReadFailureWhenNotAggregating();
-        sendAndAssertResponse(post("/pojo", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                statusForFailedSerialization(), contentTypeForFailedSerialization(), "");
+    void postInvalidJsonPojo(RouterApi api) throws Exception {
+        setUp(api);
+        expectReadFailureWhenNotAggregating(() ->
+                sendAndAssertResponse(post("/pojo", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                        statusForFailedSerialization(), contentTypeForFailedSerialization(), ""));
     }
 
-    @Ignore("Remove this after read cancel stops closing channel")
+    @Disabled("Remove this after read cancel stops closing channel")
     @Override
-    public void postBrokenJsonPojoResponse() {
+    void postBrokenJsonPojoResponse(RouterApi api) {
         // NOOP
     }
 
-    @Ignore("Remove this after read cancel stops closing channel")
+    @Disabled("Remove this after read cancel stops closing channel")
     @Override
-    public void postBrokenJsonMapResponse() {
+    void postBrokenJsonMapResponse(RouterApi api) {
         // NOOP
     }
 
-    @Ignore("Remove this after read cancel stops closing channel")
+    @Disabled("Remove this after read cancel stops closing channel")
     @Override
-    public void postInvalidJsonPojoResponse() {
+    void postInvalidJsonPojoResponse(RouterApi api) {
         // NOOP
     }
 
-    @Ignore("Remove this after read cancel stops closing channel")
+    @Disabled("Remove this after read cancel stops closing channel")
     @Override
-    public void postJsonMapResponseFailure() {
+    void postJsonMapResponseFailure(RouterApi api) {
         // NOOP
     }
 
-    @Ignore("Remove this after read cancel stops closing channel")
+    @Disabled("Remove this after read cancel stops closing channel")
     @Override
-    public void postJsonPojoResponseFailure() {
+    void postJsonPojoResponseFailure(RouterApi api) {
         // NOOP
     }
 }

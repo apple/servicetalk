@@ -17,8 +17,8 @@ package io.servicetalk.serialization.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -45,15 +45,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class BlockingIterableFlatMapTest {
+class BlockingIterableFlatMapTest {
 
     private BlockingIterator<Integer> source;
     private Function<Integer, Iterable<String>> mapper;
     private BlockingIterableFlatMap<Integer, String> flatMap;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws TimeoutException {
+    @BeforeEach
+    void setUp() throws TimeoutException {
         source = mock(BlockingIterator.class);
         when(source.hasNext(leq(0), any(TimeUnit.class))).thenThrow(new TimeoutException());
         mapper = mock(Function.class);
@@ -61,7 +61,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void emptyIteratorTimeout() throws TimeoutException {
+    void emptyIteratorTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenReturn(false);
 
         assertThat("Iterator not empty.", flatMap.iterator().hasNext(1, MILLISECONDS), is(false));
@@ -71,7 +71,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void emptyIterator() {
+    void emptyIterator() {
         when(source.hasNext()).thenReturn(false);
 
         assertThat("Iterator not empty.", flatMap.iterator().hasNext(), is(false));
@@ -81,7 +81,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void sourceReturnsNullTimeout() throws TimeoutException {
+    void sourceReturnsNullTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(source.next(anyLong(), any(TimeUnit.class))).thenReturn(null);
         when(mapper.apply(null)).thenReturn(singletonList(null));
@@ -96,7 +96,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void sourceReturnsNull() {
+    void sourceReturnsNull() {
         when(source.hasNext()).thenReturn(true);
         when(source.next()).thenReturn(null);
         when(mapper.apply(null)).thenReturn(singletonList(null));
@@ -111,7 +111,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void mapperReturnsEmptyIteratorTimeout() throws TimeoutException {
+    void mapperReturnsEmptyIteratorTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenAnswer(new DynamicHasNext(1));
         when(source.next(anyLong(), any(TimeUnit.class))).thenReturn(null);
         when(mapper.apply(null)).thenReturn(emptyList());
@@ -125,7 +125,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void mapperReturnsEmptyIterator() {
+    void mapperReturnsEmptyIterator() {
         when(source.hasNext()).thenAnswer(new DynamicHasNext(1));
         when(source.next()).thenReturn(null);
         when(mapper.apply(null)).thenReturn(emptyList());
@@ -139,7 +139,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void mapperReturnsEmptyIteratorAndThenDataTimeout() throws TimeoutException {
+    void mapperReturnsEmptyIteratorAndThenDataTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenAnswer(new DynamicHasNext(2));
         when(source.next(anyLong(), any(TimeUnit.class))).thenAnswer(new CountingAnswer());
         when(mapper.apply(1)).thenReturn(emptyList());
@@ -155,7 +155,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void mapperReturnsEmptyIteratorAndThenData() {
+    void mapperReturnsEmptyIteratorAndThenData() {
         when(source.hasNext()).thenAnswer(new DynamicHasNext(2));
         when(source.next()).thenAnswer(new CountingAnswer());
         when(mapper.apply(1)).thenReturn(emptyList());
@@ -172,7 +172,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void oneIntegerToOneStringTimeout() throws TimeoutException {
+    void oneIntegerToOneStringTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(source.next(anyLong(), any(TimeUnit.class))).thenReturn(1);
         when(mapper.apply(1)).thenReturn(singletonList("1"));
@@ -182,7 +182,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void oneIntegerToOneString() {
+    void oneIntegerToOneString() {
         when(source.hasNext()).thenReturn(true);
         when(source.next()).thenReturn(1);
         when(mapper.apply(1)).thenReturn(singletonList("1"));
@@ -192,7 +192,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void oneIntegerToMultipleStringsTimeout() throws TimeoutException {
+    void oneIntegerToMultipleStringsTimeout() throws TimeoutException {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(source.next(anyLong(), any(TimeUnit.class))).thenReturn(1);
         when(mapper.apply(1)).thenReturn(asList("1", "2"));
@@ -203,7 +203,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void oneIntegerToMultipleStrings() {
+    void oneIntegerToMultipleStrings() {
         when(source.hasNext()).thenReturn(true);
         when(source.next()).thenReturn(1);
         when(mapper.apply(1)).thenReturn(asList("1", "2"));
@@ -215,7 +215,7 @@ public class BlockingIterableFlatMapTest {
     }
 
     @Test
-    public void closeClosesSource() throws Exception {
+    void closeClosesSource() throws Exception {
         final BlockingIterator<String> iterator = flatMap.iterator();
         iterator.close();
         verify(source).close();

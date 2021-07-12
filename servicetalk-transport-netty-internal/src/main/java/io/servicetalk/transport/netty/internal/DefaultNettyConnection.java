@@ -37,13 +37,14 @@ import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
-import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
+import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
@@ -61,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -335,30 +337,34 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private Throwable enrichError(final Throwable t) {
         Throwable throwable;
-        if (t instanceof AbortedFirstWrite) {
-            final Throwable cause = t.getCause();
-            if (closeReason != null) {
-                throwable = new RetryableClosureException(wrapIfReasonIsKnown(cause));
+        CloseEvent closeReason;
+        if (t instanceof AbortedFirstWriteException) {
+            if ((closeReason = this.closeReason) != null) {
+                throwable = new RetryableClosedChannelException(wrapWithCloseReason(closeReason, t.getCause()));
+            } else if (t.getCause() instanceof RetryableException) {
+                // Unwrap additional layer of RetryableException if the cause is already retryable
+                throwable = t.getCause();
+            } else if (t.getCause() instanceof ClosedChannelException) {
+                throwable = new RetryableClosedChannelException((ClosedChannelException) t.getCause());
             } else {
-                throwable = cause;
+                throwable = t;
             }
-        } else if (t instanceof RetryableClosureException) {
+        } else if (t instanceof RetryableClosedChannelException) {
             throwable = t;
         } else {
-            throwable = wrapIfReasonIsKnown(t);
+            if ((closeReason = this.closeReason) != null) {
+                throwable = wrapWithCloseReason(closeReason, t);
+            } else {
+                throwable = enrichProtocolError.apply(t);
+            }
         }
-        throwable = enrichProtocolError.apply(throwable);
         transportError.onSuccess(throwable);
         return throwable;
     }
 
-    private Throwable wrapIfReasonIsKnown(final Throwable t) {
-        final CloseEvent closeReason = this.closeReason;
-        if (closeReason == null) {
-            return t;
-        }
+    private ClosedChannelException wrapWithCloseReason(final CloseEvent closeReason, final Throwable t) {
         if (t instanceof CloseEventObservedException && ((CloseEventObservedException) t).event() == closeReason) {
-            return t;
+            return (ClosedChannelException) t;
         }
         return closeReason.wrapError(t, channel());
     }
@@ -386,7 +392,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
-                        completableSubscriber, closeHandler, writeObserver, enrichProtocolError);
+                        completableSubscriber, closeHandler, writeObserver, enrichProtocolError, isClient);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);

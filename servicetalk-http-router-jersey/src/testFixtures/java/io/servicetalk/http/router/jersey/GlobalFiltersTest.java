@@ -25,11 +25,8 @@ import javax.ws.rs.core.Application;
 import static java.util.Arrays.asList;
 
 public class GlobalFiltersTest extends AbstractFilterInterceptorTest {
-    public GlobalFiltersTest(final RouterApi api) {
-        super(api);
-    }
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(

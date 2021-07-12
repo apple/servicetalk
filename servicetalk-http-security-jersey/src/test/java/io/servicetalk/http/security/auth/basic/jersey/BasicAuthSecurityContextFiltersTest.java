@@ -20,16 +20,15 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.net.URI;
 import java.security.Principal;
@@ -48,12 +47,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class BasicAuthSecurityContextFiltersTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class BasicAuthSecurityContextFiltersTest {
     private static final Principal TEST_PRINCIPAL = () -> "test-name";
     private static final String TEST_USER_INFO = "test-user-info";
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
 
     @Mock
     private ContainerRequestContext requestCtx;
@@ -61,25 +59,18 @@ public class BasicAuthSecurityContextFiltersTest {
     @Mock
     private UriInfo uriInfo;
 
-    private final boolean globalFilter;
+    private boolean globalFilter;
 
-    public BasicAuthSecurityContextFiltersTest(final boolean globalFilter) {
-        this.globalFilter = globalFilter;
-    }
-
-    @Parameters(name = " {index} global filter? {0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
-    }
-
-    @Before
-    public void setupMocks() {
+    @BeforeEach
+    void setupMocks() {
         when(uriInfo.getRequestUri()).thenReturn(URI.create("https://0.0.0.0"));
         when(requestCtx.getUriInfo()).thenReturn(uriInfo);
     }
 
-    @Test
-    public void principalNoUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void principalNoUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final ContainerRequestFilter filter = newFilterBuilder().build();
 
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -89,8 +80,10 @@ public class BasicAuthSecurityContextFiltersTest {
         assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(ANONYMOUS_PRINCIPAL)));
     }
 
-    @Test
-    public void principalUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void principalUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final Key<Principal> userInfoKey = newKey("basicPrincipal");
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey).build();
 
@@ -105,8 +98,10 @@ public class BasicAuthSecurityContextFiltersTest {
         assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(TEST_PRINCIPAL)));
     }
 
-    @Test
-    public void customPrincipalFunctionNoUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void customPrincipalFunctionNoUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final ContainerRequestFilter filter = newFilterBuilder()
                 .principalFunction(__ -> TEST_PRINCIPAL)
                 .build();
@@ -118,8 +113,10 @@ public class BasicAuthSecurityContextFiltersTest {
         assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(TEST_PRINCIPAL)));
     }
 
-    @Test
-    public void customPrincipalFunctionUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void customPrincipalFunctionUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final Key<String> userInfoKey = newKey("basicPrincipal");
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey)
                 .principalFunction((__, userInfo) -> TEST_USER_INFO.equals(userInfo) ? TEST_PRINCIPAL : null)
@@ -136,8 +133,10 @@ public class BasicAuthSecurityContextFiltersTest {
         assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(TEST_PRINCIPAL)));
     }
 
-    @Test
-    public void customSecurityContextFunctionNoUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void customSecurityContextFunctionNoUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final SecurityContext securityContext = mock(SecurityContext.class);
 
         final ContainerRequestFilter filter = newFilterBuilder()
@@ -151,8 +150,10 @@ public class BasicAuthSecurityContextFiltersTest {
         assertThat(securityCtxCaptor.getValue(), is(sameInstance(securityContext)));
     }
 
-    @Test
-    public void customSecurityContextFunctionUserInfo() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void customSecurityContextFunctionUserInfo(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
         final SecurityContext securityContext = mock(SecurityContext.class);
 
         final Key<String> userInfoKey = newKey("basicPrincipal");

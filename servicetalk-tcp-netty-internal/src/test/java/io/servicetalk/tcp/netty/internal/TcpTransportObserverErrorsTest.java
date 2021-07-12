@@ -20,15 +20,15 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -37,14 +37,17 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
-import static org.junit.Assert.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@RunWith(Parameterized.class)
-public final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
+final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
 
     private enum ErrorSource {
         CONNECTION_ACCEPTOR,
@@ -54,13 +57,11 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         SERVER_IDLE_TIMEOUT,
     }
 
-    private final ErrorSource errorSource;
     private final TcpClientConfig tcpClientConfig = super.getTcpClientConfig();
     private final TcpServerConfig tcpServerConfig = super.getTcpServerConfig();
     private ChannelInitializer channelInitializer = channel -> { };
 
-    public TcpTransportObserverErrorsTest(ErrorSource errorSource) {
-        this.errorSource = errorSource;
+    private void setUp(ErrorSource errorSource) throws Exception {
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
                 connectionAcceptor(ctx -> failed(DELIBERATE_EXCEPTION));
@@ -84,11 +85,8 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
-    }
 
-    @Parameters(name = "errorSource={0}")
-    public static ErrorSource[] getErrorSources() {
-        return ErrorSource.values();
+        setUp();
     }
 
     @Override
@@ -112,8 +110,11 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         return tcpServerConfig;
     }
 
-    @Test
-    public void testConnectionClosed() throws Exception {
+    @ParameterizedTest
+    @EnumSource(ErrorSource.class)
+    void testConnectionClosed(ErrorSource errorSource) throws Exception {
+        setUp(errorSource);
+
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
@@ -121,6 +122,8 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
+            case CLIENT_IDLE_TIMEOUT:
+            case SERVER_IDLE_TIMEOUT:
                 break;
             case PIPELINE:
                 Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
@@ -136,10 +139,10 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                         Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
                 verify(clientDataObserver).onNewWrite();
                 verify(clientWriteObserver).requestedToWrite(anyLong());
-                verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
-                break;
-            case CLIENT_IDLE_TIMEOUT:
-            case SERVER_IDLE_TIMEOUT:
+                ArgumentCaptor<Throwable> exceptionCaptor = forClass(Throwable.class);
+                verify(clientWriteObserver).writeFailed(exceptionCaptor.capture());
+                assertThat(exceptionCaptor.getValue(), instanceOf(RetryableException.class));
+                assertThat(exceptionCaptor.getValue().getCause(), is(DELIBERATE_EXCEPTION));
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);

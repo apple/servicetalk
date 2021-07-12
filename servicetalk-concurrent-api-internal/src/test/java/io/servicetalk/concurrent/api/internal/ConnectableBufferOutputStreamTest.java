@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,11 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,37 +56,33 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ConnectableBufferOutputStreamTest {
+class ConnectableBufferOutputStreamTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableBufferOutputStreamTest.class);
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = none();
 
     private final TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
     private ConnectableBufferOutputStream cbos;
     private ExecutorService executorService;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         cbos = new ConnectableBufferOutputStream(PREFER_HEAP_ALLOCATOR);
         executorService = Executors.newCachedThreadPool();
     }
 
-    @After
-    public void teardown() {
+    @AfterEach
+    void teardown() {
         executorService.shutdown();
     }
 
     @Test
-    public void subscribeDeliverDataSynchronously() throws Exception {
+    void subscribeDeliverDataSynchronously() throws Exception {
         AtomicReference<Future<?>> futureRef = new AtomicReference<>();
         toSource(cbos.connect().afterOnSubscribe(subscription -> {
             subscriber.awaitSubscription().request(1); // request from the TestPublisherSubscriber!
@@ -118,7 +110,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void subscribeCloseSynchronously() throws Exception {
+    void subscribeCloseSynchronously() throws Exception {
         AtomicReference<Future<?>> futureRef = new AtomicReference<>();
         toSource(cbos.connect().afterOnSubscribe(subscription -> {
             // We want to increase the chance that the writer thread has to wait for the Subscriber to become
@@ -142,18 +134,13 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeAfterCloseShouldThrow() throws IOException {
+    void writeAfterCloseShouldThrow() throws IOException {
         cbos.close();
-        expectedException.expect(IOException.class);
-        cbos.write(1);
-
-        // Make sure the Subscription thread isn't blocked.
-        subscriber.awaitSubscription().request(1);
-        subscriber.awaitSubscription().cancel();
+        assertThrows(IOException.class, () -> cbos.write(1));
     }
 
     @Test
-    public void multipleWriteAfterCloseShouldThrow() throws Exception {
+    void multipleWriteAfterCloseShouldThrow() throws Exception {
         Future<?> f = executorService.submit(toRunnable(() -> {
             cbos.write(1);
             cbos.flush();
@@ -180,7 +167,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void connectMultipleWriteAfterCloseShouldThrow() throws Exception {
+    void connectMultipleWriteAfterCloseShouldThrow() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
@@ -207,7 +194,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void cancelUnblocksWrite() throws Exception {
+    void cancelUnblocksWrite() throws Exception {
         CyclicBarrier afterFlushBarrier = new CyclicBarrier(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cbos.write(1);
@@ -238,7 +225,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void connectCancelUnblocksWrite() throws Exception {
+    void connectCancelUnblocksWrite() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cbos.write(1)));
@@ -259,7 +246,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void closeShouldBeIdempotent() throws Exception {
+    void closeShouldBeIdempotent() throws Exception {
         Future<?> f = executorService.submit(toRunnable(() -> {
             cbos.write(1);
             cbos.flush();
@@ -275,14 +262,14 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
+    void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
         cbos.connect();
         cbos.close();
         cbos.close(); // should be idempotent
     }
 
     @Test
-    public void multipleConnectWithInvalidRequestnShouldFailConnect() throws Exception {
+    void multipleConnectWithInvalidRequestnShouldFailConnect() throws Exception {
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -316,7 +303,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void multipleConnectWhileEmittingShouldFailConnect() throws Exception {
+    void multipleConnectWhileEmittingShouldFailConnect() throws Exception {
         CountDownLatch onNext = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         toSource(cbos.connect()).subscribe(new Subscriber<Buffer>() {
@@ -349,7 +336,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void multipleConnectWhileSubscribedShouldFailConnect() throws Exception {
+    void multipleConnectWhileSubscribedShouldFailConnect() throws Exception {
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         toSource(cbos.connect()).subscribe(new Subscriber<Buffer>() {
@@ -379,7 +366,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void multipleConnectWhileSubscriberFailedShouldFailConnect() throws Exception {
+    void multipleConnectWhileSubscriberFailedShouldFailConnect() throws Exception {
         CountDownLatch onError = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         toSource(cbos.connect()).subscribe(new Subscriber<Buffer>() {
@@ -423,7 +410,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeFlushCloseConnectSubscribeRequest() throws Exception {
+    void writeFlushCloseConnectSubscribeRequest() throws Exception {
         Future<?> f = executorService.submit(toRunnable(() -> {
             cbos.write(1);
             cbos.flush();
@@ -438,7 +425,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void connectSubscribeRequestWriteFlushClose() throws Exception {
+    void connectSubscribeRequestWriteFlushClose() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
@@ -453,7 +440,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void connectSubscribeWriteFlushCloseRequest() throws Exception {
+    void connectSubscribeWriteFlushCloseRequest() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cbos.write(1);
@@ -468,7 +455,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteSingleWriteSingleFlushClose() throws Exception {
+    void requestWriteSingleWriteSingleFlushClose() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(2);
@@ -484,7 +471,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
+    void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(2);
@@ -501,7 +488,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
+    void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
@@ -519,7 +506,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void invalidRequestN() throws IOException {
+    void invalidRequestN() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         toSource(cbos.connect()).subscribe(new Subscriber<Buffer>() {
             @Override
@@ -548,7 +535,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void onNextThrows() throws IOException {
+    void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         toSource(cbos.connect()).subscribe(new Subscriber<Buffer>() {
             @Override
@@ -582,18 +569,17 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void cancelCloses() throws Exception {
+    void cancelCloses() {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cbos.write(1)));
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(is(instanceOf(RuntimeException.class)));
-        f.get();
+        ExecutionException ex = assertThrows(ExecutionException.class, f::get);
+        assertThat(ex.getCause(), instanceOf(RuntimeException.class));
     }
 
     @Test
-    public void cancelCloseAfterWrite() throws Exception {
+    void cancelCloseAfterWrite() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
@@ -605,12 +591,11 @@ public class ConnectableBufferOutputStreamTest {
         assertThat(subscriber.takeOnNext(), is(buf(1)));
 
         subscriber.awaitSubscription().cancel();
-        expectedException.expect(is(instanceOf(IOException.class)));
-        cbos.write(2);
+        assertThrows(IOException.class, () -> cbos.write(2));
     }
 
     @Test
-    public void requestNegativeWrite() throws Exception {
+    void requestNegativeWrite() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(-1);
@@ -628,7 +613,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeRequestNegative() throws Exception {
+    void writeRequestNegative() throws Exception {
         toSource(cbos.connect()).subscribe(subscriber);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         CyclicBarrier cb = new CyclicBarrier(2);
@@ -649,7 +634,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void closeNoWrite() throws Exception {
+    void closeNoWrite() throws Exception {
         CyclicBarrier cb = new CyclicBarrier(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cb.await();
@@ -665,7 +650,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteArrWriteArrFlushClose() throws Exception {
+    void requestWriteArrWriteArrFlushClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -682,7 +667,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteArrFlushWriteArrFlushClose() throws Exception {
+    void requestWriteArrFlushWriteArrFlushClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -698,7 +683,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeArrFlushWriteArrFlushRequestClose() throws Exception {
+    void writeArrFlushWriteArrFlushRequestClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         Future<?> f = executorService.submit(toRunnable(() -> {
@@ -715,7 +700,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteArrOffWriteArrOffFlushClose() throws Exception {
+    void requestWriteArrOffWriteArrOffFlushClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -730,7 +715,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void requestWriteArrOffFlushWriteArrOffFlushClose() throws Exception {
+    void requestWriteArrOffFlushWriteArrOffFlushClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
@@ -746,7 +731,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void writeArrOffFlushWriteArrOffFlushRequestClose() throws Exception {
+    void writeArrOffFlushWriteArrOffFlushRequestClose() throws Exception {
         final Publisher<Buffer> connect = cbos.connect();
         toSource(connect).subscribe(subscriber);
         Future<?> f = executorService.submit(toRunnable(() -> {
@@ -763,7 +748,7 @@ public class ConnectableBufferOutputStreamTest {
     }
 
     @Test
-    public void multiThreadedProducerConsumer() throws Exception {
+    void multiThreadedProducerConsumer() throws Exception {
 
         final Random r = new Random();
         final long seed = r.nextLong();  // capture seed to have repeatable tests

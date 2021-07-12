@@ -23,16 +23,16 @@ import io.servicetalk.grpc.protoc.test.multi.TestRequest;
 import io.servicetalk.grpc.protoc.test.multi.Tester.TesterService;
 import io.servicetalk.grpc.protoc.test.multi.Tester2.Tester2Service;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import test.shared.TestShared.Generic;
 import test.shared.TestShared.SharedReply;
 import test.shared.TestShared.Untils;
 
 import java.util.concurrent.ExecutionException;
 
-public class TestMulti {
+class TestMulti {
     @Test
-    public void multiGenerated() throws ExecutionException, InterruptedException {
+    void multiGenerated() throws ExecutionException, InterruptedException {
         TesterService service = new TesterService() {
             @Override
             public Publisher<TestReply> testBiDiStream(final GrpcServiceContext ctx,

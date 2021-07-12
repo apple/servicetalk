@@ -20,7 +20,7 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.serialization.api.StreamingDeserializer;
 
 import com.google.protobuf.Parser;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,62 +37,62 @@ import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class ProtoDeserializerTest {
+class ProtoDeserializerTest {
 
     private final Parser<DummyMessage> parser = DummyMessage.parser();
     private final ProtoBufSerializationProvider<DummyMessage> serializationProvider =
             new ProtoBufSerializationProvider<>(DummyMessage.class, identity(), parser);
 
     @Test
-    public void zeroLengthMessageAligned() throws IOException {
+    void zeroLengthMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor(new String[]{null}));
         assertThat("Unexpected messages deserialized.", deserialized, contains(""));
     }
 
     @Test
-    public void zeroLengthFirstMessageAligned() throws IOException {
+    void zeroLengthFirstMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor(null, "Hello"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("", "Hello"));
     }
 
     @Test
-    public void zeroLengthLastMessageAligned() throws IOException {
+    void zeroLengthLastMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello", null));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello", ""));
     }
 
     @Test
-    public void zeroLengthMiddleMessageAligned() throws IOException {
+    void zeroLengthMiddleMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello1", null, "Hello2"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "", "Hello2"));
     }
 
     @Test
-    public void singleMessageAligned() throws IOException {
+    void singleMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
     }
 
     @Test
-    public void singleMessageAlignedAsIterable() throws IOException {
+    void singleMessageAlignedAsIterable() throws IOException {
         List<String> deserialized = deserialize(new Buffer[]{grpcBufferFor("Hello")});
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
     }
 
     @Test
-    public void multipleMessagesAligned() throws IOException {
+    void multipleMessagesAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello1"), grpcBufferFor("Hello2"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "Hello2"));
     }
 
     @Test
-    public void multipleMessagesInSingleBuffer() throws IOException {
+    void multipleMessagesInSingleBuffer() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello1", "Hello2"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "Hello2"));
     }
 
     @Test
-    public void splitMessageInBuffers() throws IOException {
+    void splitMessageInBuffers() throws IOException {
         Buffer msg = grpcBufferFor("Hello");
         List<Buffer> buffers = new ArrayList<>();
         while (msg.readableBytes() > 0) {
@@ -103,7 +103,7 @@ public class ProtoDeserializerTest {
     }
 
     @Test
-    public void multipleMessagesInCompositeBuffer() throws IOException {
+    void multipleMessagesInCompositeBuffer() throws IOException {
         final CompositeBuffer composite = DEFAULT_ALLOCATOR.newCompositeBuffer();
         Buffer msg = grpcBufferFor("Hello");
         while (msg.readableBytes() > 0) {

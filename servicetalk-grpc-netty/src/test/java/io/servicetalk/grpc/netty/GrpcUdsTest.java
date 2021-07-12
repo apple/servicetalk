@@ -24,36 +24,38 @@ import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.netty.GrpcClients.forResolvedAddress;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class GrpcUdsTest {
+class GrpcUdsTest {
+    @Nullable
     private static IoExecutor ioExecutor;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         ioExecutor = createIoExecutor(new IoThreadFactory("io-executor"));
     }
 
-    @AfterClass
-    public static void afterClass() throws ExecutionException, InterruptedException {
+    @AfterAll
+    static void afterClass() throws ExecutionException, InterruptedException {
         ioExecutor.closeAsync().toFuture().get();
     }
 
     @Test
-    public void udsRoundTrip() throws Exception {
-        assumeTrue(ioExecutor.isUnixDomainSocketSupported());
+    void udsRoundTrip() throws Exception {
+        Assumptions.assumeTrue(ioExecutor.isUnixDomainSocketSupported());
         String greetingPrefix = "Hello ";
         String name = "foo";
         String expectedResponse = greetingPrefix + name;
@@ -64,7 +66,7 @@ public class GrpcUdsTest {
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .buildBlocking(new ClientFactory())) {
             assertEquals(expectedResponse,
-                    client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
+                                    client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
         }
     }
 }

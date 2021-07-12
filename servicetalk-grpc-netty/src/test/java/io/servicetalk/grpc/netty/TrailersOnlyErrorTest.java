@@ -42,7 +42,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -63,18 +63,18 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TrailersOnlyErrorTest {
+class TrailersOnlyErrorTest {
 
     private static final CharSequence GRPC_STATUS_HEADER = newAsciiString("grpc-status");
 
     @Test
-    public void testRouteThrows() throws Exception {
+    void testRouteThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait(new Tester.ServiceFactory(mockTesterService()))) {
@@ -93,7 +93,7 @@ public class TrailersOnlyErrorTest {
     }
 
     @Test
-    public void testServiceThrows() throws Exception {
+    void testServiceThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
         final TesterService service = mockTesterService();
         setupServiceThrows(service);
@@ -126,7 +126,7 @@ public class TrailersOnlyErrorTest {
     }
 
     @Test
-    public void testServiceSingleThrows() throws Exception {
+    void testServiceSingleThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
         final TesterService service = mockTesterService();
         setupServiceSingleThrows(service);
@@ -146,7 +146,7 @@ public class TrailersOnlyErrorTest {
     }
 
     @Test
-    public void testServiceFilterThrows() throws Exception {
+    void testServiceFilterThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
         final TesterService service = mockTesterService();
 

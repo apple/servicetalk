@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.test.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -27,15 +27,16 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class TestPublisherSubscriberTest {
+class TestPublisherSubscriberTest {
     @Test
-    public void onSubscribe() {
+    void onSubscribe() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber);
         assertThat(subscriber.pollAllOnNext(), is(empty()));
@@ -43,27 +44,27 @@ public class TestPublisherSubscriberTest {
     }
 
     @Test
-    public void onSubscribeOnComplete() {
+    void onSubscribeOnComplete() {
         onSubscribeOnTerminal(true);
     }
 
     @Test
-    public void onSubscribeOnError() {
+    void onSubscribeOnError() {
         onSubscribeOnTerminal(false);
     }
 
     @Test
-    public void onSubscribeOnNextOnComplete() {
+    void onSubscribeOnNextOnComplete() {
         onSubscribeOnNextOnComplete(true);
     }
 
     @Test
-    public void onSubscribeOnNextOnError() {
+    void onSubscribeOnNextOnError() {
         onSubscribeOnNextOnComplete(false);
     }
 
     @Test
-    public void multipleOnNextWithTake() {
+    void multipleOnNextWithTake() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber).request(2);
         subscriber.onNext(null);
@@ -77,7 +78,7 @@ public class TestPublisherSubscriberTest {
     }
 
     @Test
-    public void multipleOnNextWithPollAll() {
+    void multipleOnNextWithPollAll() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber).request(2);
         subscriber.onNext(null);
@@ -89,97 +90,101 @@ public class TestPublisherSubscriberTest {
     }
 
     @Test
-    public void onNextNotConsumedWhenOnCompleteAllowedIfOptIn() {
+    void onNextNotConsumedWhenOnCompleteAllowedIfOptIn() {
         onNextNotConsumedWhenOnCompleteThrows(true, false);
     }
 
     @Test
-    public void onNextNotConsumedWhenOnErrorAllowedIfOptIn() {
+    void onNextNotConsumedWhenOnErrorAllowedIfOptIn() {
         onNextNotConsumedWhenOnCompleteThrows(false, false);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onNextNoOnSubscribeThrows() {
+    @Test
+    void onNextNoOnSubscribeThrows() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        subscriber.onNext(2);
+        assertThrows(IllegalStateException.class, () -> subscriber.onNext(2));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onCompleteNoOnSubscribeThrows() {
+    @Test
+    void onCompleteNoOnSubscribeThrows() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        subscriber.onComplete();
+        assertThrows(IllegalStateException.class, subscriber::onComplete);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onErrorNoOnSubscribeThrows() {
+    @Test
+    void onErrorNoOnSubscribeThrows() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        assertThrows(IllegalStateException.class, () -> subscriber.onError(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void onErrorAwaitOnCompleteThrows() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+
+        doOnSubscribe(subscriber);
         subscriber.onError(DELIBERATE_EXCEPTION);
+        assertThrows(IllegalStateException.class, subscriber::awaitOnComplete);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onErrorAwaitOnCompleteThrows() {
-        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-
-        doOnSubscribe(subscriber);
-        subscriber.onError(DELIBERATE_EXCEPTION);
-        subscriber.awaitOnComplete();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void onCompleteAwaitOnErrorThrows() throws Throwable {
+    @Test
+    void onCompleteAwaitOnErrorThrows() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
         subscriber.onComplete();
-        throw subscriber.awaitOnError();
+        assertThrows(IllegalStateException.class, () -> {
+            throw subscriber.awaitOnError();
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnSubscribeThrows() {
+    @Test
+    void onSubscribeAfterOnSubscribeThrows() {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
-        doOnSubscribe(subscriber);
+        assertThrows(IllegalStateException.class, () -> doOnSubscribe(subscriber));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnCompleteThrows() {
-        onSubscribeAfterTerminal(true);
+    @Test
+    void onSubscribeAfterOnCompleteThrows() {
+        assertThrows(IllegalStateException.class, () -> onSubscribeAfterTerminal(true));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnErrorThrows() {
-        onSubscribeAfterTerminal(false);
+    @Test
+    void onSubscribeAfterOnErrorThrows() {
+        assertThrows(IllegalStateException.class, () -> onSubscribeAfterTerminal(false));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onCompleteAfterOnCompleteThrows() {
-        onCompleteAfterOnCompleteThrows(true, true);
+    @Test
+    void onCompleteAfterOnCompleteThrows() {
+        assertThrows(IllegalStateException.class, () -> onCompleteAfterOnCompleteThrows(true, true));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onCompleteAfterOnErrorThrows() {
-        onCompleteAfterOnCompleteThrows(true, false);
+    @Test
+    void onCompleteAfterOnErrorThrows() {
+        assertThrows(IllegalStateException.class, () -> onCompleteAfterOnCompleteThrows(true, false));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onErrorAfterOnCompleteThrows() {
-        onCompleteAfterOnCompleteThrows(false, true);
+    @Test
+    void onErrorAfterOnCompleteThrows() {
+        assertThrows(IllegalStateException.class, () -> onCompleteAfterOnCompleteThrows(false, true));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onErrorAfterOnErrorThrows() {
-        onCompleteAfterOnCompleteThrows(false, false);
+    @Test
+    void onErrorAfterOnErrorThrows() {
+        assertThrows(IllegalStateException.class, () -> onCompleteAfterOnCompleteThrows(false, false));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onNextNotConsumedWhenOnCompleteThrows() {
-        onNextNotConsumedWhenOnCompleteThrows(true, true);
+    @Test
+    void onNextNotConsumedWhenOnCompleteThrows() {
+        assertThrows(IllegalStateException.class,
+                     () -> onNextNotConsumedWhenOnCompleteThrows(true, true));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void onNextNotConsumedWhenOnErrorThrows() {
-        onNextNotConsumedWhenOnCompleteThrows(false, true);
+    @Test
+    void onNextNotConsumedWhenOnErrorThrows() {
+        assertThrows(IllegalStateException.class,
+                     () -> onNextNotConsumedWhenOnCompleteThrows(false, true));
     }
 
     private static void onSubscribeOnTerminal(boolean onComplete) {

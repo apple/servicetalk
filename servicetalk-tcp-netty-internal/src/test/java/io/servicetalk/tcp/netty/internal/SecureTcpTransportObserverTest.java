@@ -20,20 +20,18 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.transport.api.SslProvider.JDK;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,15 +41,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@RunWith(Parameterized.class)
-public class SecureTcpTransportObserverTest extends AbstractTransportObserverTest {
+class SecureTcpTransportObserverTest extends AbstractTransportObserverTest {
 
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
 
-    private final SslProvider clientProvider;
-    private final SslProvider serverProvider;
+    private SslProvider clientProvider;
+    private SslProvider serverProvider;
 
-    public SecureTcpTransportObserverTest(SslProvider clientProvider, SslProvider serverProvider) {
+    private void setUp(SslProvider clientProvider, SslProvider serverProvider) throws Exception {
         this.clientProvider = clientProvider;
         this.serverProvider = serverProvider;
 
@@ -59,20 +56,22 @@ public class SecureTcpTransportObserverTest extends AbstractTransportObserverTes
             ctx.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
             return completed();
         });
+        setUp();
     }
 
-    @Parameters(name = "clientProvider={0}, serverProvider={1}")
-    public static Collection<Object[]> data() {
-        return asList(
-                new Object[] {JDK, JDK},
-                new Object[] {JDK, OPENSSL},
-                new Object[] {OPENSSL, JDK},
-                new Object[] {OPENSSL, OPENSSL}
+    static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of(JDK, JDK),
+                Arguments.of(JDK, OPENSSL),
+                Arguments.of(OPENSSL, JDK),
+                Arguments.of(OPENSSL, OPENSSL)
         );
     }
 
-    @Test
-    public void testConnectionObserverEvents() throws Exception {
+    @ParameterizedTest(name = "clientProvider={0}, serverProvider={1}")
+    @MethodSource("data")
+    void testConnectionObserverEvents(SslProvider clientProvider, SslProvider serverProvider) throws Exception {
+        setUp(clientProvider, serverProvider);
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();

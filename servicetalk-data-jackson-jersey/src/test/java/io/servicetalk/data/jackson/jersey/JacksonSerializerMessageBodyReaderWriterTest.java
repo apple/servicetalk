@@ -15,14 +15,11 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import javax.ws.rs.BadRequestException;
@@ -30,20 +27,18 @@ import javax.ws.rs.BadRequestException;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.data.jackson.jersey.JacksonSerializerMessageBodyReaderWriter.deserializeObject;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JacksonSerializerMessageBodyReaderWriterTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
+class JacksonSerializerMessageBodyReaderWriterTest {
 
     @Test
-    public void deserializeObjectDoesntRepeatBadRequestException() {
-        expected.expect(instanceOf(BadRequestException.class));
-        expected.expectCause(instanceOf(SerializationException.class));
+    void deserializeObjectDoesntRepeatBadRequestException() {
 
-        deserializeObject(from(DEFAULT_ALLOCATOR.fromAscii("{foo:123}")),
-                new DefaultSerializer(new JacksonSerializationProvider()), Map.class, 9, DEFAULT_ALLOCATOR);
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> deserializeObject(from(DEFAULT_ALLOCATOR.fromAscii("{foo:123}")),
+                        new DefaultSerializer(new JacksonSerializationProvider()), Map.class, 9, DEFAULT_ALLOCATOR));
+        assertThat(ex.getCause(), instanceOf(SerializationException.class));
     }
 }
