@@ -23,6 +23,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -512,6 +514,26 @@ class PublisherBufferTest {
         assertThat(buffers, hasSize(1));
         assertThat(buffers.poll(), is(-1));
         assertThat(terminal.get(), is(complete()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void itemsTerminatedBeforeRequestN(boolean failed) {
+        TestPublisher<Integer> original = new TestPublisher<>();
+        TestPublisher<Accumulator<Integer, Integer>> boundaries = new TestPublisher<>();
+        TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
+        toSource(original.buffer(new TestBufferStrategy(boundaries, BUFFER_SIZE_HINT))).subscribe(bufferSubscriber);
+        bufferSubscriber.awaitSubscription();
+        assertThat(boundaries.isSubscribed(), is(true));
+        assertThat(original.isSubscribed(), is(true));
+        if (failed) {
+            original.onError(DELIBERATE_EXCEPTION);
+            assertThat(bufferSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        } else {
+            original.onComplete();
+            bufferSubscriber.awaitOnComplete();
+        }
+        assertThat(bufferSubscriber.pollAllOnNext(), empty());
     }
 
     private static void verifyCancelled(TestSubscription subscription) {
