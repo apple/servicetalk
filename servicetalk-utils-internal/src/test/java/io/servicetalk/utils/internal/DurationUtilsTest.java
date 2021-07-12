@@ -15,7 +15,7 @@
  */
 package io.servicetalk.utils.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
@@ -26,28 +26,28 @@ import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DurationUtilsTest {
+class DurationUtilsTest {
 
     private static final Duration MAX_DURATION = ofSeconds(2);
 
     @Test
-    public void testIsPositiveSeconds() {
+    void testIsPositiveSeconds() {
         assertThat(isPositive(ofSeconds(1L)), is(true));
         assertThat(isPositive(ofSeconds(0L)), is(false));
         assertThat(isPositive(ofSeconds(1L).negated()), is(false));
     }
 
     @Test
-    public void testIsPositiveNanos() {
+    void testIsPositiveNanos() {
         assertThat(isPositive(ofNanos(1L)), is(true));
         assertThat(isPositive(ofNanos(0L)), is(false));
         assertThat(isPositive(ofNanos(1L).negated()), is(false));
     }
 
     @Test
-    public void testEnsurePositive() {
+    void testEnsurePositive() {
         assertThrows(NullPointerException.class, () -> ensurePositive(null, "duration"));
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(Duration.ZERO, "duration"));
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofNanos(1L).negated(), "duration"));
@@ -55,7 +55,7 @@ public class DurationUtilsTest {
     }
 
     @Test
-    public void testIsInfinite() {
+    void testIsInfinite() {
         assertThat(isInfinite(null, MAX_DURATION), is(true));
         assertThat(isInfinite(ofSeconds(3), MAX_DURATION), is(true));
         assertThat(isInfinite(ofSeconds(1), MAX_DURATION), is(false));

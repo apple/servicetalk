@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 
 import org.apache.logging.log4j.ThreadContext;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -32,33 +32,31 @@ import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap.getStorage;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class ServiceTalkThreadContextMapTest {
+class ServiceTalkThreadContextMapTest {
     private static final Logger logger = LoggerFactory.getLogger(ServiceTalkThreadContextMapTest.class);
 
-    @Before
-    public void verifyMDCSetup() {
-        assumeThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
+    @BeforeEach
+    void verifyMDCSetup() {
+        assumeTrue(ThreadContext.getThreadContextMap() instanceof ServiceTalkThreadContextMap);
     }
 
     @Test
-    public void testSimpleExecution() {
+    void testSimpleExecution() {
         MDC.clear();
         assertEquals(0, MDC.getCopyOfContextMap().size());
-        assertEquals("unexpected map: " + getStorage(), 0, getStorage().size());
+        assertEquals(0, getStorage().size(), "unexpected map: " + getStorage());
 
         MDC.put("aa", "1");
         assertEquals("1", MDC.get("aa"));
         assertEquals(1, MDC.getCopyOfContextMap().size());
-        assertEquals("unexpected map: " + getStorage(), 1, getStorage().size());
+        assertEquals(1, getStorage().size(), "unexpected map: " + getStorage());
 
         MDC.put("bb", "2");
         assertEquals("2", MDC.get("bb"));
@@ -82,7 +80,7 @@ public class ServiceTalkThreadContextMapTest {
     }
 
     @Test
-    public void testAsyncExecution() throws Exception {
+    void testAsyncExecution() throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             MDC.clear();
@@ -102,7 +100,7 @@ public class ServiceTalkThreadContextMapTest {
                     });
                 }
             }.map(v -> {
-                assertNotEquals(original, Thread.currentThread());
+                assertNotEquals(Thread.currentThread(), original);
                 assertEquals("1", MDC.get("a"));
                 assertEquals("2", MDC.get("b"));
                 MDC.put("b", "22");
@@ -120,7 +118,7 @@ public class ServiceTalkThreadContextMapTest {
     }
 
     @Test
-    public void testGetImmutableMapOrNull() {
+    void testGetImmutableMapOrNull() {
         ServiceTalkThreadContextMap map = new ServiceTalkThreadContextMap();
         // The map is backed by thread local storage. So we make sure to clear it so other tests don't interfere.
         map.clear();
@@ -128,7 +126,7 @@ public class ServiceTalkThreadContextMapTest {
         map.put("x", "10");
         Map<String, String> immutableMap = map.getImmutableMapOrNull();
         assertNotNull(immutableMap);
-        assertEquals(immutableMap.size(), 1);
+        assertEquals(1, immutableMap.size());
         try {
             immutableMap.put("y", "20");
             fail();

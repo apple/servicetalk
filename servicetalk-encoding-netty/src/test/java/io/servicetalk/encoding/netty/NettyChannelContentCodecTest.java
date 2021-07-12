@@ -19,22 +19,20 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.encoding.api.CodecDecodingException;
 import io.servicetalk.encoding.api.CodecEncodingException;
 import io.servicetalk.encoding.api.ContentCodec;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -46,9 +44,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(Parameterized.class)
-public class NettyChannelContentCodecTest {
+class NettyChannelContentCodecTest {
 
     private static final String INPUT;
     static {
@@ -57,43 +55,35 @@ public class NettyChannelContentCodecTest {
         INPUT = new String(arr, US_ASCII);
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final ContentCodec codec;
-
-    public NettyChannelContentCodecTest(final ContentCodec codec) {
-        this.codec = codec;
-    }
-
-    @Parameterized.Parameters(name = "codec={0}")
-    public static ContentCodec[] params() {
-        return new ContentCodec[]{
+    private static Stream<ContentCodec> params() {
+        return Stream.of(
                 ContentCodings.gzipDefault(),
-                ContentCodings.deflateDefault(),
-        };
+                ContentCodings.deflateDefault());
     }
 
-    @Test
-    public void testEncode() {
-        testEncode(DEFAULT_ALLOCATOR);
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncode(final ContentCodec codec) {
+        testEncode(codec, DEFAULT_ALLOCATOR);
     }
 
-    @Test
-    public void testEncodeWithReadOnlyBuffer() {
-        testEncode(DEFAULT_RO_ALLOCATOR);
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncodeWithReadOnlyBuffer(final ContentCodec codec) {
+        testEncode(codec, DEFAULT_RO_ALLOCATOR);
     }
 
-    @Test(expected = CodecEncodingException.class)
-    public void testEncodeWithOffsetAndZeroLength() {
-        testEncode(DEFAULT_ALLOCATOR, 0);
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncodeWithOffsetAndZeroLength(final ContentCodec codec) {
+        assertThrows(CodecEncodingException.class, () -> testEncode(codec, DEFAULT_ALLOCATOR, 0));
     }
 
-    private void testEncode(final BufferAllocator allocator) {
-        testEncode(allocator, INPUT.length());
+    private void testEncode(final ContentCodec codec, final BufferAllocator allocator) {
+        testEncode(codec, allocator, INPUT.length());
     }
 
-    private void testEncode(final BufferAllocator allocator, final int length) {
+    private void testEncode(final ContentCodec codec, final BufferAllocator allocator, final int length) {
         Buffer source = allocator.fromAscii(INPUT);
         Buffer encoded = codec.encode(source.readSlice(length), DEFAULT_ALLOCATOR);
 
@@ -103,19 +93,22 @@ public class NettyChannelContentCodecTest {
         assertThat(decoded.toString(US_ASCII), equalTo(INPUT.substring(0, length)));
     }
 
-    @Test(expected = CodecDecodingException.class)
-    public void testEncodeOverTheLimit() {
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncodeOverTheLimit(final ContentCodec codec) {
         byte[] input = new byte[(4 << 20) + 1]; //4MiB + 1 byte
         Arrays.fill(input, (byte) 'a');
 
         Buffer source = DEFAULT_ALLOCATOR.wrap(input);
         Buffer encoded = codec.encode(source, DEFAULT_ALLOCATOR);
 
-        codec.decode(encoded, DEFAULT_ALLOCATOR);
+        assertThrows(CodecDecodingException.class, () -> codec.decode(encoded, DEFAULT_ALLOCATOR));
     }
 
-    @Test(expected = CodecDecodingException.class)
-    public void testEncodeOverTheLimitStreaming() throws Exception {
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncodeOverTheLimitStreaming(final ContentCodec codec)
+            throws ExecutionException, InterruptedException {
         byte[] input = new byte[(4 << 20) + 1]; //4MiB + 1 byte
         Arrays.fill(input, (byte) 'a');
 
@@ -129,11 +122,13 @@ public class NettyChannelContentCodecTest {
                     return true;
                 }).toFuture().get();
 
-        throw error.get();
+        assertThrows(CodecDecodingException.class, () -> {
+            throw error.get();
+        });
     }
 
     @Test
-    public void testGzipIntegrationWithJDK() throws Exception {
+    void testGzipIntegrationWithJDK() throws Exception {
         ContentCodec codec = ContentCodings.gzipDefault();
 
         // Deflate with JDK and inflate with ST
@@ -159,9 +154,9 @@ public class NettyChannelContentCodecTest {
         assertThat(new String(inflated, 0, read, US_ASCII), equalTo(INPUT));
     }
 
-    @Test
-    public void testEncodePublisher()
-            throws ExecutionException, InterruptedException {
+    @ParameterizedTest
+    @MethodSource("params")
+    void testEncodePublisher(final ContentCodec codec) throws ExecutionException, InterruptedException {
         Buffer source = DEFAULT_ALLOCATOR.fromAscii(INPUT);
         Buffer encoded = codec.encode(Publisher.from(source), DEFAULT_ALLOCATOR)
                 .collect(DEFAULT_ALLOCATOR::newCompositeBuffer, CompositeBuffer::addBuffer).toFuture().get();

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.test.resources;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,44 +24,44 @@ import java.io.InputStreamReader;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Not a particularly robust test, but ensures the file is found and loaded.
 // If we change algorithms/settings this size may need to change.
-public class DefaultTestCertsTest {
+class DefaultTestCertsTest {
 
     @Test
-    public void loadServerKey() throws Exception {
+    void loadServerKey() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerKey());
         assertEquals(1707, contents.length());
     }
 
     @Test
-    public void loadServerPem() throws Exception {
+    void loadServerPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerPem());
         assertEquals(992, contents.length());
     }
 
     @Test
-    public void loadServerCAPem() throws Exception {
+    void loadServerCAPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerCAPem());
         assertEquals(1020, contents.length());
     }
 
     @Test
-    public void loadClientKey() throws Exception {
+    void loadClientKey() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientKey());
         assertEquals(1707, contents.length());
     }
 
     @Test
-    public void loadClientPem() throws Exception {
+    void loadClientPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientPem());
         assertEquals(992, contents.length());
     }
 
     @Test
-    public void loadClientCAPem() throws Exception {
+    void loadClientCAPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientCAPem());
         assertEquals(1020, contents.length());
     }

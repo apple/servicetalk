@@ -23,10 +23,9 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.handler.ssl.NotSslRecordException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,8 +47,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@RunWith(Parameterized.class)
-public final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
+final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
 
     private enum ErrorReason {
         SECURE_CLIENT_TO_PLAIN_SERVER,
@@ -62,20 +60,13 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
         NOT_MATCHING_CIPHERS,
     }
 
-    private final ErrorReason errorReason;
-    private final SslProvider clientProvider;
-    private final SslProvider serverProvider;
-
     private final TcpClientConfig clientConfig = super.getTcpClientConfig();
     private final TcpServerConfig serverConfig = super.getTcpServerConfig();
 
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
 
-    public SecureTcpTransportObserverErrorsTest(ErrorReason errorReason,
-                                                SslProvider clientProvider, SslProvider serverProvider) {
-        this.errorReason = errorReason;
-        this.clientProvider = clientProvider;
-        this.serverProvider = serverProvider;
+    private void setUp(ErrorReason errorReason, SslProvider clientProvider, SslProvider serverProvider)
+            throws Exception {
         ClientSslConfigBuilder clientSslBuilder = defaultClientSslBuilder(clientProvider);
         ServerSslConfigBuilder serverSslBuilder = defaultServerSslBuilder(serverProvider);
         switch (errorReason) {
@@ -136,16 +127,16 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorReason);
         }
+        setUp();
     }
 
-    @Parameters(name = "errorReason={0}, clientProvider={1}, serverProvider={2}")
-    public static Collection<Object[]> data() {
-        Collection<Object[]> data = new ArrayList<>();
+    static Collection<Arguments> data() {
+        Collection<Arguments> data = new ArrayList<>();
         for (ErrorReason reason : ErrorReason.values()) {
-            data.add(new Object[] {reason, JDK, JDK});
-            data.add(new Object[] {reason, JDK, OPENSSL});
-            data.add(new Object[] {reason, OPENSSL, JDK});
-            data.add(new Object[] {reason, OPENSSL, OPENSSL});
+            data.add(Arguments.of(reason, JDK, JDK));
+            data.add(Arguments.of(reason, JDK, OPENSSL));
+            data.add(Arguments.of(reason, OPENSSL, JDK));
+            data.add(Arguments.of(reason, OPENSSL, OPENSSL));
         }
         return data;
     }
@@ -160,8 +151,12 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
         return serverConfig;
     }
 
-    @Test
-    public void testSslErrors() throws Exception {
+    @ParameterizedTest(name = "errorReason={0}, clientProvider={1}, serverProvider={2}")
+    @MethodSource("data")
+    void testSslErrors(ErrorReason errorReason,
+                       SslProvider clientProvider,
+                       SslProvider serverProvider) throws Exception {
+        setUp(errorReason, clientProvider, serverProvider);
         CountDownLatch clientConnected = new CountDownLatch(1);
         AtomicReference<NettyConnection<Buffer, Buffer>> connection = new AtomicReference<>();
         client.connect(CLIENT_CTX, serverAddress).subscribe(c -> {
