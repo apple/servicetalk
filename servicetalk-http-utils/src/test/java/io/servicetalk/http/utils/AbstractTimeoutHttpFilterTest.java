@@ -48,7 +48,7 @@ import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 abstract class AbstractTimeoutHttpFilterTest {
@@ -97,7 +97,7 @@ abstract class AbstractTimeoutHttpFilterTest {
         StepVerifiers.create(applyFilter(__ -> timeout, fullRequestResponse, responseSingle))
                 .expectError(TimeoutException.class)
                 .verify();
-        assertThat("Unexpected subscribe for response single", responseSingle.isSubscribed(), is(false));
+        assertThat("No subscribe for payload body", responseSingle.isSubscribed(), is(true));
     }
 
     @ParameterizedTest
@@ -159,7 +159,7 @@ abstract class AbstractTimeoutHttpFilterTest {
         StepVerifiers.create(immediate().timer(timeout.plusMillis(5L)).concat(response.get().payloadBody()))
                 .expectError(TimeoutException.class)
                 .verify();
-        assertThat("Unexpected subscribe for payload body", payloadBody.isSubscribed(), is(false));
+        assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
     }
 
     @Test
