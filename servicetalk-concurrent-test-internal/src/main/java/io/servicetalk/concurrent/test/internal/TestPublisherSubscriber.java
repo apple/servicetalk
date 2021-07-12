@@ -34,8 +34,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.pollUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.takeUninterruptibly;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -324,89 +326,5 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     @SuppressWarnings("unchecked")
     private static <T> T unwrapNull(Object item) {
         return item == NULL_ON_NEXT ? null : (T) item;
-    }
-
-    private static void awaitUninterruptibly(CountDownLatch latch) {
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    latch.await();
-                    return;
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    private static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
-        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeoutNanos;
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return latch.await(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    private static <T> T takeUninterruptibly(BlockingQueue<T> queue) {
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return queue.take();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    @Nullable
-    private static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
-        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeout;
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return queue.poll(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return null;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
     }
 }

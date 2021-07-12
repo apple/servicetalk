@@ -16,12 +16,14 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.test.internal.AwaitUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -55,6 +57,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
     private volatile Subscriber<? super T> subscriber = new WaitingSubscriber<>();
+    private final CountDownLatch subscriberLatch = new CountDownLatch(1);
 
     /**
      * Create a {@code TestPublisher} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -76,6 +79,14 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         return !(subscriber instanceof WaitingSubscriber);
     }
 
+    /**
+     * Awaits until this {@link TestPublisher} is subscribed, even if interrupted. If interrupted the
+     * {@link Thread#isInterrupted()} will be set upon return.
+     */
+    public void awaitSubscribed() {
+        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+    }
+
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         try {
@@ -88,6 +99,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
                         final WaitingSubscriber<T> waiter = (WaitingSubscriber<T>) currSubscriber;
                         waiter.realSubscriber(newSubscriber);
                     }
+                    subscriberLatch.countDown();
                     break;
                 }
             }

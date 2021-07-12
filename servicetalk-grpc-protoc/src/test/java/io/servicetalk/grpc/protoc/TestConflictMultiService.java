@@ -19,13 +19,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestConflictMultiService0.TestConflictMultiServiceService;
 import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestReply;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class TestConflictMultiService {
+class TestConflictMultiService {
     @Test
-    public void conflictMultiServiceGenerated() throws ExecutionException, InterruptedException {
+    void conflictMultiServiceGenerated() throws ExecutionException, InterruptedException {
         TestConflictMultiServiceService service = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
         service.closeAsync().toFuture().get();
     }

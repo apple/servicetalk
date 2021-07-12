@@ -18,7 +18,6 @@ package io.servicetalk.http.security.auth.basic.jersey;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -33,12 +32,7 @@ import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.Builder;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -65,10 +59,7 @@ import static net.javacrumbs.jsonunit.fluent.JsonFluentAssert.assertThatJson;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Parameterized.class)
 public abstract class AbstractBasicAuthSecurityContextFilterTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     private static final String TEST_USERID = "test-id";
     private static final String TEST_PASSWORD = "test-pwd";
@@ -91,7 +82,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
                 }
             };
 
-    public static final class BasicUserInfo {
+    static final class BasicUserInfo {
         private final String userId;
 
         BasicUserInfo(final String userId) {
@@ -102,12 +93,12 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
             return userId;
         }
 
-        public Set<String> roles() {
+        Set<String> roles() {
             return singleton("USER");
         }
     }
 
-    protected static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
@@ -119,22 +110,10 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
 
     private static final Key<BasicUserInfo> TEST_USER_INFO_KEY = newKey("basicUserInfo");
 
-    protected final boolean withUserInfo;
-
     private ServerContext serverContext;
     private BlockingHttpClient httpClient;
 
-    protected AbstractBasicAuthSecurityContextFilterTest(final boolean withUserInfo) {
-        this.withUserInfo = withUserInfo;
-    }
-
-    @Parameters(name = " {index} with user info? {0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
-    }
-
-    @Before
-    public void setup() throws Exception {
+    void setUp(final boolean withUserInfo) throws Exception {
         final Builder<BasicUserInfo> builder = new Builder<>(CREDENTIALS_VERIFIER, "test-realm");
         if (withUserInfo) {
             builder.userInfoKey(TEST_USER_INFO_KEY);
@@ -149,7 +128,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
 
     protected abstract Application application(@Nullable Key<BasicUserInfo> userInfoKey);
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         try {
             httpClient.close();
@@ -158,7 +137,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         }
     }
 
-    protected void assertBasicAuthSecurityContextPresent(final String path) throws Exception {
+    void assertBasicAuthSecurityContextPresent(final String path) throws Exception {
         final String json = getSecurityContextJson(path, true, OK);
         assertThatJson(json)
                 .node("authenticationScheme").isStringEqualTo(BASIC_AUTH)
@@ -166,14 +145,14 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
                 .node("secure").isEqualTo(false);
     }
 
-    protected void assertBasicAuthSecurityContextAbsent(final String path,
-                                                        final boolean authenticated) throws Exception {
+    void assertBasicAuthSecurityContextAbsent(final String path,
+                                              final boolean authenticated) throws Exception {
         assertBasicAuthSecurityContextAbsent(path, authenticated, authenticated ? OK : UNAUTHORIZED);
     }
 
-    protected void assertBasicAuthSecurityContextAbsent(final String path,
-                                                        final boolean authenticated,
-                                                        final HttpResponseStatus expectedStatus) throws Exception {
+    void assertBasicAuthSecurityContextAbsent(final String path,
+                                              final boolean authenticated,
+                                              final HttpResponseStatus expectedStatus) throws Exception {
 
         final String json = getSecurityContextJson(path, authenticated, expectedStatus);
 

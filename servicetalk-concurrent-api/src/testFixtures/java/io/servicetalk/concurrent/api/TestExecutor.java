@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.SortedMap;
@@ -30,6 +31,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -40,14 +42,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class TestExecutor implements Executor {
 
+    private static final AtomicInteger INSTANCES = new AtomicInteger();
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
     private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano =
             new ConcurrentSkipListMap<>();
     private final long nanoOffset;
     private long currentNanos;
-    private CompletableProcessor closeProcessor = new CompletableProcessor();
-    private AtomicInteger tasksExecuted = new AtomicInteger();
-    private AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    private final CompletableProcessor closeProcessor = new CompletableProcessor();
+    private final AtomicInteger tasksExecuted = new AtomicInteger();
+    private final AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    private final String instanceName = getClass().getSimpleName() + "-" + INSTANCES.incrementAndGet();
 
     /**
      * Create a new instance.
@@ -63,7 +67,7 @@ public class TestExecutor implements Executor {
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         tasks.add(wrappedTask);
         return () -> tasks.remove(wrappedTask);
     }
@@ -71,7 +75,7 @@ public class TestExecutor implements Executor {
     @Override
     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
             throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         final long scheduledNanos = currentScheduledNanos() + unit.toNanos(delay);
         final Queue<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
                 k -> new ConcurrentLinkedQueue<>());
@@ -314,18 +318,107 @@ public class TestExecutor implements Executor {
         return false;
     }
 
-    // Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
-    // Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+    /**
+     *  Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
+     *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+     *  Sets the thread name to {@code TestExecutor-#} while running the task so that capturing the thread name makes
+     *  sense and during debugging the execution context is more obvious.
+     *  Adversarially set the {@link AsyncContextMap} to a hostile instance to ensure that any use of
+     *  {@link AsyncContextMap} within the context of the Runnable includes appropriate setting/restoring of the
+     *  context by the task.
+     */
     private static final class RunnableWrapper implements Runnable {
+        private final String threadName;
         private final Runnable delegate;
 
-        private RunnableWrapper(final Runnable delegate) {
+        private RunnableWrapper(final String threadName, final Runnable delegate) {
+            this.threadName = threadName;
             this.delegate = delegate;
         }
 
         @Override
         public void run() {
-            delegate.run();
+            Thread current = Thread.currentThread();
+            String oldName = current.getName();
+            current.setName(threadName);
+            try {
+                AsyncContext.provider().wrapRunnable(delegate, InvalidAsyncContextMap.INSTANCE).run();
+            } finally {
+                current.setName(oldName);
+            }
+        }
+    }
+
+    /**
+     * Any access of this {@link AsyncContextMap} instance is invalid and was meant for some other instance.
+     */
+    private static final class InvalidAsyncContextMap implements AsyncContextMap {
+        static final AsyncContextMap INSTANCE = new InvalidAsyncContextMap();
+
+        private InvalidAsyncContextMap() {
+            // singleton
+        }
+
+        private AssertionError invalidAccess() {
+            return new AssertionError("Invalid access of AsyncContextMap");
+        }
+
+        @Nullable
+        @Override
+        public <T> T get(final Key<T> key) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public boolean containsKey(final Key<?> key) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            throw invalidAccess();
+        }
+
+        @Override
+        public int size() {
+            throw invalidAccess();
+        }
+
+        @Nullable
+        @Override
+        public <T> T put(final Key<T> key, @Nullable final T value) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public void putAll(final Map<Key<?>, Object> map) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public <T> T remove(final Key<T> key) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public boolean removeAll(final Iterable<Key<?>> entries) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public void clear() {
+            throw invalidAccess();
+        }
+
+        @Nullable
+        @Override
+        public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
+            throw invalidAccess();
+        }
+
+        @Override
+        public AsyncContextMap copy() {
+            throw invalidAccess();
         }
     }
 }

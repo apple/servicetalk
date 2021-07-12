@@ -21,13 +21,11 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,19 +44,16 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultSerializerDeserializationTest {
+class DefaultSerializerDeserializationTest {
 
-    private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() { };
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() {
+    };
 
     private StreamingDeserializer<String> deSerializer;
     private StreamingDeserializer<List<String>> listDeSerializer;
@@ -66,8 +61,8 @@ public class DefaultSerializerDeserializationTest {
     private DefaultSerializer factory;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         deSerializer = mock(StreamingDeserializer.class);
         listDeSerializer = mock(StreamingDeserializer.class);
         provider = mock(SerializationProvider.class);
@@ -77,7 +72,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForPublisherWithType() throws Exception {
+    void applyDeserializerForPublisherWithType() throws Exception {
         Buffer first = mock(Buffer.class);
         Buffer second = mock(Buffer.class);
         when(deSerializer.deserialize(first)).thenReturn(singletonList("Hello1"));
@@ -92,7 +87,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForPublisherWithTypeHolder() throws Exception {
+    void applyDeserializerForPublisherWithTypeHolder() throws Exception {
         final List<String> firstList = singletonList("Hello1");
         final List<String> secondList = singletonList("Hello2");
         List<List<String>> expected = asList(firstList, secondList);
@@ -111,7 +106,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForIterableWithType() {
+    void applyDeserializerForIterableWithType() {
         Buffer first = mock(Buffer.class);
         Buffer second = mock(Buffer.class);
         final List<Buffer> source = asList(first, second);
@@ -127,7 +122,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForIterableWithTypeHolder() {
+    void applyDeserializerForIterableWithTypeHolder() {
         final List<String> firstList = singletonList("Hello1");
         final List<String> secondList = singletonList("Hello2");
         List<List<String>> expected = asList(firstList, secondList);
@@ -146,7 +141,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForBlockingIterableWithType() throws Exception {
+    void applyDeserializerForBlockingIterableWithType() throws Exception {
         final Buffer first = mock(Buffer.class);
         final Buffer second = mock(Buffer.class);
         // Since deserialize(BlockingIterable) calls deserialize(Buffer), we set up the mock for these granular calls.
@@ -166,7 +161,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForBlockingIterableWithTypeHolder() throws Exception {
+    void applyDeserializerForBlockingIterableWithTypeHolder() throws Exception {
         final Buffer first = mock(Buffer.class);
         final Buffer second = mock(Buffer.class);
         // Since deserialize(BlockingIterable) calls deserialize(Buffer), we set up the mock for these granular calls.
@@ -204,7 +199,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void publisherCompletesWithLeftOverData() {
+    void publisherCompletesWithLeftOverData() {
         Buffer first = mock(Buffer.class);
         Buffer second = mock(Buffer.class);
         when(deSerializer.deserialize(first)).thenReturn(singletonList("Hello1"));
@@ -228,7 +223,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void iterableCompletesWithLeftOverData() {
+    void iterableCompletesWithLeftOverData() {
         Buffer first = mock(Buffer.class);
         Buffer second = mock(Buffer.class);
         final List<Buffer> source = asList(first, second);
@@ -250,7 +245,7 @@ public class DefaultSerializerDeserializationTest {
 
         try {
             iterator.hasNext();
-            fail();
+            Assertions.fail();
         } catch (RuntimeException re) {
             assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
         }
@@ -258,7 +253,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void deserializeAggregatedWithType() {
+    void deserializeAggregatedWithType() {
         Buffer buffer = mock(Buffer.class);
         when(deSerializer.deserialize(buffer)).thenReturn(singletonList("Hello1"));
 
@@ -272,7 +267,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void deserializeAggregatedWithTypeHolder() {
+    void deserializeAggregatedWithTypeHolder() {
         final List<List<String>> expected = singletonList(singletonList("Hello1"));
         Buffer buffer = mock(Buffer.class);
         when(listDeSerializer.deserialize(buffer)).thenReturn(expected);
@@ -287,7 +282,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void deserializeIncompleteAggregatedWithType() {
+    void deserializeIncompleteAggregatedWithType() {
         Buffer buffer = mock(Buffer.class);
         when(deSerializer.deserialize(buffer)).thenReturn(emptyList());
 
@@ -302,7 +297,7 @@ public class DefaultSerializerDeserializationTest {
 
         try {
             deserialized.iterator().hasNext();
-            fail();
+            Assertions.fail();
         } catch (RuntimeException re) {
             assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
         }
@@ -310,7 +305,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void deserializeIncompleteAggregatedWithTypeHolder() {
+    void deserializeIncompleteAggregatedWithTypeHolder() {
         Buffer buffer = mock(Buffer.class);
         when(listDeSerializer.deserialize(buffer)).thenReturn(emptyList());
 
@@ -325,7 +320,7 @@ public class DefaultSerializerDeserializationTest {
 
         try {
             deserialized.iterator().hasNext();
-            fail();
+            Assertions.fail();
         } catch (RuntimeException re) {
             assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
         }

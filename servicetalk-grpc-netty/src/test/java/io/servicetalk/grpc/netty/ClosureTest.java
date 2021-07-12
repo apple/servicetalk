@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestBiDiStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestRequestStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestResponseStreamRpc;
@@ -31,13 +30,9 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TestRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,7 +41,6 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -57,24 +51,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class ClosureTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class ClosureTest {
 
-    private final boolean closeGracefully;
+    private boolean closeGracefully;
 
-    public ClosureTest(final boolean closeGracefully) {
+    private void setUp(final boolean closeGracefully) {
         this.closeGracefully = closeGracefully;
     }
 
-    @Parameterized.Parameters(name = "graceful? => {0}")
-    public static Collection<Boolean> data() {
-        return asList(true, false);
-    }
-
-    @Test
-    public void serviceImplIsClosed() throws Exception {
+    @ParameterizedTest(name = "graceful? => {0}")
+    @ValueSource(booleans = {true, false})
+    void serviceImplIsClosed(final boolean param) throws Exception {
+        setUp(param);
         CloseSignal signal = new CloseSignal(1);
         TesterService svc = setupCloseMock(mock(TesterService.class), signal);
         startServerAndClose(new ServiceFactory(svc), signal);
@@ -82,8 +70,10 @@ public class ClosureTest {
         signal.verifyCloseAtLeastCount(closeGracefully);
     }
 
-    @Test
-    public void blockingServiceImplIsClosed() throws Exception {
+    @ParameterizedTest(name = "graceful? => {0}")
+    @ValueSource(booleans = {true, false})
+    void blockingServiceImplIsClosed(final boolean param) throws Exception {
+        setUp(param);
         CloseSignal signal = new CloseSignal(1);
         BlockingTesterService svc = setupBlockingCloseMock(mock(BlockingTesterService.class), signal);
         startServerAndClose(new ServiceFactory(svc), signal);
@@ -91,8 +81,10 @@ public class ClosureTest {
         signal.verifyCloseAtLeastCount(closeGracefully);
     }
 
-    @Test
-    public void rpcMethodsAreClosed() throws Exception {
+    @ParameterizedTest(name = "graceful? => {0}")
+    @ValueSource(booleans = {true, false})
+    void rpcMethodsAreClosed(final boolean param) throws Exception {
+        setUp(param);
         CloseSignal signal = new CloseSignal(4);
         TestRpc testRpc = setupCloseMock(mock(TestRpc.class), signal);
         TestRequestStreamRpc testRequestStreamRpc = setupCloseMock(mock(TestRequestStreamRpc.class), signal);
@@ -111,8 +103,10 @@ public class ClosureTest {
         signal.verifyClose(closeGracefully);
     }
 
-    @Test
-    public void blockingRpcMethodsAreClosed() throws Exception {
+    @ParameterizedTest(name = "graceful? => {0}")
+    @ValueSource(booleans = {true, false})
+    void blockingRpcMethodsAreClosed(final boolean param) throws Exception {
+        setUp(param);
         CloseSignal signal = new CloseSignal(4);
         BlockingTestRpc testRpc = setupBlockingCloseMock(mock(BlockingTestRpc.class), signal);
         BlockingTestRequestStreamRpc testRequestStreamRpc =
@@ -134,8 +128,10 @@ public class ClosureTest {
         signal.verifyClose(closeGracefully);
     }
 
-    @Test
-    public void mixedModeRpcMethodsAreClosed() throws Exception {
+    @ParameterizedTest(name = "graceful? => {0}")
+    @ValueSource(booleans = {true, false})
+    void mixedModeRpcMethodsAreClosed(final boolean param) throws Exception {
+        setUp(param);
         CloseSignal signal = new CloseSignal(4);
         TestRpc testRpc = setupCloseMock(mock(TestRpc.class), signal);
         TestRequestStreamRpc testRequestStreamRpc = setupCloseMock(mock(TestRequestStreamRpc.class), signal);

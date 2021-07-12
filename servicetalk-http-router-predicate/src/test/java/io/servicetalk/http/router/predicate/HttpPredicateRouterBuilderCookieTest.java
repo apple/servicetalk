@@ -18,20 +18,20 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static java.util.Collections.emptyIterator;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
-public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRouterBuilderTest {
+class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Mock
     HttpSetCookie cookie1, cookie2;
 
     @Test
-    public void testWhenCookieIsPresent() {
+    void testWhenCookieIsPresent() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -45,7 +45,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenCookieIs() {
+    void testWhenCookieIs() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").value(cookie1::equals).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -68,7 +68,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
     }
 
     @Test
-    public void testWhenCookieValues() {
+    void testWhenCookieValues() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").values(new AnyMatchPredicate<>(cookie1)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)

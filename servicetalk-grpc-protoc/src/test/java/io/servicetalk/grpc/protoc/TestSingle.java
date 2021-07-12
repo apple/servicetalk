@@ -23,16 +23,16 @@ import io.servicetalk.grpc.protoc.test.single.HelloWorldProto.Greeter.GreeterSer
 import io.servicetalk.grpc.protoc.test.single.HelloWorldProto.HelloReply;
 import io.servicetalk.grpc.protoc.test.single.HelloWorldProto.UserRequest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import test.shared.TestShared.Generic;
 import test.shared.TestShared.SharedReply;
 import test.shared.TestShared.Untils;
 
 import java.util.concurrent.ExecutionException;
 
-public class TestSingle {
+class TestSingle {
     @Test
-    public void singleGenerated() throws ExecutionException, InterruptedException {
+    void singleGenerated() throws ExecutionException, InterruptedException {
         GreeterService service = new GreeterService() {
             @Override
             public Single<HelloReply> sayHelloFromMany(final GrpcServiceContext ctx,

@@ -19,7 +19,8 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -27,10 +28,7 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Collections.singleton;
 
-public class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
-    public NameBindingBasicAuthSecurityContextFilterTest(final boolean withUserInfo) {
-        super(withUserInfo);
-    }
+class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
     protected Application application(@Nullable final Key<BasicUserInfo> userInfoKey) {
@@ -45,14 +43,18 @@ public class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasic
         };
     }
 
-    @Test
-    public void authenticated() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void authenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
-    @Test
-    public void notAuthenticated() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void notAuthenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, false);
         assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, false);
     }

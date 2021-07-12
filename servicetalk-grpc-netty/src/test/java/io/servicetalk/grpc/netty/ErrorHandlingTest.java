@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
@@ -51,12 +50,10 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import com.google.rpc.Status;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
@@ -66,6 +63,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -80,35 +78,37 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class ErrorHandlingTest {
+class ErrorHandlingTest {
     private static final StreamingHttpClientFilterFactory IDENTITY_CLIENT_FILTER =
             c -> new StreamingHttpClientFilter(c) { };
     private static final StreamingHttpServiceFilterFactory IDENTITY_FILTER =
             s -> new StreamingHttpServiceFilter(s) { };
     private static final String REQ_THROW_NAME = "THROW";
 
-    private final TestMode testMode;
-    private final TestResponse cannedResponse;
-    private final BlockingTesterClient blockingClient;
-    private final Publisher<TestRequest> requestPublisher;
+    @Nullable
+    private TestMode testMode;
+    @Nullable
+    private TestResponse cannedResponse;
+    @Nullable
+    private BlockingTesterClient blockingClient;
+    @Nullable
+    private Publisher<TestRequest> requestPublisher;
 
     private enum TestMode {
         HttpClientFilterThrows,
@@ -152,16 +152,15 @@ public class ErrorHandlingTest {
         }
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final GrpcStatusException cannedException =
             GrpcStatusException.of(Status.newBuilder().setCode(GrpcStatusCode.ABORTED.value())
                     .setMessage("Deliberate abort").build());
-    private final ServerContext serverContext;
-    private final TesterClient client;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private TesterClient client;
 
-    public ErrorHandlingTest(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+    private void setUp(TestMode testMode, GrpcExecutionStrategy serverStrategy,
                              GrpcExecutionStrategy clientStrategy) throws Exception {
         this.testMode = testMode;
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
@@ -445,18 +444,17 @@ public class ErrorHandlingTest {
         }).when(blockingService).testResponseStream(any(), any(), any());
     }
 
-    @Parameterized.Parameters(name = "{index}: mode = {0} server = {1} client = {2}")
-    public static Collection<Object[]> data() {
+    static Collection<Arguments> data() {
         GrpcExecutionStrategy noopStrategy = noOffloadsStrategy();
         GrpcExecutionStrategy immediateStrategy = customStrategyBuilder().executor(immediate()).build();
         GrpcExecutionStrategy[] strategies =
-                new GrpcExecutionStrategy[] {noopStrategy, immediateStrategy, defaultStrategy()};
-        List<Object[]> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
+                new GrpcExecutionStrategy[]{noopStrategy, immediateStrategy, defaultStrategy()};
+        List<Arguments> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
         for (GrpcExecutionStrategy serverStrategy : strategies) {
             for (GrpcExecutionStrategy clientStrategy : strategies) {
                 for (TestMode mode : TestMode.values()) {
                     if (mode.isSafeNoOffload() || isOffloadSafe(serverStrategy)) {
-                        data.add(new Object[] {mode, serverStrategy, clientStrategy});
+                        data.add(Arguments.of(mode, serverStrategy, clientStrategy));
                     }
                 }
             }
@@ -468,8 +466,8 @@ public class ErrorHandlingTest {
         return strategy.executor() != immediate() && strategy.executor() != null;
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             blockingClient.close();
         } finally {
@@ -477,68 +475,98 @@ public class ErrorHandlingTest {
         }
     }
 
-    @Test
-    public void scalar() throws Exception {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void scalar(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         verifyException(client.test(requestPublisherTakeFirstRequest()).toFuture());
     }
 
-    @Test
-    public void bidiStreaming() throws Exception {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void bidiStreaming(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                       GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         verifyStreamingResponse(client.testBiDiStream(requestPublisher));
     }
 
-    @Test
-    public void requestStreaming() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void requestStreaming(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                          GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         verifyException(client.testRequestStream(requestPublisher).toFuture());
     }
 
-    @Test
-    public void responseStreaming() throws Exception {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void responseStreaming(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                           GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         // ServiceSecondOperatorThrowsGrpcException only throws on the second request, however testResponseStream can
         // only send a single scalar request, so ignore this test combination.
-        assumeThat(testMode, not(TestMode.ServiceSecondOperatorThrowsGrpcException));
+        assumeTrue(testMode != TestMode.ServiceSecondOperatorThrowsGrpcException);
         verifyStreamingResponse(client.testResponseStream(requestPublisherTakeFirstRequest()));
     }
 
-    @Test
-    public void scalarFromBlockingClient() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void scalarFromBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                  GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         assertThat(assertThrows(GrpcStatusException.class,
                 () -> blockingClient.test(requestPublisherTakeFirstRequest())).status().code(),
                 equalTo(expectedStatus()));
     }
 
-    @Test
-    public void bidiStreamingFromBlockingClient() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void bidiStreamingFromBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                         GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         assertThat(assertThrows(GrpcStatusException.class, () ->
                 verifyStreamingResponse(blockingClient.testBiDiStream(requestPublisher.toIterable()).iterator()))
                 .status().code(), equalTo(expectedStatus()));
     }
 
-    @Test
-    public void requestStreamingFromBlockingClient() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void requestStreamingFromBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                            GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         assertThat(assertThrows(GrpcStatusException.class, () ->
                 blockingClient.testRequestStream(requestPublisher.toIterable())).status().code(),
                 equalTo(expectedStatus()));
     }
 
-    @Test
-    public void responseStreamingFromBlockingClient() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void responseStreamingFromBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                             GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         assertThat(assertThrows(GrpcStatusException.class, () ->
                 verifyStreamingResponse(
                         blockingClient.testResponseStream(requestPublisherTakeFirstRequest()).iterator()))
                 .status().code(), equalTo(expectedStatus()));
     }
 
-    @Test
-    public void bidiStreamingServerFailClientRequestNeverComplete() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void bidiStreamingServerFailClientRequestNeverComplete(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                                           GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         // The response publisher is merged with the write publisher in order to provide status in the event of a write
         // failure. We must fail the read publisher internally at the appropriate time so the merge operator will
         // propagate the expected status (e.g. not wait for transport failure like stream reset or channel closed).
         verifyException(client.testBiDiStream(requestPublisher.concat(never())).toFuture());
     }
 
-    @Test
-    public void requestStreamingServerFailClientRequestNeverComplete() {
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void requestStreamingServerFailClientRequestNeverComplete(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                                              GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
         verifyException(client.testRequestStream(requestPublisher.concat(never())).toFuture());
     }
 

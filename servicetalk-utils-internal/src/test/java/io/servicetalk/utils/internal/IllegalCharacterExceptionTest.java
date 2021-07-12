@@ -15,13 +15,13 @@
  */
 package io.servicetalk.utils.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class IllegalCharacterExceptionTest {
+class IllegalCharacterExceptionTest {
 
     @Test
     @SuppressWarnings("ThrowableNotThrown")
-    public void messageCanBeGeneratedForAnyByteValue() {
+    void messageCanBeGeneratedForAnyByteValue() {
         for (int value = Byte.MIN_VALUE; value <= Byte.MAX_VALUE; ++value) {
             new IllegalCharacterException((byte) value);
             new IllegalCharacterException((byte) value, "something");

@@ -18,15 +18,15 @@ package io.servicetalk.log4j2.mdc;
 import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 
 import org.apache.logging.log4j.ThreadContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public class ServiceTalkThreadContextMapLog4jProviderTest {
+class ServiceTalkThreadContextMapLog4jProviderTest {
     @Test
-    public void testProviderLoadsClass() {
+    void testProviderLoadsClass() {
         assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
     }
 }

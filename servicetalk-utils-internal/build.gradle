@@ -23,5 +23,8 @@ dependencies {
     implementation "org.jctools:jctools-core:$jcToolsVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -17,19 +17,19 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.regex.Pattern;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
-public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouterBuilderTest {
+class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Test
-    public void testWhenQueryParamIsPresent() {
+    void testWhenQueryParamIsPresent() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -43,7 +43,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
     }
 
     @Test
-    public void testWhenQueryParamFirstValue() {
+    void testWhenQueryParamFirstValue() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValue("home").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -66,7 +66,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
     }
 
     @Test
-    public void testWhenQueryParamFirstValueMatches() {
+    void testWhenQueryParamFirstValueMatches() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValueMatches("sign.*").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
@@ -89,7 +89,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
     }
 
     @Test
-    public void testWhenQueryParamFirstValueMatchesPattern() {
+    void testWhenQueryParamFirstValueMatchesPattern() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValueMatches(Pattern.compile("sign.*", CASE_INSENSITIVE))
                 .thenRouteTo(serviceA)
@@ -113,7 +113,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
     }
 
     @Test
-    public void testWhenQueryParamValues() {
+    void testWhenQueryParamValues() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").values(new AnyMatchPredicate<>("home")).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
