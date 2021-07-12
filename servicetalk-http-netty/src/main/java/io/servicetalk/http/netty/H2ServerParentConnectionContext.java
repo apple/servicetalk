@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -84,9 +85,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
-
-        assert config.isH2PriorKnowledge();
-        assert config.h2Config() != null;
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // Auto read is required for h2
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, true, executionContext, connectionAcceptor,
@@ -106,9 +104,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 final ReadOnlyHttpServerConfig config, final ChannelInitializer initializer,
                 final StreamingHttpService service, final boolean drainRequestPayloadBody,
                 final ConnectionObserver observer) {
-
         final H2ProtocolConfig h2ServerConfig = config.h2Config();
-        assert h2ServerConfig != null;
+        if (h2ServerConfig == null) {
+            return failed(new IllegalStateException(
+                    "HTTP/2 channel initialization failure due to missing HTTP/2 configuration"));
+        }
         return showPipeline(new SubscribableSingle<H2ServerParentConnectionContext>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ServerParentConnectionContext> subscriber) {

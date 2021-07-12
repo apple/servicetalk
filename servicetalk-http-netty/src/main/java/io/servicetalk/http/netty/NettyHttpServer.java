@@ -86,6 +86,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -117,7 +118,6 @@ final class NettyHttpServer {
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
-        assert config.h1Config() != null;
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
@@ -153,7 +153,10 @@ final class NettyHttpServer {
                                                          final ConnectionObserver observer,
                                                          final CloseHandler closeHandler) {
         final H1ProtocolConfig h1Config = config.h1Config();
-        assert h1Config != null;
+        if (h1Config == null) {
+            return failed(new IllegalStateException(
+                    "HTTP/1.x channel initialization failure due to missing HTTP/1.x configuration"));
+        }
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),

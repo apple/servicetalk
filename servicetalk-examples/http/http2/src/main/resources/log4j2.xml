@@ -22,7 +22,7 @@
   </Appenders>
   <Loggers>
     <!-- Prints server start and shutdown -->
-    <Logger name="io.servicetalk.http.netty.AlpnServerContext" level="DEBUG"/>
+    <Logger name="io.servicetalk.http.netty.DeferredServerChannelBinder" level="DEBUG"/>
     <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
 
     <!-- Prints default subscriber errors-->
