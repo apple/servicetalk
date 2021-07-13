@@ -286,11 +286,7 @@ public final class BufferStrategies {
 
         @Override
         public void accumulate(@Nullable final T item) {
-            if (sizeThreshold > 0 || isEmpty()) {
-                // Increment `size` only when the `sizeThreshold` is used or for the first accumulation
-                ++size;
-                assert size > 0;
-            }
+            ++size;
             delegate.accumulate(item);
             if (size == sizeThreshold) {
                 assert state != null;
