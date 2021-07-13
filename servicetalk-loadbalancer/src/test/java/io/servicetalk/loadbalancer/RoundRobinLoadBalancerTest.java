@@ -121,6 +121,10 @@ abstract class RoundRobinLoadBalancerTest {
       return __ -> true;
     }
 
+    protected Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
+        return cnx -> lb.activeAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
+    }
+
     protected abstract RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb();
 
     protected abstract RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(

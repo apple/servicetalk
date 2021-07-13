@@ -22,7 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
@@ -78,13 +78,30 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
     }
 
     @Test
-    public void hostDownGracefulCloseConnection() throws Exception {
+    public void hostDownGracefullyClosesConnections() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        TestLoadBalancedConnection conn = lb.selectConnection(any()).toFuture().get();
+        TestLoadBalancedConnection host1Conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        TestLoadBalancedConnection host2Conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+
+        // create another for address-1
+        TestLoadBalancedConnection host1Conn2 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        conn.onClose().toFuture().get();
-        verify(conn).closeAsyncGracefully();
-        verify(conn, times(0)).closeAsync();
+        validateConnectionClosedGracefully(host1Conn1);
+        validateConnectionClosedGracefully(host1Conn2);
+
+        // The remaining Host's connections should not be closed
+        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-2", 1));
+        verify(host2Conn1, never()).closeAsync();
+        verify(host2Conn1, never()).closeAsyncGracefully();
+    }
+
+    private void validateConnectionClosedGracefully(final TestLoadBalancedConnection connection) throws Exception {
+        connection.onClose().toFuture().get();
+        verify(connection).closeAsyncGracefully();
+        verify(connection, never()).closeAsync();
     }
 
     @Override

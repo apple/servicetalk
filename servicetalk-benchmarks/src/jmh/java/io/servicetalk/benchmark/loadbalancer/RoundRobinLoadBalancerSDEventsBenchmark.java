@@ -18,10 +18,10 @@ package io.servicetalk.benchmark.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -72,18 +72,16 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
     }
 
     @Benchmark
-    public RoundRobinLoadBalancer<InetSocketAddress, LoadBalancedConnection> mixed() {
+    public LoadBalancer<LoadBalancedConnection> mixed() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
-        return (RoundRobinLoadBalancer<InetSocketAddress, LoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
+        return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
                 .newLoadBalancer(fromIterable(mixedEvents), ConnFactory.INSTANCE);
     }
 
     @Benchmark
-    public RoundRobinLoadBalancer<InetSocketAddress, LoadBalancedConnection> available() {
+    public LoadBalancer<LoadBalancedConnection> available() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
-        return (RoundRobinLoadBalancer<InetSocketAddress, LoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
+        return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
                         .newLoadBalancer(fromIterable(availableEvents), ConnFactory.INSTANCE);
     }
 

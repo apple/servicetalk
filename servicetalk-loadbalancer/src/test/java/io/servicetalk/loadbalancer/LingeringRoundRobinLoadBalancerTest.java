@@ -23,6 +23,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -33,8 +34,8 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         sendServiceDiscoveryEvents(upEvent("address-1"));
         TestLoadBalancedConnection conn = lb.selectConnection(any()).toFuture().get();
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        verify(conn, times(0)).closeAsyncGracefully();
-        verify(conn, times(0)).closeAsync();
+        verify(conn, never()).closeAsyncGracefully();
+        verify(conn, never()).closeAsync();
 
         // But connection is cleaned when LB is closed
         lb.closeAsync().toFuture().get();
@@ -161,9 +162,5 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
             RoundRobinLoadBalancerTest.DelegatingConnectionFactory connectionFactory) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, false);
-    }
-
-    private Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
-        return cnx -> lb.activeAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 }

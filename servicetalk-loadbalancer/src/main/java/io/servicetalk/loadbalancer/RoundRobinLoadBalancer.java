@@ -69,27 +69,14 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 import static java.util.stream.Collectors.toList;
 
 /**
- * A {@link LoadBalancer} that uses a round robin strategy for selecting addresses. It has the following behaviour:
- * <ul>
- * <li>Round robining is done at address level.</li>
- * <li>Connections are created lazily, without any concurrency control on their creation.
- * This can lead to over-provisioning connections when dealing with a requests surge.</li>
- * <li>Existing connections are reused unless a selector passed to {@link #selectConnection(Predicate)} suggests
- * otherwise.
- * This can lead to situations where connections will be used to their maximum capacity (for example in the context of
- * pipelining) before new connections are created.</li>
- * <li>Closed connections are automatically pruned.</li>
- * <li>By default, connections to addresses marked as {@link ServiceDiscovererEvent#isAvailable() unavailable}
- * are used for requests, but no new connections are created for them. In case the address' connections are busy,
- * another host is tried. If all hosts are busy, selection fails with a {@link ConnectionRejectedException}.
- * If {@link RoundRobinLoadBalancer#RoundRobinLoadBalancer(Publisher, ConnectionFactory, boolean)}
- * is used with the {@code eagerConnectionShutdown} parameter set to true, connections are immediately closed for an
- * unavailable address.</li>
- * </ul>
+ * Consult {@link RoundRobinLoadBalancerFactory} for a description of this {@link LoadBalancer} type.
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
+ * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to provide instances of this
+ * {@link LoadBalancer}. This class will become package-private in the future.
  */
+@Deprecated
 public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancer<C> {
 
@@ -134,10 +121,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     /**
      * Creates a new instance.
      *
-     * @param eventPublisher    provides a stream of addresses to connect to.
+     * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
      * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of {@link RoundRobinLoadBalancer}.
+     * of this {@link LoadBalancer}.
      */
     @Deprecated
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
@@ -148,7 +135,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     /**
      * Creates a new instance.
      *
-     * @param eventPublisher    provides a stream of addresses to connect to.
+     * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
      * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#isAvailable()} flag
      * set to {@code false} should be eagerly closed. When {@code false}, the expired addresses will be used
@@ -156,8 +143,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * the connection closure and shifting traffic to other addresses.
      */
     RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                                  final boolean eagerConnectionShutdown) {
+                           final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+                           final boolean eagerConnectionShutdown) {
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
@@ -204,10 +191,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             } else {
                                 for (Host<ResolvedAddress, C> host : oldHostsTyped) {
                                     if (host.address.equals(addr)) {
-                                        host.isExpired = true;
-                                        if (host.connections.length == 0) {
-                                            host.closeAsyncGracefully().subscribe();
-                                        }
+                                        // Host removal will be handled by the Host's onClose::afterFinally callback
+                                        host.markExpired();
                                         break;
                                     }
                                 }
@@ -234,8 +219,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 if (!eagerConnectionShutdown) {
                     host.onClose().afterFinally(() ->
                             activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this,
-                                    previousHosts -> removeFromHostsList(previousHosts, addr)
-                            )
+                                    previousHosts -> removeFromHostsList(previousHosts, addr))
                     ).subscribe();
                 }
                 return host;
@@ -292,13 +276,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     /**
-     * Create a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     * Please use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} instead of this factory.
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
-     * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     * @return a {@link LoadBalancerFactory} that creates instances of this class.
      * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of {@link RoundRobinLoadBalancer}.
+     * of this {@link LoadBalancer}.
      */
     @Deprecated
     public static <ResolvedAddress, C extends LoadBalancedConnection>
@@ -321,8 +305,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         if (activeHosts.isEmpty()) {
             return activeHosts == CLOSED_LIST ? failedLBClosed() :
                 // This is the case when SD has emitted some items but none of the hosts are active.
-                failed(StacklessNoAvailableHostException.newInstance(
-                    "No hosts are available to connect.", RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                failed(StacklessNoAvailableHostException.newInstance("No hosts are available to connect.",
+                    RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
         // try one loop over hosts and if all are expired, give up
@@ -402,12 +386,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     /**
-     * {@link LoadBalancerFactory} for {@link RoundRobinLoadBalancer}.
+     * Please use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} instead of this factory.
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of {@link RoundRobinLoadBalancer}.
+     * of this {@link LoadBalancer}
      */
     @Deprecated
     public static final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -453,6 +437,21 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
 
+        @SuppressWarnings("PMD.CollapsibleIfStatements")
+        void markExpired() {
+            this.isExpired = true;
+            Object[] observedConnections = this.connections;
+            // when we expire a host without actual connections it's safe to remove it
+            if (observedConnections.length == 0) {
+                // safeguard for a race condition when a different thread could have opened a connection,
+                // we CAS against the observed empty array and only close if our assumption holds
+                if (connectionsUpdater.compareAndSet(this, observedConnections, CLOSED_ARRAY)) {
+                    // no connections, no need for graceful close
+                    this.closeAsync().subscribe();
+                }
+            }
+        }
+
         boolean isInactive() {
             return connections == CLOSED_ARRAY;
         }
@@ -491,9 +490,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         // which will remove the host from active hosts list.
                         // If a race condition appears and a new connection was added in the meantime,
                         // the CAS operation will allow for determining that and not closing the Host yet and removing
-                        // the previously last connection from the array.
+                        // the connection, previously considered as the last one, from the array.
                         if (connectionsUpdater.compareAndSet(this, existing, CLOSED_ARRAY)) {
-                            Host.this.closeAsyncGracefully().subscribe();
+                            Host.this.closeAsync().subscribe();
                         }
                     } else {
                         Object[] newList = new Object[existing.length - 1];
@@ -507,8 +506,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }).subscribe();
             return true;
         }
-
         // Used for testing only
+
         @SuppressWarnings("unchecked")
         Entry<Addr, List<C>> asEntry() {
             return new SimpleImmutableEntry<>(address, Stream.of(connections).map(conn -> (C) conn).collect(toList()));
@@ -542,7 +541,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + (connections == CLOSED_ARRAY) +
+                    ", removed=" + isInactive() +
+                    ", expired=" + isExpired +
                     '}';
         }
     }
