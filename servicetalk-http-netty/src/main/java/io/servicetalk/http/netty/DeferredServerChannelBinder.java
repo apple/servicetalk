@@ -111,7 +111,7 @@ final class DeferredServerChannelBinder {
                                                                  final boolean drainRequestPayloadBody,
                                                                  final ConnectionObserver observer) {
         return new SniCompleteChannelSingle(channel,
-                new TcpServerChannelInitializer(config.tcpConfig(), observer), true).flatMap(sniEvt -> {
+                new TcpServerChannelInitializer(config.tcpConfig(), observer)).flatMap(sniEvt -> {
             Throwable failureCause = sniEvt.cause();
             if (failureCause != null) {
                 return failed(failureCause);

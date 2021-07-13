@@ -30,39 +30,30 @@ import javax.annotation.Nullable;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 
 final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEvent> {
-    private final boolean forceRead;
-
-    SniCompleteChannelSingle(final Channel channel, final ChannelInitializer channelInitializer,
-                             final boolean forceRead) {
+    SniCompleteChannelSingle(final Channel channel, final ChannelInitializer channelInitializer) {
         super(channel, channelInitializer);
-        this.forceRead = forceRead;
     }
 
     @Override
     protected ChannelHandler newChannelHandler(final Subscriber<? super SniCompletionEvent> subscriber) {
-        return new SniCompleteChannelHandler(subscriber, forceRead);
+        return new SniCompleteChannelHandler(subscriber);
     }
 
     private static final class SniCompleteChannelHandler extends ChannelInboundHandlerAdapter {
         @Nullable
         private Subscriber<? super SniCompletionEvent> subscriber;
-        private final boolean forceRead;
 
-        SniCompleteChannelHandler(Subscriber<? super SniCompletionEvent> subscriber,
-                                  final boolean forceRead) {
+        SniCompleteChannelHandler(Subscriber<? super SniCompletionEvent> subscriber) {
             this.subscriber = subscriber;
-            this.forceRead = forceRead;
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
-            if (forceRead) {
-                // Force a read to get the SSL handshake started. We initialize pipeline before
-                // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
-                // initialization.
-                ctx.read();
-            }
+            // Force a read to get the SSL handshake started. We initialize pipeline before
+            // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
+            // initialization.
+            ctx.read();
         }
 
         @Override
