@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -81,6 +82,7 @@ class BufferStrategiesTest {
     static final ExecutorExtension<TestExecutor> TEST_EXECUTOR_EXTENSION = withTestExecutor();
 
     @Test
+    @Disabled("https://github.com/apple/servicetalk/issues/1259")
     void sizeOrDurationConcurrent() throws Exception {
         final BlockingQueue<TestCompletable> timers = new LinkedBlockingDeque<>();
         final Executor executor = mock(Executor.class);
@@ -91,7 +93,7 @@ class BufferStrategiesTest {
         }));
 
         final int maxBoundaries = 1_000;
-        final Collection<Integer> items = unmodifiableCollection(range(1, 1_000).toFuture().get());
+        final Collection<Integer> items = unmodifiableCollection(range(1, maxBoundaries).toFuture().get());
         final List<Integer> receivedFromBoundaries = new ArrayList<>(items.size());
 
         BufferStrategy<Integer, Accumulator<Integer, Iterable<Integer>>, Iterable<Integer>> strategy =
