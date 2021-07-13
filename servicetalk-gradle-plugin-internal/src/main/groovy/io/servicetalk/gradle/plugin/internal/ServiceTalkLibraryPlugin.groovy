@@ -27,6 +27,8 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
+import static io.servicetalk.gradle.plugin.internal.Versions.PITEST_JUNIT5_PLUGIN_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.PITEST_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
@@ -215,8 +217,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("info.solidsoft.pitest")
 
       pitest {
-        pitestVersion = project.properties["pitestVersion"]
-        junit5PluginVersion = project.properties["pitestPluginJunit5Version"]
+        pitestVersion = PITEST_VERSION
+        junit5PluginVersion = PITEST_JUNIT5_PLUGIN_VERSION
       }
 
       tasks.withType(PitestTask) {
@@ -230,7 +232,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         failWhenNoMutations = false
         verbose = false
       }
-      
+
       tasks.withType(PitestTask).all {
         group = "verification"
       }
