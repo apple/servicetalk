@@ -372,8 +372,11 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                 } else if (cMaybeAccumulator == null) {
                     if (maybeAccumulatorUpdater.compareAndSet(this, null, TERMINATED)) {
                         // Terminated without any produced items or boundaries
-                        terminateTarget(null, target, terminalNotification);
-                        bCancellable.cancel();
+                        try {
+                            bCancellable.cancel();
+                        } finally {
+                            terminateTarget(null, target, terminalNotification);
+                        }
                         return;
                     }
                 } else {
@@ -381,8 +384,11 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     final CountingAccumulator<T, B> accumulator = (CountingAccumulator<T, B>) cMaybeAccumulator;
                     if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator,
                             new ItemsTerminated<>(accumulator, terminalNotification))) {
-                        bCancellable.cancel();
-                        terminateIfPossible(accumulator, target, terminalNotification);
+                        try {
+                            bCancellable.cancel();
+                        } finally {
+                            terminateIfPossible(accumulator, target, terminalNotification);
+                        }
                         return;
                     }
                 }
