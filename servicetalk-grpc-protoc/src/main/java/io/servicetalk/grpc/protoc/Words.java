@@ -50,6 +50,7 @@ final class Words {
     static final String bufferEncoders = "bufferEncoders";
     static final String strategyFactory = strategy + "Factory";
     static final String methodDescriptor = "methodDescriptor";
+    static final String methodDescriptors = methodDescriptor + "s";
     static final String Service = "Service";
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
@@ -70,6 +71,8 @@ final class Words {
     static final String JAVADOC_RETURN = "@return ";
     static final String JAVADOC_THROWS = "@throws ";
     static final String JAVADOC_DEPRECATED = "@deprecated";
+    static final String ASYNC_METHOD_DESCRIPTORS = "ASYNC_METHOD_DESCRIPTORS";
+    static final String BLOCKING_METHOD_DESCRIPTORS = "BLOCKING_METHOD_DESCRIPTORS";
 
     private Words() {
         // no instance

@@ -51,6 +51,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-transport-netty")
+  testImplementation project(":servicetalk-serializer-utils")
   testImplementation "io.grpc:grpc-core:$grpcVersion"
   testImplementation("io.grpc:grpc-netty:$grpcVersion") {
     exclude group: "io.netty"
