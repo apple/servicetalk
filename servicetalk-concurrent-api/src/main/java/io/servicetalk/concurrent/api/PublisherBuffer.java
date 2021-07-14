@@ -84,7 +84,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         private final DelayedSubscription bSubscription;
         private final DelayedSubscription tSubscription;
         private final int bufferSizeHint;
-        private int itemsPending;
+        private volatile int itemsPending;
 
         ItemsSubscriber(final Publisher<? extends Accumulator<T, B>> boundaries,
                         final Subscriber<? super B> target, final int bufferSizeHint) {
@@ -93,10 +93,6 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             bSubscription = new DelayedSubscription();
             tSubscription = new DelayedSubscription();
             this.bufferSizeHint = bufferSizeHint;
-            // Request-n is delayed till we receive the first boundary but we will request bufferSizeHint.
-            // This is done here to localize state management (pending count) in this subscriber but still drive the
-            // first request-n from inside State.
-            itemsPending = bufferSizeHint;
             toSource(boundaries).subscribe(new BoundariesSubscriber<>(state, target, bSubscription, tSubscription));
         }
 
@@ -104,18 +100,30 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         public void onSubscribe(final Subscription subscription) {
             // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
             // it will not prevent concurrent access between request(n) and cancel() on the original subscription.
-            tSubscription.delayedSubscription(ConcurrentSubscription.wrap(subscription));
+            final ConcurrentSubscription cs = ConcurrentSubscription.wrap(subscription);
+            tSubscription.delayedSubscription(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    assert n == bufferSizeHint;
+                    itemsPending = (int) n;
+                    cs.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    cs.cancel();
+                }
+            });
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            assert itemsPending > 0;
-            --itemsPending;
+            final int cItemsPending = --itemsPending;
+            assert cItemsPending >= 0;
             try {
                 state.accumulate(t, target);
             } finally {
-                if (itemsPending == 0) {
-                    itemsPending = bufferSizeHint;
+                if (cItemsPending == 0 && state.requestMore()) {
                     tSubscription.request(bufferSizeHint);
                 }
             }
@@ -169,8 +177,11 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             target.onSubscribe(new Subscription() {
                 @Override
                 public void request(final long n) {
-                    state.requested(n, target);
+                    final boolean needRequestItems = state.requested(n, target);
                     bSubscription.request(n);
+                    if (needRequestItems) {
+                        tSubscription.request(state.itemsRequestN);
+                    }
                 }
 
                 @Override
@@ -210,10 +221,13 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         private static final Object TERMINATED = new Object();
         private static final AtomicReferenceFieldUpdater<State, Object> maybeAccumulatorUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(State.class, Object.class, "maybeAccumulator");
+
+        private static final long NEED_TERMINATE = MIN_VALUE;
+        private static final long NEED_REQUEST_ITEMS = NEED_TERMINATE + 1;
+        private static final long LAST_SPECIAL_STATE = NEED_REQUEST_ITEMS;  // update this if a new state is added above
         private static final AtomicLongFieldUpdater<State> pendingUpdater =
                 AtomicLongFieldUpdater.newUpdater(State.class, "pending");
 
-        private final int firstItemsRequestN;
         /**
          * Following values are assigned to this variable:
          * <ul>
@@ -231,23 +245,41 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         private volatile Object maybeAccumulator;
         /**
          * Number of pending boundaries to deliver to the target based on expressed demand.
+         * <ul>
+         *     <li>Non-negative value - current number of pending accumulations.</li>
+         *     <li>{@link #NEED_TERMINATE} - items terminated but one accumulation is waiting for more demand.</li>
+         *     <li>{@link #NEED_REQUEST_ITEMS} - more demand for accumulations should drive more demand for items.</li>
+         * </ul>
          */
         private volatile long pending;
 
-        State(final int firstItemsRequestN) {
-            this.firstItemsRequestN = firstItemsRequestN;
+        final int itemsRequestN;
+
+        State(final int itemsRequestN) {
+            this.itemsRequestN = itemsRequestN;
         }
 
-        <T, B> void requested(long n, final Subscriber<? super B> target) {
-            final long pending = pendingUpdater.accumulateAndGet(this, n, (prev, nValue) ->
-                    prev == MIN_VALUE || nValue <= 0L ? prev : addWithOverflowProtection(prev, nValue));
-            if (pending == MIN_VALUE && n > 0L) {
+        <T, B> boolean requested(long n, final Subscriber<? super B> target) {
+            final long oldPending = pendingUpdater.getAndAccumulate(this, n, (prev, nValue) -> {
+                if (nValue <= 0L || prev == NEED_TERMINATE) {
+                    return prev;
+                }
+                return prev == NEED_REQUEST_ITEMS ? nValue : addWithOverflowProtection(prev, nValue);
+            });
+            if (oldPending == NEED_TERMINATE && n > 0L) {
                 @SuppressWarnings("unchecked")
                 final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) maybeAccumulator;
                 assert it != null;
                 maybeAccumulator = TERMINATED;
                 terminateTarget(it.accumulator, target, it.terminalNotification);
             }
+            return oldPending == NEED_REQUEST_ITEMS;
+        }
+
+        boolean requestMore() {
+            final long pending = pendingUpdater.accumulateAndGet(this, NEED_REQUEST_ITEMS,
+                    (prev, next) -> prev > 0L || prev == NEED_TERMINATE ? prev : next);
+            return pending > 0L;
         }
 
         <T, B> void accumulate(@Nullable final T item, final Subscriber<? super B> target) {
@@ -307,7 +339,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     // This is the first received accumulator (first boundary start); so we just store the accumulator
                     // to accumulate and request items from tSubscription.
                     if (maybeAccumulatorUpdater.compareAndSet(this, null, toCounting(nextAccumulator))) {
-                        tSubscription.request(firstItemsRequestN);
+                        tSubscription.request(itemsRequestN);
                         // Since we did not emit the accumulator we request one more to observe the next boundary:
                         bSubscription.request(1);
                         return;
@@ -410,10 +442,10 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         }
 
         private <T, B> void deliverOnNext(final Accumulator<T, B> accumulator, final Subscriber<? super B> target) {
-            // decrementAndGet alternative without update of the MIN_VALUE state:
-            final long pending = pendingUpdater.accumulateAndGet(this, 1,
-                    (prev, next) -> prev == MIN_VALUE ? prev : prev - 1);
-            assert pending >= 0 || pending == MIN_VALUE;
+            // an alternative of `decrementAndGet` without update of the special states:
+            final long pending = pendingUpdater.accumulateAndGet(this, 1L,
+                    (prev, decrement) -> prev <= LAST_SPECIAL_STATE ? prev : prev - decrement);
+            assert pending >= 0 || pending == NEED_TERMINATE;
             target.onNext(accumulator.finish());
         }
 
@@ -425,7 +457,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                 maybeAccumulator = TERMINATED;
                 terminateTarget(null, target, terminalNotification);
             } else {
-                final long demand = pendingUpdater.accumulateAndGet(this, MIN_VALUE,
+                final long demand = pendingUpdater.accumulateAndGet(this, NEED_TERMINATE,
                         (prev, next) -> prev > 0L ? prev : next);
                 if (demand > 0L) {
                     maybeAccumulator = TERMINATED;

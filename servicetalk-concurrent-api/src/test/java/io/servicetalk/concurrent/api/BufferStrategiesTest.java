@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.hamcrest.Matchers;
@@ -335,5 +336,47 @@ class BufferStrategiesTest {
         assertThat("Unexpected number of emitted accumulators", count.get(), is(5));
         assertThat("Unexpected termination", terminated.get(), is(nullValue()));
         assertNoAsyncErrors(asyncErrors);
+    }
+
+    @Test
+    void forCountOneDemandIsRespected() {
+        DelayedSubscription subscription = new DelayedSubscription();
+        AtomicReference<TerminalNotification> terminated = new AtomicReference<>();
+        BlockingQueue<Iterable<Integer>> accumulations = new LinkedBlockingDeque<>();
+        toSource(range(1, 6).buffer(forCountOrTime(2, ofDays(1))))
+                .subscribe(new Subscriber<Iterable<Integer>>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                        subscription.delayedSubscription(s);
+                        subscription.request(1);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final Iterable<Integer> integers) {
+                        assert integers != null;
+                        accumulations.add(integers);
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        terminated.set(error(t));
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        terminated.set(complete());
+                    }
+                });
+        assertThat("Unexpected number of emitted accumulators", accumulations, hasSize(1));
+        assertThat("Unexpected accumulators", accumulations, contains(asList(1, 2)));
+        assertThat("Unexpected termination", terminated.get(), is(nullValue()));
+        subscription.request(1);
+        assertThat("Unexpected number of emitted accumulators", accumulations, hasSize(2));
+        assertThat("Unexpected accumulators", accumulations, contains(asList(1, 2), asList(3, 4)));
+        assertThat("Unexpected termination", terminated.get(), is(nullValue()));
+        subscription.request(1);
+        assertThat("Unexpected number of emitted accumulators", accumulations, hasSize(3));
+        assertThat("Unexpected accumulators", accumulations, contains(asList(1, 2), asList(3, 4), singletonList(5)));
+        assertThat("Unexpected termination", terminated.get(), is(complete()));
     }
 }

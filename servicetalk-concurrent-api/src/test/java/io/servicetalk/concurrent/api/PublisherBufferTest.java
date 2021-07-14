@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
@@ -577,6 +578,7 @@ class PublisherBufferTest {
     @Test
     void originalSourceIsRetriedIfSubscriberThrows() {
         TestPublisher<Accumulator<Integer, Integer>> bPublisher = new TestPublisher<>();
+        DelayedSubscription bSubscription = new DelayedSubscription();
         AtomicReference<TerminalNotification> terminal = new AtomicReference<>();
         BlockingQueue<Integer> items = new LinkedBlockingDeque<>();
         BlockingQueue<Integer> buffers = new LinkedBlockingDeque<>();
@@ -588,7 +590,8 @@ class PublisherBufferTest {
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onSubscribe(Subscription s) {
-                        s.request(MAX_VALUE);
+                        bSubscription.delayedSubscription(s);
+                        bSubscription.request(1);
                     }
 
                     @Override
@@ -608,7 +611,12 @@ class PublisherBufferTest {
                         terminal.set(complete());
                     }
                 });
-        bPublisher.onNext(new SumAccumulator(bPublisher));
+        bPublisher.onNext(new SumAccumulator(bPublisher));  // it will generate a new boundary on each accumulation
+        assertThat(items, hasSize(1));
+        assertThat(items, contains(1));
+        assertThat(buffers, hasSize(1));
+        assertThat(buffers, contains(1));
+        bSubscription.request(MAX_VALUE);
 
         assertThat(items, hasSize(3));
         assertThat(items, contains(1, 2, 3));

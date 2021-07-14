@@ -57,6 +57,10 @@ public interface BufferStrategy<T, BC extends Accumulator<T, B>, B> {
 
     /**
      * A rough estimate of the number of items in a buffer.
+     * <p>
+     * Note: if {@link #boundaries()} are generated based on the number of accumulated items, this hint size MUST always
+     * be equal or less than the number of items that generates a boundary. Otherwise, there is a risk of emitting more
+     * buffers than requested.
      *
      * @return A rough estimate of the number of items in a buffer.
      */
