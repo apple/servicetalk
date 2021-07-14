@@ -120,12 +120,14 @@ final class DeferredServerChannelBinder {
             if (config.h2Config() != null) {
                 return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext, config,
                         NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
-            } else if (config.h1Config() != null) {
+            }
+            if (config.h1Config() != null) {
                 return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
                         NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
             }
             return failed(new IllegalStateException(
-                    "SSL handshake completed, but no protocols to initialize. Consider using ALPN."));
+                    "SSL handshake completed, but no protocols to initialize. Consider using ALPN to explicitly " +
+                            "negotiate the protocol and/or configure protocols on the client/server builder."));
         });
     }
 }

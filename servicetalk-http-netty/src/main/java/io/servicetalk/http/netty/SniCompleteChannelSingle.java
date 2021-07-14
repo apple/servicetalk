@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -24,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SniCompletionEvent;
 
-import java.nio.channels.ClosedChannelException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
@@ -70,11 +70,8 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (subscriber != null) {
-                Exception e = new ClosedChannelException();
-                assignConnectionError(ctx.channel(), e);
-                final SingleSource.Subscriber<? super SniCompletionEvent> subscriberCopy = subscriber;
-                subscriber = null;
-                subscriberCopy.onError(e);
+                propagateError(ctx.channel(), StacklessClosedChannelException.newInstance(
+                        SniCompleteChannelHandler.class, "exceptionCaught(...)").initCause(cause));
             } else {
                 // Propagate exception in the pipeline if subscriber is already complete
                 ctx.fireExceptionCaught(cause);
@@ -85,14 +82,19 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             if (subscriber != null) {
-                Exception e = new ClosedChannelException();
-                assignConnectionError(ctx.channel(), e);
-                final SingleSource.Subscriber<? super SniCompletionEvent> subscriberCopy = subscriber;
-                subscriber = null;
-                subscriberCopy.onError(e);
+                propagateError(ctx.channel(), StacklessClosedChannelException.newInstance(
+                        SniCompleteChannelHandler.class, "channelInactive(...)"));
             } else {
                 ctx.fireChannelInactive();
             }
+        }
+
+        private void propagateError(Channel channel, Throwable cause) {
+            assert subscriber != null;
+            assignConnectionError(channel, cause);
+            final SingleSource.Subscriber<? super SniCompletionEvent> subscriberCopy = subscriber;
+            subscriber = null;
+            subscriberCopy.onError(cause);
         }
     }
 }
