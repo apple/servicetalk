@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SniTest {
     private static final String SNI_HOSTNAME = "servicetalk.io";
-    
+
     @ParameterizedTest(name = "protocols={0}, alpn={1}")
     @MethodSource("protocolsAndAlpn")
     void sniSuccess(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
