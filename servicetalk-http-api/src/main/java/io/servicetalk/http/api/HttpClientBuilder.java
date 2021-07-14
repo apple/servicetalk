@@ -89,7 +89,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * </pre>
      * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ original connection factory
      * </pre>
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}
@@ -110,7 +110,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
@@ -132,7 +132,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.

@@ -42,7 +42,7 @@ public interface ConnectionAcceptorFactory {
      * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3
+     *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
