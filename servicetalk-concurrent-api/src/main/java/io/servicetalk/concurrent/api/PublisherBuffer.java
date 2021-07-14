@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nonnull;
@@ -30,6 +31,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -79,6 +81,10 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
     }
 
     private static final class ItemsSubscriber<T, B> implements Subscriber<T> {
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<ItemsSubscriber> itemsPendingUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(ItemsSubscriber.class, "itemsPending");
+
         private final State state;
         private final Subscriber<? super B> target;
         private final DelayedSubscription bSubscription;
@@ -118,7 +124,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
 
         @Override
         public void onNext(@Nullable final T t) {
-            final int cItemsPending = --itemsPending;
+            final int cItemsPending = itemsPendingUpdater.decrementAndGet(this);
             assert cItemsPending >= 0;
             try {
                 state.accumulate(t, target);
@@ -158,29 +164,35 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         public void onSubscribe(final Subscription subscription) {
             // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
             // it will not prevent concurrent access between request(n) and cancel() on the original subscription.
-            bSubscription.delayedSubscription(ConcurrentSubscription.wrap(new Subscription() {
+            final ConcurrentSubscription cs = ConcurrentSubscription.wrap(subscription);
+            bSubscription.delayedSubscription(new Subscription() {
                 @Override
                 public void request(final long n) {
-                    subscription.request(n);
+                    cs.request(n);
                 }
 
                 @Override
                 public void cancel() {
                     try {
-                        subscription.cancel();
+                        cs.cancel();
                     } finally {
                         tSubscription.cancel();
                     }
                 }
-            }));
+            });
             // Wrap bSubscription to count number of requested items excluding internal demand for discarded boundaries.
             target.onSubscribe(new Subscription() {
                 @Override
                 public void request(final long n) {
-                    final boolean needRequestItems = state.requested(n, target);
-                    bSubscription.request(n);
-                    if (needRequestItems) {
-                        tSubscription.request(state.itemsRequestN);
+                    if (isRequestNValid(n)) {
+                        final boolean needRequestItems = state.requested(n, target);
+                        bSubscription.request(n);
+                        if (needRequestItems) {
+                            tSubscription.request(state.itemsRequestN);
+                        }
+                    } else {
+                        // Propagate invalid value upstream to let it handle it and propagate an error downstream
+                        bSubscription.request(n);
                     }
                 }
 
@@ -260,13 +272,10 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         }
 
         <T, B> boolean requested(long n, final Subscriber<? super B> target) {
-            final long oldPending = pendingUpdater.getAndAccumulate(this, n, (prev, nValue) -> {
-                if (nValue <= 0L || prev == NEED_TERMINATE) {
-                    return prev;
-                }
-                return prev == NEED_REQUEST_ITEMS ? nValue : addWithOverflowProtection(prev, nValue);
-            });
-            if (oldPending == NEED_TERMINATE && n > 0L) {
+            assert isRequestNValid(n);
+            final long oldPending = pendingUpdater.getAndAccumulate(this, n,
+                    (prev, nValue) -> prev <= LAST_SPECIAL_STATE ? nValue : addWithOverflowProtection(prev, nValue));
+            if (oldPending == NEED_TERMINATE) {
                 @SuppressWarnings("unchecked")
                 final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) maybeAccumulator;
                 assert it != null;
@@ -314,7 +323,6 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                         return;
                     }
                     // Received the next boundary while adding, deliver current accumulator and unwrap the next boundary
-                    assert nextState instanceof NextAccumulatorHolder : "Expected next boundary";
                     @SuppressWarnings("unchecked")
                     final NextAccumulatorHolder<T, B> holder = (NextAccumulatorHolder<T, B>) nextState;
                     try {

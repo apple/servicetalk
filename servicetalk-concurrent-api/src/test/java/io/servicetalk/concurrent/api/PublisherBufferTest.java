@@ -570,6 +570,8 @@ class PublisherBufferTest {
             bufferSubscriber.awaitSubscription().request(1);    // request the last buffer
             assertThat(bufferSubscriber.pollAllOnNext(), contains(2));
             verifyBufferSubCompleted();
+            // issue one more request-1 to verify we don't terminate twice:
+            bufferSubscriber.awaitSubscription().request(1);
         } finally {
             executor.closeAsync().toFuture().get();
         }
