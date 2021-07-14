@@ -47,6 +47,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.function.Supplier;
@@ -390,16 +391,12 @@ class ClientEffectiveStrategyTest {
 
         void addOffloadedPointFor(ClientType clientType, ClientOffloadPoint... points) {
             EnumSet<ClientOffloadPoint> offloads = offloadPoints.get(clientType);
-            for (ClientOffloadPoint point : points) {
-                offloads.add(point);
-            }
+            Collections.addAll(offloads, points);
         }
 
         void addNonOffloadedPointFor(ClientType clientType, ClientOffloadPoint... points) {
             EnumSet<ClientOffloadPoint> nonOffloads = nonOffloadPoints.get(clientType);
-            for (ClientOffloadPoint point : points) {
-                nonOffloads.add(point);
-            }
+            Collections.addAll(nonOffloads, points);
         }
 
         void allPointsOffloadedForAllClients() {
