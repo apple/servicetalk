@@ -111,10 +111,13 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         public void onNext(@Nullable final T t) {
             assert itemsPending > 0;
             --itemsPending;
-            state.accumulate(t, target, bSubscription, tSubscription);
-            if (itemsPending == 0) {
-                itemsPending = bufferSizeHint;
-                tSubscription.request(bufferSizeHint);
+            try {
+                state.accumulate(t, target);
+            } finally {
+                if (itemsPending == 0) {
+                    itemsPending = bufferSizeHint;
+                    tSubscription.request(bufferSizeHint);
+                }
             }
         }
 
@@ -247,8 +250,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             }
         }
 
-        <T, B> void accumulate(@Nullable final T item, final Subscriber<? super B> target,
-                               final Cancellable bCancellable, final Cancellable tCancellable) {
+        <T, B> void accumulate(@Nullable final T item, final Subscriber<? super B> target) {
             for (;;) {
                 final Object cMaybeAccumulator = maybeAccumulator;
                 assert cMaybeAccumulator != null;   // without the first accumulator there is no demand for items
@@ -281,11 +283,12 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     }
                     // Received the next boundary while adding, deliver current accumulator and unwrap the next boundary
                     assert nextState instanceof NextAccumulatorHolder : "Expected next boundary";
-                    if (deliverOnNext(accumulator, target, bCancellable, tCancellable)) {
-                        @SuppressWarnings("unchecked")
-                        final Accumulator<T, B> nextAccumulator = ((NextAccumulatorHolder<T, B>) nextState).accumulator;
-                        maybeAccumulatorUpdater.accumulateAndGet(this, nextAccumulator,
-                                (prev, next) -> prev == TERMINATED ? TERMINATED : next);
+                    @SuppressWarnings("unchecked")
+                    final NextAccumulatorHolder<T, B> holder = (NextAccumulatorHolder<T, B>) nextState;
+                    try {
+                        deliverOnNext(accumulator, target);
+                    } finally {
+                        unwrapHolderState(holder);
                     }
                     return;
                 }
@@ -332,22 +335,28 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     if (maybeAccumulatorUpdater.compareAndSet(this, cMaybeAccumulator, holder)) {
                         @SuppressWarnings("unchecked")
                         Accumulator<T, B> oldAccumulator = (Accumulator<T, B>) cMaybeAccumulator;
-                        if (deliverOnNext(oldAccumulator, target, bSubscription, tSubscription)) {
-                            final Object nextState = maybeAccumulatorUpdater.accumulateAndGet(this,
-                                    // Keep "prev" state because we observed `itemsTerminated` or `accumulate` took
-                                    // ownership of the `holder`
-                                    toCounting(nextAccumulator), (prev, next) -> prev == holder ? next : prev);
-                            assert nextState != null;
-                            if (ItemsTerminated.class.equals(nextState.getClass())) {
-                                @SuppressWarnings("unchecked")
-                                final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) nextState;
-                                terminateIfPossible(it.accumulator, target, it.terminalNotification);
-                            }
+                        final Object nextState;
+                        try {
+                            deliverOnNext(oldAccumulator, target);
+                        } finally {
+                            nextState = unwrapHolderState(holder);
+                        }
+                        if (ItemsTerminated.class.equals(nextState.getClass())) {
+                            @SuppressWarnings("unchecked")
+                            final ItemsTerminated<T, B> it = (ItemsTerminated<T, B>) nextState;
+                            terminateIfPossible(it.accumulator, target, it.terminalNotification);
                         }
                         return;
                     }
                 }
             }
+        }
+
+        <T, B> Object unwrapHolderState(final NextAccumulatorHolder<T, B> holder) {
+            return maybeAccumulatorUpdater.accumulateAndGet(this,
+                    // Keep "prev" state because we observed `itemsTerminated` or `accumulate` took
+                    // ownership of the `holder`
+                    holder.accumulator, (prev, next) -> prev == holder ? next : prev);
         }
 
         <T, B> void itemsTerminated(final TerminalNotification terminalNotification,
@@ -400,31 +409,12 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             safeOnError(target, cause);
         }
 
-        private <T, B> boolean deliverOnNext(final Accumulator<T, B> accumulator,
-                                             final Subscriber<? super B> target,
-                                             final Cancellable bCancellable,
-                                             final Cancellable tCancellable) {
-            try {
-                // decrementAndGet alternative without update of the MIN_VALUE state:
-                final long pending = pendingUpdater.accumulateAndGet(this, 1,
-                        (prev, next) -> prev == MIN_VALUE ? prev : prev - 1);
-                assert pending >= 0;
-                target.onNext(accumulator.finish());
-                return true;
-            } catch (Throwable t) {
-                terminate(t, target, bCancellable, tCancellable);
-                return false;
-            }
-        }
-
-        private <B> void terminate(final Throwable cause, final Subscriber<? super B> target,
-                                   final Cancellable bCancellable, final Cancellable tCancellable) {
-            boundariesTerminated(cause, target);
-            try {
-                bCancellable.cancel();
-            } finally {
-                tCancellable.cancel();
-            }
+        private <T, B> void deliverOnNext(final Accumulator<T, B> accumulator, final Subscriber<? super B> target) {
+            // decrementAndGet alternative without update of the MIN_VALUE state:
+            final long pending = pendingUpdater.accumulateAndGet(this, 1,
+                    (prev, next) -> prev == MIN_VALUE ? prev : prev - 1);
+            assert pending >= 0 || pending == MIN_VALUE;
+            target.onNext(accumulator.finish());
         }
 
         private <T, B> void terminateIfPossible(final CountingAccumulator<T, B> accumulator,
@@ -444,12 +434,12 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             }
         }
 
-        private static <T, B> void terminateTarget(@Nullable final Accumulator<T, B> accumulator,
-                                                   final Subscriber<? super B> target,
-                                                   final TerminalNotification terminalNotification) {
+        private <T, B> void terminateTarget(@Nullable final Accumulator<T, B> accumulator,
+                                            final Subscriber<? super B> target,
+                                            final TerminalNotification terminalNotification) {
             if (accumulator != null) {
                 try {
-                    target.onNext(accumulator.finish());
+                    deliverOnNext(accumulator, target);
                 } catch (Throwable t) {
                     safeOnError(target, t);
                     return;

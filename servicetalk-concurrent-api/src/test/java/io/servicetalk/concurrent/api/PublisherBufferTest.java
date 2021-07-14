@@ -32,11 +32,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -90,7 +93,7 @@ class PublisherBufferTest {
         toSource(publisher.buffer(new TestBufferStrategy(never(), BUFFER_SIZE_HINT))).subscribe(bufferSubscriber);
         assertThat(publisher.isSubscribed(), is(true));
         publisher.onSubscribe(subscription);
-        bufferSubscriber.awaitSubscription().request(Long.MAX_VALUE);
+        bufferSubscriber.awaitSubscription().request(MAX_VALUE);
         assertThat(subscription.requested(), is(0L));
         assertThat(subscription.requestedEquals(0L), is(false));
     }
@@ -108,7 +111,7 @@ class PublisherBufferTest {
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onSubscribe(Subscription s) {
-                        s.request(Long.MAX_VALUE);
+                        s.request(MAX_VALUE);
                     }
 
                     @Override
@@ -133,7 +136,7 @@ class PublisherBufferTest {
         bPublisher.onSubscribe(bSubscription);
 
         assertThat(tSubscription.requested(), is(0L));
-        assertThat(bSubscription.requested(), is(Long.MAX_VALUE));
+        assertThat(bSubscription.requested(), is(MAX_VALUE));
 
         bPublisher.onNext(new SumAccumulator());
         assertThat((int) tSubscription.requested(), is(BUFFER_SIZE_HINT));
@@ -142,10 +145,9 @@ class PublisherBufferTest {
 
         assertThat(onNextCounter.get(), is(1));
         assertThat(terminal.get().cause(), is(DELIBERATE_EXCEPTION));
-        terminal.set(null);
-        assertThat(tSubscription.isCancelled(), is(true));
-        assertThat(bSubscription.isCancelled(), is(true));
+        verifyCancelled(tSubscription);
         // Verify that further items are ignored
+        terminal.set(null);
         tPublisher.onNext(2);
         bPublisher.onNext(new SumAccumulator());
         tPublisher.onComplete();
@@ -164,7 +166,7 @@ class PublisherBufferTest {
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onSubscribe(Subscription s) {
-                        s.request(Long.MAX_VALUE);
+                        s.request(MAX_VALUE);
                     }
 
                     @Override
@@ -185,7 +187,7 @@ class PublisherBufferTest {
                 });
         assertThat(bPublisher.isSubscribed(), is(true));
         bPublisher.onSubscribe(bSubscription);
-        assertThat(bSubscription.requested(), is(Long.MAX_VALUE));
+        assertThat(bSubscription.requested(), is(MAX_VALUE));
 
         bPublisher.onNext(new SumAccumulator());
         tPublisher.onNext(1);
@@ -193,9 +195,9 @@ class PublisherBufferTest {
 
         assertThat(onNextCounter.get(), is(1));
         assertThat(terminal.get().cause(), is(DELIBERATE_EXCEPTION));
-        terminal.set(null);
-        assertThat(bSubscription.isCancelled(), is(true));
+        verifyCancelled(bSubscription);
         // Verify that further items are ignored
+        terminal.set(null);
         tPublisher.onNext(2);
         bPublisher.onNext(new SumAccumulator());
         tPublisher.onComplete();
@@ -395,7 +397,7 @@ class PublisherBufferTest {
         TestSubscription bSubscription = new TestSubscription();
         AtomicReference<TerminalNotification> terminal = new AtomicReference<>();
         BlockingQueue<Integer> buffers = new LinkedBlockingDeque<>();
-        toSource(tPublisher.buffer(new TestBufferStrategy(bPublisher, BUFFER_SIZE_HINT)))
+        toSource(tPublisher.buffer(new TestBufferStrategy(bPublisher, 1)))
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -570,6 +572,49 @@ class PublisherBufferTest {
         } finally {
             executor.closeAsync().toFuture().get();
         }
+    }
+
+    @Test
+    void originalSourceIsRetriedIfSubscriberThrows() {
+        TestPublisher<Accumulator<Integer, Integer>> bPublisher = new TestPublisher<>();
+        AtomicReference<TerminalNotification> terminal = new AtomicReference<>();
+        BlockingQueue<Integer> items = new LinkedBlockingDeque<>();
+        BlockingQueue<Integer> buffers = new LinkedBlockingDeque<>();
+        AtomicInteger counter = new AtomicInteger();
+        toSource(defer(() -> from(counter.incrementAndGet()))
+                .whenOnNext(items::add)
+                .retry((i, t) -> i < 3 && t == DELIBERATE_EXCEPTION)
+                .buffer(new TestBufferStrategy(bPublisher, 1)))
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onSubscribe(Subscription s) {
+                        s.request(MAX_VALUE);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable Integer integer) {
+                        assert integer != null;
+                        buffers.add(integer);
+                        throw DELIBERATE_EXCEPTION;
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        terminal.set(error(t));
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        terminal.set(complete());
+                    }
+                });
+        bPublisher.onNext(new SumAccumulator(bPublisher));
+
+        assertThat(items, hasSize(3));
+        assertThat(items, contains(1, 2, 3));
+        assertThat(buffers, hasSize(3));
+        assertThat(buffers, contains(1, 2, 3));
+        assertThat(terminal.get().cause(), is(DELIBERATE_EXCEPTION));
     }
 
     private static void verifyCancelled(TestSubscription subscription) {
