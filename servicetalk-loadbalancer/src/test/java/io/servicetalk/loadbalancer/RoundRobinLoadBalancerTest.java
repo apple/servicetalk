@@ -478,7 +478,7 @@ abstract class RoundRobinLoadBalancerTest {
         };
     }
 
-    protected interface TestLoadBalancedConnection extends ListenableAsyncCloseable, LoadBalancedConnection {
+    protected interface TestLoadBalancedConnection extends LoadBalancedConnection {
         String address();
     }
 

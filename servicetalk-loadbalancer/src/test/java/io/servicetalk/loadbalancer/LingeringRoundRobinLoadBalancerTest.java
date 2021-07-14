@@ -15,14 +15,19 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.NoAvailableHostException;
+
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -77,6 +82,35 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
+    public void handleDiscoveryEventsForExpiredHostBecomingAvailable() throws Exception {
+        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1");
+
+        lb.selectConnection(any()).toFuture().get();
+
+        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 1));
+
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1");
+
+        // We validate the host is expired by attempting to create a new connection
+        final Predicate<TestLoadBalancedConnection> createNewConnection = alwaysNewConnectionFilter();
+        Exception e = assertThrows(ExecutionException.class, () ->
+                lb.selectConnection(createNewConnection).toFuture().get());
+        assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+
+        lb.selectConnection(any()).toFuture().get();
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.activeAddresses(), "address-1");
+        lb.selectConnection(createNewConnection).toFuture().get();
+
+        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 2));
+    }
+
+    @Test
     public void handleDiscoveryEventsForConnectedHosts() throws Exception {
         assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
         assertThat(lb.activeAddresses(), is(empty()));
@@ -99,12 +133,17 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
+        // Marking the first host as not expired should not create duplicates
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        // At this moment in time, duplicates are allowed and the down event removes just the first address
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        // At this moment in time, duplicates are allowed and the down event will remove just the first address
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        // Because the first address has an open connection, both addresses stay in the collection
+        // Because the first address (new ones are added at the end) has an open connection,
+        // both addresses stay in the collection
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-2"));
@@ -112,11 +151,8 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
-        sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-1", "address-2");
-
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
     }
 
     @Test

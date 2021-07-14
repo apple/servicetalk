@@ -174,29 +174,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         final ResolvedAddress addr = requireNonNull(event.address());
                         @SuppressWarnings("unchecked")
                         final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
-                        if (event.isAvailable()) {
-                            if (oldHostsTyped.isEmpty()) {
-                                return singletonList(createHost(addr));
-                            }
-                            final List<Host<ResolvedAddress, C>> newHosts =
-                                    new ArrayList<>(oldHostsTyped.size() + 1);
-                            newHosts.addAll(oldHostsTyped);
-                            newHosts.add(createHost(addr));
-                            return newHosts;
-                        } else if (oldHostsTyped.isEmpty()) {
-                            return emptyList();
-                        } else {
-                            if (eagerConnectionShutdown) {
-                                return removeFromHostsList(oldHosts, addr);
+
+                        if (eagerConnectionShutdown) {
+                            if (event.isAvailable()) {
+                                return addHostToList(oldHostsTyped, addr, false);
                             } else {
-                                for (Host<ResolvedAddress, C> host : oldHostsTyped) {
-                                    if (host.address.equals(addr)) {
-                                        // Host removal will be handled by the Host's onClose::afterFinally callback
-                                        host.markExpired();
-                                        break;
-                                    }
-                                }
-                                return oldHostsTyped;
+                                return removeFromHostsList(oldHostsTyped, addr);
+                            }
+                        } else {
+                            if (event.isAvailable()) {
+                                return addHostToList(oldHostsTyped, addr, true);
+                            } else if (oldHostsTyped.isEmpty()) {
+                                return emptyList();
+                            } else {
+                                return markHostAsExpired(oldHostsTyped, addr);
                             }
                         }
                     });
@@ -213,6 +204,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 }
             }
 
+            private List<Host<ResolvedAddress, C>> markHostAsExpired(
+                    final List<Host<ResolvedAddress, C>> oldHostsTyped, final ResolvedAddress addr) {
+                for (Host<ResolvedAddress, C> host : oldHostsTyped) {
+                    if (host.address.equals(addr)) {
+                        // Host removal will be handled by the Host's onClose::afterFinally callback
+                        host.markExpired();
+                        break;
+                    }
+                }
+                return oldHostsTyped;
+            }
+
             @SuppressWarnings("unchecked")
             private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
                 Host<ResolvedAddress, C> host = new Host<>(addr);
@@ -225,12 +228,35 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 return host;
             }
 
+            private List<Host<ResolvedAddress, C>> addHostToList(
+                    List<Host<ResolvedAddress, C>> oldHostsTyped, ResolvedAddress addr, boolean handleExpired) {
+                if (oldHostsTyped.isEmpty()) {
+                    return singletonList(createHost(addr));
+                }
+
+                if (handleExpired) {
+                    for (Host<ResolvedAddress, C> host : oldHostsTyped) {
+                        if (host.address.equals(addr) && host.tryToMarkActive()) {
+                            return oldHostsTyped;
+                        }
+                    }
+                }
+
+                final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() + 1);
+                newHosts.addAll(oldHostsTyped);
+                newHosts.add(createHost(addr));
+                return newHosts;
+            }
+
             private List<Host<ResolvedAddress, C>> removeFromHostsList(
                     List<Host<ResolvedAddress, C>> oldHostsTyped, ResolvedAddress addr) {
-                if (oldHostsTyped.isEmpty()) {
+                if (oldHostsTyped == CLOSED_LIST) {
                     // this can happen when an expired host is removed during closing of the RoundRobinLoadBalancer,
                     // but all of its connections have already been closed
                     return oldHostsTyped;
+                }
+                if (oldHostsTyped.isEmpty()) {
+                    return emptyList();
                 }
                 final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
                 for (int i = 0; i < oldHostsTyped.size(); ++i) {
@@ -425,6 +451,19 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             this.address = requireNonNull(address);
             this.closeable = toAsyncCloseable(graceful ->
                     graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
+        }
+
+        boolean tryToMarkActive() {
+            if (!isExpired) {
+                return false;
+            }
+            Object[] previousConnections = connectionsUpdater.getAndUpdate(this, connections -> {
+                if (connections != CLOSED_ARRAY) {
+                    isExpired = false;
+                }
+                return connections;
+            });
+            return previousConnections != CLOSED_ARRAY;
         }
 
         void markInactive() {

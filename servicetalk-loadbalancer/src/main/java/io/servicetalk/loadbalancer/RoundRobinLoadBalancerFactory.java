@@ -82,7 +82,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * not close connections when a host become {@link ServiceDiscovererEvent#isAvailable() unavailable}.
          * When configured with {@code true} as an argument, the connections will be closed gracefully on such event.
          *
-         * @param eagerConnectionShutdown when true, connections will be shut down upon receiving
+         * @param eagerConnectionShutdown when {@code true}, connections will be shut down upon receiving
          * {@link ServiceDiscovererEvent#isAvailable() unavailable} events for a particular host.
          * @return {@code this}.
          */
