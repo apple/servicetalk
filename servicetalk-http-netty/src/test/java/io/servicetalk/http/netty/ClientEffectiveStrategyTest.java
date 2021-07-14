@@ -63,15 +63,20 @@ import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloa
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ClientEffectiveStrategyTest {
 
+    @Nullable
     private Params params;
 
     @AfterEach
     void tearDown() throws Exception {
-        params.dispose();
+        if (params != null) {
+            params.dispose();
+        }
     }
 
     enum ClientStrategyCase implements Supplier<Params> {
@@ -106,12 +111,13 @@ class ClientEffectiveStrategyTest {
         customUserStrategyNoExecutorWithLB(ClientEffectiveStrategyTest::customUserStrategyNoExecutorWithLB),
         customUserStrategyNoExecutorWithCF(ClientEffectiveStrategyTest::customUserStrategyNoExecutorWithCF);
 
-        final Supplier<Params> paramsSupplier;
+        private final Supplier<Params> paramsSupplier;
 
         ClientStrategyCase(Supplier<Params> paramsSupplier) {
             this.paramsSupplier = paramsSupplier;
         }
 
+        @Override
         public Params get() {
             return paramsSupplier.get();
         }
@@ -317,6 +323,7 @@ class ClientEffectiveStrategyTest {
     @EnumSource(ClientStrategyCase.class)
     void blocking(ClientStrategyCase strategyCase) throws Exception {
         params = strategyCase.get();
+        assertThat("Null params supplied", params, notNullValue());
         BlockingHttpClient blockingClient = params.client().asBlockingClient();
         blockingClient.request(blockingClient.get("/"));
         params.verifyOffloads(ClientType.Blocking);
@@ -326,6 +333,7 @@ class ClientEffectiveStrategyTest {
     @EnumSource(ClientStrategyCase.class)
     void blockingStreaming(ClientStrategyCase strategyCase) throws Exception {
         params = strategyCase.get();
+        assertThat("Null params supplied", params, notNullValue());
         BlockingStreamingHttpClient blockingClient = params.client().asBlockingStreamingClient();
         BlockingIterator<Buffer> iter = blockingClient.request(blockingClient.get("/")).payloadBody().iterator();
         iter.forEachRemaining(__ -> { });
@@ -337,6 +345,7 @@ class ClientEffectiveStrategyTest {
     @EnumSource(ClientStrategyCase.class)
     void streaming(ClientStrategyCase strategyCase) throws Exception {
         params = strategyCase.get();
+        assertThat("Null params supplied", params, notNullValue());
         params.client().request(params.client().get("/"))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody).toFuture().get();
         params.verifyOffloads(ClientType.AsyncStreaming);
@@ -346,6 +355,7 @@ class ClientEffectiveStrategyTest {
     @EnumSource(ClientStrategyCase.class)
     void async(ClientStrategyCase strategyCase) throws Exception {
         params = strategyCase.get();
+        assertThat("Null params supplied", params, notNullValue());
         HttpClient httpClient = params.client().asClient();
         httpClient.request(httpClient.get("/")).toFuture().get();
         params.verifyOffloads(ClientType.Async);
