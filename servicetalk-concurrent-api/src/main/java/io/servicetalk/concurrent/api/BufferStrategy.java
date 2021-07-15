@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 
 import javax.annotation.Nullable;
 
@@ -33,13 +34,22 @@ import javax.annotation.Nullable;
  * @param <BC> An intermediate mutable object that holds the items into a buffer before it is emitted.
  * @param <B> The buffer of items.
  */
-public interface BufferStrategy<T, BC extends BufferStrategy.Accumulator<T, B>, B> {
+public interface BufferStrategy<T, BC extends Accumulator<T, B>, B> {
 
     /**
-     * Returns a {@link Publisher} representing asynchronous buffer boundaries. This {@link Publisher} is expected to be
-     * an infinite {@link Publisher}. Hence, it should never terminate any {@link Subscriber} subscribed to it. Instead
-     * {@link Subscriber}s will always {@link Subscription#cancel() cancel} their {@link Subscription}. If this
-     * expectation is violated, buffered items may be discarded.
+     * Returns a {@link Publisher} representing asynchronous buffer boundaries.
+     * <p>
+     * Notes:
+     * <ol>
+     *     <li>This {@link Publisher} is expected to be an infinite {@link Publisher}. Hence, it should never terminate
+     *     any {@link Subscriber} subscribed to it. Instead {@link Subscriber}s will always
+     *     {@link Subscription#cancel() cancel} their {@link Subscription}. If this expectation is violated, buffered
+     *     items may be discarded.</li>
+     *     <li>If this {@link Publisher} returns more boundaries faster than accumulation or emission of the previous
+     *     boundary can be processed, these new boundaries may be discarded without invocation of either
+     *     {@link Accumulator#accumulate(Object)} or {@link Accumulator#finish()} methods. Avoid initializing expensive
+     *     state before any of the {@link Accumulator} methods are invoked.</li>
+     * </ol>
      *
      * @return A {@link Publisher} representing asynchronous buffer boundaries.
      */
@@ -47,6 +57,10 @@ public interface BufferStrategy<T, BC extends BufferStrategy.Accumulator<T, B>, 
 
     /**
      * A rough estimate of the number of items in a buffer.
+     * <p>
+     * Note: if {@link #boundaries()} are generated based on the number of accumulated items, this hint size MUST always
+     * be equal or less than the number of items that generates a boundary. Otherwise, there is a risk of emitting more
+     * buffers than requested.
      *
      * @return A rough estimate of the number of items in a buffer.
      */
