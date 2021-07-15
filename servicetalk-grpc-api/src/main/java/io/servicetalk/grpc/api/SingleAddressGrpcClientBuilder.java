@@ -84,7 +84,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * </pre>
      * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ original connection factory
      * </pre>
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}.

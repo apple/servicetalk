@@ -141,7 +141,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
      * </pre>
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
      * purpose of filtering.
@@ -164,7 +164,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
      * </pre>
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the

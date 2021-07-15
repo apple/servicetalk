@@ -207,7 +207,7 @@ public abstract class GrpcServerBuilder {
      * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3
+     *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
@@ -224,7 +224,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
@@ -245,7 +245,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
@@ -362,7 +362,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      */
@@ -378,7 +378,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
