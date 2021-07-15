@@ -24,7 +24,10 @@ public interface InMemorySpanContext extends SpanContext {
     /**
      * Get the {@link InMemoryTraceState} associated with this object.
      * @return the {@link InMemoryTraceState} associated with this object.
+     * @deprecated This method will be removed in a follow up release, to an effort to clean API. Alternative accessors
+     * will be offered through the {@link InMemorySpanContext} API.
      */
+    @Deprecated
     InMemoryTraceState traceState();
 
     /**
@@ -34,7 +37,9 @@ public interface InMemorySpanContext extends SpanContext {
      * based upon some sampling policy.
      *
      * @return whether the span should be sampled
+     * @deprecated This method will change in a follow up release, to hold an additional state of {@code null}.
      */
+    @Deprecated
     default boolean isSampled() {
         return traceState().isSampled();
     }
