@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2364,6 +2364,17 @@ public abstract class Publisher<T> {
      *     }
      *     return buffers;
      * }</pre>
+     * Notes:
+     * <ol>
+     *     <li>If this {@link Publisher} does not emit items within the {@link BufferStrategy#boundaries() boundary},
+     *     it's expected it will emit an empty {@link Accumulator#finish() accumulated value} as the result of
+     *     accumulating nothing. Use {@link #filter(Predicate)} operator if empty accumulations have to be discarded.
+     *     </li>
+     *     <li>If more than one {@link BufferStrategy#boundaries() boundary} is emitted while this operator
+     *     {@link Accumulator#accumulate(Object) accumulates} or emits the
+     *     {@link PublisherSource.Subscriber#onNext(Object) next} result of accumulation, those boundaries will be
+     *     discarded without invoking {@link Accumulator#finish()} method.</li>
+     * </ol>
      *
      * @param strategy A {@link BufferStrategy} to use for buffering items from this {@link Publisher}.
      * @param <BC> Type of the {@link Accumulator} to buffer items from this {@link Publisher}.

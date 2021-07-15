@@ -63,7 +63,7 @@ public final class SubscriberUtils {
      * @return {@code false} if the requested amount of elements {@code n} is not-positive, {@code true} otherwise.
      */
     public static boolean isRequestNValid(long n) {
-        return n > 0;
+        return n > 0L;
     }
 
     /**

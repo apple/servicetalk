@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,11 +265,18 @@ public final class BufferStrategies {
         }
     }
 
-    private static final class CountingAccumulator<T, B> implements Accumulator<T, B> {
+    static final class CountingAccumulator<T, B> implements Accumulator<T, B> {
+        @Nullable
         private final State<T, B> state;
         private final Accumulator<T, B> delegate;
         private final int sizeThreshold;
         private int size;
+
+        CountingAccumulator(final Accumulator<T, B> delegate) {
+            this.state = null;
+            this.delegate = delegate;
+            this.sizeThreshold = -1;
+        }
 
         CountingAccumulator(final State<T, B> state, final Accumulator<T, B> delegate, final int sizeThreshold) {
             this.state = state;
@@ -279,9 +286,10 @@ public final class BufferStrategies {
 
         @Override
         public void accumulate(@Nullable final T item) {
-            size++;
+            ++size;
             delegate.accumulate(item);
             if (size == sizeThreshold) {
+                assert state != null;
                 state.countThresholdBreached(this);
             }
         }
@@ -289,6 +297,10 @@ public final class BufferStrategies {
         @Override
         public B finish() {
             return delegate.finish();
+        }
+
+        boolean isEmpty() {
+            return size == 0;
         }
     }
 
