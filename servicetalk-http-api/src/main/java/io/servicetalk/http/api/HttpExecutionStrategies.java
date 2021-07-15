@@ -102,7 +102,7 @@ public final class HttpExecutionStrategies {
      * {@link HttpExecutionStrategy}. This method is useful to reduce duplicating work across these entities if the
      * caller has already offloaded all the paths required to be offloaded by the callee.
      * <pre>
-     *     Entities:         Entity 1      =&gt;    Entity 2      =&gt;      Entity 3
+     *     Entities:         Entity 1      ⇒      Entity 2      ⇒      Entity 3
      *                                  (calls)              (calls)
      *     Strategies:     No offloads          Offload Send        Offload Send + Meta
      * </pre>

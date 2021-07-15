@@ -244,7 +244,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters
      * will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service discoverer
      * </pre>
      *
      * @param factory {@link DnsClientFilterFactory} to decorate a {@link DnsClient} for the purpose of
