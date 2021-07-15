@@ -172,7 +172,6 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         }
 
         private void tryDrainIterator(ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
-            assert sourceSubscription != null;
             boolean hasNext = false;
             boolean thrown = false;
             boolean terminated = false;
@@ -241,7 +240,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 // here before we unlock emitting so visibility to other threads should be taken care of
                                 // by the write to emitting below (and later read).
                                 currentIterator = EmptyIterator.instance();
-                                sourceSubscription.request(1);
+                                if (sourceSubscription != null) {
+                                    sourceSubscription.request(1);
+                                }
                             }
                         } finally {
                             // The lock must be released after we interact with the subscription for thread safety
