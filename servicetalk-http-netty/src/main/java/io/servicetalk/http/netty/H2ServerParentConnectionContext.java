@@ -85,6 +85,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
+        if (config.h2Config() == null) {
+            return failed(newH2ConfigException());
+        }
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // Auto read is required for h2
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, true, executionContext, connectionAcceptor,
@@ -99,6 +102,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 });
     }
 
+    private static Throwable newH2ConfigException() {
+        return new IllegalStateException(
+                "HTTP/2 channel initialization failure due to missing HTTP/2 configuration");
+    }
+
     static Single<H2ServerParentConnectionContext> initChannel(final SocketAddress listenAddress,
                 final Channel channel, final HttpExecutionContext httpExecutionContext,
                 final ReadOnlyHttpServerConfig config, final ChannelInitializer initializer,
@@ -106,8 +114,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 final ConnectionObserver observer) {
         final H2ProtocolConfig h2ServerConfig = config.h2Config();
         if (h2ServerConfig == null) {
-            return failed(new IllegalStateException(
-                    "HTTP/2 channel initialization failure due to missing HTTP/2 configuration"));
+            return failed(newH2ConfigException());
         }
         return showPipeline(new SubscribableSingle<H2ServerParentConnectionContext>() {
             @Override
