@@ -35,11 +35,11 @@ import java.util.function.Predicate;
  * suggests otherwise. This can lead to situations where connections will be used to their maximum capacity
  * (for example in the context of pipelining) before new connections are created.</li>
  * <li>Closed connections are automatically pruned.</li>
- * <li>By default, connections to addresses marked as {@link ServiceDiscovererEvent#isAvailable() unavailable}
- * are used for requests, but no new connections are created for them. In case the address' connections are busy,
- * another host is tried. If all hosts are busy, selection fails with a
- * {@link io.servicetalk.client.api.ConnectionRejectedException}. If {@link #eagerConnectionShutdown} is set to true,
- * connections are immediately closed for an {@link ServiceDiscovererEvent#isAvailable() unavailable} address.</li>
+ * <li>If {@link #eagerConnectionShutdown} is set to {@code true}, connections are immediately closed
+ * for an {@link ServiceDiscovererEvent#isAvailable() unavailable} address. When {@code false} is used, connections
+ * to addresses marked as {@link ServiceDiscovererEvent#isAvailable() unavailable} are used for requests,
+ * but no new connections are created for them. In case the address' connections are busy, another host is tried.
+ * If all hosts are busy, selection fails with a {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
  * </ul>
  *
  * @param <ResolvedAddress> The resolved address type.
@@ -68,7 +68,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-        private boolean eagerConnectionShutdown;
+        private boolean eagerConnectionShutdown = true;
 
         /**
          * Creates a new instance with default settings.
@@ -78,12 +78,14 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
         /**
          * Configures the {@link RoundRobinLoadBalancerFactory} to produce a {@link LoadBalancer} with
-         * a setting driving eagerness of connection shutdown. By default, the created {@link LoadBalancer} does
-         * not close connections when a host become {@link ServiceDiscovererEvent#isAvailable() unavailable}.
-         * When configured with {@code true} as an argument, the connections will be closed gracefully on such event.
+         * a setting driving eagerness of connection shutdown. When configured with {@code false} as the argument,
+         * the created {@link LoadBalancer} does not close connections when a host becomes
+         * {@link ServiceDiscovererEvent#isAvailable() unavailable}. If the value is {@code true},
+         * the connections will be closed gracefully on such event.
          *
-         * @param eagerConnectionShutdown when {@code true}, connections will be shut down upon receiving
-         * {@link ServiceDiscovererEvent#isAvailable() unavailable} events for a particular host.
+         * @param eagerConnectionShutdown when {@code true} (default), connections will be shut down upon receiving
+         * {@link ServiceDiscovererEvent#isAvailable() unavailable} events for a particular host. Value of {@code false}
+         * preserves connections and routes requests through them but no new connections are opened for such host.
          * @return {@code this}.
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> eagerConnectionShutdown(
