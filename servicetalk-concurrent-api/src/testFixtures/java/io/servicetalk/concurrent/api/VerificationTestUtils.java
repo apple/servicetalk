@@ -84,6 +84,10 @@ public final class VerificationTestUtils {
         return o == null ? "null" : className(o);
     }
 
+    private static String className(Class<?> o) {
+        return o.getCanonicalName();
+    }
+
     private static String className(Object o) {
         return o.getClass().getCanonicalName();
     }

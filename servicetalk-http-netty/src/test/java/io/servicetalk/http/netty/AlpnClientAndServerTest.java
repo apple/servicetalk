@@ -27,7 +27,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,7 +111,7 @@ class AlpnClientAndServerTest {
                 Arguments.of(singletonList(HTTP_2), singletonList(HTTP_2),
                         HttpProtocolVersion.HTTP_2_0, null, null),
                 Arguments.of(singletonList(HTTP_2), singletonList(HTTP_1_1),
-                        null, DecoderException.class, ClosedChannelException.class),
+                        null, ClosedChannelException.class, null),
 
                 Arguments.of(singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1),
                         HttpProtocolVersion.HTTP_1_1, null, null),

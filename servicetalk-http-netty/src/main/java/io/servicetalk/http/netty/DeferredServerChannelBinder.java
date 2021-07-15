@@ -33,17 +33,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 
-final class AlpnServerContext {
+final class DeferredServerChannelBinder {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AlpnServerContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeferredServerChannelBinder.class);
 
-    private AlpnServerContext() {
+    private DeferredServerChannelBinder() {
         // No instances
     }
 
@@ -52,16 +53,20 @@ final class AlpnServerContext {
                                       final SocketAddress listenAddress,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody) {
-        assert config.h1Config() != null && config.h2Config() != null;
+                                      final boolean drainRequestPayloadBody,
+                                      final boolean sniOnly) {
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         assert tcpConfig.sslContext() != null;
 
+        final BiFunction<Channel, ConnectionObserver, Single<NettyConnectionContext>> channelInit = sniOnly ?
+                (channel, connectionObserver) -> sniInitChannel(listenAddress, channel, config, executionContext,
+                        service, drainRequestPayloadBody, connectionObserver) :
+                (channel, connectionObserver) -> alpnInitChannel(listenAddress, channel, config, executionContext,
+                        service, drainRequestPayloadBody, connectionObserver);
+
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
-        return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor,
-                (channel, connectionObserver) -> initChannel(listenAddress, channel, config, executionContext, service,
-                        drainRequestPayloadBody, connectionObserver),
+        return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor, channelInit,
                 serverConnection -> {
                     // Start processing requests on http/1.1 connection:
                     if (serverConnection instanceof NettyHttpServerConnection) {
@@ -76,13 +81,13 @@ final class AlpnServerContext {
                 });
     }
 
-    private static Single<NettyConnectionContext> initChannel(final SocketAddress listenAddress,
-                                                              final Channel channel,
-                                                              final ReadOnlyHttpServerConfig config,
-                                                              final HttpExecutionContext httpExecutionContext,
-                                                              final StreamingHttpService service,
-                                                              final boolean drainRequestPayloadBody,
-                                                              final ConnectionObserver observer) {
+    private static Single<NettyConnectionContext> alpnInitChannel(final SocketAddress listenAddress,
+                                                                  final Channel channel,
+                                                                  final ReadOnlyHttpServerConfig config,
+                                                                  final HttpExecutionContext httpExecutionContext,
+                                                                  final StreamingHttpService service,
+                                                                  final boolean drainRequestPayloadBody,
+                                                                  final ConnectionObserver observer) {
         return new AlpnChannelSingle(channel,
                 new TcpServerChannelInitializer(config.tcpConfig(), observer), true).flatMap(protocol -> {
             switch (protocol) {
@@ -95,6 +100,34 @@ final class AlpnServerContext {
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }
+        });
+    }
+
+    private static Single<NettyConnectionContext> sniInitChannel(final SocketAddress listenAddress,
+                                                                 final Channel channel,
+                                                                 final ReadOnlyHttpServerConfig config,
+                                                                 final HttpExecutionContext httpExecutionContext,
+                                                                 final StreamingHttpService service,
+                                                                 final boolean drainRequestPayloadBody,
+                                                                 final ConnectionObserver observer) {
+        return new SniCompleteChannelSingle(channel,
+                new TcpServerChannelInitializer(config.tcpConfig(), observer)).flatMap(sniEvt -> {
+            Throwable failureCause = sniEvt.cause();
+            if (failureCause != null) {
+                return failed(failureCause);
+            }
+
+            if (config.h2Config() != null) {
+                return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext, config,
+                        NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+            }
+            if (config.h1Config() != null) {
+                return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
+                        NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+            }
+            return failed(new IllegalStateException(
+                    "SSL handshake completed, but no protocols to initialize. Consider using ALPN to explicitly " +
+                            "negotiate the protocol and/or configure protocols on the client/server builder."));
         });
     }
 }
