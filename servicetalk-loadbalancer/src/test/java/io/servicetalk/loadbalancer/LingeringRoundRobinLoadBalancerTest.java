@@ -16,10 +16,13 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoAvailableHostException;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -27,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -35,7 +39,16 @@ import static org.mockito.Mockito.verify;
 public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
     @Test
-    public void hostDownDoesntCloseConnection() throws Exception {
+    public void hostDownDoesntCloseConnectionCloseLB() throws Exception {
+        hostDownDoesntCloseConnection(false);
+    }
+
+    @Test
+    public void hostDownDoesntCloseConnectionCloseLBGracefully() throws Exception {
+        hostDownDoesntCloseConnection(true);
+    }
+
+    private void hostDownDoesntCloseConnection(boolean gracefulClosure) throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         TestLoadBalancedConnection conn = lb.selectConnection(any()).toFuture().get();
         sendServiceDiscoveryEvents(downEvent("address-1"));
@@ -43,8 +56,15 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         verify(conn, never()).closeAsync();
 
         // But connection is cleaned when LB is closed
-        lb.closeAsync().toFuture().get();
-        verify(conn, times(1)).closeAsync();
+        if (gracefulClosure) {
+            lb.closeAsyncGracefully().toFuture().get();
+            verify(conn, times(1)).closeAsyncGracefully();
+            verify(conn, never()).closeAsync();
+        } else {
+            lb.closeAsync().toFuture().get();
+            verify(conn, times(1)).closeAsync();
+            verify(conn, never()).closeAsyncGracefully();
+        }
         assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
     }
 
@@ -65,6 +85,29 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
 
         conn2.closeAsync().toFuture().get();
         assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+    }
+
+    // Concurrency test, worth running ~10K times to spot concurrency issues.
+    @Test
+    public void closureOfLastConnectionDoesntRaceWithNewAvailableEvent() throws Exception {
+        Executor executor = Executors.newFixedSizeExecutor(1);
+        try {
+            sendServiceDiscoveryEvents(upEvent("address-1"));
+            TestLoadBalancedConnection conn = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+            sendServiceDiscoveryEvents(downEvent("address-1"));
+            assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 1));
+
+            Future<Object> f = executor.submit(() -> {
+                sendServiceDiscoveryEvents(upEvent("address-1"));
+                return null;
+            }).toFuture();
+
+            conn.closeAsync().toFuture().get();
+            f.get();
+            assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 0));
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
     }
 
     @Test
@@ -89,11 +132,11 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         assertAddresses(lb.activeAddresses(), "address-1");
 
         lb.selectConnection(any()).toFuture().get();
-
         assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 1));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1");
+        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 1));
+        assertThat(lb.selectConnection(any()).toFuture().get(), is(notNullValue()));
 
         // We validate the host is expired by attempting to create a new connection
         final Predicate<TestLoadBalancedConnection> createNewConnection = alwaysNewConnectionFilter();
@@ -101,18 +144,15 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
                 lb.selectConnection(createNewConnection).toFuture().get());
         assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
 
-        lb.selectConnection(any()).toFuture().get();
-
+        // When the host becomes available again, new connections can be created
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-1");
         lb.selectConnection(createNewConnection).toFuture().get();
-
         assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 2));
     }
 
     @Test
     public void handleDiscoveryEventsForConnectedHosts() throws Exception {
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
         assertThat(lb.activeAddresses(), is(empty()));
 
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
@@ -137,27 +177,26 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
+        // When all hosts are active, new event creates a duplicate
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        // At this moment in time, duplicates are allowed and the down event will remove just the first address
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2", "address-1");
 
+        // Because the first address (new ones are added at the end) has an open connection it's marked as "expired",
+        // but the other one is removed due to 0 connections being open
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        // Because the first address (new ones are added at the end) has an open connection,
-        // both addresses stay in the collection
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
+        // This host has a connection open, so it stays as "expired".
         sendServiceDiscoveryEvents(downEvent("address-2"));
-        // This host has a connection open, so it stays.
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
-        assertAddresses(lb.activeAddresses(), "address-1", "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
     }
 
     @Test
     public void handleDiscoveryEventsForNotConnectedHosts() {
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
         assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -173,7 +212,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         assertAddresses(lb.activeAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-2", "address-1");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-2");

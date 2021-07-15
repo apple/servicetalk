@@ -179,7 +179,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             if (event.isAvailable()) {
                                 return addHostToList(oldHostsTyped, addr, false);
                             } else {
-                                return removeFromHostsList(oldHostsTyped, addr);
+                                return listWithHostRemoved(oldHostsTyped, host -> {
+                                    boolean match = host.address == addr;
+                                    if (match) {
+                                        host.markInactive();
+                                    }
+                                    return match;
+                                });
                             }
                         } else {
                             if (event.isAvailable()) {
@@ -210,7 +216,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     if (host.address.equals(addr)) {
                         // Host removal will be handled by the Host's onClose::afterFinally callback
                         host.markExpired();
-                        break;
                     }
                 }
                 return oldHostsTyped;
@@ -220,9 +225,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
                 Host<ResolvedAddress, C> host = new Host<>(addr);
                 if (!eagerConnectionShutdown) {
-                    host.onClose().afterFinally(() ->
-                            activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this,
-                                    previousHosts -> removeFromHostsList(previousHosts, addr))
+                    host.onClose().afterFinally(() -> {
+                                activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this,
+                                        previousHosts ->
+                                                listWithHostRemoved(previousHosts, current -> current == host));
+                                host.markInactive();
+                            }
                     ).subscribe();
                 }
                 return host;
@@ -248,27 +256,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 return newHosts;
             }
 
-            private List<Host<ResolvedAddress, C>> removeFromHostsList(
-                    List<Host<ResolvedAddress, C>> oldHostsTyped, ResolvedAddress addr) {
-                if (oldHostsTyped == CLOSED_LIST) {
+            private List<Host<ResolvedAddress, C>> listWithHostRemoved(
+                    List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
+                if (oldHostsTyped.isEmpty()) {
                     // this can happen when an expired host is removed during closing of the RoundRobinLoadBalancer,
                     // but all of its connections have already been closed
                     return oldHostsTyped;
                 }
-                if (oldHostsTyped.isEmpty()) {
-                    return emptyList();
-                }
                 final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
                 for (int i = 0; i < oldHostsTyped.size(); ++i) {
-                    final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
-                    if (host.address.equals(addr)) {
-                        host.markInactive();
+                    final Host<ResolvedAddress, C> current = oldHostsTyped.get(i);
+                    if (hostPredicate.test(current)) {
                         for (int x = i + 1; x < oldHostsTyped.size(); ++x) {
                             newHosts.add(oldHostsTyped.get(x));
                         }
                         return newHosts.isEmpty() ? emptyList() : newHosts;
                     } else {
-                        newHosts.add(host);
+                        newHosts.add(current);
                     }
                 }
                 return newHosts;
@@ -361,7 +365,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
 
             // don't open new connections for expired hosts, try a different one
-            if (!host.isExpired) {
+            if (host.isActive()) {
                 pickedHost = host;
                 break;
             }
@@ -392,7 +396,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             failed(new ConnectionRejectedException(
                                     "Failed to add newly created connection for host: "
                                             + host.address + ", host inactive? " + host.isInactive()
-                                            + ", host expired? " + host.isExpired)));
+                                            + ", host expired? " + host.isExpired())));
                 });
     }
 
@@ -437,12 +441,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private static final class Host<Addr, C extends ListenableAsyncCloseable> implements ListenableAsyncCloseable {
+
+        private enum State {
+            ACTIVE,
+            EXPIRED,
+            CLOSED
+        }
+
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<Host, Object[]> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, Object[].class, "connections");
 
+        @SuppressWarnings("rawtypes")
+        private static final AtomicReferenceFieldUpdater<Host, State> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, State.class, "state");
+
         final Addr address;
-        volatile boolean isExpired;
+        volatile State state = State.ACTIVE;
         volatile Object[] connections = EMPTY_ARRAY;
 
         private final ListenableAsyncCloseable closeable;
@@ -454,19 +469,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         boolean tryToMarkActive() {
-            if (!isExpired) {
-                return false;
-            }
-            Object[] previousConnections = connectionsUpdater.getAndUpdate(this, connections -> {
-                if (connections != CLOSED_ARRAY) {
-                    isExpired = false;
-                }
-                return connections;
-            });
-            return previousConnections != CLOSED_ARRAY;
+            return stateUpdater.compareAndSet(this, State.EXPIRED, State.ACTIVE);
         }
 
         void markInactive() {
+            stateUpdater.set(this, State.CLOSED);
             final Object[] toRemove = connectionsUpdater.getAndSet(this, CLOSED_ARRAY);
             LOGGER.debug("Closing {} connection(s) gracefully to inactive address: {}", toRemove.length, address);
             for (Object conn : toRemove) {
@@ -478,25 +485,30 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @SuppressWarnings("PMD.CollapsibleIfStatements")
         void markExpired() {
-            this.isExpired = true;
-            Object[] observedConnections = this.connections;
-            // when we expire a host without actual connections it's safe to remove it
-            if (observedConnections.length == 0) {
-                // safeguard for a race condition when a different thread could have opened a connection,
-                // we CAS against the observed empty array and only close if our assumption holds
-                if (connectionsUpdater.compareAndSet(this, observedConnections, CLOSED_ARRAY)) {
-                    // no connections, no need for graceful close
-                    this.closeAsync().subscribe();
-                }
+            stateUpdater.set(this, connections.length == 0 ? State.CLOSED : State.EXPIRED);
+            if (state == State.CLOSED) {
+                // if in the meantime a connection was added, we shall close it gracefully
+                this.closeAsyncGracefully().subscribe();
             }
         }
 
         boolean isInactive() {
-            return connections == CLOSED_ARRAY;
+            return state == State.CLOSED;
+        }
+
+        boolean isActive() {
+            return state == State.ACTIVE;
+        }
+
+        boolean isExpired() {
+            return state == State.EXPIRED;
         }
 
         boolean addConnection(C connection) {
             for (;;) {
+                if (state == State.CLOSED) {
+                    return false;
+                }
                 final Object[] existing = this.connections;
                 if (existing == CLOSED_ARRAY) {
                     return false;
@@ -523,15 +535,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     }
                     if (i == existing.length) {
                         break;
-                    } else if (existing.length == 1 && isExpired) {
+                    } else if (existing.length == 1 && state == State.EXPIRED) {
                         // We're closing the last connection, close the Host.
-                        // Closing the host will trigger the Host's onClose method,
-                        // which will remove the host from active hosts list.
-                        // If a race condition appears and a new connection was added in the meantime,
-                        // the CAS operation will allow for determining that and not closing the Host yet and removing
-                        // the connection, previously considered as the last one, from the array.
-                        if (connectionsUpdater.compareAndSet(this, existing, CLOSED_ARRAY)) {
-                            Host.this.closeAsync().subscribe();
+                        // Closing the host will trigger the Host's onClose method, which will remove the host from
+                        // active hosts list. If a race condition appears and a new connection was added in the
+                        // meantime, that would mean the host is available again and the CAS operation will allow for
+                        // determining that. It will prevent closing the Host and will only remove the connection
+                        // (previously considered as the last one), from the array in the next iteration.
+                        if (stateUpdater.compareAndSet(this, State.EXPIRED, State.CLOSED)) {
+                            closeAsync().subscribe();
+                            break;
                         }
                     } else {
                         Object[] newList = new Object[existing.length - 1];
@@ -581,7 +594,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             return "Host{" +
                     "address=" + address +
                     ", removed=" + isInactive() +
-                    ", expired=" + isExpired +
+                    ", expired=" + isExpired() +
                     '}';
         }
     }

@@ -58,7 +58,7 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
         assertAddresses(lb.activeAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1", "address-2");
+        assertAddresses(lb.activeAddresses(), "address-2", "address-1");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.activeAddresses(), "address-2");

@@ -79,7 +79,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
@@ -413,7 +412,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @SafeVarargs
-    protected final <T> void assertConnectionCount(
+    protected static <T> void assertConnectionCount(
             Iterable<T> addresses, Map.Entry<String, Integer>... addressAndConnCount) {
         @SuppressWarnings("unchecked")
         final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(addressAndConnCount)
@@ -422,7 +421,7 @@ abstract class RoundRobinLoadBalancerTest {
                 .collect(Collectors.toList())
                 .toArray(new Matcher[] {});
         final Matcher<Iterable<? extends T>> iterableMatcher =
-                addressAndConnCount.length == 0 ? emptyIterable() : containsInAnyOrder(args);
+                addressAndConnCount.length == 0 ? emptyIterable() : contains(args);
         assertThat(addresses, iterableMatcher);
     }
 
@@ -437,7 +436,7 @@ abstract class RoundRobinLoadBalancerTest {
                 .collect(Collectors.toList())
                 .toArray(new Matcher[] {});
         final Matcher<Iterable<? extends T>> iterableMatcher =
-                address.length == 0 ? emptyIterable() : containsInAnyOrder(args);
+                address.length == 0 ? emptyIterable() : contains(args);
         assertThat(addresses, iterableMatcher);
     }
 
