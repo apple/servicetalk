@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ import javax.annotation.Nullable;
 
 /**
  * Utility for representing a Ziplin-like trace state.
+ * @deprecated This class will be removed in a follow up release. Alternative accessors will be available through
+ * the {@link InMemorySpanContext} API.
  */
+@Deprecated
 public interface InMemoryTraceState {
     /**
      * The hex representation of the traceId.
