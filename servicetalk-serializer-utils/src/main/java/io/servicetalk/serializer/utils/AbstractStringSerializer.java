@@ -20,19 +20,23 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Serialize/deserialize {@link String}s encoded with a {@link Charset}.
- * @see StringAsciiSerializer
- * @see StringUtf8Serializer
- */
-public final class StringCharsetSerializer implements SerializerDeserializer<String> {
-    private static final Map<Charset, Integer> MAX_BYTES_PER_CHAR_MAP = new HashMap<>();
+import static java.nio.charset.Charset.availableCharsets;
+
+abstract class AbstractStringSerializer implements SerializerDeserializer<String> {
+    private static final Map<Charset, Integer> MAX_BYTES_PER_CHAR_MAP;
     static {
-        for (Charset charset : Charset.availableCharsets().values()) {
-            MAX_BYTES_PER_CHAR_MAP.put(charset, (int) charset.newEncoder().maxBytesPerChar());
+        Collection<Charset> charsets = availableCharsets().values();
+        MAX_BYTES_PER_CHAR_MAP = new HashMap<>(charsets.size());
+        for (Charset charset : charsets) {
+            try {
+                MAX_BYTES_PER_CHAR_MAP.put(charset, (int) charset.newEncoder().maxBytesPerChar());
+            } catch (Throwable ignored) {
+                // ignored
+            }
         }
     }
 
@@ -43,20 +47,20 @@ public final class StringCharsetSerializer implements SerializerDeserializer<Str
      * Create a new instance.
      * @param charset The charset used for encoding.
      */
-    public StringCharsetSerializer(final Charset charset) {
+    AbstractStringSerializer(final Charset charset) {
         this.charset = charset;
         maxBytesPerChar = MAX_BYTES_PER_CHAR_MAP.getOrDefault(charset, 1);
     }
 
     @Override
-    public String deserialize(final Buffer serializedData, final BufferAllocator allocator) {
+    public final String deserialize(final Buffer serializedData, final BufferAllocator allocator) {
         String result = serializedData.toString(charset);
         serializedData.skipBytes(serializedData.readableBytes());
         return result;
     }
 
     @Override
-    public Buffer serialize(String toSerialize, BufferAllocator allocator) {
+    public final Buffer serialize(String toSerialize, BufferAllocator allocator) {
         Buffer buffer = allocator.newBuffer(toSerialize.length() * maxBytesPerChar);
         serialize(toSerialize, allocator, buffer);
         return buffer;

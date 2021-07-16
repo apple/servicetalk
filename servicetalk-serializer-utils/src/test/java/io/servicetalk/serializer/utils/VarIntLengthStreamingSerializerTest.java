@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.FOUR_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.MAX_LENGTH_BYTES;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.ONE_BYTE_VAL;
@@ -37,6 +38,7 @@ import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.TH
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.TWO_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.getVarInt;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.setVarInt;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -79,7 +81,7 @@ class VarIntLengthStreamingSerializerTest {
     @Test
     void serializeDeserialize() throws Exception {
         VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
-                StringUtf8Serializer.INSTANCE, String::length);
+                stringSerializer(UTF_8), String::length);
 
         assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
                 DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));
