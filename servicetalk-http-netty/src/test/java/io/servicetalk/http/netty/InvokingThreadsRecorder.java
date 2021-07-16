@@ -28,6 +28,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -53,6 +54,9 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
+/**
+ * @param <T> Type of the keys used in thread recorder map.
+ */
 final class InvokingThreadsRecorder<T> {
     static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
@@ -138,23 +142,21 @@ final class InvokingThreadsRecorder<T> {
 
     void verifyOffloadCount() {
         assert invokingThreads != null;
-        assertThat("Unexpected offload points recorded.", invokingThreads.size(), is(3));
+        assertThat("Unexpected offload points recorded. " + invokingThreads, invokingThreads.size(), is(3));
     }
 
     void assertStrategyUsedForClient() {
         assertThat("No user specified strategy found.", strategy, is(notNullValue()));
         assertThat("Unknown user specified strategy.", strategy, instanceOf(InstrumentedStrategy.class));
         InstrumentedStrategy instrumentedStrategy = (InstrumentedStrategy) strategy;
-        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForClientOffloading(),
-                is(true));
+        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForClientOffloading());
     }
 
     void assertStrategyUsedForServer() {
         assertThat("No user specified strategy found.", strategy, is(notNullValue()));
         assertThat("Unknown user specified strategy.", strategy, instanceOf(InstrumentedStrategy.class));
         InstrumentedStrategy instrumentedStrategy = (InstrumentedStrategy) strategy;
-        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForServerOffloading(),
-                is(true));
+        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForServerOffloading());
     }
 
     StreamingHttpClient client() {
@@ -195,6 +197,12 @@ final class InvokingThreadsRecorder<T> {
                                                final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
             usedForServerOffloading = true;
             return super.invokeService(fallback, request, service, errorHandler);
+        }
+
+        @Override
+        public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService handler) {
+            usedForServerOffloading = true;
+            return super.offloadService(fallback, handler);
         }
 
         boolean isUsedForClientOffloading() {

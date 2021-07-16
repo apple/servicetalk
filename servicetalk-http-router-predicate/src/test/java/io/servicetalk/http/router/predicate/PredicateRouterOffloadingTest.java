@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -114,7 +113,8 @@ class PredicateRouterOffloadingTest {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()).executionStrategy(defaultStrategy(executionContextRule.executor())),
+                routerBuilder.when(this::recordRouterThread)
+                        .executionStrategy(defaultStrategy(executionContextRule.executor())),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -129,7 +129,7 @@ class PredicateRouterOffloadingTest {
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()).executionStrategy(noOffloadsStrategy()),
+                routerBuilder.when(this::recordRouterThread).executionStrategy(noOffloadsStrategy()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -145,7 +145,8 @@ class PredicateRouterOffloadingTest {
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()).executionStrategy(defaultStrategy(executionContextRule.executor())),
+                routerBuilder.when(this::recordRouterThread)
+                        .executionStrategy(defaultStrategy(executionContextRule.executor())),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -160,7 +161,7 @@ class PredicateRouterOffloadingTest {
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()),
+                routerBuilder.when(this::recordRouterThread),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -176,7 +177,7 @@ class PredicateRouterOffloadingTest {
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()).executionStrategy(noOffloadsStrategy()),
+                routerBuilder.when(this::recordRouterThread).executionStrategy(noOffloadsStrategy()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -194,7 +195,7 @@ class PredicateRouterOffloadingTest {
         final HttpExecutionStrategy routeStrat = newMetaUnaffectingExecutionStrategy();
         serverBuilder.executionStrategy(routerStrat);
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(newPredicate()).executionStrategy(routeStrat),
+                routerBuilder.when(this::recordRouterThread).executionStrategy(routeStrat),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -256,11 +257,9 @@ class PredicateRouterOffloadingTest {
         assertThat("Unexpected offload points recorded.", invokingThreads.size(), is(2));
     }
 
-    private Predicate<StreamingHttpRequest> newPredicate() {
-        return req -> {
-            recordThread(RouterOffloadPoint.Predicate);
-            return true;
-        };
+    private boolean recordRouterThread(StreamingHttpRequest req) {
+        recordThread(RouterOffloadPoint.Predicate);
+        return true;
     }
 
     private void recordThread(final RouterOffloadPoint offloadPoint) {

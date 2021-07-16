@@ -17,8 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.DelegatingExecutor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -87,8 +85,7 @@ class NoOffloadsStrategyTest {
 
     @Test
     void turnOffAllExecutors() throws Exception {
-        Executor wrappedImmediate = new DelegatingExecutor(immediate()) { };
-        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(wrappedImmediate).build());
+        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
         StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
         client.request(client.get("/"));

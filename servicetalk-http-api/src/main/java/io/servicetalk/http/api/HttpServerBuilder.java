@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.logging.api.LogLevel;
@@ -30,6 +29,8 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
@@ -50,11 +52,17 @@ public abstract class HttpServerBuilder {
 
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
-    @Nullable
-    private StreamingHttpServiceFilterFactory serviceFilter;
+    private final Deque<StreamingHttpServiceFilterFactory> noOffloadServiceFilters = new ArrayDeque<>();
+    private final Deque<StreamingHttpServiceFilterFactory> serviceFilters = new ArrayDeque<>();
     private HttpExecutionStrategy strategy = defaultStrategy();
-    private final StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
     private boolean drainRequestPayloadBody = true;
+
+    public HttpServerBuilder() {
+        // Async context clear goes before everything else.
+        StreamingHttpServiceFilterFactory asyncContextFilter = new ClearAsyncContextHttpServiceFilter();
+        assert OFFLOAD_NONE_STRATEGY == influenceStrategy(asyncContextFilter, OFFLOAD_NONE_STRATEGY);
+        noOffloadServiceFilters.add(asyncContextFilter);
+    }
 
     /**
      * Configurations of various HTTP protocol versions.
@@ -164,8 +172,10 @@ public abstract class HttpServerBuilder {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.appendConnectionAcceptorFilter(filter1).appendConnectionAcceptorFilter(filter2).
-     *     appendConnectionAcceptorFilter(filter3)
+     *     builder
+     *          .appendConnectionAcceptorFilter(filter1)
+     *          .appendConnectionAcceptorFilter(filter2)
+     *          .appendConnectionAcceptorFilter(filter3)
      * </pre>
      * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
      * be:
@@ -205,12 +215,38 @@ public abstract class HttpServerBuilder {
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        requireNonNull(factory);
+        HttpExecutionStrategy factoryStrategy = influenceStrategy(factory, OFFLOAD_NONE_STRATEGY);
+        if (!OFFLOAD_NONE_STRATEGY.equals(factoryStrategy)) {
+            throw new IllegalArgumentException("Non-offloading filter required offloading " + factoryStrategy);
+        }
+        noOffloadServiceFilters.add(factory);
+        return this;
+    }
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpService} passed to
+     * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *      filter1 ⇒ filter2 ⇒ filter3 ⇒ service
+     * </pre>
+     *
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
     public final HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
         requireNonNull(factory);
-        serviceFilter = appendFilter(serviceFilter, factory);
-        if (!influencerChainBuilder.appendIfInfluencer(factory)) {
-            influencerChainBuilder.append(defaultStreamingInfluencer());
-        }
+        serviceFilters.add(factory);
         return this;
     }
 
@@ -339,8 +375,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpService service) {
-        influencerChainBuilder.prependIfInfluencer(service);
-        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
+        return listenForAdapter(toStreamingHttpService(service, getStrategyInfluencer(service)));
     }
 
     /**
@@ -368,8 +403,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
-        influencerChainBuilder.prependIfInfluencer(service);
-        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
+        return listenForAdapter(toStreamingHttpService(service, getStrategyInfluencer(service)));
     }
 
     /**
@@ -383,8 +417,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        influencerChainBuilder.prependIfInfluencer(service);
-        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
+        return listenForAdapter(toStreamingHttpService(service, getStrategyInfluencer(service)));
     }
 
     /**
@@ -412,20 +445,74 @@ public abstract class HttpServerBuilder {
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
-        StreamingHttpServiceFilterFactory currServiceFilter = serviceFilter;
-        if (!AsyncContext.isDisabled()) {
-            StreamingHttpServiceFilterFactory asyncContextFilter = new AsyncContextAwareHttpServiceFilter();
-            currServiceFilter = currServiceFilter == null ? asyncContextFilter :
-                    appendFilter(asyncContextFilter, currServiceFilter);
+
+        Deque<StreamingHttpServiceFilterFactory> nonOffloadingFilters = new ArrayDeque<>(noOffloadServiceFilters);
+
+        StreamingHttpService filteredService;
+
+        if (nonOffloadingFilters.isEmpty()) {
+            filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters, rawService);
+        } else {
+            boolean anyOffloads = strategy.isSendOffloaded() ||
+                    strategy.isMetadataReceiveOffloaded() ||
+                    strategy.isDataReceiveOffloaded();
+
+            if (anyOffloads) {
+                // We are going to have to offload, even if just to the raw service
+                nonOffloadingFilters.add(new OffloadingFilter(strategy,
+                        buildFactory(serviceFilters)));
+                strategy = null != strategy.executor() ?
+                        HttpExecutionStrategies.customStrategyBuilder()
+                                .offloadNone().executor(strategy.executor()).build() :
+                        HttpExecutionStrategies.noOffloadsStrategy();
+            } else {
+                // All the filters can be appended.
+                nonOffloadingFilters.addAll(serviceFilters);
+            }
+            filteredService = buildService(nonOffloadingFilters, rawService);
         }
-        StreamingHttpService filteredService = currServiceFilter != null ?
-                currServiceFilter.create(rawService) : rawService;
+
         return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
     }
 
-    private static StreamingHttpServiceFilterFactory appendFilter(
-            @Nullable final StreamingHttpServiceFilterFactory current,
-            final StreamingHttpServiceFilterFactory next) {
-        return current == null ? next : service -> current.create(next.create(service));
+    private HttpExecutionStrategyInfluencer getStrategyInfluencer(Object service) {
+        HttpExecutionStrategyInfluencer influencer =
+                buildInfluencer(serviceFilters, strategy -> influenceStrategy(service, strategy));
+        HttpExecutionStrategy useStrategy = influencer.influenceStrategy(strategy);
+
+        return s -> s.merge(useStrategy);
+    }
+
+    private static StreamingHttpServiceFilterFactory buildFactory(Deque<StreamingHttpServiceFilterFactory> filters) {
+        return filters.stream()
+                .reduce((prev, filter) -> strategy -> prev.create(filter.create(strategy)))
+                .orElse(StreamingHttpServiceFilter::new); // unfortunate that we need extra layer
+    }
+
+    private static StreamingHttpService buildService(Deque<StreamingHttpServiceFilterFactory> filters,
+                                                     StreamingHttpService service) {
+        return filters.stream()
+                .reduce((prev, filter) -> svc -> prev.create(filter.create(svc)))
+                .map(factory -> (StreamingHttpService) factory.create(service))
+                .orElse(service);
+    }
+
+    private static HttpExecutionStrategyInfluencer buildInfluencer(Deque<StreamingHttpServiceFilterFactory> filters,
+                                                                   HttpExecutionStrategyInfluencer defaultInfluence) {
+        return filters.stream()
+                .map(filter -> filter instanceof HttpExecutionStrategyInfluencer ?
+                        (HttpExecutionStrategyInfluencer) filter :
+                        defaultStreamingInfluencer())
+                .distinct()
+                .reduce(defaultInfluence,
+                        (prev, influencer) ->
+                                strategy -> influencer.influenceStrategy(prev.influenceStrategy(strategy))
+                );
+    }
+
+    private static HttpExecutionStrategy influenceStrategy(Object anything, HttpExecutionStrategy strategy) {
+        return anything instanceof HttpExecutionStrategyInfluencer ?
+                ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
+                strategy;
     }
 }

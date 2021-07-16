@@ -81,7 +81,6 @@ class InsufficientlySizedExecutorHttpTest {
     void insufficientClientCapacityStreaming(final int capacity, final boolean threadBased) throws Exception {
         initWhenClientUnderProvisioned(capacity, threadBased);
         assertNotNull(client);
-        assertNotNull(client);
 
         if (threadBased ? capacity <= 1 : capacity == 0) {
             ExecutionException e = assertThrows(ExecutionException.class,

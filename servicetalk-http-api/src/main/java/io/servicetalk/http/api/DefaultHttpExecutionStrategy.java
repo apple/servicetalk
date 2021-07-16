@@ -310,16 +310,10 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
         final DefaultHttpExecutionStrategy that = (DefaultHttpExecutionStrategy) o;
 
-        if (offloads != that.offloads) {
-            return false;
-        }
-        if (threadAffinity != that.threadAffinity) {
-            return false;
-        }
-        if (!Objects.equals(executor, that.executor)) {
-            return false;
-        }
-        return mergeStrategy == that.mergeStrategy;
+        return offloads == that.offloads &&
+                threadAffinity == that.threadAffinity &&
+                Objects.equals(executor, that.executor) &&
+                mergeStrategy == that.mergeStrategy;
     }
 
     @Override
@@ -333,7 +327,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public String toString() {
-        return "DefaultHttpExecutionStrategy{" +
+        return getClass().getSimpleName() + "{" +
                 "executor=" + executor +
                 ", offloads=" + offloads +
                 ", mergeStrategy=" + mergeStrategy +

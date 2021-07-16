@@ -23,6 +23,8 @@ import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT
 @FunctionalInterface
 public interface HttpExecutionStrategyInfluencer {
 
+    HttpExecutionStrategyInfluencer NO_INFLUENCE = strategy -> strategy;
+
     /**
      * Optionally modify the passed {@link HttpExecutionStrategy} to a new {@link HttpExecutionStrategy} that suits
      * this {@link HttpExecutionStrategyInfluencer}.

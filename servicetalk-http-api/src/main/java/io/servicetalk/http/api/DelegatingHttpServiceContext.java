@@ -40,6 +40,16 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
         this.delegate = other;
     }
 
+    // public for tests
+    public HttpServiceContext getDelegate() {
+        return delegate;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{delegate=" + delegate + "}";
+    }
+
     @Override
     public SocketAddress localAddress() {
         return delegate.localAddress();

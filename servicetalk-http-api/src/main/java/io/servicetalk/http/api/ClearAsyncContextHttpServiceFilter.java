@@ -18,7 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 
-final class AsyncContextAwareHttpServiceFilter implements
+/**
+ * Clears the {@link AsyncContext} for a new request.
+ */
+final class ClearAsyncContextHttpServiceFilter implements
                                                StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
     @Override
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
