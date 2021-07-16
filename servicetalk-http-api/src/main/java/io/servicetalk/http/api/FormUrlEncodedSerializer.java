@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,13 +33,18 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.DefaultHttpRequestMetaData.DEFAULT_MAX_QUERY_PARAMS;
 import static io.servicetalk.http.api.UriUtils.decodeQueryParams;
+import static java.nio.charset.Charset.availableCharsets;
 import static java.util.Collections.emptyMap;
 
 final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<String, List<String>>> {
-    private static final HashMap<Charset, byte[]> CONTINUATIONS_SEPARATORS = new HashMap<>();
-    private static final HashMap<Charset, byte[]> KEYVALUE_SEPARATORS = new HashMap<>();
+    private static final HashMap<Charset, byte[]> CONTINUATIONS_SEPARATORS;
+    private static final HashMap<Charset, byte[]> KEYVALUE_SEPARATORS;
     static {
-        for (Charset charset : Charset.availableCharsets().values()) {
+        Collection<Charset> charsets = availableCharsets().values();
+        final int size = charsets.size();
+        CONTINUATIONS_SEPARATORS = new HashMap<>(size);
+        KEYVALUE_SEPARATORS = new HashMap<>(size);
+        for (Charset charset : charsets) {
             final byte[] continuation;
             final byte[] keyvalue;
             try {

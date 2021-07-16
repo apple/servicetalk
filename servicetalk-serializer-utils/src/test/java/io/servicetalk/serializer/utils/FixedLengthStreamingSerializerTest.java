@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
@@ -26,7 +28,7 @@ class FixedLengthStreamingSerializerTest {
     @Test
     void serializeDeserialize() throws Exception {
         FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
-                StringUtf8Serializer.INSTANCE, String::length);
+                stringSerializer(UTF_8), String::length);
 
         assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
                 DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));

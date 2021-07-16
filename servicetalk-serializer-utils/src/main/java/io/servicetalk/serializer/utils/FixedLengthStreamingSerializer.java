@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
+import static java.lang.Integer.BYTES;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -58,9 +59,9 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
     @Override
     public Publisher<Buffer> serialize(final Publisher<T> toSerialize, final BufferAllocator allocator) {
         return toSerialize.map(t -> {
-            Buffer buffer = allocator.newBuffer(4 + bytesEstimator.applyAsInt(t));
+            Buffer buffer = allocator.newBuffer(BYTES + bytesEstimator.applyAsInt(t));
             final int beforeWriterIndex = buffer.writerIndex();
-            buffer.writerIndex(beforeWriterIndex + 4);
+            buffer.writerIndex(beforeWriterIndex + BYTES);
             serializer.serialize(t, allocator, buffer);
             buffer.setInt(beforeWriterIndex, buffer.writerIndex() - beforeWriterIndex - 4);
             return buffer;
@@ -74,7 +75,7 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
         @Override
         public Buffer apply(final Buffer buffer, final BufferAllocator allocator) {
             if (expectedLength < 0) {
-                if (buffer.readableBytes() < 4) {
+                if (buffer.readableBytes() < BYTES) {
                     return null;
                 }
                 expectedLength = buffer.readInt();

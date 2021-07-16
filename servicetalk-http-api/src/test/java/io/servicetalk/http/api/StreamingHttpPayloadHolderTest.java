@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 import io.servicetalk.serializer.utils.FixedLengthStreamingSerializer;
-import io.servicetalk.serializer.utils.StringUtf8Serializer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +43,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -79,7 +79,7 @@ class StreamingHttpPayloadHolderTest {
     }
 
     private static final StreamingSerializerDeserializer<String> UTF8_DESERIALIZER =
-            new FixedLengthStreamingSerializer<>(StringUtf8Serializer.INSTANCE, String::length);
+            new FixedLengthStreamingSerializer<>(stringSerializer(UTF_8), String::length);
     private HttpHeaders headers;
     private HttpHeadersFactory headersFactory;
 
