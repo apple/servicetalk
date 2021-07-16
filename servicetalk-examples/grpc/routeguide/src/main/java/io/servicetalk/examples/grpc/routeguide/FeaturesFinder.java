@@ -20,7 +20,6 @@ import io.grpc.examples.routeguide.Point;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
 import javax.annotation.Nullable;
 
 public interface FeaturesFinder extends Iterable<Feature> {
