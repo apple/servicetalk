@@ -48,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -73,6 +75,22 @@ final class SequentialSubscriptionTest {
     void tearDown() throws Exception {
         executor.shutdownNow();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+    }
+
+    @Test
+    void testReentry() {
+        Subscription s3 = mock(Subscription.class);
+        doAnswer(invocation -> {
+            s.switchTo(s3); // switch from s2 to s3 in reentry fashion!
+            return null;
+        }).when(s2).request(anyLong());
+
+        s.request(100);
+        s.switchTo(s2);
+
+        verify(s1).request(eq(100L));
+        verify(s2).request(eq(100L));
+        verify(s3).request(eq(100L));
     }
 
     @Test

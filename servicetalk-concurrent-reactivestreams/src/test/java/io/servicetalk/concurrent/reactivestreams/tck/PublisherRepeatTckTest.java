@@ -19,11 +19,17 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
+
 @Test
-public class PublisherRepeatTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherRepeatTckTest extends AbstractPublisherTckTest<Integer> {
+    @Override
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+        return from(1).repeat(i -> i < elements);
+    }
 
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.repeat(integer -> false);
+    public long maxElementsFromPublisher() {
+        return TckUtils.maxElementsFromPublisher();
     }
 }
