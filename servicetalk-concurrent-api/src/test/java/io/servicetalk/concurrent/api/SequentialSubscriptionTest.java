@@ -25,6 +25,8 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -77,10 +79,14 @@ final class SequentialSubscriptionTest {
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
-    @Test
-    void testReentry() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testReentry(boolean itemReceived) {
         Subscription s3 = mock(Subscription.class);
         doAnswer(invocation -> {
+            if (itemReceived) {
+                s.itemReceived(); // simulate an item being delivered in a reentry fashion.
+            }
             s.switchTo(s3); // switch from s2 to s3 in reentry fashion!
             return null;
         }).when(s2).request(anyLong());
@@ -90,7 +96,7 @@ final class SequentialSubscriptionTest {
 
         verify(s1).request(eq(100L));
         verify(s2).request(eq(100L));
-        verify(s3).request(eq(100L));
+        verify(s3).request(eq(itemReceived ? 99L : 100L));
     }
 
     @Test
