@@ -23,10 +23,10 @@ import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopStreamObserver;
 
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.HttpMethod;
@@ -56,7 +56,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,6 +65,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class AbstractH2DuplexHandlerTest {
 
@@ -75,9 +78,9 @@ class AbstractH2DuplexHandlerTest {
 
         CLIENT_HANDLER {
             @Override
-            ChannelDuplexHandler handler(ChannelConfig config) {
-                return new H2ToStH1ClientDuplexHandler(false, DEFAULT_ALLOCATOR,
-                        HEADERS_FACTORY, forNonPipelined(true, config), NoopStreamObserver.INSTANCE);
+            ChannelDuplexHandler handler(CloseHandler closeHandler) {
+                return new H2ToStH1ClientDuplexHandler(false, DEFAULT_ALLOCATOR, HEADERS_FACTORY,
+                        closeHandler, NoopStreamObserver.INSTANCE);
             }
 
             @Override
@@ -93,9 +96,9 @@ class AbstractH2DuplexHandlerTest {
         },
         SERVER_HANDLER {
             @Override
-            ChannelDuplexHandler handler(ChannelConfig config) {
-                return new H2ToStH1ServerDuplexHandler(DEFAULT_ALLOCATOR, HEADERS_FACTORY,
-                        forNonPipelined(false, config), NoopStreamObserver.INSTANCE);
+            ChannelDuplexHandler handler(CloseHandler closeHandler) {
+                return new H2ToStH1ServerDuplexHandler(DEFAULT_ALLOCATOR, HEADERS_FACTORY, closeHandler,
+                        NoopStreamObserver.INSTANCE);
             }
 
             @Override
@@ -109,7 +112,7 @@ class AbstractH2DuplexHandlerTest {
             }
         };
 
-        abstract ChannelDuplexHandler handler(ChannelConfig config);
+        abstract ChannelDuplexHandler handler(CloseHandler closeHandler);
 
         abstract void writeOutbound(EmbeddedChannel channel);
 
@@ -117,11 +120,10 @@ class AbstractH2DuplexHandlerTest {
     }
 
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private Variant variant;
+    private final CloseHandler closeHandler = mock(CloseHandler.class);
 
     void setUp(Variant variant) {
-        this.variant = variant;
-        channel.pipeline().addLast(variant.handler(channel.config()));
+        channel.pipeline().addLast(variant.handler(closeHandler));
     }
 
     @AfterEach
@@ -138,19 +140,19 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void unexpectedContentLength(Variant param) {
-        setUp(param);
-        unexpectedContentLength(false);
+    void unexpectedContentLength(Variant variant) {
+        setUp(variant);
+        unexpectedContentLength(variant, false);
     }
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void unexpectedContentLengthEndStream(Variant param) {
-        setUp(param);
-        unexpectedContentLength(true);
+    void unexpectedContentLengthEndStream(Variant variant) {
+        setUp(variant);
+        unexpectedContentLength(variant, true);
     }
 
-    private void unexpectedContentLength(boolean endStream) {
+    private void unexpectedContentLength(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
         Http2Headers headers = new DefaultHttp2Headers();
@@ -173,19 +175,19 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void nullContentLengthWhenContentIsNotExpected(Variant param) {
-        setUp(param);
-        nullContentLengthWhenContentIsNotExpected(false);
+    void nullContentLengthWhenContentIsNotExpected(Variant variant) {
+        setUp(variant);
+        nullContentLengthWhenContentIsNotExpected(variant, false);
     }
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void nullContentLengthWhenContentIsNotExpectedEndStream(Variant param) {
-        setUp(param);
-        nullContentLengthWhenContentIsNotExpected(true);
+    void nullContentLengthWhenContentIsNotExpectedEndStream(Variant variant) {
+        setUp(variant);
+        nullContentLengthWhenContentIsNotExpected(variant, true);
     }
 
-    private void nullContentLengthWhenContentIsNotExpected(boolean endStream) {
+    private void nullContentLengthWhenContentIsNotExpected(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
         Http2Headers headers = new DefaultHttp2Headers();
@@ -206,19 +208,19 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void responseWithContentLengthToHeadRequest(Variant param) {
-        setUp(param);
-        responseWithContentLengthToHeadRequest(false);
+    void responseWithContentLengthToHeadRequest(Variant variant) {
+        setUp(variant);
+        responseWithContentLengthToHeadRequest(variant, false);
     }
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void responseWithContentLengthToHeadRequestEndStream(Variant param) {
-        setUp(param);
-        responseWithContentLengthToHeadRequest(true);
+    void responseWithContentLengthToHeadRequestEndStream(Variant variant) {
+        setUp(variant);
+        responseWithContentLengthToHeadRequest(variant, true);
     }
 
-    private void responseWithContentLengthToHeadRequest(boolean endStream) {
+    private void responseWithContentLengthToHeadRequest(Variant variant, boolean endStream) {
         Assumptions.assumeTrue(variant == Variant.CLIENT_HANDLER, "Only relevant for the client-side");
         int contentLength = 1;
         // Send HEAD request
@@ -247,19 +249,19 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void noContentLength(Variant param) {
-        setUp(param);
-        noContentLength(false);
+    void noContentLength(Variant variant) {
+        setUp(variant);
+        noContentLength(variant, false);
     }
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void noContentLengthEndStream(Variant param) {
-        setUp(param);
-        noContentLength(true);
+    void noContentLengthEndStream(Variant variant) {
+        setUp(variant);
+        noContentLength(variant, true);
     }
 
-    private void noContentLength(boolean endStream) {
+    private void noContentLength(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
         Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
@@ -275,19 +277,19 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void withContentLength(Variant param) {
-        setUp(param);
-        withContentLength(false);
+    void withContentLength(Variant variant) {
+        setUp(variant);
+        withContentLength(variant, false);
     }
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void withContentLengthAndTrailers(Variant param) {
-        setUp(param);
-        withContentLength(true);
+    void withContentLengthAndTrailers(Variant variant) {
+        setUp(variant);
+        withContentLength(variant, true);
     }
 
-    private void withContentLength(boolean addTrailers) {
+    private void withContentLength(Variant variant, boolean addTrailers) {
         variant.writeOutbound(channel);
         String content = "hello";
 
@@ -313,8 +315,8 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void singleHeadersFrameWithZeroContentLength(Variant param) {
-        setUp(param);
+    void singleHeadersFrameWithZeroContentLength(Variant variant) {
+        setUp(variant);
         variant.writeOutbound(channel);
 
         Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
@@ -331,8 +333,8 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void emptyMessageWrittenAsSingleFrame(Variant param) {
-        setUp(param);
+    void emptyMessageWrittenAsSingleFrame(Variant variant) {
+        setUp(variant);
         HttpMetaData msg;
         switch (variant) {
             case CLIENT_HANDLER:
@@ -347,8 +349,8 @@ class AbstractH2DuplexHandlerTest {
                 throw new IllegalStateException("Unexpected variant: " + variant);
         }
         channel.writeOutbound(msg);
-        channel.writeOutbound(EMPTY_BUFFER);
-        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+        verify(closeHandler).protocolPayloadBeginOutbound(any());
+        verify(closeHandler).protocolPayloadEndOutbound(any(), any());
 
         Http2HeadersFrame frame = channel.readOutbound();
         assertThat("Unexpected endStream flag value", frame.isEndStream(), is(true));
@@ -357,8 +359,8 @@ class AbstractH2DuplexHandlerTest {
 
     @ParameterizedTest
     @EnumSource(Variant.class)
-    void noDataFramesForEmptyBuffers(Variant param) {
-        setUp(param);
+    void noDataFramesForEmptyBuffers(Variant variant) {
+        setUp(variant);
         Buffer[] payload = {EMPTY_BUFFER, DEFAULT_ALLOCATOR.fromAscii("data"), EMPTY_BUFFER};
 
         HttpMetaData msg;
@@ -379,10 +381,14 @@ class AbstractH2DuplexHandlerTest {
                 throw new IllegalStateException("Unexpected variant: " + variant);
         }
         channel.writeOutbound(msg);
+        verify(closeHandler).protocolPayloadBeginOutbound(any());
+        verify(closeHandler, never()).protocolPayloadEndOutbound(any(), any());
         for (Buffer buffer : payload) {
             channel.writeOutbound(buffer);
         }
+        verify(closeHandler, never()).protocolPayloadEndOutbound(any(), any());
         channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+        verify(closeHandler).protocolPayloadEndOutbound(any(), any());
 
         Http2HeadersFrame headersFrame = channel.readOutbound();
         assertThat("Unexpected endStream flag value at headers frame", headersFrame.isEndStream(), is(false));

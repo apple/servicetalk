@@ -31,7 +31,6 @@ import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
-import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -85,7 +84,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -96,6 +94,8 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determin
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
+import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
@@ -266,7 +266,8 @@ final class NettyHttpServer {
             this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
                     itemWritten -> {
                         if (itemWritten instanceof HttpResponseMetaData) {
-                            return Start;
+                            final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
+                            return emptyMessageBody(metadata) && metadata.version().major() > 1 ? End : Start;
                         }
                         if (itemWritten instanceof HttpHeaders) {
                             return End;
@@ -347,7 +348,7 @@ final class NettyHttpServer {
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
                 Publisher<Object> responsePublisher = strategy
                         .invokeService(executionContext().executor(), request,
-                                req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
+                                req -> service.handle(this, req, streamingResponseFactory())
                                         .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
                                                         req.version(), keepAlive))
                                         .flatMapPublisher(response -> {
@@ -360,8 +361,11 @@ final class NettyHttpServer {
                                             }
                                             return handleResponse(requestMethod, response);
                                         }),
-                                (cause, executor) -> from(newErrorResponse(cause, executor,
-                                        request.version(), keepAlive), EmptyHttpHeaders.INSTANCE));
+                                (cause, executor) -> {
+                                    final StreamingHttpResponse errorResponse = newErrorResponse(cause, executor,
+                                            request.version(), keepAlive);
+                                    return flatEmptyMessage(errorResponse, errorResponse.messageBody());
+                                });
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
@@ -385,9 +389,11 @@ final class NettyHttpServer {
             if (canAddResponseContentLength(response, requestMethod)) {
                 return setResponseContentLength(response);
             } else {
-                // Not necessary to defer subscribe to message body because server does not retry responses
-                final Publisher<Object> flatResponse = Single.<Object>succeeded(response).concat(response.messageBody())
-                        .scanWith(HeaderUtils::insertTrailersMapper);
+                final Publisher<Object> flatResponse = emptyMessageBody(response, response.messageBody()) ?
+                        flatEmptyMessage(response, response.messageBody()) :
+                        // Not necessary to defer subscribe to the messageBody because server does not retry responses
+                        Single.<Object>succeeded(response).concat(response.messageBody())
+                                .scanWith(HeaderUtils::insertTrailersMapper);
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }

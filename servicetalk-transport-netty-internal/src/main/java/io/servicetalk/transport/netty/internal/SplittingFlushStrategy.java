@@ -173,16 +173,17 @@ public final class SplittingFlushStrategy implements FlushStrategy {
         }
 
         private void adjustForMissingBoundaries(final FlushBoundary boundary) {
-            if (previousBoundary != null) {
-                if (boundary == Start && (previousBoundary == Start || previousBoundary == InProgress)) {
-                    // consecutive starts or missing end after InProgress, terminate previous listener for these
-                    // unexpected scenarios
-                    delegate.writeTerminated();
-                    delegate = NOOP_LISTENER;
-                } else if ((boundary == InProgress || boundary == End) && previousBoundary == End) {
-                    // missing start or just consecutive ends
-                    delegate.writeStarted();
-                }
+            if (boundary == Start && (previousBoundary == Start || previousBoundary == InProgress)) {
+                // consecutive starts or missing end after InProgress, terminate previous listener for these
+                // unexpected scenarios
+                delegate.writeTerminated();
+                delegate = NOOP_LISTENER;
+                return;
+            }
+            if ((boundary == InProgress || boundary == End) && (previousBoundary == null || previousBoundary == End)) {
+                // missing start or just consecutive ends
+                delegate = flushStrategyHolder.currentStrategy().apply(flushSender);
+                delegate.writeStarted();
             }
         }
 
