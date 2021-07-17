@@ -183,12 +183,12 @@ final class SequentialSubscription implements Subscription, Cancellable {
 
                 final boolean reentry = beforeSubscription != subscription;
                 if (reentry) {
-                    // subscription was overwritten higher in the stack to track the more recent value, so use it on the
-                    // next iteration on the loop to deliver demand to.
+                    // subscription was overwritten higher in the stack to track the more recent value. overwrite next
+                    // in our current stack frame to use the more recent value on the next loop iteration.
                     next = subscription;
 
                     // There is a new subscription so we need to reset state for how much has been emitted, so we
-                    // deliver demand to the more recent subscriber on the next loop iteration.
+                    // deliver demand to the more recent subscription on the next loop iteration.
                     effectiveSourceRequested = sourceEmitted;
                 } else {
                     // Make the subscription visible before restoring the state of sourceRequested. If the Subscription
