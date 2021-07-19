@@ -29,12 +29,30 @@ import static io.servicetalk.concurrent.api.Publisher.fromIterable;
  */
 @FunctionalInterface
 public interface StreamingSerializer<T> {
+    /**
+     * Serialize a {@link Publisher} of {@link T}s into a {@link Publisher} of {@link Buffer}.
+     * @param toSerialize the deserialized stream of data represented in a {@link Publisher} of {@link T}.
+     * @param allocator the {@link BufferAllocator} to use if allocation is required.
+     * @return the serialized stream of data represented in a {@link Publisher} of {@link Buffer}.
+     */
     Publisher<Buffer> serialize(Publisher<T> toSerialize, BufferAllocator allocator);
 
+    /**
+     * Serialize a {@link Iterable} of {@link T}s into a {@link Iterable} of {@link Buffer}.
+     * @param toSerialize the deserialized stream of data represented in a {@link Iterable} of {@link T}.
+     * @param allocator the {@link BufferAllocator} to use if allocation is required.
+     * @return the serialized stream of data represented in a {@link Iterable} of {@link Buffer}.
+     */
     default BlockingIterable<Buffer> serialize(Iterable<T> toSerialize, BufferAllocator allocator) {
         return serialize(fromIterable(toSerialize), allocator).toIterable();
     }
 
+    /**
+     * Serialize a {@link PayloadWriter} of {@link T}s into a {@link PayloadWriter} of {@link Buffer}.
+     * @param writer The {@link PayloadWriter} used to write the result of serialization to.
+     * @param allocator the {@link BufferAllocator} to use if allocation is required.
+     * @return a {@link PayloadWriter} where you can write {@link T}s to.
+     */
     default PayloadWriter<T> serialize(PayloadWriter<Buffer> writer, BufferAllocator allocator) {
         return StreamingSerializerUtils.serialize(this, writer, allocator);
     }
