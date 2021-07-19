@@ -107,14 +107,16 @@ final class HeaderUtils {
                 !hasContentHeaders(metadata.headers());
     }
 
-    static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
+    static Publisher<Object> setRequestContentLength(final HttpProtocolVersion protocolVersion,
+                                                     final StreamingHttpRequest request) {
         return setContentLength(request, request.messageBody(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateContentLength :
-                        HeaderUtils::updateRequestContentLengthNonZero);
+                        HeaderUtils::updateRequestContentLengthNonZero, protocolVersion);
     }
 
-    static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
-        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength);
+    static Publisher<Object> setResponseContentLength(final HttpProtocolVersion protocolVersion,
+                                                      final StreamingHttpResponse response) {
+        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength, protocolVersion);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -180,10 +182,12 @@ final class HeaderUtils {
         return isPayloadEmpty(metadata) && !mayHaveTrailers(metadata);
     }
 
-    static Publisher<Object> flatEmptyMessage(final HttpMetaData metadata, final Publisher<Object> messageBody) {
+    static Publisher<Object> flatEmptyMessage(final HttpProtocolVersion protocolVersion,
+                                              final HttpMetaData metadata, final Publisher<Object> messageBody) {
         assert emptyMessageBody(metadata, messageBody);
-        // HTTP/2 and above can write meta-data as a single frame with endStream=true flag
-        final Publisher<Object> flatMessage = metadata.version().major() > 1 ? from(metadata) :
+        // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
+        // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
+        final Publisher<Object> flatMessage = protocolVersion.major() > 1 ? from(metadata) :
                 from(metadata, EmptyHttpHeaders.INSTANCE);
         return messageBody == empty() ? flatMessage :
                 // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
@@ -193,10 +197,11 @@ final class HeaderUtils {
 
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
-                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
+                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater,
+                                                      final HttpProtocolVersion protocolVersion) {
         if (emptyMessageBody(metadata, messageBody)) {
             contentLengthUpdater.apply(0, metadata.headers());
-            return flatEmptyMessage(metadata, messageBody);
+            return flatEmptyMessage(protocolVersion, metadata, messageBody);
         }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {

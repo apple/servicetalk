@@ -109,10 +109,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             final Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
             if (canAddRequestContentLength(request)) {
-                flatRequest = setRequestContentLength(request);
+                flatRequest = setRequestContentLength(connectionContext().protocol(), request);
             } else {
                 flatRequest = emptyMessageBody(request, request.messageBody()) ?
-                        flatEmptyMessage(request, request.messageBody()) :
+                        flatEmptyMessage(connectionContext().protocol(), request, request.messageBody()) :
                         // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
                         // requests with non-replayable messageBody
                         Single.<Object>succeeded(request).concat(request.messageBody(), true)

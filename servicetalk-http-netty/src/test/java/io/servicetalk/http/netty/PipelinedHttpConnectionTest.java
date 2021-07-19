@@ -63,30 +63,24 @@ class PipelinedHttpConnectionTest {
     private final TestSingleSubscriber<StreamingHttpResponse> dataSubscriber1 = new TestSingleSubscriber<>();
     private final TestSingleSubscriber<StreamingHttpResponse> dataSubscriber2 = new TestSingleSubscriber<>();
 
-    private TestPublisher<Object> readPublisher1;
-    private TestPublisher<Object> readPublisher2;
-    private TestPublisher<Buffer> writePublisher1;
-    private TestPublisher<Buffer> writePublisher2;
-
-    private StreamingHttpConnection pipe;
+    private final TestPublisher<Object> readPublisher1 = new TestPublisher<>();
+    private final TestPublisher<Object> readPublisher2 = new TestPublisher<>();
+    private final TestPublisher<Buffer> writePublisher1 = new TestPublisher<>();
+    private final TestPublisher<Buffer> writePublisher2 = new TestPublisher<>();
 
     private final HttpHeaders emptyLastChunk = DefaultHttpHeadersFactory.INSTANCE.newEmptyTrailers();
-    private StreamingHttpResponse mockResp;
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
+    private final StreamingHttpResponse mockResp = reqRespFactory.ok();
 
-    @SuppressWarnings("unchecked")
+    private StreamingHttpConnection pipe;
+
     @BeforeEach
     void setup() {
-        mockResp = reqRespFactory.ok();
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
         when(connection.executionContext()).thenReturn(ctx);
-        readPublisher1 = new TestPublisher<>();
-        readPublisher2 = new TestPublisher<>();
-        writePublisher1 = new TestPublisher<>();
-        writePublisher2 = new TestPublisher<>();
         when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
@@ -104,10 +98,10 @@ class PipelinedHttpConnectionTest {
                         reqRespFactory, false));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
+        when(connection.protocol()).thenReturn(HTTP_1_1);
         when(connection.executionContext()).thenReturn(ctx);
         when(connection.write(any())).thenReturn(completed());
         when(connection.write(any(), any(), any())).thenReturn(completed());

@@ -267,7 +267,7 @@ final class NettyHttpServer {
                     itemWritten -> {
                         if (itemWritten instanceof HttpResponseMetaData) {
                             final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
-                            return emptyMessageBody(metadata) && metadata.version().major() > 1 ? End : Start;
+                            return emptyMessageBody(metadata) && protocol().major() > 1 ? End : Start;
                         }
                         if (itemWritten instanceof HttpHeaders) {
                             return End;
@@ -359,12 +359,12 @@ final class NettyHttpServer {
                                                 splittingFlushStrategy.updateFlushStrategy(
                                                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
                                             }
-                                            return handleResponse(requestMethod, response);
+                                            return handleResponse(protocol(), requestMethod, response);
                                         }),
                                 (cause, executor) -> {
                                     final StreamingHttpResponse errorResponse = newErrorResponse(cause, executor,
                                             request.version(), keepAlive);
-                                    return flatEmptyMessage(errorResponse, errorResponse.messageBody());
+                                    return flatEmptyMessage(protocol(), errorResponse, errorResponse.messageBody());
                                 });
 
                 if (drainRequestPayloadBody) {
@@ -383,14 +383,15 @@ final class NettyHttpServer {
         }
 
         @Nonnull
-        private static Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
+        private static Publisher<Object> handleResponse(final HttpProtocolVersion protocolVersion,
+                                                        final HttpRequestMethod requestMethod,
                                                         final StreamingHttpResponse response) {
             // Add the content-length if necessary, falling back to transfer-encoding otherwise.
             if (canAddResponseContentLength(response, requestMethod)) {
-                return setResponseContentLength(response);
+                return setResponseContentLength(protocolVersion, response);
             } else {
                 final Publisher<Object> flatResponse = emptyMessageBody(response, response.messageBody()) ?
-                        flatEmptyMessage(response, response.messageBody()) :
+                        flatEmptyMessage(protocolVersion, response, response.messageBody()) :
                         // Not necessary to defer subscribe to the messageBody because server does not retry responses
                         Single.<Object>succeeded(response).concat(response.messageBody())
                                 .scanWith(HeaderUtils::insertTrailersMapper);

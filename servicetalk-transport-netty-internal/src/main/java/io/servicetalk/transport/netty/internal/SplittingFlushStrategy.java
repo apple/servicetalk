@@ -178,9 +178,8 @@ public final class SplittingFlushStrategy implements FlushStrategy {
                 // unexpected scenarios
                 delegate.writeTerminated();
                 delegate = NOOP_LISTENER;
-                return;
-            }
-            if ((boundary == InProgress || boundary == End) && (previousBoundary == null || previousBoundary == End)) {
+            } else if ((boundary == InProgress || boundary == End) &&
+                    (previousBoundary == null || previousBoundary == End)) {
                 // missing start or just consecutive ends
                 delegate = flushStrategyHolder.currentStrategy().apply(flushSender);
                 delegate.writeStarted();
