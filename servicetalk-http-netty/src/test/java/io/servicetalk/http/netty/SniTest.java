@@ -121,7 +121,7 @@ class SniTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfigs(protocols))
                 .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap("localhost", untrustedServerConfig()))
+                        singletonMap(getLoopbackAddress().getHostName(), untrustedServerConfig()))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
                      getLoopbackAddress().getHostName(),
