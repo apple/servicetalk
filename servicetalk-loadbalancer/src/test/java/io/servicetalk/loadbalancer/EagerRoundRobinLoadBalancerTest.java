@@ -29,52 +29,52 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
 
     @Test
     public void addressIsAddedTwice() {
-        assertThat(lb.activeAddresses(), is(empty()));
+        assertThat(lb.usedAddresses(), is(empty()));
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(1));
+        assertThat(lb.usedAddresses(), hasSize(1));
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(2));
+        assertThat(lb.usedAddresses(), hasSize(2));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(1));
+        assertThat(lb.usedAddresses(), hasSize(1));
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(0));
+        assertThat(lb.usedAddresses(), hasSize(0));
     }
 
     @Test
     public void handleDiscoveryEvents() {
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1");
+        assertAddresses(lb.usedAddresses(), "address-1");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        assertAddresses(lb.activeAddresses(), "address-2");
+        assertAddresses(lb.usedAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
-        assertAddresses(lb.activeAddresses(), "address-2");
+        assertAddresses(lb.usedAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-2", "address-1");
+        assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-2");
+        assertAddresses(lb.usedAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-2"));
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), "address-1");
+        assertAddresses(lb.usedAddresses(), "address-1");
 
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
-        assertAddresses(lb.activeAddresses(), "address-1");
+        assertAddresses(lb.usedAddresses(), "address-1");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
         validateConnectionClosedGracefully(host1Conn2);
 
         // The remaining Host's connections should not be closed
-        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-2", 1));
+        assertConnectionCount(lb.usedAddresses(), connectionsCount("address-2", 1));
         verify(host2Conn1, never()).closeAsync();
         verify(host2Conn1, never()).closeAsyncGracefully();
     }

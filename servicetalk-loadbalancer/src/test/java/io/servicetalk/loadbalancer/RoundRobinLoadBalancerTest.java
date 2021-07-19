@@ -121,7 +121,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     protected Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
-        return cnx -> lb.activeAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
+        return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 
     protected abstract RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb();
@@ -207,9 +207,9 @@ abstract class RoundRobinLoadBalancerTest {
 
     @Test
     public void unknownAddressIsRemoved() {
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertAddresses(lb.activeAddresses(), EMPTY_ARRAY);
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
     }
 
     @Test
@@ -307,7 +307,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
 
-        assertConnectionCount(lb.activeAddresses(),
+        assertConnectionCount(lb.usedAddresses(),
                 connectionsCount("address-1", 1),
                 connectionsCount("address-2", 1));
 
@@ -320,14 +320,14 @@ abstract class RoundRobinLoadBalancerTest {
 
         final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any()));
         assert connection != null;
-        List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.activeAddresses();
+        List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.usedAddresses();
 
         assertThat(activeAddresses.size(), is(1));
         assertConnectionCount(activeAddresses, connectionsCount("address-1", 1));
         assertThat(activeAddresses.get(0).getValue().get(0), is(connection));
         awaitIndefinitely(connection.closeAsync());
 
-        assertConnectionCount(lb.activeAddresses(), connectionsCount("address-1", 0));
+        assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 0));
 
         assertThat(connectionsCreated, hasSize(1));
     }
