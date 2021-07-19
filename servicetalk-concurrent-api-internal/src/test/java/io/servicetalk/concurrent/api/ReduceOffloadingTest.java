@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.api.Executors.newSingleThreadedExecutor;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -31,7 +31,7 @@ class ReduceOffloadingTest {
 
     @Test
     void reduceShouldOffloadOnce() throws Exception {
-        Executor executor = newFixedSizeExecutor(1);
+        Executor executor = newSingleThreadedExecutor();
         AtomicInteger taskCount = new AtomicInteger();
         Executor wrapped = new OffloaderAwareExecutor(from(task -> {
             taskCount.incrementAndGet();

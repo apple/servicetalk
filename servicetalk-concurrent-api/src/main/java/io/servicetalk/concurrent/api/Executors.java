@@ -49,6 +49,29 @@ public final class Executors {
     }
 
     /**
+     * Creates a new {@link Executor} that has a single dedicated worker thread. If {@link Executor#execute(Runnable)}
+     * method is invoked on the worker thread the {@link Runnable#run()} method will be executed immediately, but
+     * concurrent use is otherwise rejected.
+     *
+     * @return A new {@link Executor} that will use a single thread.
+     */
+    public static Executor newSingleThreadedExecutor() {
+        return from(new SingleThreadedExecutor());
+    }
+
+    /**
+     * Creates a new {@link Executor} that has a single dedicated worker thread. If {@link Executor#execute(Runnable)}
+     * method is invoked on the worker thread the {@link Runnable#run()} method will be executed immediately, but
+     * concurrent use is otherwise rejected.
+     *
+     * @param namePrefix A prefix for the worker thread name. A sequence number will always be appended.
+     * @return A new {@link Executor} that will use a single worker thread.
+     */
+    public static Executor newSingleThreadedExecutor(String namePrefix) {
+        return from(new SingleThreadedExecutor(namePrefix));
+    }
+
+    /**
      * Creates a new {@link Executor} that has a fixed number of threads as specified by the {@code size}.
      *
      * @param size Number of threads used by the newly created {@link Executor}.
