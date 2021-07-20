@@ -1501,7 +1501,7 @@ public abstract class Completable {
      * @param provider The {@link AsyncContextProvider} which is the source of the map
      * @return {@link AsyncContextMap} for this subscribe operation.
      */
-    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
         return provider.contextMap().copy();
     }
@@ -1515,6 +1515,10 @@ public abstract class Completable {
     protected final void subscribeInternal(Subscriber subscriber) {
         AsyncContextProvider contextProvider = AsyncContext.provider();
         AsyncContextMap contextMap = contextForSubscribe(contextProvider);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("AsyncContextMap for subscribe {}@{}",
+                    contextMap.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(contextMap)));
+        }
         subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 
@@ -1978,16 +1982,6 @@ public abstract class Completable {
     //
     // Internal Methods Begin
     //
-
-    /**
-     * Subscribes to this {@link Completable} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
 
     /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream

@@ -3291,7 +3291,7 @@ public abstract class Publisher<T> {
      * @param provider The {@link AsyncContextProvider} which is the source of the map
      * @return {@link AsyncContextMap} for this subscribe operation.
      */
-    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
         return provider.contextMap().copy();
     }
@@ -3305,6 +3305,10 @@ public abstract class Publisher<T> {
     protected void subscribeInternal(Subscriber<? super T> subscriber) {
         AsyncContextProvider contextProvider = AsyncContext.provider();
         AsyncContextMap contextMap = contextForSubscribe(contextProvider);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("AsyncContextMap for subscribe {}@{}",
+                    contextMap.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(contextMap)));
+        }
         subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 

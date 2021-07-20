@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- *  Asynchronous operator for @link Completable} that processes signals with task based offloading.
+ *  Asynchronous operator for {@link Completable} that processes signals with task based offloading.
  *
  *  <p>This implementation uses <i>task based</i> offloading. Signals are delivered on a thread owned by the provided
  *  {@link Executor} invoked via the {@link Executor#execute(Runnable)} method independently for each signal.
@@ -41,14 +41,14 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
-    protected final Executor executor;
+    private final Executor executor;
 
     TaskBasedAsyncCompletableOperator(Completable original, Executor executor) {
         super(original);
         this.executor = executor;
     }
 
-    protected Executor executor() {
+    Executor executor() {
         return executor;
     }
 

@@ -56,14 +56,14 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
     };
 
-    protected final Executor executor;
+    private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(Publisher<T> original, Executor executor) {
         super(original);
         this.executor = executor;
     }
 
-    protected Executor executor() {
+    Executor executor() {
         return executor;
     }
 
@@ -391,7 +391,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                 long r = requestedUpdater.getAndSet(this, 0);
                 if (r > 0) {
                     try {
-                        LOGGER.trace("executing request on {}", executor);
+                        LOGGER.trace("delivering request to {} on {}", target, executor);
                         target.request(r);
                         continue;
                     } catch (Throwable t) {
@@ -403,7 +403,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
 
                 if (r == CANCELLED) {
                     requested = TERMINATED;
-                    LOGGER.trace("executing cancel on {}", executor);
+                    LOGGER.trace("delivering cancel to {} on {}", target, executor);
                     safeCancel(target);
                     LOGGER.trace("cancelled on {}", executor);
                     return; // No more signals are required to be sent.
@@ -419,6 +419,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     // terminate.
                     requested = TERMINATED;
                     try {
+                        LOGGER.trace("delivering invalid request to {} on {}", target, executor);
                         target.request(r);
                     } catch (IllegalArgumentException iae) {
                         // Expected

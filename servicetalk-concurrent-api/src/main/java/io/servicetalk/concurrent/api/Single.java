@@ -2316,7 +2316,7 @@ public abstract class Single<T> {
      * @param provider The {@link AsyncContextProvider} which is the source of the map
      * @return {@link AsyncContextMap} for this subscribe operation.
      */
-    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
         return provider.contextMap().copy();
     }
@@ -2331,6 +2331,10 @@ public abstract class Single<T> {
      */
     final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
         final AsyncContextMap contextMap = contextForSubscribe(provider);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("AsyncContextMap for subscribe {}@{}",
+                    contextMap.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(contextMap)));
+        }
         subscribeWithContext(subscriber, provider, contextMap);
         return contextMap;
     }

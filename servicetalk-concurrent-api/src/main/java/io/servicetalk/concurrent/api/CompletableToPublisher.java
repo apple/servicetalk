@@ -85,18 +85,17 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
         @Override
         public void request(long n) {
             if (!isRequestNValid(n) && terminatedUpdater.compareAndSet(this, 0, 1)) {
-                // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
-                // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
-                // Subscriber directly, hence we explicitly offload.
-                Subscriber<? super T> offloaded = wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
+                // We have not wrapped the Subscriber as we generally emit to the Subscriber from the Completable
+                // Subscriber methods which are correctly wrapped. This is the only case where we invoke the
+                // Subscriber directly, hence we explicitly wrap it.
+                Subscriber<? super T> wrapped = wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
                 try {
-                    // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
                     cancel();
                 } catch (Throwable t) {
-                    offloaded.onError(t);
+                    wrapped.onError(t);
                     return;
                 }
-                offloaded.onError(newExceptionForInvalidRequestN(n));
+                wrapped.onError(newExceptionForInvalidRequestN(n));
             }
         }
     }

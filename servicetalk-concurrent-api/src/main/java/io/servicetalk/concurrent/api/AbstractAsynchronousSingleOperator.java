@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractAsynchronousSingleOperator<T, R> extends AbstractNoHandleSubscribeSingle<R>
         implements SingleOperator<T, R> {
 
-    protected final Single<T> original;
+    final Single<T> original;
 
     AbstractAsynchronousSingleOperator(Single<T> original) {
         this.original = requireNonNull(original);

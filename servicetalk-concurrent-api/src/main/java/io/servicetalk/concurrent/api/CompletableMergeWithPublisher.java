@@ -61,7 +61,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private static final AtomicReferenceFieldUpdater<MergerDelayError, TerminalSignal> terminalUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(MergerDelayError.class, TerminalSignal.class, "terminal");
         private final CompletableSubscriber completableSubscriber;
-        private final Subscriber<? super T> offloadedSubscriber;
+        private final Subscriber<? super T> wrappedSubscriber;
         private final DelayedSubscription subscription = new DelayedSubscription();
         @Nullable
         private volatile TerminalSignal terminal;
@@ -69,14 +69,13 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         MergerDelayError(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                AsyncContextProvider contextProvider) {
             // This is used only to deliver signals that originate from the mergeWith Publisher.
-            this.offloadedSubscriber = contextProvider.wrapPublisherSubscriber(
-                    subscriber, contextMap);
+            this.wrappedSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
             completableSubscriber = new CompletableSubscriber();
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith,
                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-            offloadedSubscriber.onSubscribe(
+            wrappedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, contextMap,
                     contextProvider);
@@ -93,7 +92,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         @Override
         public void onNext(@Nullable final T t) {
-            offloadedSubscriber.onNext(t);
+            wrappedSubscriber.onNext(t);
         }
 
         @Override
@@ -118,12 +117,12 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                     }
                     if (currState.cause == null) {
                         if (terminalSignal.cause == null) {
-                            offloadedSubscriber.onComplete();
+                            wrappedSubscriber.onComplete();
                         } else {
-                            offloadedSubscriber.onError(terminalSignal.cause);
+                            wrappedSubscriber.onError(terminalSignal.cause);
                         }
                     } else {
-                        offloadedSubscriber.onError(currState.cause);
+                        wrappedSubscriber.onError(currState.cause);
                     }
                     break;
                 } else if (terminalUpdater.compareAndSet(this, null, terminalSignal)) {

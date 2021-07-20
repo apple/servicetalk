@@ -37,13 +37,13 @@ public abstract class AbstractOffloadingTest {
     protected static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException();
 
     protected enum CaptureSlot {
-        APP_THREAD,
-        ORIGINAL_SUBSCRIBE_THREAD,
-        OFFLOADED_SUBSCRIBE_THREAD,
-        ORIGINAL_SUBSCRIBER_THREAD,
-        OFFLOADED_SUBSCRIBER_THREAD,
-        ORIGINAL_SUBSCRIPTION_THREAD,
-        OFFLOADED_SUBSCRIPTION_THREAD
+        IN_APP,
+        IN_ORIGINAL_SUBSCRIBE,
+        IN_OFFLOADED_SUBSCRIBE,
+        IN_ORIGINAL_SUBSCRIBER,
+        IN_OFFLOADED_SUBSCRIBER,
+        IN_ORIGINAL_SUBSCRIPTION,
+        IN_OFFLOADED_SUBSCRIPTION
     }
 
     protected enum TerminalOperation {
@@ -70,17 +70,9 @@ public abstract class AbstractOffloadingTest {
     @RegisterExtension
     public final ExecutorExtension<TestExecutor> testExecutor = ExecutorExtension.withTestExecutor();
 
-    protected final CaptureReferences<CaptureSlot, String> capturedReferences;
+    protected final CaptureReferences<CaptureSlot, String> capturedThreads;
 
     protected AbstractOffloadingTest() {
-        this(new CaptureReferences(CaptureSlot.class, () -> Thread.currentThread().getName()) {
-            @Override
-            public void assertCaptured() {
-            }
-        });
-    }
-
-    protected AbstractOffloadingTest(CaptureReferences<CaptureSlot, String> captureReferences) {
-        this.capturedReferences = captureReferences;
+        this.capturedThreads = new CaptureReferences(CaptureSlot.class, () -> Thread.currentThread().getName());
     }
 }

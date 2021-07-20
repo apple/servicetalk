@@ -66,7 +66,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedTerminals(subscriber, executor());
+            return new SingleSubscriberOffloadedTerminals<>(subscriber, executor());
         }
 
         @Override
@@ -95,7 +95,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedCancellable(subscriber, executor());
+            return new SingleSubscriberOffloadedCancellable<>(subscriber, executor());
         }
 
         @Override
@@ -104,10 +104,10 @@ final class PublishAndSubscribeOnSingles {
             try {
                 // re-wrap the subscriber so that async context is restored during offloading.
                 Subscriber<? super T> wrapped =
-                        contextProvider.wrapSingleSubscriberAndCancellable(subscriber, contextMap);
+                        contextProvider.wrapCancellable(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Single subscribe() on {}", executor);
+                LOGGER.trace("Offloading Single subscribe() on {}", executor());
                 executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception

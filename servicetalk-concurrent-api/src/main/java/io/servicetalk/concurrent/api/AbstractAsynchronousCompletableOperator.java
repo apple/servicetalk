@@ -28,15 +28,14 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleSubscribeCompletable
         implements CompletableOperator {
 
-    protected final Completable original;
+    final Completable original;
 
     AbstractAsynchronousCompletableOperator(Completable original) {
         this.original = requireNonNull(original);
     }
 
     @Override
-    void handleSubscribe(Subscriber subscriber,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+    void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
         // asynchronously processes signals. This is because the thread that processes the signals may have different
         // thread safety characteristics than the typical thread interacting with the execution chain.

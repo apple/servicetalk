@@ -66,22 +66,22 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
         final String expectedOffloads;
         final BiFunction<Single<String>, Executor, Single<String>> offloadOperator;
         final TerminalOperation terminal;
-        final EnumMap<CaptureSlot, Matcher<? super String>> matchers = new EnumMap<>(CaptureSlot.class);
+        final EnumMap<CaptureSlot, Matcher<? super String>> threadNameMatchers = new EnumMap<>(CaptureSlot.class);
 
         OffloadCase(int offloadsExpected, String expectedOffloads,
                     BiFunction<Single<String>, Executor, Single<String>> offloadOperator,
                     TerminalOperation terminal,
-                    Matcher<? super String>... matchers) {
+                    Matcher<? super String>... threadNameMatchers) {
             this.offloadsExpected = offloadsExpected;
             this.expectedOffloads = expectedOffloads;
             this.offloadOperator = offloadOperator;
             this.terminal = terminal;
-            Iterator<Matcher<? super String>> eachMatcher = Arrays.asList(matchers).iterator();
+            Iterator<Matcher<? super String>> eachMatcher = Arrays.asList(threadNameMatchers).iterator();
             for (CaptureSlot slot : CaptureSlot.values()) {
                 if (!eachMatcher.hasNext()) {
                     break;
                 }
-                this.matchers.put(slot, eachMatcher.next());
+                this.threadNameMatchers.put(slot, eachMatcher.next());
             }
         }
     }
@@ -92,7 +92,6 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
         int offloads = testOffloading(offloadCase.offloadOperator, offloadCase.terminal);
         assertThat("Unexpected offloads: " + offloadCase.expectedOffloads,
                 offloads, CoreMatchers.is(offloadCase.offloadsExpected));
-        offloadCase.matchers.entrySet().stream()
-                .forEach(slotMatch -> capturedReferences.assertCaptured(slotMatch.getKey(), slotMatch.getValue()));
+        offloadCase.threadNameMatchers.forEach(capturedThreads::assertCaptured);
     }
 }

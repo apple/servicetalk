@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHandleSubscribePublisher<R>
         implements PublisherOperator<T, R> {
 
-    protected final Publisher<T> original;
+    final Publisher<T> original;
 
     AbstractAsynchronousPublisherOperator(Publisher<T> original) {
         this.original = requireNonNull(original);

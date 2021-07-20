@@ -65,7 +65,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriber(subscriber, executor());
+            return new OffloadedSubscriber<>(subscriber, executor());
         }
 
         @Override
@@ -95,7 +95,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriptionSubscriber(subscriber, executor());
+            return new OffloadedSubscriptionSubscriber<>(subscriber, executor());
         }
 
         @Override
@@ -104,10 +104,10 @@ final class PublishAndSubscribeOnPublishers {
             try {
                 // re-wrap the subscriber so that async context is restored during offloading.
                 Subscriber<? super T> wrapped =
-                        contextProvider.wrapPublisherSubscriberAndSubscription(subscriber, contextMap);
+                        contextProvider.wrapSubscription(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Publisher subscribe() on {}", executor);
+                LOGGER.trace("Offloading Publisher subscribe() on {}", executor());
                 executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception

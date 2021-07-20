@@ -52,53 +52,53 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedReferences.capture(CaptureSlot.APP_THREAD);
+                capturedThreads.capture(CaptureSlot.IN_APP);
 
                 // Add thread recording test points
                 final Publisher<String> original = testPublisher
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
+                            capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIPTION);
                             }
                         });
 
                 // Perform offloading and add more thread recording test points
                 Publisher<String> offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
+                            capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIPTION);
                             }
                         });
 
@@ -177,8 +177,6 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
             default:
                 throw new AssertionError("unexpected terminal mode");
         }
-
-        capturedReferences.assertCaptured();
 
         assertThat("Pending offloading", testExecutor.executor().queuedTasksPending(), is(0));
         return testExecutor.executor().queuedTasksExecuted();

@@ -21,19 +21,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Utilities for capturing references during test execution.
  */
-public abstract class CaptureReferences<E extends Enum<E>, R> {
+public class CaptureReferences<E extends Enum<E>, R> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CaptureReferences.class);
 
@@ -45,6 +44,7 @@ public abstract class CaptureReferences<E extends Enum<E>, R> {
      * A capture slot will be created for each enum value.
      *
      * @param clazz The enum class for this capture
+     * @param capturer Supplier which captures the desired reference.
      */
     protected CaptureReferences(Class<E> clazz, Supplier<R> capturer) {
         values = clazz.getEnumConstants();
@@ -71,6 +71,7 @@ public abstract class CaptureReferences<E extends Enum<E>, R> {
     public void capture(final E slot) {
         int index = slot.ordinal();
         R current = capturer.get();
+        assertThat("Reference captured was null", current, notNullValue());
         R was = references.getAndSet(index, current);
         assertThat("Reference already captured at " + slot, was, nullValue());
         LOGGER.trace("Capture {} at {}", current, slot);
@@ -107,23 +108,5 @@ public abstract class CaptureReferences<E extends Enum<E>, R> {
      */
     public void assertCaptured(String reason, E slot, Matcher<? super R> matcher) throws AssertionError {
         org.hamcrest.MatcherAssert.assertThat(reason + " : " + this + " : " + slot, captured(slot), matcher);
-    }
-
-    /**
-     * Perform validation of the captured references.
-     *
-     * @throws AssertionError if the captured references do not match expected state.
-     */
-    public abstract void assertCaptured() throws AssertionError;
-
-    /**
-     * Returns all of the captured reference slots as an array.
-     *
-     * @return an array of the captured references.
-     */
-    public R[] asArray(IntFunction<R[]> arrayMaker) {
-        return IntStream.range(0, references.length())
-                .mapToObj(references::get)
-                .toArray(arrayMaker);
     }
 }

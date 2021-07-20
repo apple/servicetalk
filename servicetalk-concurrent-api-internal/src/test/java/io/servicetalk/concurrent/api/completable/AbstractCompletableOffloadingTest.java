@@ -48,53 +48,53 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedReferences.capture(CaptureSlot.APP_THREAD);
+                capturedThreads.capture(CaptureSlot.IN_APP);
 
                 // Add thread recording test points
                 final Completable original = testCompletable
                         .liftSync(subscriber -> {
-                            capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBE_THREAD);
+                            capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIPTION_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIPTION);
                             }
                         });
 
                 // Perform offloading and add more thread recording test points
                 Completable offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync(subscriber -> {
-                            capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIBE_THREAD);
+                            capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
                             return subscriber;
                         })
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedReferences.capture(CaptureSlot.OFFLOADED_SUBSCRIBER_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedReferences.capture(CaptureSlot.ORIGINAL_SUBSCRIPTION_THREAD);
+                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIPTION);
                             }
                         });
 
@@ -152,8 +152,6 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
             default:
                 throw new AssertionError("unexpected terminal mode");
         }
-
-        capturedReferences.assertCaptured();
 
         // Ensure that all offloading completed.
         assertThat("Offloading pending", testExecutor.executor().queuedTasksPending(), is(0));

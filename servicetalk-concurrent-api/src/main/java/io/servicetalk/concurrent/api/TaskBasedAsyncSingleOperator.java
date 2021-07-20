@@ -30,7 +30,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static java.util.Objects.requireNonNull;
 
 /**
- *  Asynchronous operator for @link Completable} that processes signals with task based offloading.
+ *  Asynchronous operator for {@link Single} that processes signals with task based offloading.
  *
  * Base class for operators on a {@link Single} that process signals asynchronously hence in order to guarantee safe
  * downstream invocations require to wrap their {@link Subscriber}s with the correct {@link AsyncContext}.
@@ -51,7 +51,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         }
     };
 
-    protected final Executor executor;
+    private final Executor executor;
 
     TaskBasedAsyncSingleOperator(Single<T> original, Executor executor) {
         super(original);
