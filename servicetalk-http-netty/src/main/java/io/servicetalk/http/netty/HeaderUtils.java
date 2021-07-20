@@ -107,14 +107,16 @@ final class HeaderUtils {
                 !hasContentHeaders(metadata.headers());
     }
 
-    static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
+    static Publisher<Object> setRequestContentLength(final HttpProtocolVersion protocolVersion,
+                                                     final StreamingHttpRequest request) {
         return setContentLength(request, request.messageBody(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateContentLength :
-                        HeaderUtils::updateRequestContentLengthNonZero);
+                        HeaderUtils::updateRequestContentLengthNonZero, protocolVersion);
     }
 
-    static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
-        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength);
+    static Publisher<Object> setResponseContentLength(final HttpProtocolVersion protocolVersion,
+                                                      final StreamingHttpResponse response) {
+        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength, protocolVersion);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -172,16 +174,34 @@ final class HeaderUtils {
         };
     }
 
+    static boolean emptyMessageBody(final HttpMetaData metadata, final Publisher<Object> messageBody) {
+        return messageBody == empty() || emptyMessageBody(metadata);
+    }
+
+    static boolean emptyMessageBody(final HttpMetaData metadata) {
+        return isPayloadEmpty(metadata) && !mayHaveTrailers(metadata);
+    }
+
+    static Publisher<Object> flatEmptyMessage(final HttpProtocolVersion protocolVersion,
+                                              final HttpMetaData metadata, final Publisher<Object> messageBody) {
+        assert emptyMessageBody(metadata, messageBody);
+        // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
+        // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
+        final Publisher<Object> flatMessage = protocolVersion.major() > 1 ? from(metadata) :
+                from(metadata, EmptyHttpHeaders.INSTANCE);
+        return messageBody == empty() ? flatMessage :
+                // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
+                // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
+                flatMessage.concat(messageBody.ignoreElements());
+    }
+
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
-                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
-        if (messageBody == empty() || (isPayloadEmpty(metadata) && !mayHaveTrailers(metadata))) {
+                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater,
+                                                      final HttpProtocolVersion protocolVersion) {
+        if (emptyMessageBody(metadata, messageBody)) {
             contentLengthUpdater.apply(0, metadata.headers());
-            return messageBody == empty() ?
-                    from(metadata, EmptyHttpHeaders.INSTANCE) :
-                    // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
-                    // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
-                    from(metadata, EmptyHttpHeaders.INSTANCE).concat(messageBody.ignoreElements());
+            return flatEmptyMessage(protocolVersion, metadata, messageBody);
         }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
