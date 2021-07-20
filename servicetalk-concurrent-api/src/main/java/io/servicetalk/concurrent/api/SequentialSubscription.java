@@ -144,7 +144,6 @@ final class SequentialSubscription implements Subscription, Cancellable {
         long effectiveSourceRequested = sourceEmitted;
         for (;;) {
             final long currSourceRequested = sourceRequested;
-            assert currSourceRequested != SWITCHING; // no concurrency on this method allowed
             if (currSourceRequested == CANCELLED) {
                 final long currRequested = requested;
                 if (currRequested >= 0) {
@@ -152,6 +151,11 @@ final class SequentialSubscription implements Subscription, Cancellable {
                 } else { // invalid requestN is pending, deliver to each subscription.
                     next.request(currRequested);
                 }
+                break;
+            } else if (currSourceRequested == SWITCHING) {
+                // concurrency is not allowed on this method, but reentry is allowed. save next into subscription so
+                // we can use it when the stack unwinds to deliver demand to it.
+                subscription = next;
                 break;
             } else if (sourceRequestedUpdater.compareAndSet(this, currSourceRequested, SWITCHING)) {
                 assert currSourceRequested >= 0 || currSourceRequested == REQUESTED;
@@ -168,6 +172,7 @@ final class SequentialSubscription implements Subscription, Cancellable {
                 // effectiveSourceRequested ...[delta]... requested
                 final long delta = currRequested - effectiveSourceRequested;
                 assert delta >= 0;
+                final Subscription beforeSubscription = subscription;
                 if (delta != 0) {
                     // There maybe concurrency with the Subscription thread, or synchronous delivery of data from
                     // request(n). In these cases we want to avoid "double request" from requested, so we track how much
@@ -176,20 +181,32 @@ final class SequentialSubscription implements Subscription, Cancellable {
                     next.request(delta);
                 }
 
-                // Make the subscription visible before restoring the state of sourceRequested. If the Subscription
-                // thread observes the sourceRequested change it will also observe the subscription change. The
-                // Subscription thread also uses sourceRequested to make sure there is no concurrent invocation of
-                // the switched Subscription.
-                subscription = next;
+                final boolean reentry = beforeSubscription != subscription;
+                if (reentry) {
+                    // subscription was overwritten higher in the stack to track the more recent value. overwrite next
+                    // in our current stack frame to use the more recent value on the next loop iteration.
+                    next = subscription;
+
+                    // There is a new subscription so we need to reset state for how much has been emitted, so we
+                    // deliver demand to the more recent subscription on the next loop iteration.
+                    effectiveSourceRequested = sourceEmitted;
+                } else {
+                    // Make the subscription visible before restoring the state of sourceRequested. If the Subscription
+                    // thread observes the sourceRequested change it will also observe the subscription change. The
+                    // Subscription thread also uses sourceRequested to make sure there is no concurrent invocation of
+                    // the switched Subscription.
+                    subscription = next;
+                }
+
                 // We want to set sourceRequested to currRequested because we have already requested the delta between
                 // the two above, and we want to ensure sourceRequested is always monotonically increasing
                 // (besides control values) to prevent the Subscription thread from requesting from an old subscription.
-                if (sourceRequestedUpdater.compareAndSet(this, SWITCHING, currRequested)) {
+                if (sourceRequestedUpdater.compareAndSet(this, SWITCHING, currRequested) && !reentry) {
                     break;
                 }
                 // else the Subscription thread was active in the mean time, we need to process the pending event(s).
                 // if the state is cancelled the Subscription thread defers to this thread to do the cancel on the
-                // next loop invocation.
+                // next loop invocation. or this method was invoked in a re-entry fashion and we need to loop again.
             }
         }
     }
