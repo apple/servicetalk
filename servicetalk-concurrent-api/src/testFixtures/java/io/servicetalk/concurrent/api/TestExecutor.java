@@ -418,7 +418,7 @@ public class TestExecutor implements Executor {
 
         @Override
         public AsyncContextMap copy() {
-            throw invalidAccess();
+            return this;
         }
     }
 }

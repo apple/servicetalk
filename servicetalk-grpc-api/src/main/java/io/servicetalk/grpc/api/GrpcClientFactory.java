@@ -93,7 +93,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param before the factory to apply before this factory is applied

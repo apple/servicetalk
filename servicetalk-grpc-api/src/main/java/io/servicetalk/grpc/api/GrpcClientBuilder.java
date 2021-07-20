@@ -118,7 +118,7 @@ public abstract class GrpcClientBuilder<U, R>
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
@@ -140,7 +140,7 @@ public abstract class GrpcClientBuilder<U, R>
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
@@ -237,7 +237,7 @@ public abstract class GrpcClientBuilder<U, R>
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
@@ -254,7 +254,7 @@ public abstract class GrpcClientBuilder<U, R>
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.

@@ -50,7 +50,6 @@ public final class StrategyInfluencerChainBuilder {
      * Adds the passed {@link HttpExecutionStrategyInfluencer} to the head of this chain.
      *
      * @param influencer {@link HttpExecutionStrategyInfluencer} to add.
-     * @throws IndexOutOfBoundsException If the passed index is invalid.
      */
     public void prepend(HttpExecutionStrategyInfluencer influencer) {
         influencers.addFirst(requireNonNull(influencer));
@@ -62,7 +61,6 @@ public final class StrategyInfluencerChainBuilder {
      *
      * @param mayBeInfluencer An object which may be an {@link HttpExecutionStrategyInfluencer}.
      * @return {@code true} if the passed {@code mayBeInfluencer} was added to the chain.
-     * @throws IndexOutOfBoundsException If the passed index is invalid.
      */
     public boolean prependIfInfluencer(Object mayBeInfluencer) {
         if (mayBeInfluencer instanceof HttpExecutionStrategyInfluencer) {

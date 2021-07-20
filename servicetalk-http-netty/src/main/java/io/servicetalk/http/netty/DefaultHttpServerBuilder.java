@@ -114,14 +114,17 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
         final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
-        if (roConfig.isH2PriorKnowledge()) {
+        if (roConfig.tcpConfig().isAlpnConfigured()) {
+            return DeferredServerChannelBinder.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                    service, drainRequestPayloadBody, false);
+        } else if (roConfig.tcpConfig().sniMapping() != null) {
+            return DeferredServerChannelBinder.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                    service, drainRequestPayloadBody, true);
+        } else if (roConfig.isH2PriorKnowledge()) {
             return H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody);
         }
-        return roConfig.tcpConfig().isAlpnConfigured() ?
-                AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
-                        drainRequestPayloadBody) :
-                NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
-                        drainRequestPayloadBody);
+        return NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
+                drainRequestPayloadBody);
     }
 }

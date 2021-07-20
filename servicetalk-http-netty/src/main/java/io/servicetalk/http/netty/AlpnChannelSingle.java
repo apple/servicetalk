@@ -17,10 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.ApplicationProtocolNegotiationHandler;
@@ -30,41 +30,25 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
  */
-final class AlpnChannelSingle extends SubscribableSingle<String> {
-
-    private final Channel channel;
-    private final ChannelInitializer channelInitializer;
+final class AlpnChannelSingle extends ChannelInitSingle<String> {
     private final boolean forceChannelRead;
 
     AlpnChannelSingle(final Channel channel,
                       final ChannelInitializer channelInitializer,
                       final boolean forceChannelRead) {
-        this.channel = channel;
-        this.channelInitializer = channelInitializer;
+        super(channel, channelInitializer);
         this.forceChannelRead = forceChannelRead;
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super String> subscriber) {
-        try {
-            channelInitializer.init(channel);
-        } catch (Throwable cause) {
-            close(channel, cause);
-            deliverErrorFromSource(subscriber, cause);
-            return;
-        }
-        subscriber.onSubscribe(channel::close);
-        // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
-        // callbacks that interact with the subscriber.
-        channel.pipeline().addLast(new AlpnChannelHandler(subscriber, forceChannelRead));
+    protected ChannelHandler newChannelHandler(final Subscriber<? super String> subscriber) {
+        return new AlpnChannelHandler(subscriber, forceChannelRead);
     }
 
     /**

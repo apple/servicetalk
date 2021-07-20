@@ -69,6 +69,25 @@ class PublisherConcatMapIterableTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
+    void onSubscribeThrowsPropagatesError() throws Exception {
+        @SuppressWarnings("unchecked")
+        Subscriber<String> mockSubscriber = mock(Subscriber.class);
+        CountDownLatch latchOnError = new CountDownLatch(1);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+        doAnswer(a -> {
+            causeRef.set(a.getArgument(0));
+            latchOnError.countDown();
+            return null;
+        }).when(mockSubscriber).onError(any());
+
+        toSource(from(singletonList("foo")).beforeOnSubscribe(subscription1 -> {
+            throw DELIBERATE_EXCEPTION;
+        }).flatMapConcatIterable(identity())).subscribe(mockSubscriber);
+        latchOnError.await();
+        assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     void upstreamRecoverWithMakesProgress() throws Exception {
         @SuppressWarnings("unchecked")
         Subscriber<String> mockSubscriber = mock(Subscriber.class);

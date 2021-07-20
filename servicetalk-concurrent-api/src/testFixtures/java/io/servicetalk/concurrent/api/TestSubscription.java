@@ -20,13 +20,31 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Subscription} that tracks requests and cancellation.
  */
 public final class TestSubscription extends TestCancellable implements Subscription {
+    private final String name;
     private final AtomicLong requested = new AtomicLong();
     private volatile boolean requestCalled;
+
+    /**
+     * Creates a new instance.
+     */
+    public TestSubscription() {
+        this(TestSubscription.class.getSimpleName());
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param name a name for this subscription
+     */
+    public TestSubscription(final String name) {
+        this.name = requireNonNull(name);
+    }
 
     @Override
     public void request(final long n) {
@@ -112,7 +130,8 @@ public final class TestSubscription extends TestCancellable implements Subscript
 
     @Override
     public String toString() {
-        return "requestN: " + requested.get() + " requestCalled: " + requestCalled;
+        return name + "{requested: " + requested.get() + " requestCalled: " + requestCalled +
+                " cancelled: " + isCancelled() + '}';
     }
 
     private boolean isRequestNInvalid(long r) {
