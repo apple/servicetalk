@@ -18,6 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -34,5 +37,9 @@ enum HttpProtocol {
     HttpProtocol(HttpProtocolConfig config, HttpProtocolVersion version) {
         this.config = config;
         this.version = version;
+    }
+
+    static HttpProtocolConfig[] toConfigs(Collection<HttpProtocol> protocols) {
+        return protocols.stream().map(p -> p.config).collect(Collectors.toList()).toArray(new HttpProtocolConfig[] {});
     }
 }
