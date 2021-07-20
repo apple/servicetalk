@@ -112,7 +112,7 @@ class StreamingHttpPayloadHolderTest {
             payloadInfo.setMayHaveTrailers(false);
         }
         payloadHolder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR, payloadSource, payloadInfo,
-                headersFactory, HTTP_1_1);
+                headersFactory);
 
         if (sourceType == SourceType.Trailers) {
             assertThat("Unexpected payload info trailer indication.", payloadHolder.mayHaveTrailers(), is(true));

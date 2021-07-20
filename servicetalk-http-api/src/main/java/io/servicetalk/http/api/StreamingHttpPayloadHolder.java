@@ -58,7 +58,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
                                @Nullable final Publisher<?> messageBody, final DefaultPayloadInfo messageBodyInfo,
-                               final HttpHeadersFactory headersFactory, final HttpProtocolVersion version) {
+                               final HttpHeadersFactory headersFactory) {
         assert messageBody != null || !messageBodyInfo.mayHaveTrailers();
         this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
