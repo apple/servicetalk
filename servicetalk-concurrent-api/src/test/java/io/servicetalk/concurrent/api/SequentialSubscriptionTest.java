@@ -25,6 +25,8 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -48,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -73,6 +77,26 @@ final class SequentialSubscriptionTest {
     void tearDown() throws Exception {
         executor.shutdownNow();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testReentry(boolean itemReceived) {
+        Subscription s3 = mock(Subscription.class);
+        doAnswer(invocation -> {
+            if (itemReceived) {
+                s.itemReceived(); // simulate an item being delivered in a reentry fashion.
+            }
+            s.switchTo(s3); // switch from s2 to s3 in reentry fashion!
+            return null;
+        }).when(s2).request(anyLong());
+
+        s.request(100);
+        s.switchTo(s2);
+
+        verify(s1).request(eq(100L));
+        verify(s2).request(eq(100L));
+        verify(s3).request(eq(itemReceived ? 99L : 100L));
     }
 
     @Test
