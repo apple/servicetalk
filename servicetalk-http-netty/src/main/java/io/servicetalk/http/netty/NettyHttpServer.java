@@ -267,7 +267,7 @@ final class NettyHttpServer {
                     itemWritten -> {
                         if (itemWritten instanceof HttpResponseMetaData) {
                             final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
-                            return emptyMessageBody(metadata) && protocol().major() > 1 ? End : Start;
+                            return protocol().major() > 1 && emptyMessageBody(metadata) ? End : Start;
                         }
                         if (itemWritten instanceof HttpHeaders) {
                             return End;

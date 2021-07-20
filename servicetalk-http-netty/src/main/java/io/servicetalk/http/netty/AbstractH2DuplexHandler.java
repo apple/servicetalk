@@ -33,6 +33,8 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -45,10 +47,13 @@ import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelE
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractH2DuplexHandler.class);
+
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
     private final StreamObserver observer;
+    private boolean endStream;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
                             StreamObserver observer) {
@@ -69,7 +74,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
     final void writeMetaData(ChannelHandlerContext ctx, HttpMetaData metaData, Http2Headers h2Headers,
                              ChannelPromise promise) {
-        final boolean endStream = emptyMessageBody(metaData);
+        endStream = emptyMessageBody(metaData);
         if (endStream) {
             closeHandler.protocolPayloadEndOutbound(ctx, promise);
         }
@@ -95,6 +100,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
             if (h2Headers.isEmpty()) {
                 writeEmptyEndStream(ctx, promise);
             } else {
+                endStream = true;
                 ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
             }
         }
@@ -149,5 +155,14 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
             observer.streamClosed(t);
         }
         ctx.fireChannelInactive();
+    }
+
+    final boolean endStreamSent() {
+        return endStream;
+    }
+
+    static void logMsgAfterEndStream(final Object msg) {
+        LOGGER.debug("Unexpected attempt to write a message after endStream flag has been sent: {}",
+                msg.getClass().getName());
     }
 }

@@ -29,6 +29,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
+import io.netty.util.ReferenceCountUtil;
 
 import javax.annotation.Nullable;
 
@@ -58,6 +59,11 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        if (endStreamSent()) {
+            logMsgAfterEndStream(msg);
+            ReferenceCountUtil.release(msg);
+            return;
+        }
         if (msg instanceof HttpResponseMetaData) {
             closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
