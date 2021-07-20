@@ -30,7 +30,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -56,7 +55,7 @@ class StreamingHttpPayloadHolderDrainTest {
     void resubscribeDrainOriginalSource(Publisher<?> payload) throws Exception {
         AtomicInteger completeCount = new AtomicInteger();
         StreamingHttpPayloadHolder holder = new StreamingHttpPayloadHolder(H_FACTORY.newHeaders(), ALLOCATOR,
-                payload.afterFinally(completeCount::incrementAndGet), forUserCreated(), H_FACTORY, HTTP_1_1);
+                payload.afterFinally(completeCount::incrementAndGet), forUserCreated(), H_FACTORY);
         holder.payloadBody(from(ALLOCATOR.fromAscii("second")));
         // Subscribe twice and verify the results are the same both times (from supports multiple subscribes), and that
         // the original payload has been subscribed to and consumed.
