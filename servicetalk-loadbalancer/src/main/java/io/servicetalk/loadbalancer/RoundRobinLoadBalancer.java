@@ -61,6 +61,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.EAGER_CONNECTION_SHUTDOWN_ENABLED;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -82,7 +83,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
     private static final List<?> CLOSED_LIST = new ArrayList<>(0);
-    private static final Object[] CLOSED_ARRAY = new Object[0];
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
     @SuppressWarnings("rawtypes")
@@ -129,7 +129,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     @Deprecated
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
-        this(eventPublisher, connectionFactory, true);
+        this(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED);
     }
 
     /**
@@ -180,7 +180,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 return addHostToList(oldHostsTyped, addr, false);
                             } else {
                                 return listWithHostRemoved(oldHostsTyped, host -> {
-                                    boolean match = host.address == addr;
+                                    boolean match = host.address.equals(addr);
                                     if (match) {
                                         host.markClosed();
                                     }
@@ -227,7 +227,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this,
                                         previousHosts ->
                                                 listWithHostRemoved(previousHosts, current -> current == host));
-                                host.markClosed();
                             }
                     ).subscribe();
                 }
@@ -348,7 +347,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             assert host != null : "Host can't be null.";
 
             // Try first to see if an existing connection can be used
-            final Object[] connections = host.connections;
+            final Object[] connections = host.connState.connections;
             // With small enough search space, attempt all connections.
             // Back off after exploring most of the search space, it gives diminishing returns.
             final int attempts = connections.length < MIN_SEARCH_SPACE ?
@@ -391,11 +390,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     }
                     return newCnx.closeAsync().concat(this.usedHosts == CLOSED_LIST ? failedLBClosed() :
                             failed(new ConnectionRejectedException(
-                                    "Failed to add newly created connection for host: "
-                                            + host.address
-                                            + ", host active? " + host.isActive()
-                                            + ", host closed? " + host.isClosed()
-                                            + ", host expired? " + host.isExpired())));
+                                    "Failed to add newly created connection for host: " + host)));
                 });
     }
 
@@ -430,7 +425,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, true);
+            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED);
         }
     }
 
@@ -440,6 +435,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private static final class Host<Addr, C extends ListenableAsyncCloseable> implements ListenableAsyncCloseable {
+        private static final ConnState EMPTY_CONN_STATE = new ConnState(EMPTY_ARRAY, State.ACTIVE);
+        private static final ConnState CLOSED_CONN_STATE = new ConnState(EMPTY_ARRAY, State.CLOSED);
 
         private enum State {
             ACTIVE,
@@ -447,19 +444,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             CLOSED
         }
 
-        @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<Host, Object[]> connectionsUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(Host.class, Object[].class, "connections");
+        private static final class ConnState {
+            final Object[] connections;
+            final State state;
 
-        @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<Host, State> stateUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(Host.class, State.class, "state");
+            ConnState(final Object[] connections, final State state) {
+                this.connections = connections;
+                this.state = state;
+            }
+        }
 
         final Addr address;
-        volatile State state = State.ACTIVE;
-        volatile Object[] connections = EMPTY_ARRAY;
-
         private final ListenableAsyncCloseable closeable;
+
+        @SuppressWarnings("rawtypes")
+        private static final AtomicReferenceFieldUpdater<Host, ConnState> connStateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, ConnState.class, "connState");
+        private volatile ConnState connState = EMPTY_CONN_STATE;
 
         Host(Addr address) {
             this.address = requireNonNull(address);
@@ -468,12 +469,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         boolean tryToMarkActive() {
-            return stateUpdater.compareAndSet(this, State.EXPIRED, State.ACTIVE);
+            return connStateUpdater.getAndUpdate(this, oldConnState -> {
+                if (oldConnState.state == State.EXPIRED) {
+                    return new ConnState(oldConnState.connections, State.ACTIVE);
+                }
+                return oldConnState;
+            }).state == State.EXPIRED;
         }
 
         void markClosed() {
-            stateUpdater.set(this, State.CLOSED);
-            final Object[] toRemove = connectionsUpdater.getAndSet(this, CLOSED_ARRAY);
+            final Object[] toRemove = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE).connections;
             LOGGER.debug("Closing {} connection(s) gracefully to closed address: {}", toRemove.length, address);
             for (Object conn : toRemove) {
                 @SuppressWarnings("unchecked")
@@ -484,41 +489,38 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @SuppressWarnings("PMD.CollapsibleIfStatements")
         void markExpired() {
-            // We're interacting with two volatile variables: state and connections.
-            // It's safe to set state based on a read from connections.length, as any interaction with connections
-            // is also combined with guards against state. The only concern is a host considered CLOSED, but with
-            // connections.length > 0. That inconsistency would cause leaks of connections.
-            // The only moment when that's possible is when addConnection is called. That method includes a CAS
-            // operation, which will fail at any point if the collection was substituted. And whenever the state changes
-            // to CLOSED, that operation is followed by a non-conditional substitution of connections with ARRAY_CLOSED.
-            stateUpdater.set(this, connections.length == 0 ? State.CLOSED : State.EXPIRED);
-            if (state == State.CLOSED) {
-                // if in the meantime a connection was added, we shall close it gracefully
+            final ConnState newState = connStateUpdater.updateAndGet(this,
+                    oldConnState -> oldConnState.connections.length == 0 ?
+                            CLOSED_CONN_STATE : new ConnState(oldConnState.connections, State.EXPIRED));
+            if (newState == CLOSED_CONN_STATE) {
+                // If in the meantime a connection was added, we shall close it gracefully
                 this.closeAsyncGracefully().subscribe();
             }
         }
 
-        boolean isClosed() {
-            return state == State.CLOSED;
-        }
-
         boolean isActive() {
-            return state == State.ACTIVE;
+            return connState.state == State.ACTIVE;
         }
 
-        boolean isExpired() {
-            return state == State.EXPIRED;
+        private boolean isClosed() {
+            return connState == CLOSED_CONN_STATE;
+        }
+
+        private boolean isExpired() {
+            return connState.state == State.EXPIRED;
         }
 
         boolean addConnection(C connection) {
             for (;;) {
-                final Object[] existing = this.connections;
-                if (existing == CLOSED_ARRAY) {
+                final ConnState currentConnState = this.connState;
+                if (currentConnState == CLOSED_CONN_STATE) {
                     return false;
                 }
+                final Object[] existing = currentConnState.connections;
                 Object[] newList = Arrays.copyOf(existing, existing.length + 1);
                 newList[existing.length] = connection;
-                if (connectionsUpdater.compareAndSet(this, existing, newList)) {
+                if (connStateUpdater.compareAndSet(this,
+                        currentConnState, new ConnState(newList, currentConnState.state))) {
                     break;
                 }
             }
@@ -526,34 +528,36 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             // Instrument the new connection so we prune it on close
             connection.onClose().beforeFinally(() -> {
                 for (;;) {
-                    final Object[] existing = this.connections;
-                    if (existing == CLOSED_ARRAY) {
-                        break;
+                    final ConnState currentConnState = this.connState;
+                    if (currentConnState == CLOSED_CONN_STATE) {
+                        return;
                     }
                     int i = 0;
-                    for (; i < existing.length; ++i) {
-                        if (existing[i].equals(connection)) {
+                    final Object[] connections = currentConnState.connections;
+                    for (; i < connections.length; ++i) {
+                        if (connections[i].equals(connection)) {
                             break;
                         }
                     }
-                    if (i == existing.length) {
+                    if (i == connections.length) {
                         break;
-                    } else if (existing.length == 1 && state == State.EXPIRED) {
+                    } else if (connections.length == 1 && currentConnState.state == State.EXPIRED) {
                         // We're closing the last connection, close the Host.
                         // Closing the host will trigger the Host's onClose method, which will remove the host from
                         // used hosts list. If a race condition appears and a new connection was added in the
                         // meantime, that would mean the host is available again and the CAS operation will allow for
                         // determining that. It will prevent closing the Host and will only remove the connection
                         // (previously considered as the last one), from the array in the next iteration.
-                        if (stateUpdater.compareAndSet(this, State.EXPIRED, State.CLOSED)) {
+                        if (connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
                             closeAsync().subscribe();
                             break;
                         }
                     } else {
-                        Object[] newList = new Object[existing.length - 1];
-                        System.arraycopy(existing, 0, newList, 0, i);
-                        System.arraycopy(existing, i + 1, newList, i, newList.length - i);
-                        if (connectionsUpdater.compareAndSet(this, existing, newList)) {
+                        Object[] newList = new Object[connections.length - 1];
+                        System.arraycopy(connections, 0, newList, 0, i);
+                        System.arraycopy(connections, i + 1, newList, i, newList.length - i);
+                        if (connStateUpdater.compareAndSet(this,
+                                currentConnState, new ConnState(newList, currentConnState.state))) {
                             break;
                         }
                     }
@@ -565,7 +569,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @SuppressWarnings("unchecked")
         Entry<Addr, List<C>> asEntry() {
-            return new SimpleImmutableEntry<>(address, Stream.of(connections).map(conn -> (C) conn).collect(toList()));
+            return new SimpleImmutableEntry<>(address,
+                    Stream.of(connState.connections).map(conn -> (C) conn).collect(toList()));
         }
 
         @Override
@@ -586,8 +591,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         @SuppressWarnings("unchecked")
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
             return Completable.defer(() -> {
-                final Object[] connections = connectionsUpdater.getAndSet(this, CLOSED_ARRAY);
-                return connections == CLOSED_ARRAY ? completed() :
+                final Object[] connections = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE).connections;
+                return connections.length == 0 ? completed() :
                         from(connections).flatMapCompletableDelayError(conn -> closeFunction.apply((C) conn));
             });
         }
@@ -596,7 +601,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + isClosed() +
+                    ", active=" + isActive() +
+                    ", closed=" + isClosed() +
                     ", expired=" + isExpired() +
                     '}';
         }

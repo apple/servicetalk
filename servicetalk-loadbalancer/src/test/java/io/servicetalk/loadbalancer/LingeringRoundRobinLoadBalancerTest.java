@@ -165,6 +165,32 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         }
     }
 
+    // Concurrency test, worth running >10K times to spot concurrency issues.
+    @Test
+    public void expiringHostWhileConnectionsClose() throws Exception {
+        Executor executor = Executors.newFixedSizeExecutor(1);
+        try {
+            sendServiceDiscoveryEvents(upEvent("address-1"));
+            assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 0));
+
+            TestLoadBalancedConnection conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+            TestLoadBalancedConnection conn2 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+
+            Future<Object> f = executor.submit(() -> {
+                sendServiceDiscoveryEvents(downEvent("address-1"));
+                return null;
+            }).toFuture();
+
+            conn1.closeAsync().toFuture().get();
+            conn2.closeAsync().toFuture().get();
+            f.get();
+
+            assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
+    }
+
     @Test
     public void closedConnectionDoesntRemoveActiveHost() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));

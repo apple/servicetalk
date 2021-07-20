@@ -48,6 +48,7 @@ import java.util.function.Predicate;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
+    static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     private final boolean eagerConnectionShutdown;
 
     private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown) {
@@ -68,7 +69,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-        private boolean eagerConnectionShutdown = true;
+        private boolean eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
 
         /**
          * Creates a new instance with default settings.
@@ -83,7 +84,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * {@link ServiceDiscovererEvent#isAvailable() unavailable}. If the value is {@code true},
          * the connections will be closed gracefully on such event.
          *
-         * @param eagerConnectionShutdown when {@code true} (default), connections will be shut down upon receiving
+         * @param eagerConnectionShutdown when {@code true}, connections will be shut down upon receiving
          * {@link ServiceDiscovererEvent#isAvailable() unavailable} events for a particular host. Value of {@code false}
          * preserves connections and routes requests through them but no new connections are opened for such host.
          * @return {@code this}.
