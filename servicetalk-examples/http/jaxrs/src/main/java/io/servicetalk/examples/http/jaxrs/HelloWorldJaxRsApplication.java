@@ -17,13 +17,11 @@ package io.servicetalk.examples.http.jaxrs;
 
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singleton;
 
 /**
  * JAX-RS Hello World {@link Application}.
