@@ -19,6 +19,9 @@ package io.servicetalk.opentracing.internal;
  * Various constants for tracing.
  */
 public final class TracingConstants {
+    /**
+     * Text value that can be used if there is no parent span.
+     */
     public static final String NO_PARENT_ID = "null";
 
     private TracingConstants() { } // no instantiation

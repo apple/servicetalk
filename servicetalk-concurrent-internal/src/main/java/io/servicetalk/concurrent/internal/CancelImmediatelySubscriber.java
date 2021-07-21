@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class CancelImmediatelySubscriber implements PublisherSource.Subscriber<Object> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
+    /**
+     * Singleton instance.
+     */
     public static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 
     private CancelImmediatelySubscriber() {

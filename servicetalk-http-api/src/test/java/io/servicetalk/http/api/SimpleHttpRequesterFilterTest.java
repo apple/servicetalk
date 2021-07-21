@@ -114,8 +114,8 @@ class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
 
         assertThat(request.headers().get("X-Unit"), hasToString("Test"));
         if (type != Client) {
-            assertThat(request.headers().get("X-Local"), hasToString("127.0.1.2:28080"));
-            assertThat(request.headers().get("X-Remote"), hasToString("127.0.1.1:80"));
+            assertThat(request.headers().get("X-Local"), hasToString(localAddress().toString()));
+            assertThat(request.headers().get("X-Remote"), hasToString(remoteAddress().toString()));
             if (security == Secure) {
                 assertThat(request.headers().get("X-Secure"), hasToString("True"));
             }

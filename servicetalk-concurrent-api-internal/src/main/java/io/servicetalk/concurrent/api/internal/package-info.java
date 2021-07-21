@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Internal utilities which leverage the concurrent API package.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.concurrent.api.internal;
 

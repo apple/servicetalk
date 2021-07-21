@@ -20,6 +20,8 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
+import org.gradle.external.javadoc.JavadocOptionFileOption
+import org.gradle.external.javadoc.internal.JavadocOptionFileWriterContext
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -50,8 +52,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   }
 
   private static void applyJavaLibraryPlugin(Project project) {
-
-
     project.configure(project) {
       pluginManager.apply("java-library")
 
@@ -64,8 +64,9 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       javadoc {
         options.noQualifiers "all"
-        // -quiet is a workaround for addStringOption(s) being broken: it's ignored as already added in the command by Gradle
-        options.addStringOption("Xwerror", "-quiet")
+        options.addBooleanOption("Xwerror", true)
+        options.addBooleanOption("Xdoclint:all,-missing", true)
+        options.addBooleanOption("protected", true)
       }
 
       def sourcesJar = createSourcesJarTask(project, sourceSets.main)

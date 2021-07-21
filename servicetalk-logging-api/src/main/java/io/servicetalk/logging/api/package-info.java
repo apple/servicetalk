@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * ServiceTalk logging APIs.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.logging.api;
 
