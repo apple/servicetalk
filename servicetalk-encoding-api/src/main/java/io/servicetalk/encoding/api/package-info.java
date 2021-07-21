@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/**
+ * Content encoding and compression related APIs.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.encoding.api;
 

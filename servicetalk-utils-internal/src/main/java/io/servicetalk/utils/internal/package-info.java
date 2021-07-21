@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Internal general utilities used by ServiceTalk.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.utils.internal;
 

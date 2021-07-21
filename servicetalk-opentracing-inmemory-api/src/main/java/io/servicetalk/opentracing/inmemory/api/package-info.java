@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * APIs which build off of OpenTracing APIs to provide in memory span storage.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.opentracing.inmemory.api;
 

@@ -3156,7 +3156,7 @@ public abstract class Publisher<T> {
      *     {@code -1} to indicate end of stream after emitting all received data.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch may pre-fetch items from {@code this} {@link Publisher} if available to reduce
      * blocking for read operations from the returned {@link InputStream}. In order to increase responsiveness of the
      * {@link InputStream} some amount of buffering may be done. Use {@link #toInputStream(Function, int)} to manage
@@ -3187,7 +3187,7 @@ public abstract class Publisher<T> {
      *     {@code -1} to indicate end of stream after emitting all received data.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking for read
      * operations from the returned {@link InputStream}. In order to increase responsiveness of the {@link InputStream}
      * some amount of buffering may be done. {@code queueCapacity} can be used to bound this buffer.
@@ -3221,13 +3221,13 @@ public abstract class Publisher<T> {
      *     {@link NoSuchElementException}. This error will be thrown only after draining all queued data, if any.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
      * {@link Iterator#hasNext()} from the returned {@link BlockingIterable}. In order to increase responsiveness of
      * the {@link Iterator} some amount of buffering may be done. Use {@link #toIterable(int)} to manage capacity of
      * this buffer.
      *
-     * <h2>Blocking</h2>
+     * <p><strong>Blocking</strong></p>
      * The returned {@link BlockingIterator} from the returned {@link BlockingIterable} will block on
      * {@link BlockingIterator#hasNext()} and {@link BlockingIterator#next()} if no data is available. This operator may
      * try to reduce this blocking by requesting data ahead of time.
@@ -3258,13 +3258,13 @@ public abstract class Publisher<T> {
      *     {@link NoSuchElementException}. This error will be thrown only after draining all queued data, if any.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
      * {@link BlockingIterator#hasNext()} from the returned {@link BlockingIterable}. In order to increase
      * responsiveness of the {@link BlockingIterator} some amount of buffering may be done. {@code queueCapacityHint}
      * can be used to bound this buffer.
      *
-     * <h2>Blocking</h2>
+     * <p><strong>Blocking</strong></p>
      * The returned {@link BlockingIterator} from the returned {@link BlockingIterable} will block on
      * {@link BlockingIterator#hasNext()} and {@link BlockingIterator#next()} if no data is available. This operator may
      * try to reduce this blocking by requesting data ahead of time.

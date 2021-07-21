@@ -32,6 +32,9 @@ import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
  * </ul>
  */
 public final class SingleLineFormatter implements InMemorySpanContextFormat<SingleLineValue> {
+    /**
+     * Singleton instance.
+     */
     public static final SingleLineFormatter INSTANCE = new SingleLineFormatter();
 
     private SingleLineFormatter() {
