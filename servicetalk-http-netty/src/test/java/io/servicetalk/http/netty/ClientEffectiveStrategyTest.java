@@ -40,7 +40,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -568,8 +568,8 @@ class ClientEffectiveStrategyTest {
         public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T>
         newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
                         final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
-            return RoundRobinLoadBalancer.<InetSocketAddress,
-                    FilterableStreamingHttpLoadBalancedConnection>newRoundRobinFactory()
+            return new RoundRobinLoadBalancerFactory
+                    .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
                     .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }
