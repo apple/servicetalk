@@ -36,8 +36,7 @@ public class PublisherRetryWhenTckTest extends AbstractPublisherTckTest<Integer>
             final AtomicLong cnt = new AtomicLong();
             return from(1)
                     .concat(defer(() -> cnt.incrementAndGet() < elements ? failed(DELIBERATE_EXCEPTION) : completed()))
-                    .retryWhen((i, t) -> t == DELIBERATE_EXCEPTION && i < elements ?
-                            completed() : failed(t));
+                    .retryWhen((i, t) -> t == DELIBERATE_EXCEPTION && i < elements ? completed() : failed(t));
         });
     }
 
