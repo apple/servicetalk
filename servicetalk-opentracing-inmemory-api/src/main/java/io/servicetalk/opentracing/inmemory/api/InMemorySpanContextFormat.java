@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,25 +20,25 @@ import io.opentracing.propagation.Format;
 import javax.annotation.Nullable;
 
 /**
- * A {@link Format} compatible with {@link InMemoryTraceState}.
+ * A {@link Format} compatible with {@link InMemorySpanContext}.
  * @param <C> the carrier type.
  */
-public interface InMemoryTraceStateFormat<C> extends Format<C> {
+public interface InMemorySpanContextFormat<C> extends Format<C> {
     /**
      * Inject a trace state into a carrier.
      *
-     * @param state   trace state
+     * @param context span context
      * @param carrier carrier to inject into
      */
-    void inject(InMemoryTraceState state, C carrier);
+    void inject(InMemorySpanContext context, C carrier);
 
     /**
      * Extract the trace state from a carrier.
      *
      * @param carrier carrier to extract from
-     * @return extracted trace state, may be {@code null} if the carrier doesn't contain a valid span
+     * @return extracted {@link InMemorySpanContext}, may be {@code null} if the carrier doesn't contain a valid span
      * @throws Exception if any parsing error happened during extraction
      */
     @Nullable
-    InMemoryTraceState extract(C carrier) throws Exception;
+    InMemorySpanContext extract(C carrier) throws Exception;
 }

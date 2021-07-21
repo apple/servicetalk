@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,38 +17,25 @@ package io.servicetalk.opentracing.inmemory.api;
 
 import io.opentracing.SpanContext;
 
+import javax.annotation.Nullable;
+
 /**
  * A span that allows reading values at runtime.
  */
 public interface InMemorySpanContext extends SpanContext {
     /**
-     * Get the {@link InMemoryTraceState} associated with this object.
-     * @return the {@link InMemoryTraceState} associated with this object.
-     * @deprecated This method will be removed in a follow up release, to an effort to clean API. Alternative accessors
-     * will be offered through the {@link InMemorySpanContext} API.
+     * Returns whether the span should be sampled or {@code null} if the sampling was not decided.
+     * <p>
+     * @return whether the span should be sampled
      */
-    @Deprecated
-    InMemoryTraceState traceState();
+    @Nullable
+    Boolean isSampled();
 
     /**
-     * Returns whether the span should be sampled.
-     * <p>
-     * Note this may differ from {@link InMemorySpan#isSampled()} from {@link #traceState()} if the value is overridden
-     * based upon some sampling policy.
+     * Returns the parent span ID in hex, or {@code null} if the parent span ID is not present.
      *
-     * @return whether the span should be sampled
-     * @deprecated This method will change in a follow up release, to hold an additional state of {@code null}.
+     * @return parent span ID in hex
      */
-    @Deprecated
-    default boolean isSampled() {
-        return traceState().isSampled();
-    }
-
-    default String toTraceId() {
-        return traceState().traceIdHex();
-    }
-
-    default String toSpanId() {
-        return traceState().spanIdHex();
-    }
+    @Nullable
+    String parentSpanId();
 }

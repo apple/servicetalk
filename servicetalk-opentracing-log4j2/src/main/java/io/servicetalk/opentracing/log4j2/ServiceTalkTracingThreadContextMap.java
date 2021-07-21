@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
+import static io.servicetalk.opentracing.internal.TracingIdUtils.idOrNullAsValue;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -58,21 +59,21 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             case TRACE_ID_KEY: {
                 InMemorySpan span = SCOPE_MANAGER.activeSpan();
                 if (span != null) {
-                    return span.traceIdHex();
+                    return span.context().toTraceId();
                 }
                 break;
             }
             case SPAN_ID_KEY: {
                 InMemorySpan span = SCOPE_MANAGER.activeSpan();
                 if (span != null) {
-                    return span.spanIdHex();
+                    return span.context().toTraceId();
                 }
                 break;
             }
             case PARENT_SPAN_ID_KEY: {
                 InMemorySpan span = SCOPE_MANAGER.activeSpan();
                 if (span != null) {
-                    return span.nonnullParentSpanIdHex();
+                    return idOrNullAsValue(span.context().parentSpanId());
                 }
                 break;
             }
@@ -92,9 +93,9 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
         Map<String, String> copy = super.getCopy();
         InMemorySpan span = SCOPE_MANAGER.activeSpan();
         if (span != null) {
-            copy.put(TRACE_ID_KEY, span.traceIdHex());
-            copy.put(SPAN_ID_KEY, span.spanIdHex());
-            copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
+            copy.put(TRACE_ID_KEY, span.context().toTraceId());
+            copy.put(SPAN_ID_KEY, span.context().toSpanId());
+            copy.put(PARENT_SPAN_ID_KEY, idOrNullAsValue(span.context().parentSpanId()));
         }
         return copy;
     }
@@ -130,9 +131,9 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             copy = new HashMap<>(4);
         }
         if (span != null) {
-            copy.put(TRACE_ID_KEY, span.traceIdHex());
-            copy.put(SPAN_ID_KEY, span.spanIdHex());
-            copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
+            copy.put(TRACE_ID_KEY, span.context().toTraceId());
+            copy.put(SPAN_ID_KEY, span.context().toSpanId());
+            copy.put(PARENT_SPAN_ID_KEY, idOrNullAsValue(span.context().parentSpanId()));
         }
         return copy;
     }

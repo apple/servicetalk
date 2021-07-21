@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanBuilder;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -191,9 +190,9 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
         //noop
     }
 
-    @Override
-    protected InMemorySpanContext newSpanContext(final InMemoryTraceState state) {
-        return new DefaultInMemorySpanContext(state, isSampled(state.traceIdHex(), state.isSampled()));
+    private InMemorySpanContext newSpanContext(final String traceId, final String spanId,
+                                                 @Nullable final String parentSpanId, final boolean sampled) {
+        return new DefaultInMemorySpanContext(traceId, spanId, parentSpanId, sampled);
     }
 
     private final class DefaultInMemorySpanBuilder extends AbstractInMemorySpanBuilder {
@@ -219,10 +218,10 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
             final String parentSpanIdHex;
             final boolean sampled;
             if (maybeParent != null) {
-                traceIdHex = maybeParent.traceState().traceIdHex();
+                traceIdHex = maybeParent.toTraceId();
                 spanIdHex = nextId();
-                parentSpanIdHex = maybeParent.traceState().spanIdHex();
-                sampled = maybeParent.isSampled();
+                parentSpanIdHex = maybeParent.toSpanId();
+                sampled = isSampled(traceIdHex, maybeParent.isSampled());
             } else {
                 spanIdHex = nextId();
                 traceIdHex = use128BitTraceId ? nextId() + spanIdHex : spanIdHex;
@@ -230,14 +229,14 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
                 sampled = isSampled(traceIdHex, null);
             }
 
+            final InMemorySpanContext context = newSpanContext(traceIdHex, spanIdHex, parentSpanIdHex, sampled);
             if (sampled) {
-                SampledInMemorySpan span = new SampledInMemorySpan(operationName, references,
-                        traceIdHex, spanIdHex, parentSpanIdHex, tags, maxTagSize, startTimestampMicros,
-                        listeners, persistLogs);
+                SampledInMemorySpan span = new SampledInMemorySpan(operationName, references, context, tags, maxTagSize,
+                        startTimestampMicros, listeners, persistLogs);
                 span.start();
                 return span;
             } else {
-                return new UnsampledInMemorySpan(operationName, references, traceIdHex, spanIdHex, parentSpanIdHex);
+                return new UnsampledInMemorySpan(operationName, references, context);
             }
         }
     }

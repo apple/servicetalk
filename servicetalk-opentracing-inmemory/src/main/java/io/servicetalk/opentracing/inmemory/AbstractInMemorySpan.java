@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package io.servicetalk.opentracing.inmemory;
 
 import io.servicetalk.opentracing.inmemory.api.InMemoryReference;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,32 +28,34 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Span object used by the {@link DefaultInMemoryTracer}.
  */
-abstract class AbstractInMemorySpan extends DefaultInMemorySpanContext implements InMemorySpan {
+abstract class AbstractInMemorySpan implements InMemorySpan {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInMemorySpan.class);
 
+    private final InMemorySpanContext context;
+    private final List<InMemoryReference> references;
     String operationName;
-    final List<InMemoryReference> references;
 
     /**
      * Instantiates a new {@link AbstractInMemorySpan}.
      *
      * @param operationName the operation name.
      * @param references a {@link List} of {@link InMemoryReference}s.
-     * @param state the {@link InMemoryTraceState} associated with this {@link Span}
+     * @param context the {@link SpanContext} associated with this {@link Span}
      */
-    AbstractInMemorySpan(String operationName, List<InMemoryReference> references, InMemoryTraceState state) {
-        super(state);
+    AbstractInMemorySpan(String operationName, List<InMemoryReference> references, InMemorySpanContext context) {
+        this.context = requireNonNull(context);
         this.operationName = operationName;
         this.references = references;
     }
 
     @Override
-    public final DefaultInMemorySpanContext context() {
-        return this;
+    public final InMemorySpanContext context() {
+        return context;
     }
 
     @Override
@@ -83,31 +86,5 @@ abstract class AbstractInMemorySpan extends DefaultInMemorySpanContext implement
     public final String getBaggageItem(String key) {
         logger.debug("getBaggageItem() is not supported");
         return null;
-    }
-
-    @Override
-    public final String traceIdHex() {
-        return traceState.traceIdHex();
-    }
-
-    @Override
-    public final String spanIdHex() {
-        return traceState.spanIdHex();
-    }
-
-    @Nullable
-    @Override
-    public final String parentSpanIdHex() {
-        return traceState.parentSpanIdHex();
-    }
-
-    @Override
-    public String toTraceId() {
-        return traceIdHex();
-    }
-
-    @Override
-    public String toSpanId() {
-        return spanIdHex();
     }
 }
