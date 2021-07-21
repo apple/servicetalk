@@ -18,8 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.concurrent.api.Single.fromCallable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +36,7 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> blockingToSingle(() -> original.handle(
+        return request.toRequest().flatMap(req -> fromCallable(() -> original.handle(
                 ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse));
     }
 

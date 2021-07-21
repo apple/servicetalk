@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.Callable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CallableSingle.class);
     private final Callable<T> callable;
 
     CallableSingle(final Callable<T> callable) {
@@ -39,23 +37,22 @@ final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
         final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
         try {
             subscriber.onSubscribe(cancellable);
-        } catch (Throwable t) {
-            handleExceptionFromOnSubscribe(subscriber, t);
+        } catch (Throwable cause) {
+            handleExceptionFromOnSubscribe(subscriber, cause);
             return;
         }
 
+        final T value;
         try {
-            final T value = callable.call();
-
-            try {
-                cancellable.setDone();
-                subscriber.onSuccess(value);
-            } catch (Throwable t) {
-                LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
-            }
-        } catch (Throwable t) {
-            cancellable.setDone(t);
-            subscriber.onError(t);
+            value = callable.call();
+        } catch (Throwable cause) {
+            cancellable.setDone(cause);
+            safeOnError(subscriber, cause);
+            return;
         }
+        // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
+        // operations which may be interrupted between the completion of the blockingHttpService call and here.
+        cancellable.setDone();
+        safeOnSuccess(subscriber, value);
     }
 }
