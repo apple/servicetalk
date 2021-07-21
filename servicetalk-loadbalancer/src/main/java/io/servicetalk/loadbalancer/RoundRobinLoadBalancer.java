@@ -169,7 +169,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final List<Host<ResolvedAddress, C>> usedAddresses =
                     usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
                         if (oldHosts == CLOSED_LIST) {
-                            return CLOSED_LIST;
+                            return oldHosts;
                         }
                         final ResolvedAddress addr = requireNonNull(event.address());
                         @SuppressWarnings("unchecked")
@@ -214,6 +214,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     if (host.address.equals(addr)) {
                         // Host removal will be handled by the Host's onClose::afterFinally callback
                         host.markExpired();
+                        break;  // because duplicates are not allowed, we can stop iteration
                     }
                 }
                 return oldHostsTyped;
@@ -243,9 +244,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 // duplicates are not allowed
                 for (Host<ResolvedAddress, C> host : oldHostsTyped) {
                     if (host.address.equals(addr)) {
-                        if (!handleExpired) {
-                            LOGGER.warn("Duplicate ACTIVE event for host " + host + ". Duplicates are disallowed.");
-                        } else if (!host.tryToMarkActive()) {
+                        if (handleExpired && !host.tryToMarkActive()) {
                             // If the new state is not ACTIVE, the host is already in CLOSED state, we should create
                             // a new entry. For duplicate ACTIVE events or for repeated activation due to failed CAS
                             // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
@@ -557,7 +556,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 // remove the connection (previously considered as the last one) from the array
                                 // in the next iteration.
                                 && connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
-                            closeAsync().subscribe();
+                            this.closeAsync().subscribe();
                             break;
                         }
                     } else {
@@ -607,6 +606,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @Override
         public String toString() {
+            final ConnState connState = this.connState;
             return "Host{" +
                     "address=" + address +
                     ", state=" + connState.state +
