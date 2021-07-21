@@ -1515,10 +1515,6 @@ public abstract class Completable {
     protected final void subscribeInternal(Subscriber subscriber) {
         AsyncContextProvider contextProvider = AsyncContext.provider();
         AsyncContextMap contextMap = contextForSubscribe(contextProvider);
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("AsyncContextMap for subscribe {}@{}",
-                    contextMap.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(contextMap)));
-        }
         subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 
