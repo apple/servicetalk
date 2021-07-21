@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.Callable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -33,13 +35,19 @@ final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
         final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
-        final T value;
         try {
             subscriber.onSubscribe(cancellable);
+        } catch (Throwable cause) {
+            handleExceptionFromOnSubscribe(subscriber, cause);
+            return;
+        }
+
+        final T value;
+        try {
             value = callable.call();
-        } catch (Throwable t) {
-            cancellable.setDone(t);
-            subscriber.onError(t);
+        } catch (Throwable cause) {
+            cancellable.setDone(cause);
+            safeOnError(subscriber, cause);
             return;
         }
         // It is safe to set this outside the scope of the try/catch above because we don't do any blocking

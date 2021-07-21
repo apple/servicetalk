@@ -17,7 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
@@ -33,10 +35,16 @@ final class RunnableCompletable extends AbstractSynchronousCompletable {
         final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
         try {
             subscriber.onSubscribe(cancellable);
+        } catch (Throwable cause) {
+            handleExceptionFromOnSubscribe(subscriber, cause);
+            return;
+        }
+
+        try {
             runnable.run();
         } catch (Throwable cause) {
             cancellable.setDone(cause);
-            subscriber.onError(cause);
+            safeOnError(subscriber, cause);
             return;
         }
         // It is safe to set this outside the scope of the try/catch above because we don't do any blocking

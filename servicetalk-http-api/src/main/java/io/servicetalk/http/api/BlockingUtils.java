@@ -32,16 +32,18 @@ final class BlockingUtils {
 
     interface RunnableCheckedException {
         void run() throws Exception;
-    }
 
-    static Completable blockingToCompletable(RunnableCheckedException r) {
-        return fromRunnable(() -> {
+        default void runUnchecked() {
             try {
-                r.run();
+                run();
             } catch (Exception e) {
                 throwException(e);
             }
-        });
+        }
+    }
+
+    static Completable blockingToCompletable(RunnableCheckedException r) {
+        return fromRunnable(r::runUnchecked);
     }
 
     static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
