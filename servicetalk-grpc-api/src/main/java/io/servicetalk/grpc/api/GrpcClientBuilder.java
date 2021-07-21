@@ -111,6 +111,15 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     @Override
+    public abstract GrpcClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
+
+    @Override
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 
