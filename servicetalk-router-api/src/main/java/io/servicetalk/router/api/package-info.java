@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * APIs that can be used while implementing routers (typically route requests on the server side).
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.router.api;
 

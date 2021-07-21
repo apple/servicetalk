@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * ServiceTalk concurrent APIs which follow Reactive Streams semantics.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.concurrent.api;
 

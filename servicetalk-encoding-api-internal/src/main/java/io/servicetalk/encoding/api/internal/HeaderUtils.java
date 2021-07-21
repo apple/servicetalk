@@ -29,6 +29,9 @@ import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Header utilities to support encoding.
+ */
 public final class HeaderUtils {
 
     private static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());

@@ -26,9 +26,11 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -44,6 +46,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -150,7 +153,7 @@ class DefaultSerializerDeserializationTest {
 
         final List<Buffer> data = asList(first, second);
         BlockingIterableMock<Buffer> source = new BlockingIterableMock<>(data);
-        when(deSerializer.deserialize(source.iterable())).thenCallRealMethod();
+        mockDeserializer(deSerializer, source);
         final BlockingIterable<String> expected = new BlockingIterableFromIterable<>(asList("Hello1", "Hello2"));
 
         final BlockingIterable<String> deserialized = factory.deserialize(source.iterable(), String.class);
@@ -158,6 +161,13 @@ class DefaultSerializerDeserializationTest {
         verify(deSerializer).deserialize(source.iterable());
 
         drainBlockingIteratorAndVerify(deserialized, source.iterator(), expected);
+    }
+
+    @SuppressWarnings("unchecked, rawtypes")
+    private void mockDeserializer(StreamingDeserializer deserializer, BlockingIterableMock<Buffer> source) {
+        doAnswer((Answer<BlockingIterable>) invocation -> new BlockingIterableFlatMap(invocation.getArgument(0),
+                (Function<Buffer, Iterable>) deserializer::deserialize))
+                .when(deserializer).deserialize(source.iterable());
     }
 
     @Test
@@ -170,7 +180,7 @@ class DefaultSerializerDeserializationTest {
 
         final List<Buffer> data = asList(first, second);
         BlockingIterableMock<Buffer> source = new BlockingIterableMock<>(data);
-        when(listDeSerializer.deserialize(source.iterable())).thenCallRealMethod();
+        mockDeserializer(listDeSerializer, source);
         BlockingIterable<List<String>> expected =
                 new BlockingIterableFromIterable<>(asList(singletonList("Hello1"), singletonList("Hello2")));
 

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * ServiceTalk internal logging utilities for slf4j.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.logging.slf4j.internal;
 
