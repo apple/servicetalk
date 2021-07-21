@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.util.function.Function;
  * The {@link Subscriber} that is returned by this {@link Function} is the one that should be used to subscribe to the
  * {@link Completable} on which this operator is applied.
  */
+@FunctionalInterface
 public interface CompletableOperator extends Function<Subscriber, Subscriber> {
 
     /**

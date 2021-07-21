@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -38,32 +37,24 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
-                        contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
     private static final class SubscriberImpl<T> implements SingleSource.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
         private final Function<T, ? extends Completable> nextFactory;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
 
         SubscriberImpl(Subscriber subscriber, Function<T, ? extends Completable> nextFactory,
-                       final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
-                       final AsyncContextProvider contextProvider) {
+                       final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
-            this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
@@ -92,16 +83,10 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
                 subscriber.onError(cause);
                 return;
             }
-            // We need to preserve the threading semantics for the original subscriber. Since here we are subscribing to
-            // a new source which may have different threading semantics, we explicitly offload signals going down to
-            // the original subscriber. If we do not do this and next source does not support blocking operations,
-            // whereas original subscriber does, we will violate threading assumptions.
-            //
             // The static AsyncContext should be the same as the original contextMap at this point because we are
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and use an isolated copy to subscribe to the new source.
-            next.subscribeInternal(signalOffloader.offloadSubscriber(
-                    contextProvider.wrapCompletableSubscriber(this, contextMap)));
+            next.subscribeInternal(contextProvider.wrapCompletableSubscriber(this, contextMap));
         }
 
         @Override

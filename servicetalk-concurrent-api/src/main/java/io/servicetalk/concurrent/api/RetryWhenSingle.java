@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
@@ -40,36 +39,29 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
         original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber,
-                contextMap, contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
+                contextMap, contextProvider, this), contextMap, contextProvider);
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
 
         private final SequentialCancellable retrySignalCancellable;
         private final RetryWhenSingle<T> retrySingle;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
         RetrySubscriber(SequentialCancellable cancellable, int redoCount, Subscriber<? super T> subscriber,
                         AsyncContextMap contextMap, AsyncContextProvider contextProvider,
-                        RetryWhenSingle<T> retrySingle, final SignalOffloader signalOffloader) {
+                        RetryWhenSingle<T> retrySingle) {
             super(cancellable, subscriber, redoCount);
             this.retrySingle = retrySingle;
             retrySignalCancellable = new SequentialCancellable();
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
-            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -111,8 +103,8 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
                     // we save a copy upfront.
                     retrySingle.original.delegateSubscribe(new RetrySubscriber<>(sequentialCancellable,
-                            retryCount + 1, target, contextMap.copy(), contextProvider, retrySingle, signalOffloader),
-                            signalOffloader, contextMap, contextProvider);
+                            retryCount + 1, target, contextMap.copy(), contextProvider, retrySingle),
+                            contextMap, contextProvider);
                 }
 
                 @Override

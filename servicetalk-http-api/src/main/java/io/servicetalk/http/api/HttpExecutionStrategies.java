@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,11 +164,9 @@ public final class HttpExecutionStrategies {
     public static final class Builder {
 
         static final HttpExecutionStrategy DEFAULT = new Builder().offloadAll().mergeStrategy(ReturnOther).build();
-
         @Nullable
         private Executor executor;
         private byte offloads;
-        private boolean threadAffinity;
         @Nullable
         private MergeStrategy mergeStrategy;
 
@@ -242,8 +240,7 @@ public final class HttpExecutionStrategies {
          */
         @Deprecated
         public Builder offloadWithThreadAffinity() {
-            threadAffinity = true;
-            return this;
+            throw new UnsupportedOperationException("thread affinity not currently supported");
         }
 
         /**
@@ -272,7 +269,7 @@ public final class HttpExecutionStrategies {
                     // the merged call site.
                     mergeStrategy = ReturnSelf;
                 }
-                return new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
+                return new DefaultHttpExecutionStrategy(executor, offloads, mergeStrategy);
             }
         }
 

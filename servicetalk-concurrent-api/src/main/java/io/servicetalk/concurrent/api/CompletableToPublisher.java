@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.wrapWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -39,15 +38,10 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
-                signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
@@ -56,16 +50,14 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
         private static final AtomicIntegerFieldUpdater<ConversionSubscriber> terminatedUpdater =
                 newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
         private volatile int terminated;
 
-        private ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+        private ConversionSubscriber(Subscriber<? super T> subscriber,
                                      final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
@@ -93,19 +85,17 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
         @Override
         public void request(long n) {
             if (!isRequestNValid(n) && terminatedUpdater.compareAndSet(this, 0, 1)) {
-                // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
-                // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
-                // Subscriber directly, hence we explicitly offload.
-                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(subscriber, signalOffloader,
-                        contextMap, contextProvider);
+                // We have not wrapped the Subscriber as we generally emit to the Subscriber from the Completable
+                // Subscriber methods which are correctly wrapped. This is the only case where we invoke the
+                // Subscriber directly, hence we explicitly wrap it.
+                Subscriber<? super T> wrapped = wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
                 try {
-                    // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
                     cancel();
                 } catch (Throwable t) {
-                    offloaded.onError(t);
+                    wrapped.onError(t);
                     return;
                 }
-                offloaded.onError(newExceptionForInvalidRequestN(n));
+                wrapped.onError(newExceptionForInvalidRequestN(n));
             }
         }
     }

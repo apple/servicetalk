@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
@@ -35,7 +34,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.taskBasedOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -48,16 +46,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class TaskBasedSignalOffloaderExecutorRejectionTests {
+class ExecutorRejectionTests {
 
     private final AtomicBoolean rejectNextTask = new AtomicBoolean();
     private final AtomicInteger rejectTaskCount = new AtomicInteger();
-    private final Executor mockExecutor;
-    private final OffloaderAwareExecutor executor;
+    private final Executor executor;
 
-    TaskBasedSignalOffloaderExecutorRejectionTests() {
-        mockExecutor = mock(Executor.class);
-        executor = new OffloaderAwareExecutor(mockExecutor, taskBasedOffloaderFactory());
+    ExecutorRejectionTests() {
+        executor = mock(Executor.class);
         when(executor.execute(any())).then(invocation -> {
             if (rejectNextTask.get()) {
                 rejectTaskCount.incrementAndGet();
@@ -102,7 +98,7 @@ class TaskBasedSignalOffloaderExecutorRejectionTests {
     @Test
     void completableOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        expectFailureAndVerify(Completable.never().publishOn(executor).toFuture());
+        expectFailureAndVerify(Completable.never().subscribeOn(executor).toFuture());
     }
 
     @Test
@@ -240,7 +236,7 @@ class TaskBasedSignalOffloaderExecutorRejectionTests {
     }
 
     private void verifyRejectedTasks(final int submitCount, final int rejectionCount) {
-        verify(mockExecutor, times(submitCount)).execute(any());
+        verify(executor, times(submitCount)).execute(any());
         assertThat("Unexpected tasks rejected.", rejectTaskCount.get(), is(rejectionCount));
     }
 }

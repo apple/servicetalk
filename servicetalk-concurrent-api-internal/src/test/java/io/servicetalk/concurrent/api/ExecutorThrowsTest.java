@@ -20,10 +20,8 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,17 +32,11 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
 class ExecutorThrowsTest {
 
-    private LinkedBlockingQueue<Throwable> errors;
-
-    @BeforeEach
-    void setUp() {
-        errors = new LinkedBlockingQueue<>();
-    }
+    private final LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     @Test
     void publisherExecutorThrows() {
@@ -151,10 +143,9 @@ class ExecutorThrowsTest {
     }
 
     private Executor newAlwaysFailingExecutor() {
-        Executor original = from(task -> {
+        return from(task -> {
             throw DELIBERATE_EXCEPTION;
         });
-        return new OffloaderAwareExecutor(original, defaultOffloaderFactory());
     }
 
     private void verifyError() {

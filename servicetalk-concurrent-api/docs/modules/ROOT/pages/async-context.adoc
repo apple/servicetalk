@@ -130,10 +130,7 @@ while executing user code, and then restore the `original` context. This require
 leveraging `ThreadLocal` (or an
 link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
 ) to retain the state. We also need to capture the current context at `subscribe`, propagate it up the operator chain,
-and capture it effectively in the source (or in a wrapped `Subscriber` just outside the source). These mechanics are
-similar to how the
-link:{source-root}/servicetalk-concurrent-internal/src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[SignalOffloader]
-is captured and propagated, and we use a similar approach here.
+and capture it effectively in the source (or in a wrapped `Subscriber` just outside the source).
 
 === Understandability
 

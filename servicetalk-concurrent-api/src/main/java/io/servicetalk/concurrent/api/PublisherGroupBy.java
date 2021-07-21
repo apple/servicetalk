@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
-
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -42,10 +40,10 @@ final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber, SignalOffloader signalOffloader,
+    void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber,
                          AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new GroupBySubscriber(subscriber, queueLimit, initialCapacityForGroups, contextMap,
-                contextProvider), signalOffloader, contextMap, contextProvider);
+                contextProvider), contextMap, contextProvider);
     }
 
     private final class GroupBySubscriber extends AbstractGroupBySubscriber<Key, T> {

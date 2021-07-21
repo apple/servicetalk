@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.internal.SubscriberUtils;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,6 +58,8 @@ import static java.lang.Integer.numberOfTrailingZeros;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -170,6 +174,109 @@ class DefaultAsyncContextProviderTest {
     }
 
     @Test
+    void testSubscriptionIsWrapped() throws Exception {
+        TestSubscription testSubscription = new TestSubscription();
+        TestPublisherSubscriber<Integer> testSubscriber = new TestPublisherSubscriber<>();
+        TestPublisher<Integer> testPublisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(
+                sub -> {
+                    sub.onSubscribe(testSubscription);
+                    return sub;
+                });
+        toSource(testPublisher
+                .map(x -> {
+                    AsyncContext.put(K1, "v1");
+                    return x;
+                })
+                .liftSync((PublisherOperator<Integer, Integer>) subscriber -> new Subscriber<Integer>() {
+                    @Nullable
+                    private Subscription upstreamSubscription;
+                    private boolean isSubscribed;
+                    private boolean queuedItemDelivered;
+                    @Nullable
+                    private Integer queuedItem;
+                    @Override
+                    public void onSubscribe(final Subscription subscription) {
+                        assert upstreamSubscription == null;
+                        upstreamSubscription = subscription;
+                        // Force upstream demand before downstream issues any demand. We want the Subscription thread
+                        // to deliver the first element.
+                        subscription.request(1);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final Integer integer) {
+                        if (isSubscribed) {
+                            subscriber.onNext(integer);
+                        } else {
+                            queuedItem = integer;
+                            trySubscribeToQueue();
+                        }
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        trySubscribeToQueue();
+                        subscriber.onError(t);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        trySubscribeToQueue();
+                        subscriber.onComplete();
+                    }
+
+                    private void trySubscribeToQueue() {
+                        assert upstreamSubscription != null;
+                        if (isSubscribed) {
+                            return;
+                        }
+                        isSubscribed = true;
+                        subscriber.onSubscribe(new Subscription() {
+                            @Override
+                            public void request(final long n) {
+                                if (!SubscriberUtils.isRequestNValid(n)) {
+                                    upstreamSubscription.request(n);
+                                    return;
+                                }
+                                if (!queuedItemDelivered) {
+                                    queuedItemDelivered = true;
+                                    subscriber.onNext(queuedItem);
+                                    if (n > 1) {
+                                        upstreamSubscription.request(n - 1);
+                                    }
+                                } else {
+                                    upstreamSubscription.request(n);
+                                }
+                            }
+
+                            @Override
+                            public void cancel() {
+                                upstreamSubscription.cancel();
+                            }
+                        });
+                    }
+                }).map(x -> {
+                    assertEquals("v1", AsyncContext.get(K1));
+                    return x;
+                })
+        ).subscribe(testSubscriber);
+        // Operator delivers demand before giving the Subscription downstream, wait for implicit demand first.
+        testSubscription.awaitRequestN(1);
+        testPublisher.onNext(1);
+        Subscription subscription = testSubscriber.awaitSubscription();
+        executor.submit(() -> {
+            try {
+                subscription.request(1);
+            } catch (Throwable cause) {
+                testPublisher.onError(cause);
+            }
+        }).get();
+        testPublisher.onComplete();
+        assertThat(testSubscriber.takeOnNext(), is(1));
+        testSubscriber.awaitOnComplete();
+    }
+
+    @Test
     void testContextInSingleListener() throws Exception {
         Single<String> single = new Single<String>() {
             @Override
@@ -213,6 +320,7 @@ class DefaultAsyncContextProviderTest {
                 completeOnExecutor(singleSubscriber, "a");
             }
         }.map(v -> {
+
             AsyncContext.put(K2, "v2.2");
             f2.complete(AsyncContext.current().copy());
             return v;

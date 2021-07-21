@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -38,30 +37,26 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ResumeSubscriber(subscriber, signalOffloader, contextMap, contextProvider),
-                signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(
+                new ResumeSubscriber(this, subscriber, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
-    private final class ResumeSubscriber implements Subscriber {
+    private static final class ResumeSubscriber implements Subscriber {
+        private final OnErrorResumeCompletable parent;
         private final Subscriber subscriber;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
         private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
-                         AsyncContextProvider contextProvider) {
+        ResumeSubscriber(OnErrorResumeCompletable parent, Subscriber subscriber,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+            this.parent = parent;
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
@@ -86,7 +81,9 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
         public void onError(Throwable throwable) {
             final Completable next;
             try {
-                next = !resubscribed && predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
+                next = !resubscribed && parent.predicate.test(throwable) ?
+                        requireNonNull(parent.nextFactory.apply(throwable)) :
+                        null;
             } catch (Throwable t) {
                 t.addSuppressed(throwable);
                 subscriber.onError(t);
@@ -98,11 +95,9 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
             } else {
                 // We are subscribing to a new Completable which will send signals to the original Subscriber. This
                 // means that the threading semantics may differ with respect to the original Subscriber when we emit
-                // signals from the new Completable. This is the reason we use the original offloader now to offload
-                // signals which originate from this new Completable.
-                final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(
-                        contextProvider.wrapCompletableSubscriber(this, contextMap));
-                next.subscribeInternal(offloadedSubscriber);
+                // signals from the new Completable.
+                final Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(this, contextMap);
+                next.subscribeInternal(wrappedSubscriber);
             }
         }
     }

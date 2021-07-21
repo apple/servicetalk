@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.CompletableToFuture;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,6 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSu
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Arrays.spliterator;
 import static java.util.Objects.requireNonNull;
@@ -468,7 +466,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor());
+        return timeout(duration, unit, immediate());
     }
 
     /**
@@ -505,7 +503,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(Duration duration) {
-        return timeout(duration, executor());
+        return timeout(duration, immediate());
     }
 
     /**
@@ -1355,8 +1353,8 @@ public abstract class Completable {
      *        .afterFinally(..) // B
      * }</pre>
      *
-     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
-     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
+     * The {@code original -> modified} "operator" <strong>MAY</strong> be "asynchronous" in that it may interact with
+     * the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
      * specifically:
      * <ul>
      *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
@@ -1498,15 +1496,26 @@ public abstract class Completable {
     //
 
     /**
+     * Returns the {@link AsyncContextMap} to be used for a subscribe.
+     *
+     * @param provider The {@link AsyncContextProvider} which is the source of the map
+     * @return {@link AsyncContextMap} for this subscribe operation.
+     */
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        // the default behavior is to copy the map. Some operators may want to use shared map
+        return provider.contextMap().copy();
+    }
+
+    /**
      * A internal subscribe method similar to {@link CompletableSource#subscribe(Subscriber)} which can be used by
      * different implementations to subscribe.
      *
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected final void subscribeInternal(Subscriber subscriber) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe() ? provider.contextMap() : provider.contextMap().copy());
+        AsyncContextProvider contextProvider = AsyncContext.provider();
+        AsyncContextMap contextMap = contextForSubscribe(contextProvider);
+        subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 
     /**
@@ -1971,71 +1980,38 @@ public abstract class Completable {
     //
 
     /**
-     * Subscribes to this {@link Completable} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void delegateSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
+    final void delegateSubscribe(Subscriber subscriber,
                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        handleSubscribe(subscriber, contextMap, contextProvider);
     }
 
-    private void subscribeWithContext(Subscriber subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+    private void subscribeWithContext(Subscriber subscriber,
+                                      AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
-            // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor());
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
-        } catch (Throwable t) {
-            deliverErrorFromSource(subscriber, t);
-            return;
-        }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
-                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
+        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
     }
 
     /**
-     * Override for {@link #handleSubscribe(CompletableSource.Subscriber)} to offload the
-     * {@link #handleSubscribe(CompletableSource.Subscriber)} call to the passed {@link SignalOffloader}.
+     * Override for {@link #handleSubscribe(CompletableSource.Subscriber)}.
      * <p>
-     * This method wraps the passed {@link Subscriber} using
-     * {@link SignalOffloader#offloadSubscriber(CompletableSource.Subscriber)} and then calls
-     * {@link #handleSubscribe(CompletableSource.Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(CompletableSource.Subscriber, Consumer)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      */
-    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
-                         AsyncContextProvider contextProvider) {
+    void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         try {
-            Subscriber offloaded = signalOffloader.offloadSubscriber(
-                    contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
-            handleSubscribe(offloaded);
+            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+            handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
@@ -2050,25 +2026,6 @@ public abstract class Completable {
             // further signals occur.
             deliverErrorFromSource(subscriber, t);
         }
-    }
-
-    /**
-     * Returns the {@link Executor} used for this {@link Completable}.
-     *
-     * @return {@link Executor} used for this {@link Completable}.
-     */
-    Executor executor() {
-        return immediate();
-    }
-
-    /**
-     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
-     * copied.
-     *
-     * @return true if the async context should be shared on subscribe
-     */
-    boolean shareContextOnSubscribe() {
-        return false;
     }
 
     //

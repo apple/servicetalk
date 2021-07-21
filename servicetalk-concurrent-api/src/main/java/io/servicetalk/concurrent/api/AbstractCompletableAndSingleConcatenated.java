@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
@@ -28,31 +27,13 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader offloader,
+    protected void handleSubscribe(final Subscriber<? super T> subscriber,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        // Since we use the same Subscriber for two sources we always need to offload it. We do not subscribe to the
-        // next source using the same offloader so we have the following cases:
-        //
-        //  (1) Original Source was not using an Executor but the next Source uses an Executor.
-        //  (2) Original Source uses an Executor but the next Source does not.
-        //  (3) None of the sources use an Executor.
-        //  (4) Both of the sources use an Executor.
-        //
-        // SignalOffloader passed here is created from the Executor of the original Source.
-        // While subscribing to the next Source, we do not pass any SignalOffloader so whatever is chosen for that
-        // Source will be used.
-        //
-        // The only interesting case is (2) above where for the first Subscriber we are running on an Executor thread
-        // but for the second we are not which changes the threading model such that blocking code could run on the
-        // eventloop. Important thing to note is that once the next Source is subscribed we never touch the original
-        // Source. So, we do not need to do anything special there.
-        // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        final Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(
-                contextProvider.wrapSingleSubscriber(subscriber, contextMap));
-        delegateSubscribeToOriginal(offloadSubscriber, offloader, contextMap, contextProvider);
+        final Subscriber<? super T> wrappedSubscriber = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
+        delegateSubscribeToOriginal(wrappedSubscriber, contextMap, contextProvider);
     }
 
-    abstract void delegateSubscribeToOriginal(Subscriber<? super T> offloadSubscriber, SignalOffloader offloader,
+    abstract void delegateSubscribeToOriginal(Subscriber<? super T> offloadSubscriber,
                                               AsyncContextMap contextMap, AsyncContextProvider contextProvider);
 
     abstract static class AbstractConcatWithSubscriber<T> implements Subscriber<T>, CompletableSource.Subscriber {
@@ -76,21 +57,11 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
         }
 
         final void subscribeToNext(final Completable next) {
-            // Do not use the same SignalOffloader as used for original as that may cause deadlock.
-            // Using a regular subscribe helps us to inherit the threading model for this next source. However, since
-            // we always offload the original Subscriber (in handleSubscribe above) we are assured that this Subscriber
-            // is not called unexpectedly on an eventloop if this source does not use an Executor.
-            //
             // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating it.
             next.subscribeInternal(this);
         }
 
         final void subscribeToNext(final Single<T> next) {
-            // Do not use the same SignalOffloader as used for original as that may cause deadlock.
-            // Using a regular subscribe helps us to inherit the threading model for this next source. However, since
-            // we always offload the original Subscriber (in handleSubscribe above) we are assured that this Subscriber
-            // is not called unexpectedly on an eventloop if this source does not use an Executor.
-            //
             // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating it.
             next.subscribeInternal(this);
         }
