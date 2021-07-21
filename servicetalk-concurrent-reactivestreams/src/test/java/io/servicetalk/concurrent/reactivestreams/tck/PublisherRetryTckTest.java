@@ -19,11 +19,28 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
+import java.util.concurrent.atomic.AtomicLong;
+
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.defer;
+import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+
 @Test
-public class PublisherRetryTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherRetryTckTest extends AbstractPublisherTckTest<Integer> {
+    @Override
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+        return Publisher.defer(() -> {
+            final AtomicLong cnt = new AtomicLong();
+            return from(1)
+                    .concat(defer(() -> cnt.incrementAndGet() < elements ? failed(DELIBERATE_EXCEPTION) : completed()))
+                    .retry((i, t) -> t == DELIBERATE_EXCEPTION && i < elements);
+        });
+    }
 
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.retry((integer, throwable) -> false);
+    public long maxElementsFromPublisher() {
+        return TckUtils.maxElementsFromPublisher();
     }
 }

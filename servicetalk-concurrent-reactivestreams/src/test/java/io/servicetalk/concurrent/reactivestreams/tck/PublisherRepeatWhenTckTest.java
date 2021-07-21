@@ -19,14 +19,20 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @Test
-public class PublisherRepeatWhenTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherRepeatWhenTckTest extends AbstractPublisherTckTest<Integer> {
+    @Override
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+        return from(1).repeatWhen(i -> i < elements ? completed() : failed(DELIBERATE_EXCEPTION));
+    }
 
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.repeatWhen(integer -> failed(DELIBERATE_EXCEPTION));
+    public long maxElementsFromPublisher() {
+        return TckUtils.maxElementsFromPublisher();
     }
 }
