@@ -234,7 +234,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         };
         private final Subscriber subscriber;
 
-        CompletableSubscriberOffloadedTerminals(Subscriber subscriber, BooleanSupplier offload, Executor executor) {
+        CompletableSubscriberOffloadedTerminals(final Subscriber subscriber,
+                                                final BooleanSupplier offload, final Executor executor) {
             super(offload, executor);
             this.subscriber = requireNonNull(subscriber);
         }

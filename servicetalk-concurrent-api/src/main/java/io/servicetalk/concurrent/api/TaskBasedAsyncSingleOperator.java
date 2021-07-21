@@ -56,7 +56,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
     private final BooleanSupplier offload;
     private final Executor executor;
 
-    TaskBasedAsyncSingleOperator(Single<T> original, BooleanSupplier offload, Executor executor) {
+    TaskBasedAsyncSingleOperator(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
         super(original);
         this.offload = offload;
         this.executor = executor;
@@ -77,8 +77,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+    protected void handleSubscribe(final Subscriber<? super T> subscriber,
+                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
         Subscriber<? super T> upstreamSubscriber = apply(subscriber);
 

@@ -67,7 +67,7 @@ final class PublishAndSubscribeOnSingles {
         }
 
         @Override
-        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
             return new SingleSubscriberOffloadedTerminals<>(subscriber, this::offload, executor());
         }
 
@@ -95,7 +95,7 @@ final class PublishAndSubscribeOnSingles {
         }
 
         @Override
-        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
             return new SingleSubscriberOffloadedCancellable<>(subscriber, this::offload, executor());
         }
 

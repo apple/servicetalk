@@ -61,7 +61,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
     private final BooleanSupplier offload;
     private final Executor executor;
 
-    TaskBasedAsyncPublisherOperator(Publisher<T> original, BooleanSupplier offload, Executor executor) {
+    TaskBasedAsyncPublisherOperator(final Publisher<T> original,
+                                    final BooleanSupplier offload, final Executor executor) {
         super(original);
         this.offload = offload;
         this.executor = executor;
@@ -82,8 +83,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+    protected void handleSubscribe(final Subscriber<? super T> subscriber,
+                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
         final Subscriber<? super T> upstreamSubscriber = apply(subscriber);
 
@@ -117,7 +118,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         @Nullable
         private Subscription subscription;
 
-        OffloadedSubscriber(Subscriber<? super T> target, BooleanSupplier offload, Executor executor) {
+        OffloadedSubscriber(final Subscriber<? super T> target,
+                            final BooleanSupplier offload, final Executor executor) {
             this(target, offload, executor, 2);
         }
 
