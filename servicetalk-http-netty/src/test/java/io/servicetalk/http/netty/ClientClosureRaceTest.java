@@ -48,6 +48,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofNanos;
 
 @Timeout(90)
 class ClientClosureRaceTest {
@@ -180,7 +181,6 @@ class ClientClosureRaceTest {
                             // on the same connection which would result in a non-retryable exception. Since this test
                             // doesn't care about idempotency it should always retry.
                             true
-                        )
-                        .buildWithImmediateRetries());
+                        ).buildWithConstantBackoffFullJitter(ofNanos(1)));
     }
 }
