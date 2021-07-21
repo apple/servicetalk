@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -34,8 +35,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class RunnableCompletableTest {
-    private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
-
     private Runnable factory;
 
     @BeforeEach

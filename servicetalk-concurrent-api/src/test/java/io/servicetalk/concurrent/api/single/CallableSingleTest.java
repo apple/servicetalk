@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -36,8 +37,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class CallableSingleTest {
-    private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
-
     private Callable<Integer> factory;
 
     @SuppressWarnings("unchecked")
