@@ -10,7 +10,7 @@ jobs:
     strategy:
       # Matrix should be coordinated with ci-prb.yml.
       matrix:
-        java: [ 8, 11 ]
+        java: [ 8, 11, 16 ]
         os: [ ubuntu-latest ]
     steps:
       - name: Download Artifacts
