@@ -85,7 +85,7 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
                             boolean interruptOnCancel) {
         if (jdkExecutor == null) {
             if (scheduler != null) {
-                scheduler.close();
+                scheduler.run();
             }
             throw new NullPointerException("jdkExecutor");
         } else if (scheduler == null) {
@@ -109,15 +109,15 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
 
     @Override
     public Cancellable schedule(final Runnable task, final long duration, final TimeUnit unit) {
-        return scheduler.schedule(task, duration, unit);
+        return scheduler.apply(task, duration, unit);
     }
 
     @Override
     void doClose() {
         try {
-            executor.close();
+            executor.run();
         } finally {
-            scheduler.close();
+            scheduler.run();
         }
     }
 
@@ -127,23 +127,16 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
     }
 
     /**
-     * {@link AutoCloseable} interface will invoke {@link ExecutorService#shutdown()}.
+     * {@link Runnable} interface will invoke {@link ExecutorService#shutdown()}.
      */
-    private interface InternalExecutor extends Function<Runnable, Cancellable>, AutoCloseable {
-
-        @Override
-        void close();
+    private interface InternalExecutor extends Function<Runnable, Cancellable>, Runnable {
     }
 
     /**
-     * {@link AutoCloseable} interface will invoke {@link ScheduledExecutorService#shutdown()}.
+     * {@link Runnable} interface will invoke {@link ScheduledExecutorService#shutdown()}.
      */
-    private interface InternalScheduler extends AutoCloseable {
-
-        @Override
-        void close();
-
-        Cancellable schedule(Runnable task, long delay, TimeUnit unit);
+    private interface InternalScheduler extends Runnable {
+        Cancellable apply(Runnable task, long delay, TimeUnit unit);
     }
 
     private static void shutdownExecutor(java.util.concurrent.Executor jdkExecutor) {
@@ -171,7 +164,7 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
                 }
 
                 @Override
-                public void close() {
+                public void run() {
                     service.shutdown();
                 }
 
@@ -190,7 +183,7 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
             }
 
             @Override
-            public void close() {
+            public void run() {
                 shutdownExecutor(jdkExecutor);
             }
 
@@ -211,12 +204,12 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
             }
 
             @Override
-            public void close() {
+            public void run() {
                 service.shutdown();
             }
 
             @Override
-            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
+            public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
                 ScheduledFuture<?> future = service.schedule(task, delay, unit);
                 return () -> future.cancel(interruptOnCancel);
             }
@@ -238,14 +231,14 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
         }
 
         @Override
-        public void close() {
+        public void run() {
             // This uses shared scheduled executor service and hence there is no clear lifetime, so, we ignore shutdown.
             // Since GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR uses daemon threads, the threads will be shutdown on JVM
             // shutdown.
         }
 
         @Override
-        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
+        public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
             // When using the global scheduler, offload timer ticks to the user specified Executor since user code
             // executed on the timer tick can block.
             ScheduledFuture<?> future = GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.schedule(
