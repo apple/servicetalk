@@ -159,6 +159,24 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
+    public GrpcClientBuilder<U, R> inferPeerHost(final boolean shouldInfer) {
+        httpClientBuilder.inferPeerHost(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> inferPeerPort(final boolean shouldInfer) {
+        httpClientBuilder.inferPeerPort(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
+        httpClientBuilder.inferSniHostname(shouldInfer);
+        return this;
+    }
+
+    @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
 
