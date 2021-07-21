@@ -24,6 +24,11 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Runnable used internally for {@link Completable#fromRunnable(Runnable)}.
+ * @deprecated Use {@link Completable#fromRunnable(Runnable)}.
+ */
+@Deprecated
 public class RunnableCompletable extends AbstractSynchronousCompletable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnableCompletable.class);
     private final Runnable runnable;
