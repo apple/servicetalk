@@ -53,12 +53,13 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
     };
 
     private volatile boolean hasOffloaded;
-    private final BooleanSupplier offload;
+    private final BooleanSupplier shouldOffload;
     private final Executor executor;
 
-    TaskBasedAsyncSingleOperator(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
+    TaskBasedAsyncSingleOperator(final Single<T> original,
+                                 final BooleanSupplier shouldOffload, final Executor executor) {
         super(original);
-        this.offload = offload;
+        this.shouldOffload = shouldOffload;
         this.executor = executor;
     }
 
@@ -66,9 +67,9 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         return executor;
     }
 
-    protected boolean offload() {
+    final boolean offload() {
         if (!hasOffloaded) {
-            if (!offload.getAsBoolean()) {
+            if (!shouldOffload.getAsBoolean()) {
                 return false;
             }
             hasOffloaded = true;
@@ -91,8 +92,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         private final SingleSource.Subscriber<T> target;
 
         SingleSubscriberOffloadedTerminals(final Subscriber<T> target,
-                                           final BooleanSupplier offload, final Executor executor) {
-            super(offload, executor);
+                                           final BooleanSupplier shouldOffload, final Executor executor) {
+            super(shouldOffload, executor);
             this.target = requireNonNull(target);
         }
 
@@ -149,20 +150,20 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
 
     static final class SingleSubscriberOffloadedCancellable<T> implements SingleSource.Subscriber<T> {
         private final SingleSource.Subscriber<? super T> subscriber;
-        private final BooleanSupplier offload;
+        private final BooleanSupplier shouldOffload;
         private final Executor executor;
 
         SingleSubscriberOffloadedCancellable(final Subscriber<? super T> subscriber,
-                                             final BooleanSupplier offload, final Executor executor) {
+                                             final BooleanSupplier shouldOffload, final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
-            this.offload = offload;
+            this.shouldOffload = shouldOffload;
             this.executor = executor;
         }
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(
-                    new TaskBasedAsyncCompletableOperator.OffloadedCancellable(cancellable, offload, executor));
+                    new TaskBasedAsyncCompletableOperator.OffloadedCancellable(cancellable, shouldOffload, executor));
         }
 
         @Override

@@ -2875,19 +2875,21 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke {@link Subscriber}
      * methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      *
-     * @param offload If true then offload to the specified executor otherwise continue execution on the same thread.
      * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
+     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
+     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}.
      */
-    public final Publisher<T> publishOn(BooleanSupplier offload, Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, offload, executor);
+    public final Publisher<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+        return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -2909,7 +2911,7 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
@@ -2918,13 +2920,15 @@ public abstract class Publisher<T> {
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      *
-     * @param offload If true then offload to the specified executor otherwise continue execution on the same thread.
      * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
+     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
+     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
-    public final Publisher<T> subscribeOn(BooleanSupplier offload, Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, offload, executor);
+    public final Publisher<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 
     /**

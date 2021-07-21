@@ -58,13 +58,13 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
     };
 
     private volatile boolean hasOffloaded;
-    private final BooleanSupplier offload;
+    private final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
-                                    final BooleanSupplier offload, final Executor executor) {
+                                    final BooleanSupplier shouldOffload, final Executor executor) {
         super(original);
-        this.offload = offload;
+        this.shouldOffload = shouldOffload;
         this.executor = executor;
     }
 
@@ -72,9 +72,9 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         return executor;
     }
 
-    protected boolean offload() {
+    final boolean offload() {
         if (!hasOffloaded) {
-            if (!offload.getAsBoolean()) {
+            if (!shouldOffload.getAsBoolean()) {
                 return false;
             }
             hasOffloaded = true;
@@ -109,7 +109,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         private volatile int state = STATE_IDLE;
 
         private final Subscriber<? super T> target;
-        private final BooleanSupplier offload;
+        private final BooleanSupplier shouldOffload;
         private final Executor executor;
         private final Queue<Object> signals;
         // Set in onSubscribe before we enqueue the task which provides memory visibility inside the task.
@@ -119,14 +119,15 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         private Subscription subscription;
 
         OffloadedSubscriber(final Subscriber<? super T> target,
-                            final BooleanSupplier offload, final Executor executor) {
-            this(target, offload, executor, 2);
+                            final BooleanSupplier shouldOffload, final Executor executor) {
+            this(target, shouldOffload, executor, 2);
         }
 
-        OffloadedSubscriber(final Subscriber<? super T> target, final BooleanSupplier offload, final Executor executor,
+        OffloadedSubscriber(final Subscriber<? super T> target,
+                            final BooleanSupplier shouldOffload, final Executor executor,
                             final int publisherSignalQueueInitialCapacity) {
             this.target = target;
-            this.offload = offload;
+            this.shouldOffload = shouldOffload;
             this.executor = executor;
             // Queue is bounded by request-n
             signals = newUnboundedSpscQueue(publisherSignalQueueInitialCapacity);
@@ -264,7 +265,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             }
 
             try {
-                if (offload.getAsBoolean()) {
+                if (shouldOffload.getAsBoolean()) {
                     LOGGER.trace("delivering Subscriber signals on {}", executor);
                     executor.execute(this::deliverSignals);
                 } else {
@@ -302,18 +303,18 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
      */
     static final class OffloadedSubscriptionSubscriber<T> implements Subscriber<T> {
         private final Subscriber<T> subscriber;
-        private final BooleanSupplier offload;
+        private final BooleanSupplier shouldOffload;
         private final Executor executor;
 
-        OffloadedSubscriptionSubscriber(Subscriber<T> subscriber, BooleanSupplier offload, Executor executor) {
+        OffloadedSubscriptionSubscriber(Subscriber<T> subscriber, BooleanSupplier shouldOffload, Executor executor) {
             this.subscriber = requireNonNull(subscriber);
-            this.offload = offload;
+            this.shouldOffload = shouldOffload;
             this.executor = executor;
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
-            subscriber.onSubscribe(new OffloadedSubscription(executor, offload, s));
+            subscriber.onSubscribe(new OffloadedSubscription(executor, shouldOffload, s));
         }
 
         @Override
@@ -349,14 +350,14 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                 AtomicLongFieldUpdater.newUpdater(OffloadedSubscription.class, "requested");
 
         private final Executor executor;
-        private final BooleanSupplier offload;
+        private final BooleanSupplier shouldOffload;
         private final Subscription target;
         private volatile int state = STATE_IDLE;
         private volatile long requested;
 
-        OffloadedSubscription(Executor executor, BooleanSupplier offload, Subscription target) {
+        OffloadedSubscription(Executor executor, BooleanSupplier shouldOffload, Subscription target) {
             this.executor = executor;
-            this.offload = offload;
+            this.shouldOffload = shouldOffload;
             this.target = requireNonNull(target);
         }
 
@@ -383,7 +384,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             final int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
-                    if (offload.getAsBoolean()) {
+                    if (shouldOffload.getAsBoolean()) {
                         LOGGER.debug("executing {} on {}", forRequestN ? "request" : "cancel", executor);
                         executor.execute(this::executeTask);
                     } else {

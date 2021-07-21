@@ -44,12 +44,12 @@ final class PublishAndSubscribeOnPublishers {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Publisher<T> publishOn(Publisher<T> original, BooleanSupplier offload, Executor executor) {
-        return immediate() == executor ? original : new PublishOn<>(original, offload, executor);
+    static <T> Publisher<T> publishOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
-    static <T> Publisher<T> subscribeOn(Publisher<T> original, BooleanSupplier offload, Executor executor) {
-        return immediate() == executor ? original : new SubscribeOn<>(original, offload, executor);
+    static <T> Publisher<T> subscribeOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
     /**
@@ -61,8 +61,8 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        PublishOn(final Publisher<T> original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        PublishOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
@@ -90,8 +90,8 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        SubscribeOn(final Publisher<T> original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        SubscribeOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override

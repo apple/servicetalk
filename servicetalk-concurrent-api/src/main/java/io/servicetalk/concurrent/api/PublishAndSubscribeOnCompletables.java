@@ -49,12 +49,12 @@ final class PublishAndSubscribeOnCompletables {
         deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
     }
 
-    static Completable publishOn(Completable original, BooleanSupplier offload, Executor executor) {
-        return executor == immediate() ? original : new PublishOn(original, offload, executor);
+    static Completable publishOn(Completable original, BooleanSupplier shouldOffload, Executor executor) {
+        return executor == immediate() ? original : new PublishOn(original, shouldOffload, executor);
     }
 
-    static Completable subscribeOn(Completable original, BooleanSupplier offload, Executor executor) {
-        return executor == immediate() ? original : new SubscribeOn(original, offload, executor);
+    static Completable subscribeOn(Completable original, BooleanSupplier shouldOffload, Executor executor) {
+        return executor == immediate() ? original : new SubscribeOn(original, shouldOffload, executor);
     }
 
     /**
@@ -66,8 +66,8 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class PublishOn extends TaskBasedAsyncCompletableOperator {
 
-        PublishOn(final Completable original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        PublishOn(final Completable original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
@@ -94,8 +94,8 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class SubscribeOn extends TaskBasedAsyncCompletableOperator {
 
-        SubscribeOn(final Completable original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        SubscribeOn(final Completable original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override

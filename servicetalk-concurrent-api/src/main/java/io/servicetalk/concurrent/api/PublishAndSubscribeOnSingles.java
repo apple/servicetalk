@@ -45,12 +45,12 @@ final class PublishAndSubscribeOnSingles {
         deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Single<T> publishOn(Single<T> original, BooleanSupplier offload, Executor executor) {
-        return immediate() == executor ? original : new PublishOn<>(original, offload, executor);
+    static <T> Single<T> publishOn(Single<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
-    static <T> Single<T> subscribeOn(Single<T> original, BooleanSupplier offload, Executor executor) {
-        return immediate() == executor ? original : new SubscribeOn<>(original, offload, executor);
+    static <T> Single<T> subscribeOn(Single<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
     /**
@@ -62,8 +62,8 @@ final class PublishAndSubscribeOnSingles {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
-        PublishOn(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        PublishOn(final Single<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
@@ -90,8 +90,8 @@ final class PublishAndSubscribeOnSingles {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
-        SubscribeOn(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
-            super(original, offload, executor);
+        SubscribeOn(final Single<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override

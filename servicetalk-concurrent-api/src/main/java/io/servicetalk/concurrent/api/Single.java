@@ -1365,18 +1365,20 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke {@link Subscriber} methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      *
-     * @param offload If true then offload to the specified executor otherwise continue execution on the same thread.
      * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
+     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
+     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
      */
-    public final Single<T> publishOn(BooleanSupplier offload, Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, offload, executor);
+    public final Single<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+        return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1398,7 +1400,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
@@ -1407,13 +1409,15 @@ public abstract class Single<T> {
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      *
-     * @param offload If true then offload to the specified executor otherwise continue execution on the same thread.
      * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
+     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
+     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
-    public final Single<T> subscribeOn(BooleanSupplier offload, Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, offload, executor);
+    public final Single<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
