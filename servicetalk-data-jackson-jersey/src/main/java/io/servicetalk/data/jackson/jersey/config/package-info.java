@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Configuration for bindings of ServiceTalk's jackson serialization while using the Jersey router.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.data.jackson.jersey.config;
 

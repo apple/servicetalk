@@ -366,7 +366,7 @@ public interface Serializer {
     /**
      * Deserializes the passed encoded {@link Buffer} to one or more instances of {@link T}.
      *
-     * <h2>Incomplete data</h2>
+     * <p><strong>Incomplete data</strong></p>
      *
      * This method assumes that the passed {@link Buffer} contains exact amount of data required to deserialize into
      * at least one complete instance of {@link T}. If there is any left over data in the {@link Buffer} after the
@@ -391,7 +391,7 @@ public interface Serializer {
     /**
      * Deserializes the passed encoded {@link Buffer} to zero or more instances of {@link T}.
      *
-     * <h2>Incomplete data</h2>
+     * <p><strong>Incomplete data</strong></p>
      *
      * This method assumes that the passed {@link Buffer} contains exact amount of data required to deserialize into
      * at least one complete instance of {@link T}. If there is any left over data in the {@link Buffer} after

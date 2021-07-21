@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * ServiceTalk DNS client exposed as a {@link io.servicetalk.client.api.ServiceDiscoverer}.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.dns.discovery.netty;
 

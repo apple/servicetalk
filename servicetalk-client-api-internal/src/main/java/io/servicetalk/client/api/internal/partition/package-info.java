@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Internal client utilities that support partitioning use cases.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.client.api.internal.partition;
 

@@ -22,11 +22,18 @@ import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * Utilities to do blocking await calls for tests.
+ */
 public final class AwaitUtils {
     private AwaitUtils() {
         // no instances
     }
 
+    /**
+     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down.
+     * @param latch the {@link CountDownLatch} to await.
+     */
     public static void awaitUninterruptibly(CountDownLatch latch) {
         boolean interrupted = false;
         try {
@@ -45,6 +52,14 @@ public final class AwaitUtils {
         }
     }
 
+    /**
+     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down or
+     * the given time duration expires.
+     * @param latch the {@link CountDownLatch} to await.
+     * @param timeout the timeout duration to await for.
+     * @param unit the units applied to {@code timeout}.
+     * @return see {@link CountDownLatch#await(long, TimeUnit)}.
+     */
     public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
         final long startTime = System.nanoTime();
         final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
@@ -69,6 +84,12 @@ public final class AwaitUtils {
         }
     }
 
+    /**
+     * {@link BlockingQueue#take()} from the queue while suppressing {@link InterruptedException}s.
+     * @param queue The queue to take from.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#take()}.
+     */
     public static <T> T takeUninterruptibly(BlockingQueue<T> queue) {
         boolean interrupted = false;
         try {
@@ -86,6 +107,14 @@ public final class AwaitUtils {
         }
     }
 
+    /**
+     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue while suppressing {@link InterruptedException}s.
+     * @param queue the queue to poll from.
+     * @param timeout the timeout duration to poll for.
+     * @param unit the units applied to {@code timeout}.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#poll(long, TimeUnit)}.
+     */
     @Nullable
     public static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
         final long startTime = System.nanoTime();

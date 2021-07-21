@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Adapters between ServiceTalk's concurrency APIs and the JDK's {@link java.util.concurrent.Flow} API.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.concurrent.jdkflow;
 

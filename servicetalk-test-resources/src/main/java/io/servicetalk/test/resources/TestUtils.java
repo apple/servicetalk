@@ -63,6 +63,11 @@ public final class TestUtils {
         throw error;
     }
 
+    /**
+     * Create a {@link Matcher} that matches the thread's name against and expected prefix value.
+     * @param expectPrefix the expected prefix value to match.
+     * @return a {@link Matcher} that matches the thread's name against and expected prefix value.
+     */
     public static Matcher<Thread> matchThreadNamePrefix(String expectPrefix) {
         return new TypeSafeMatcher<Thread>() {
             final String matchPrefix = expectPrefix;

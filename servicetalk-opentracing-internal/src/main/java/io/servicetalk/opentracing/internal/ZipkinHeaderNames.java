@@ -22,9 +22,21 @@ public final class ZipkinHeaderNames {
     // Use lowercase so the same header names can be used for HTTP/2 which requires lower case header names.
     // Header names in HTTP/1 should be compared in a case insensitive manner so this shouldn't impact existing
     // deployments.
+    /**
+     * Header name for the trace id.
+     */
     public static final String TRACE_ID = "x-b3-traceid";
+    /**
+     * Header name for the span id.
+     */
     public static final String SPAN_ID = "x-b3-spanid";
+    /**
+     * Header name for the parent span id.
+     */
     public static final String PARENT_SPAN_ID = "x-b3-parentspanid";
+    /**
+     * Header name which determines if sampling is requested.
+     */
     public static final String SAMPLED = "x-b3-sampled";
 
     private ZipkinHeaderNames() { } // no instantiation

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Client APIs targeted at partitioned use cases.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.client.api.partition;
 

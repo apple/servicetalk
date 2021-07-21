@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Utilities that help build tests when interacting with ServiceTalk concurrent APIs.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.concurrent.api.test;
 
