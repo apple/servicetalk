@@ -219,16 +219,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 return oldHostsTyped;
             }
 
-            @SuppressWarnings("unchecked")
             private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
                 Host<ResolvedAddress, C> host = new Host<>(addr);
                 if (!eagerConnectionShutdown) {
-                    host.onClose().afterFinally(() -> {
-                                usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this,
-                                        previousHosts ->
-                                                listWithHostRemoved(previousHosts, current -> current == host));
-                            }
-                    ).subscribe();
+                    host.onClose().afterFinally(() ->
+                            usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, previousHosts -> {
+                                        @SuppressWarnings("unchecked")
+                                        List<Host<ResolvedAddress, C>> previousHostsTyped =
+                                                (List<Host<ResolvedAddress, C>>) previousHosts;
+                                        return listWithHostRemoved(previousHostsTyped, current -> current == host);
+                                    }
+                            )).subscribe();
                 }
                 return host;
             }
@@ -239,11 +240,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     return singletonList(createHost(addr));
                 }
 
-                if (handleExpired) {
-                    for (Host<ResolvedAddress, C> host : oldHostsTyped) {
-                        if (host.address.equals(addr) && host.tryToMarkActive()) {
-                            return oldHostsTyped;
+                // duplicates are not allowed
+                for (Host<ResolvedAddress, C> host : oldHostsTyped) {
+                    if (host.address.equals(addr)) {
+                        if (!handleExpired) {
+                            LOGGER.warn("Duplicate ACTIVE event for host " + host + ". Duplicates are disallowed.");
+                        } else if (!host.tryToMarkActive()) {
+                            // If the new state is not ACTIVE, the host is already in CLOSED state, we should create
+                            // a new entry. For duplicate ACTIVE events or for repeated activation due to failed CAS
+                            // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
+                            break;
                         }
+                        return oldHostsTyped;
                     }
                 }
 
@@ -438,6 +446,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         private static final ConnState EMPTY_CONN_STATE = new ConnState(EMPTY_ARRAY, State.ACTIVE);
         private static final ConnState CLOSED_CONN_STATE = new ConnState(EMPTY_ARRAY, State.CLOSED);
 
+        @SuppressWarnings("rawtypes")
+        private static final AtomicReferenceFieldUpdater<Host, ConnState> connStateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, ConnState.class, "connState");
+
         private enum State {
             ACTIVE,
             EXPIRED,
@@ -457,9 +469,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         final Addr address;
         private final ListenableAsyncCloseable closeable;
 
-        @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<Host, ConnState> connStateUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(Host.class, ConnState.class, "connState");
         private volatile ConnState connState = EMPTY_CONN_STATE;
 
         Host(Addr address) {
@@ -469,12 +478,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         boolean tryToMarkActive() {
-            return connStateUpdater.getAndUpdate(this, oldConnState -> {
+            return connStateUpdater.updateAndGet(this, oldConnState -> {
                 if (oldConnState.state == State.EXPIRED) {
                     return new ConnState(oldConnState.connections, State.ACTIVE);
                 }
+                // If oldConnState.state == State.ACTIVE this could mean either a duplicate event,
+                // or a repeated CAS operation. We could issue a warning, but as we don't know, we don't log anything.
                 return oldConnState;
-            }).state == State.EXPIRED;
+            }).state == State.ACTIVE;
         }
 
         void markClosed() {
@@ -487,27 +498,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
 
-        @SuppressWarnings("PMD.CollapsibleIfStatements")
         void markExpired() {
             final ConnState newState = connStateUpdater.updateAndGet(this,
                     oldConnState -> oldConnState.connections.length == 0 ?
                             CLOSED_CONN_STATE : new ConnState(oldConnState.connections, State.EXPIRED));
             if (newState == CLOSED_CONN_STATE) {
-                // If in the meantime a connection was added, we shall close it gracefully
-                this.closeAsyncGracefully().subscribe();
+                // Trigger the callback to remove the host from usedHosts array.
+                this.closeAsync().subscribe();
             }
         }
 
         boolean isActive() {
             return connState.state == State.ACTIVE;
-        }
-
-        private boolean isClosed() {
-            return connState == CLOSED_CONN_STATE;
-        }
-
-        private boolean isExpired() {
-            return connState.state == State.EXPIRED;
         }
 
         boolean addConnection(C connection) {
@@ -541,14 +543,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     }
                     if (i == connections.length) {
                         break;
-                    } else if (connections.length == 1 && currentConnState.state == State.EXPIRED) {
-                        // We're closing the last connection, close the Host.
-                        // Closing the host will trigger the Host's onClose method, which will remove the host from
-                        // used hosts list. If a race condition appears and a new connection was added in the
-                        // meantime, that would mean the host is available again and the CAS operation will allow for
-                        // determining that. It will prevent closing the Host and will only remove the connection
-                        // (previously considered as the last one), from the array in the next iteration.
-                        if (connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
+                    } else if (connections.length == 1) {
+                        if (currentConnState.state == State.ACTIVE) {
+                            if (connStateUpdater.compareAndSet(this, currentConnState, EMPTY_CONN_STATE)) {
+                                break;
+                            }
+                        } else if (currentConnState.state == State.EXPIRED
+                                // We're closing the last connection, close the Host.
+                                // Closing the host will trigger the Host's onClose method, which will remove the host
+                                // from used hosts list. If a race condition appears and a new connection was added
+                                // in the meantime, that would mean the host is available again and the CAS operation
+                                // will allow for determining that. It will prevent closing the Host and will only
+                                // remove the connection (previously considered as the last one) from the array
+                                // in the next iteration.
+                                && connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
                             closeAsync().subscribe();
                             break;
                         }
@@ -601,9 +609,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", active=" + isActive() +
-                    ", closed=" + isClosed() +
-                    ", expired=" + isExpired() +
+                    ", state=" + connState.state +
+                    ", #connections=" + connState.connections.length +
                     '}';
         }
     }

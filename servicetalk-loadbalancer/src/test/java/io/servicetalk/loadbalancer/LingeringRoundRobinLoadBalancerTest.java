@@ -247,7 +247,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         assertAddresses(lb.usedAddresses(), "address-1");
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        lb.selectConnection(connectionFilter).toFuture().get();
+        TestLoadBalancedConnection address2connection = lb.selectConnection(connectionFilter).toFuture().get();
 
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
@@ -258,22 +258,21 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
-        // When all hosts are active, new event creates a duplicate
+        // When all hosts are active, duplicate event is ignored
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertAddresses(lb.usedAddresses(), "address-1", "address-2", "address-1");
-
-        // Because the first address (new ones are added at the end) has an open connection it's marked as "expired",
-        // but the other one is removed due to 0 connections being open
-        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
-        // This host has a connection open, so it stays as "expired".
+        // The second host has a connection open, so it stays as "expired".
         sendServiceDiscoveryEvents(downEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
+        // Closing an expired host's connection should remove the host from the list
+        address2connection.closeAsync().toFuture().get();
+        assertAddresses(lb.usedAddresses(), "address-1");
+
         // Let's make sure that an SD failure doesn't compromise LB's internal state
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
-        assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+        assertAddresses(lb.usedAddresses(), "address-1");
     }
 
     @Test

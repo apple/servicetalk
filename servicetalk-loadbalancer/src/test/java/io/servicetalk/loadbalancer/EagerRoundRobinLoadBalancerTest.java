@@ -28,15 +28,16 @@ import static org.mockito.Mockito.verify;
 public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
     @Test
-    public void addressIsAddedTwice() {
+    public void duplicateEventsAreIgnored() {
         assertThat(lb.usedAddresses(), is(empty()));
+
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertThat(lb.usedAddresses(), hasSize(1));
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.usedAddresses(), hasSize(2));
+        assertThat(lb.usedAddresses(), hasSize(1));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.usedAddresses(), hasSize(1));
+        assertThat(lb.usedAddresses(), hasSize(0));
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertThat(lb.usedAddresses(), hasSize(0));
     }
