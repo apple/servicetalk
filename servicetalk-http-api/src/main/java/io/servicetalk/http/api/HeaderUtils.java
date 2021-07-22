@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -51,9 +52,9 @@ import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static io.servicetalk.http.api.UriUtils.TCHAR_HMASK;
 import static io.servicetalk.http.api.UriUtils.TCHAR_LMASK;
 import static io.servicetalk.http.api.UriUtils.isBitSet;
+import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
-import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
@@ -92,8 +93,8 @@ public final class HeaderUtils {
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
 
     static {
-        CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
-                .collect(toMap(Map.Entry::getValue, e -> compileCharsetRegex(e.getKey()))));
+        CHARSET_PATTERNS = unmodifiableMap(standardCharsets().stream()
+                .collect(toMap(Function.identity(), e -> compileCharsetRegex(e.name()))));
     }
 
     private HeaderUtils() {

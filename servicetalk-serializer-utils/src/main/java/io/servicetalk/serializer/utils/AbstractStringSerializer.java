@@ -24,12 +24,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.nio.charset.Charset.availableCharsets;
+import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 
 abstract class AbstractStringSerializer implements SerializerDeserializer<String> {
     private static final Map<Charset, Integer> MAX_BYTES_PER_CHAR_MAP;
     static {
-        Collection<Charset> charsets = availableCharsets().values();
+        Collection<Charset> charsets = standardCharsets();
         MAX_BYTES_PER_CHAR_MAP = new HashMap<>(charsets.size());
         for (Charset charset : charsets) {
             try {
