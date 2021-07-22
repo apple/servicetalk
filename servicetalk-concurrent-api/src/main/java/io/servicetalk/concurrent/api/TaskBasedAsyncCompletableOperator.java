@@ -42,8 +42,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
-    private volatile boolean hasOffloaded;
-    private final BooleanSupplier shouldOffload;
+    final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncCompletableOperator(Completable original, BooleanSupplier shouldOffload, Executor executor) {
@@ -54,16 +53,6 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
 
     final Executor executor() {
         return executor;
-    }
-
-    final boolean offload() {
-        if (!hasOffloaded) {
-            if (!shouldOffload.getAsBoolean()) {
-                return false;
-            }
-            hasOffloaded = true;
-        }
-        return true;
     }
 
     @Override
@@ -95,20 +84,28 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         @Nullable
         private Object terminal;
         private volatile int state = STATE_INIT;
+        private boolean hasOffloaded;
 
         AbstractOffloadedSingleValueSubscriber(final BooleanSupplier shouldOffload, final Executor executor) {
             this.shouldOffload = shouldOffload;
             this.executor = executor;
         }
 
+        private boolean offload() {
+            if (!hasOffloaded) {
+                if (!shouldOffload.getAsBoolean()) {
+                    return false;
+                }
+                hasOffloaded = true;
+            }
+            return true;
+        }
+
         public final void onSubscribe(final Cancellable cancellable) {
             this.cancellable = cancellable;
             state = ON_SUBSCRIBE_RECEIVED_MASK;
             try {
-                LOGGER.trace("executing {} onSubscribe on {}",
-                        this instanceof CompletableSubscriberOffloadedTerminals ? "Completable" : "Single",
-                        executor);
-                if (shouldOffload.getAsBoolean()) {
+                if (offload()) {
                     executor.execute(this::deliverSignals);
                 } else {
                     deliverSignals();
@@ -123,11 +120,9 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         }
 
         private void deliverSignals() {
-            LOGGER.trace("offloaded on {}", executor);
             while (true) {
                 int cState = state;
                 if (cState == STATE_TERMINATED) {
-                    LOGGER.trace("terminated for {}", executor);
                     return;
                 }
                 if (!casAppend(cState, EXECUTING_MASK)) {
@@ -147,11 +142,9 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
                     if (casSet(cState, STATE_TERMINATED)) {
                         assert terminal != null;
                         deliverTerminalToSubscriber(terminal);
-                        LOGGER.trace("finished for {}", executor);
                         return;
                     }
                 } else if (casSet(cState, STATE_AWAITING_TERMINAL)) {
-                    LOGGER.trace("idle for {}", executor);
                     return;
                 }
             }
@@ -173,7 +166,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
                     // have not seen onSubscribe and there is a sequencing issue on the Subscriber. Either way we avoid
                     // looping and deliver the terminal event.
                     try {
-                        if (shouldOffload.getAsBoolean()) {
+                        if (offload()) {
                             executor.execute(this::deliverSignals);
                         } else {
                             deliverSignals();
@@ -241,13 +234,11 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
 
         @Override
         public void onComplete() {
-            LOGGER.trace("offloading Completable onComplete on {}", executor);
             terminal(COMPLETED);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.trace("offloading Completable onError on {}", executor);
             terminal(t);
         }
 
@@ -262,11 +253,9 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof Throwable) {
-                LOGGER.trace("delivering Completable onError");
                 safeOnError(subscriber, (Throwable) terminal);
             } else {
                 assert COMPLETED == terminal : "Unexpected terminal " + terminal;
-                LOGGER.trace("delivering Completable onComplete");
                 safeOnComplete(subscriber);
             }
         }
@@ -274,7 +263,6 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         @Override
         void sendOnSubscribe(final Cancellable cancellable) {
             try {
-                LOGGER.trace("delivering Completable onSubscribe");
                 subscriber.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
@@ -334,7 +322,6 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         public void cancel() {
             if (shouldOffload.getAsBoolean()) {
                 try {
-                    LOGGER.trace("executing Completable cancel on {}", executor);
                     executor.execute(() -> safeCancel(cancellable));
                 } catch (Throwable t) {
                     LOGGER.warn("Failed to execute task on the executor {}. " +

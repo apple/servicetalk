@@ -18,9 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -31,8 +28,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  * {@link Publisher}.
  */
 final class PublishAndSubscribeOnPublishers {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
 
     private PublishAndSubscribeOnPublishers() {
         // No instance.
@@ -67,7 +62,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriber<>(subscriber, this::offload, executor());
+            return new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -96,7 +91,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriptionSubscriber<>(subscriber, this::offload, executor());
+            return new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -108,8 +103,7 @@ final class PublishAndSubscribeOnPublishers {
                         contextProvider.wrapSubscription(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                if (offload()) {
-                    LOGGER.trace("Offloading Publisher subscribe() on {}", executor());
+                if (shouldOffload.getAsBoolean()) {
                     executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
                 } else {
                     super.handleSubscribe(wrapped, contextMap, contextProvider);

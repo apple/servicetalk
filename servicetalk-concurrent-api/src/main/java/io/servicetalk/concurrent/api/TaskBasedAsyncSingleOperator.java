@@ -52,8 +52,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         }
     };
 
-    private volatile boolean hasOffloaded;
-    private final BooleanSupplier shouldOffload;
+    final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncSingleOperator(final Single<T> original,
@@ -65,16 +64,6 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
 
     final Executor executor() {
         return executor;
-    }
-
-    final boolean offload() {
-        if (!hasOffloaded) {
-            if (!shouldOffload.getAsBoolean()) {
-                return false;
-            }
-            hasOffloaded = true;
-        }
-        return true;
     }
 
     @Override
@@ -99,19 +88,17 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            LOGGER.trace("offloading Single onSuccess on {}", executor);
             terminal(result == null ? NULL_WRAPPER : result);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.trace("offloading Single onError on {}", executor);
             terminal(TerminalNotification.error(t));
         }
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
-            LOGGER.error("Failed to execute task on the executor {}. " +
+            LOGGER.warn("Failed to execute task on the executor {}. " +
                     "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target, cause);
             target.onError(cause);
         }
@@ -121,10 +108,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
             if (terminal instanceof TerminalNotification) {
                 final Throwable error = ((TerminalNotification) terminal).cause();
                 assert error != null;
-                LOGGER.trace("delivering Single onError");
                 safeOnError(target, error);
             } else {
-                LOGGER.trace("delivering Single onSuccess");
                 safeOnSuccess(target, uncheckCast(terminal));
             }
         }
@@ -132,7 +117,6 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         @Override
         void sendOnSubscribe(final Cancellable cancellable) {
             try {
-                LOGGER.trace("delivering Single onSubscribe");
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();

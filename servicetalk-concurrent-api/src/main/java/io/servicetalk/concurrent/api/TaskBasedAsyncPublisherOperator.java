@@ -57,8 +57,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
     };
 
-    private volatile boolean hasOffloaded;
-    private final BooleanSupplier shouldOffload;
+    final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
@@ -70,16 +69,6 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
 
     final Executor executor() {
         return executor;
-    }
-
-    final boolean offload() {
-        if (!hasOffloaded) {
-            if (!shouldOffload.getAsBoolean()) {
-                return false;
-            }
-            hasOffloaded = true;
-        }
-        return true;
     }
 
     @Override
@@ -117,6 +106,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         // run()
         @Nullable
         private Subscription subscription;
+        private boolean hasOffloaded;
 
         OffloadedSubscriber(final Subscriber<? super T> target,
                             final BooleanSupplier shouldOffload, final Executor executor) {
@@ -133,33 +123,38 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             signals = newUnboundedSpscQueue(publisherSignalQueueInitialCapacity);
         }
 
+        private boolean offload() {
+            if (!hasOffloaded) {
+                if (!shouldOffload.getAsBoolean()) {
+                    return false;
+                }
+                hasOffloaded = true;
+            }
+            return true;
+        }
+
         @Override
         public void onSubscribe(final Subscription s) {
             subscription = s;
-            LOGGER.trace("offloading Publisher onSubscribe on {}", executor);
             offerSignal(s);
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            LOGGER.trace("offloading Publisher onNext on {}", executor);
             offerSignal(t == null ? NULL_WRAPPER : t);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.trace("offloading Publisher onError on {}", executor);
             offerSignal(TerminalNotification.error(t));
         }
 
         @Override
         public void onComplete() {
-            LOGGER.trace("offloading Publisher onComplete on {}", executor);
             offerSignal(TerminalNotification.complete());
         }
 
         void deliverSignals() {
-            LOGGER.trace("offloaded Subscriber on {}", executor);
             state = STATE_EXECUTING;
             for (;;) {
                 Object signal;
@@ -167,39 +162,32 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     if (signal instanceof Subscription) {
                         Subscription subscription = (Subscription) signal;
                         try {
-                            LOGGER.trace("deliver onSubscribe on {}", executor);
                             target.onSubscribe(subscription);
                         } catch (Throwable t) {
                             clearSignalsFromExecutorThread();
                             safeOnError(target, t);
                             safeCancel(subscription);
-                            LOGGER.trace("onSubscribe error terminated Subscriber on {}", executor);
                             return; // We can't interact with the queue any more because we terminated, so bail.
                         }
                     } else if (signal instanceof TerminalNotification) {
                         state = STATE_TERMINATED;
                         Throwable cause = ((TerminalNotification) signal).cause();
                         if (cause != null) {
-                            LOGGER.trace("deliver onError on {}", executor);
                             safeOnError(target, cause);
                         } else {
-                            LOGGER.trace("deliver onComplete on {}", executor);
                             safeOnComplete(target);
                         }
-                        LOGGER.trace("terminal Subscriber on {}", executor);
                         return; // We can't interact with the queue any more because we terminated, so bail.
                     } else {
                         @SuppressWarnings("unchecked")
                         T t = signal == NULL_WRAPPER ? null : (T) signal;
                         try {
-                            LOGGER.trace("deliver onNext on {}", executor);
                             target.onNext(t);
                         } catch (Throwable th) {
                             clearSignalsFromExecutorThread();
                             safeOnError(target, th);
                             assert subscription != null;
                             safeCancel(subscription);
-                            LOGGER.trace("onNext error terminated Subscriber on {}", executor);
                             return; // We can't interact with the queue any more because we terminated, so bail.
                         }
                     }
@@ -208,7 +196,6 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     final int cState = state;
                     if (cState == STATE_EXECUTING) {
                         if (stateUpdater.compareAndSet(this, STATE_EXECUTING, STATE_IDLE)) {
-                            LOGGER.trace("idle Subscriber on {}", executor);
                             return;
                         }
                     } else if (cState == STATE_ENQUEUED) {
@@ -216,7 +203,6 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                             break;
                         }
                     } else {
-                        LOGGER.trace("terminated Subscriber on {}", executor);
                         return;
                     }
                 }
@@ -265,8 +251,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             }
 
             try {
-                if (shouldOffload.getAsBoolean()) {
-                    LOGGER.trace("delivering Subscriber signals on {}", executor);
+                if (offload()) {
                     executor.execute(this::deliverSignals);
                 } else {
                     deliverSignals();
@@ -354,11 +339,22 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         private final Subscription target;
         private volatile int state = STATE_IDLE;
         private volatile long requested;
+        private boolean hasOffloaded;
 
         OffloadedSubscription(Executor executor, BooleanSupplier shouldOffload, Subscription target) {
             this.executor = executor;
             this.shouldOffload = shouldOffload;
             this.target = requireNonNull(target);
+        }
+
+        private boolean offload() {
+            if (!hasOffloaded) {
+                if (!shouldOffload.getAsBoolean()) {
+                    return false;
+                }
+                hasOffloaded = true;
+            }
+            return true;
         }
 
         @Override
@@ -384,8 +380,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             final int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
-                    if (shouldOffload.getAsBoolean()) {
-                        LOGGER.debug("executing {} on {}", forRequestN ? "request" : "cancel", executor);
+                    if (offload()) {
                         executor.execute(this::executeTask);
                     } else {
                         executeTask();
@@ -398,13 +393,13 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     // Subscription -> Subscriber dependency for all paths is too costly.
                     // As we do for other cases, we simply invoke the target in the calling thread.
                     if (forRequestN) {
-                        LOGGER.error("Failed to execute task on the executor {}. " +
+                        LOGGER.warn("Failed to execute task on the executor {}. " +
                                         "Invoking Subscription (request()) in the caller thread. Subscription {}.",
                                 executor, target, t);
                         target.request(requestedUpdater.getAndSet(this, 0));
                     } else {
                         requested = TERMINATED;
-                        LOGGER.error("Failed to execute task on the executor {}. " +
+                        LOGGER.warn("Failed to execute task on the executor {}. " +
                                         "Invoking Subscription (cancel()) in the caller thread. Subscription {}.",
                                 executor, target, t);
                         target.cancel();
@@ -416,30 +411,25 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
 
         private void executeTask() {
-            LOGGER.trace("Offloaded Subscription on {}", executor);
             state = STATE_EXECUTING;
             for (;;) {
                 long r = requestedUpdater.getAndSet(this, 0);
                 if (r > 0) {
                     try {
-                        LOGGER.trace("delivering request to {} on {}", target, executor);
                         target.request(r);
                         continue;
                     } catch (Throwable t) {
                         // Cancel since request-n threw.
                         requested = r = CANCELLED;
-                        LOGGER.error("Unexpected exception from request(). Subscription {}.", target, t);
+                        LOGGER.warn("Unexpected exception from request(). Subscription {}.", target, t);
                     }
                 }
 
                 if (r == CANCELLED) {
                     requested = TERMINATED;
-                    LOGGER.trace("delivering cancel to {} on {}", target, executor);
                     safeCancel(target);
-                    LOGGER.trace("cancelled on {}", executor);
                     return; // No more signals are required to be sent.
                 } else if (r == TERMINATED) {
-                    LOGGER.trace("terminated on {}", executor);
                     return; // we want to hard return to avoid resetting state.
                 } else if (r != 0) {
                     // Invalid request-n
@@ -450,14 +440,12 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     // terminate.
                     requested = TERMINATED;
                     try {
-                        LOGGER.trace("delivering invalid request to {} on {}", target, executor);
                         target.request(r);
                     } catch (IllegalArgumentException iae) {
                         // Expected
                     } catch (Throwable t) {
-                        LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
+                        LOGGER.warn("Ignoring unexpected exception from request(). Subscription {}.", target, t);
                     }
-                    LOGGER.trace("terminated on invalid request on {}", executor);
                     return;
                 }
                 // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
@@ -467,7 +455,6 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                     final int cState = state;
                     if (cState == STATE_EXECUTING) {
                         if (stateUpdater.compareAndSet(this, STATE_EXECUTING, STATE_IDLE)) {
-                            LOGGER.trace("idle Subscription on {}", executor);
                             return;
                         }
                     } else if (cState == STATE_ENQUEUED) {
@@ -475,7 +462,6 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
                             break;
                         }
                     } else {
-                        LOGGER.trace("finished Subscription on {}", executor);
                         return;
                     }
                 }
