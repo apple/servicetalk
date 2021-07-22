@@ -33,14 +33,14 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.DefaultHttpRequestMetaData.DEFAULT_MAX_QUERY_PARAMS;
 import static io.servicetalk.http.api.UriUtils.decodeQueryParams;
-import static java.nio.charset.Charset.availableCharsets;
+import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static java.util.Collections.emptyMap;
 
 final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<String, List<String>>> {
     private static final HashMap<Charset, byte[]> CONTINUATIONS_SEPARATORS;
     private static final HashMap<Charset, byte[]> KEYVALUE_SEPARATORS;
     static {
-        Collection<Charset> charsets = availableCharsets().values();
+        Collection<Charset> charsets = standardCharsets();
         final int size = charsets.size();
         CONTINUATIONS_SEPARATORS = new HashMap<>(size);
         KEYVALUE_SEPARATORS = new HashMap<>(size);
