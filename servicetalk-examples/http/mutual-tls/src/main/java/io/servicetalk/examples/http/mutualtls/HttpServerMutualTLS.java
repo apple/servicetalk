@@ -20,7 +20,7 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslClientAuthMode;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * A server that does mutual TLS.
@@ -36,8 +36,8 @@ public final class HttpServerMutualTLS {
                         .trustManager(DefaultTestCerts::loadClientCAPem).build())
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
-                .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("Client and Server completed Mutual TLS!", textSerializer()))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
+                        .payloadBody("Client and Server completed Mutual TLS!", textSerializerUtf8()))
                 .awaitShutdown();
     }
 }

@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.Buffer;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
+import java.nio.charset.Charset;
 
 final class ReadOnlyBuffer extends WrappedBuffer {
 
@@ -299,6 +300,11 @@ final class ReadOnlyBuffer extends WrappedBuffer {
 
     @Override
     public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
+        throw new ReadOnlyBufferException();
+    }
+
+    @Override
+    public Buffer writeCharSequence(CharSequence seq, Charset charset) {
         throw new ReadOnlyBufferException();
     }
 

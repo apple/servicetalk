@@ -26,15 +26,18 @@ import io.servicetalk.buffer.api.Buffer;
  * A {@link StreamingSerializer} implementation may chose to be stateful or stateless. This contract does not assume
  * either.
  * <em>Implementations are assumed to be synchronous.</em>
+ * @deprecated Use {@link io.servicetalk.serializer.api.StreamingSerializer}.
  */
+@Deprecated
 @FunctionalInterface
 public interface StreamingSerializer {
 
     /**
      * Serializes the passed {@link Object} {@code toSerialize} into the passed {@link Buffer} synchronously.
-     *
+     * @deprecated Use {@link io.servicetalk.serializer.api.StreamingSerializer}.
      * @param toSerialize {@link Object} to serialize.
      * @param destination {@link Buffer} to which the serialized representation of {@code toSerialize} is to be written.
      */
+    @Deprecated
     void serialize(Object toSerialize, Buffer destination);
 }

@@ -38,7 +38,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * {@link SerializationProvider} implementation using jackson.
+ * @deprecated Use {@link JacksonSerializerCache}.
  */
+@Deprecated
 public final class JacksonSerializationProvider implements SerializationProvider {
 
     private final ObjectMapper mapper;

@@ -32,8 +32,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -76,7 +75,7 @@ class HttpConnectionContextProtocolTest {
             assertThat("Client-side connection protocol does not match expected value",
                     connection.connectionContext().protocol(), equalTo(config.expectedProtocol));
             assertThat("Server-side connection protocol does not match expected value",
-                    connection.request(connection.get("/")).payloadBody(textDeserializer()),
+                    connection.request(connection.get("/")).payloadBody(textSerializerUtf8()),
                     equalTo(config.expectedProtocol.name()));
         }
     }
@@ -89,7 +88,7 @@ class HttpConnectionContextProtocolTest {
                     DefaultTestCerts::loadServerKey).build());
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                .payloadBody(ctx.protocol().name(), textSerializer()));
+                .payloadBody(ctx.protocol().name(), textSerializerUtf8()));
     }
 
     private static BlockingHttpClient newClient(ServerContext serverContext, Config config) {

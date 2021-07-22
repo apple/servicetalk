@@ -362,8 +362,19 @@ final class HeaderUtils {
         return new IllegalArgumentException("Multiple content-length values found: " + allClValues);
     }
 
+    /**
+     * A special consumer that takes an {@code int} and a custom argument and returns the result.
+     *
+     * @param <T> The other argument to this function.
+     */
     @FunctionalInterface
     private interface BiIntConsumer<T> {
-        void apply(int contentLength, T headers);
+        /**
+         * Evaluates this consumer on the given arguments.
+         *
+         * @param i The {@code int} argument.
+         * @param t The {@link T} argument.
+         */
+        void apply(int i, T t);
     }
 }

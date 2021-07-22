@@ -28,11 +28,13 @@ ideaModule.dependsOn "generateTestProto"
 dependencies {
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-serializer-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-serialization-api")
+  implementation project(":servicetalk-serializer-utils")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "com.google.protobuf:protobuf-java:$protobufVersion"
 
@@ -41,6 +43,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 

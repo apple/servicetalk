@@ -36,8 +36,7 @@ import java.util.stream.Stream;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslProvider.JDK;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
@@ -66,11 +65,11 @@ class SslProvidersTest {
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     assertThat(request.path(), is("/path"));
                     assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-                    assertThat(request.payloadBody(textDeserializer()),
+                    assertThat(request.payloadBody(textSerializerUtf8()),
                             is("request-payload-body-" + payloadBody));
 
                     return responseFactory.ok()
-                            .payloadBody("response-payload-body-" + payloadBody, textSerializer());
+                            .payloadBody("response-payload-body-" + payloadBody, textSerializerUtf8());
                 });
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
@@ -111,11 +110,11 @@ class SslProvidersTest {
         setUp(serverSslProvider, clientSslProvider, payloadLength);
 
         HttpResponse response = client.request(client.get("/path")
-                .payloadBody("request-payload-body-" + payloadBody, textSerializer()));
+                .payloadBody("request-payload-body-" + payloadBody, textSerializerUtf8()));
 
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-        assertThat(response.payloadBody(textDeserializer()), is("response-payload-body-" + payloadBody));
+        assertThat(response.payloadBody(textSerializerUtf8()), is("response-payload-body-" + payloadBody));
     }
 
     private static String randomString(final int length) {

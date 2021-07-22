@@ -178,7 +178,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                 throw new IllegalArgumentException("Unknown codec: " + codec);
         }
         return encodedSpans -> client.request(
-                client.post(path).addHeader(CONTENT_TYPE, contentType).payloadBody(encodedSpans))
+                client.post(path).setHeader(CONTENT_TYPE, contentType).payloadBody(encodedSpans))
                 .beforeOnSuccess(response -> {
                     HttpResponseStatus status = response.status();
                     if (status.statusClass() != SUCCESSFUL_2XX) {

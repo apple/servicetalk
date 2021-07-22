@@ -38,7 +38,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @param status a status for the response
      * @param version a default version for the response
      * @param headers an {@link HttpHeaders} object for headers
-     * @param allocator a {@link BufferAllocator} to use for {@link #sendMetaData(HttpSerializer)}
+     * @param allocator a {@link BufferAllocator} to use for {@link #sendMetaData(HttpStreamingSerializer)}.
      */
     BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                         final HttpProtocolVersion version,
@@ -66,13 +66,31 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * to continue writing a payload body. Each element will be serialized using provided {@code serializer}.
      * <p>
      * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
+     * @deprecated Use {@link #sendMetaData(HttpStreamingSerializer)}.
+     * @param serializer used to serialize the payload elements
+     * @param <T> the type of objects to write
+     * @return {@link HttpPayloadWriter} to write a payload body
+     * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
+     */
+    @Deprecated
+    public final <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {
+        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
+        sendMetaData();
+        return payloadWriter;
+    }
+
+    /**
+     * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} of type {@link T}
+     * to continue writing a payload body. Each element will be serialized using provided {@code serializer}.
+     * <p>
+     * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
      *
      * @param serializer used to serialize the payload elements
      * @param <T> the type of objects to write
      * @return {@link HttpPayloadWriter} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
      */
-    public final <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {
+    public final <T> HttpPayloadWriter<T> sendMetaData(final HttpStreamingSerializer<T> serializer) {
         final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
         sendMetaData();
         return payloadWriter;

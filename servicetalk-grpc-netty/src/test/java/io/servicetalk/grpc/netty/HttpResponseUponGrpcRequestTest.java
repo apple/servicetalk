@@ -28,17 +28,17 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class HttpResponseUponGrpcRequestTest {
 
@@ -49,7 +49,7 @@ final class HttpResponseUponGrpcRequestTest {
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2Default())
                 .listenAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.badRequest().payloadBody(responsePayload, textSerializer())));
+                        succeeded(responseFactory.badRequest().payloadBody(responsePayload, textSerializerUtf8())));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
@@ -112,9 +112,8 @@ final class HttpResponseUponGrpcRequestTest {
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {
         assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.INTERNAL));
-        assertThat(grpcStatusException.status().description(), notNullValue());
-        assertTrue(grpcStatusException.status().description().contains("status code: 400 Bad Request"));
-        assertTrue(grpcStatusException.status().description().contains("invalid content-type: text/plain;"));
-        assertTrue(grpcStatusException.status().description().contains("headers:"));
+        String description = grpcStatusException.status().description();
+        assertThat(description, notNullValue());
+        assertThat(description, containsString("invalid content-type: text/plain;"));
     }
 }

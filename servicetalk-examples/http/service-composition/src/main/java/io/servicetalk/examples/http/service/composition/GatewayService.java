@@ -25,10 +25,8 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +34,13 @@ import java.util.List;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.Single.zip;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.ENTITY_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.FULL_RECOMMEND_LIST_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.METADATA_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RATING_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RECOMMEND_LIST_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_SERIALIZER;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
@@ -43,29 +48,17 @@ import static io.servicetalk.examples.http.service.composition.backends.ErrorRes
  * response.
  */
 final class GatewayService implements HttpService {
-
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
-            new TypeHolder<List<Recommendation>>() { };
-    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendation =
-            new TypeHolder<List<FullRecommendation>>() { };
-
-    private static final String USER_ID_QP_NAME = "userId";
-    private static final String ENTITY_ID_QP_NAME = "entityId";
-
     private final HttpClient recommendationsClient;
     private final HttpClient metadataClient;
     private final HttpClient ratingsClient;
     private final HttpClient userClient;
-    private final HttpSerializationProvider serializers;
 
     GatewayService(final HttpClient recommendationsClient, final HttpClient metadataClient,
-                   final HttpClient ratingsClient, final HttpClient userClient,
-                   HttpSerializationProvider serializers) {
+                   final HttpClient ratingsClient, final HttpClient userClient) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
         this.ratingsClient = ratingsClient;
         this.userClient = userClient;
-        this.serializers = serializers;
     }
 
     @Override
@@ -82,10 +75,10 @@ final class GatewayService implements HttpService {
                 .addQueryParameter(USER_ID_QP_NAME, userId)
                 .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
-                .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
+                .map(response -> response.payloadBody(RECOMMEND_LIST_SERIALIZER))
                 .flatMap(recommendations -> queryRecommendationDetails(recommendations, errorQpValues))
                 .map(fullRecommendations -> responseFactory.ok()
-                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
+                        .payloadBody(fullRecommendations, FULL_RECOMMEND_LIST_SERIALIZER));
     }
 
     private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations,
@@ -99,21 +92,21 @@ final class GatewayService implements HttpService {
                                     .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.
-                                    .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
+                                    .map(response -> response.payloadBody(METADATA_SERIALIZER));
 
                     Single<User> user =
                             userClient.request(userClient.get("/user")
                                     .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into User.
-                                    .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
+                                    .map(response -> response.payloadBody(USER_SERIALIZER));
 
                     Single<Rating> rating =
                             ratingsClient.request(ratingsClient.get("/rating")
                                     .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Rating.
-                                    .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
+                                    .map(response -> response.payloadBody(RATING_SERIALIZER))
                                     // We consider ratings to be a non-critical data and hence we substitute the
                                     // response with a static "unavailable" rating when the rating service is
                                     // unavailable or provides a bad response. This is typically referred to as a

@@ -25,9 +25,7 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.serialization.api.TypeHolder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +33,13 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.ENTITY_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.FULL_RECOMMEND_LIST_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.METADATA_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RATING_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RECOMMEND_LIST_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_SERIALIZER;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
@@ -42,18 +47,7 @@ import static io.servicetalk.examples.http.service.composition.backends.ErrorRes
  * JSON array containing all {@link FullRecommendation}s.
  */
 final class BlockingGatewayService implements BlockingHttpService {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
-
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
-            new TypeHolder<List<Recommendation>>() { };
-    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendations =
-            new TypeHolder<List<FullRecommendation>>() { };
-
-    private static final String USER_ID_QP_NAME = "userId";
-    private static final String ENTITY_ID_QP_NAME = "entityId";
-
-    private final HttpSerializationProvider serializers;
 
     private final BlockingHttpClient recommendationClient;
     private final BlockingHttpClient metadataClient;
@@ -63,13 +57,11 @@ final class BlockingGatewayService implements BlockingHttpService {
     BlockingGatewayService(final BlockingHttpClient recommendationClient,
                            final BlockingHttpClient metadataClient,
                            final BlockingHttpClient ratingClient,
-                           final BlockingHttpClient userClient,
-                           final HttpSerializationProvider serializers) {
+                           final BlockingHttpClient userClient) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
         this.ratingClient = ratingClient;
         this.userClient = userClient;
-        this.serializers = serializers;
     }
 
     @Override
@@ -85,7 +77,7 @@ final class BlockingGatewayService implements BlockingHttpService {
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated")
                         .addQueryParameter(USER_ID_QP_NAME, userId)
                         .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
-                        .payloadBody(serializers.deserializerFor(typeOfRecommendation));
+                        .payloadBody(RECOMMEND_LIST_SERIALIZER);
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
         for (Recommendation recommendation : recommendations) {
@@ -94,20 +86,20 @@ final class BlockingGatewayService implements BlockingHttpService {
                     metadataClient.request(metadataClient.get("/metadata")
                             .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
-                            .payloadBody(serializers.deserializerFor(Metadata.class));
+                            .payloadBody(METADATA_SERIALIZER);
 
             final User user =
                     userClient.request(userClient.get("/user")
                             .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
-                            .payloadBody(serializers.deserializerFor(User.class));
+                            .payloadBody(USER_SERIALIZER);
 
             Rating rating;
             try {
                 rating = ratingClient.request(ratingClient.get("/rating")
                         .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                         .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
-                        .payloadBody(serializers.deserializerFor(Rating.class));
+                        .payloadBody(RATING_SERIALIZER);
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
                 // with a static "unavailable" rating when the rating service is unavailable or provides
@@ -119,7 +111,6 @@ final class BlockingGatewayService implements BlockingHttpService {
             fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
 
-        return responseFactory.ok()
-                .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
+        return responseFactory.ok().payloadBody(fullRecommendations, FULL_RECOMMEND_LIST_SERIALIZER);
     }
 }

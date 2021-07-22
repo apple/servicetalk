@@ -20,27 +20,20 @@ import io.servicetalk.examples.http.service.composition.pojo.User;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_SERIALIZER;
 import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
  * A service that returns {@link User} for an entity.
  */
 final class UserBackend implements HttpService {
-
-    private static final String USER_ID_QP_NAME = "userId";
-    private final HttpSerializationProvider serializer;
-
-    private UserBackend(HttpSerializationProvider serializer) {
-        this.serializer = serializer;
-    }
-
     @Override
     public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                        HttpResponseFactory responseFactory) {
@@ -51,13 +44,13 @@ final class UserBackend implements HttpService {
 
         // Create a random rating
         User user = new User(userId, randomString(5), randomString(3));
-        return succeeded(responseFactory.ok().payloadBody(user, serializer.serializerFor(User.class)));
+        return succeeded(responseFactory.ok().payloadBody(user, USER_SERIALIZER));
     }
 
-    static StreamingHttpService newUserService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newUserService() {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/user")
-                .thenRouteTo(new UserBackend(serializer))
+                .thenRouteTo(new UserBackend())
                 .buildStreaming();
     }
 }

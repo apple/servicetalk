@@ -20,13 +20,9 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
-import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.Serializer;
-import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;
@@ -60,6 +56,8 @@ import javax.ws.rs.core.UriInfo;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
+import static io.servicetalk.http.router.jersey.resources.SerializerUtils.MAP_STRING_OBJECT_SERIALIZER;
+import static io.servicetalk.http.router.jersey.resources.SerializerUtils.MAP_STRING_OBJECT_STREAM_SERIALIZER;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -84,11 +82,6 @@ import static javax.ws.rs.core.Response.status;
 @Path(PATH)
 public class SynchronousResources {
     public static final String PATH = "/sync";
-
-    private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
-    private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-            new TypeHolder<Map<String, Object>>() {
-            };
 
     @Context
     private ConnectionContext ctx;
@@ -366,8 +359,8 @@ public class SynchronousResources {
         // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
-        return SERIALIZER.serialize(from(responseContent), ctx.executionContext().bufferAllocator(),
-                STRING_OBJECT_MAP_TYPE);
+        return MAP_STRING_OBJECT_STREAM_SERIALIZER.serialize(from(responseContent),
+                ctx.executionContext().bufferAllocator());
     }
 
     @Consumes(APPLICATION_JSON)
@@ -378,7 +371,8 @@ public class SynchronousResources {
         // ServiceTalk streaming deserialization is used for the request
         // and Jersey's JacksonJsonProvider (thus blocking IO) is used for response serialization
         final Map<String, Object> requestData =
-                SERIALIZER.deserialize(requestContent, STRING_OBJECT_MAP_TYPE).toIterable().iterator().next();
+                MAP_STRING_OBJECT_STREAM_SERIALIZER.deserialize(requestContent,
+                        ctx.executionContext().bufferAllocator()).toIterable().iterator().next();
         final Map<String, Object> responseContent = new HashMap<>(requestData);
         responseContent.put("foo", "bar4");
         return responseContent;
@@ -390,15 +384,15 @@ public class SynchronousResources {
     @POST
     public Publisher<Buffer> postJsonPubInPubOut(final Publisher<Buffer> requestContent) {
         // ServiceTalk streaming is used for both request deserialization and response serialization
-        final Publisher<Map<String, Object>> response =
-                SERIALIZER.deserialize(requestContent, STRING_OBJECT_MAP_TYPE)
+        final Publisher<Map<String, Object>> response = MAP_STRING_OBJECT_STREAM_SERIALIZER.deserialize(
+                requestContent, ctx.executionContext().bufferAllocator())
                         .map(requestData -> {
                             final Map<String, Object> responseContent = new HashMap<>(requestData);
                             responseContent.put("foo", "bar5");
                             return responseContent;
                         });
 
-        return SERIALIZER.serialize(response, ctx.executionContext().bufferAllocator(), STRING_OBJECT_MAP_TYPE);
+        return MAP_STRING_OBJECT_STREAM_SERIALIZER.serialize(response, ctx.executionContext().bufferAllocator());
     }
 
     @Consumes(APPLICATION_JSON)
@@ -409,9 +403,9 @@ public class SynchronousResources {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         final Single<Buffer> response = requestContent.map(buf -> {
             final Map<String, Object> responseContent =
-                    new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
+                    new HashMap<>(MAP_STRING_OBJECT_SERIALIZER.deserialize(buf, allocator));
             responseContent.put("foo", "bar6");
-            return SERIALIZER.serialize(responseContent, allocator);
+            return MAP_STRING_OBJECT_SERIALIZER.serialize(responseContent, allocator);
         });
 
         return accepted(new GenericEntity<Single<Buffer>>(response) { }).build();

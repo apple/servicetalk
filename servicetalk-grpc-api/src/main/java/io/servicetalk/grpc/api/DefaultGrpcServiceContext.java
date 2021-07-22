@@ -23,12 +23,11 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements GrpcServiceContext {
@@ -36,15 +35,15 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     private final ConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
     private final GrpcProtocol protocol;
+    @Deprecated
     private final List<ContentCodec> supportedMessageCodings;
 
-    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
-                              final List<ContentCodec> supportedMessageCodings) {
+    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
         super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
-        this.supportedMessageCodings = unmodifiableList(new ArrayList<>(supportedMessageCodings));
+        this.supportedMessageCodings = emptyList();
     }
 
     @Override
@@ -68,6 +67,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
         return executionContext;
     }
 
+    @Deprecated
     @Override
     public List<ContentCodec> supportedMessageCodings() {
         return supportedMessageCodings;

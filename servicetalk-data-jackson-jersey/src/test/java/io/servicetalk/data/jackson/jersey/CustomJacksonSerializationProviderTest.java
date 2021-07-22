@@ -28,7 +28,7 @@ import javax.ws.rs.core.Application;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
-import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor;
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.newContextResolver;
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -47,7 +47,7 @@ class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttp
 
         @Override
         public Set<Object> getSingletons() {
-            return singleton(contextResolverFor(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
+            return singleton(newContextResolver(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
         }
 
         @Override

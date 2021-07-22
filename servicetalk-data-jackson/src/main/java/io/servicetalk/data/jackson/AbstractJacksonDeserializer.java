@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import static com.fasterxml.jackson.databind.node.JsonNodeFactory.instance;
 import static java.util.Collections.emptyList;
 
+@Deprecated
 abstract class AbstractJacksonDeserializer<T> implements StreamingDeserializer<T> {
 
     private final Deque<JsonNode> nodeStack = new ArrayDeque<>();

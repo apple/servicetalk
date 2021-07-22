@@ -46,8 +46,8 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Deprecated
 class NettyChannelContentCodecTest {
-
     private static final String INPUT;
     static {
         byte[] arr = new byte[1024];

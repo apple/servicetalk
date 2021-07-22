@@ -21,7 +21,7 @@ import io.servicetalk.transport.api.DomainSocketAddress;
 import java.io.File;
 
 import static io.servicetalk.examples.http.uds.blocking.UdsUtils.udsAddress;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket</a> server example.
@@ -39,7 +39,7 @@ public final class BlockingUdsServer {
 
         HttpServers.forAddress(udsAddress)
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
+                        responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()))
                 .awaitShutdown();
     }
 }

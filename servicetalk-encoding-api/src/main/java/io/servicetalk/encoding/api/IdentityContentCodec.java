@@ -25,7 +25,9 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.
+ * @deprecated Will be removed along with {@link ContentCodec}.
  */
+@Deprecated
 final class IdentityContentCodec implements ContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");

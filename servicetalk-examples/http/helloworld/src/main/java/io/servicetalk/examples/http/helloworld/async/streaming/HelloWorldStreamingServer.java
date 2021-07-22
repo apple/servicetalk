@@ -19,7 +19,7 @@ import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 
 public final class HelloWorldStreamingServer {
 
@@ -27,7 +27,7 @@ public final class HelloWorldStreamingServer {
         HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok()
-                                .payloadBody(from("Hello", " World!"), textSerializer())))
+                                .payloadBody(from("Hello", " World!"), textSerializerUtf8FixLen())))
                 .awaitShutdown();
     }
 }

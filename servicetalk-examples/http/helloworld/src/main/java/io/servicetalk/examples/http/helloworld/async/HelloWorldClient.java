@@ -20,7 +20,7 @@ import io.servicetalk.http.netty.HttpClients;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 public final class HelloWorldClient {
 
@@ -34,7 +34,7 @@ public final class HelloWorldClient {
                     .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
             // block until request is complete and afterFinally() is called

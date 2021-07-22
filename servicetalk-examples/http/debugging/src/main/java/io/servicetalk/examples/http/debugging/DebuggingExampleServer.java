@@ -26,8 +26,7 @@ import io.servicetalk.logging.api.LogLevel;
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
@@ -159,8 +158,8 @@ public final class DebuggingExampleServer {
                         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, Boolean.TRUE::booleanValue)
                         .build())
                 .listenAndAwait((ctx, request, responseFactory) -> {
-                    String who = request.payloadBody(textDeserializer());
-                    return succeeded(responseFactory.ok().payloadBody("Hello " + who + "!", textSerializer()));
+                    String who = request.payloadBody(textSerializerUtf8());
+                    return succeeded(responseFactory.ok().payloadBody("Hello " + who + "!", textSerializerUtf8()));
                 })
                 .awaitShutdown();
     }

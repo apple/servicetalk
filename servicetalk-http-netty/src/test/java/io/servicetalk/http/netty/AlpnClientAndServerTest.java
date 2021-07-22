@@ -42,8 +42,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.VerificationTestUtils.assertThrows;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -131,7 +130,7 @@ class AlpnClientAndServerTest {
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
                     requestVersion.put(request.version());
-                    return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer());
+                    return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializerUtf8());
                 })
                 .toFuture().get();
     }
@@ -208,7 +207,7 @@ class AlpnClientAndServerTest {
     private void assertResponseAndServiceContext(HttpResponse response) throws Exception {
         assertThat(response.version(), is(expectedProtocol));
         assertThat(response.status(), is(OK));
-        assertThat(response.payloadBody(textDeserializer()), is(PAYLOAD_BODY));
+        assertThat(response.payloadBody(textSerializerUtf8()), is(PAYLOAD_BODY));
 
         HttpServiceContext serviceCtx = serviceContext.take();
         assertThat(serviceCtx.protocol(), is(expectedProtocol));

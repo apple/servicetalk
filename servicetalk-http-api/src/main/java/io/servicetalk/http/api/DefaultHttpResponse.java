@@ -45,6 +45,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpResponse encoding(final ContentCodec encoding) {
         original.encoding(encoding);
@@ -68,6 +69,11 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     }
 
     @Override
+    public <T> T payloadBody(final HttpDeserializer2<T> deserializer) {
+        return deserializer.deserialize(headers(), original.payloadHolder().allocator(), payloadBody);
+    }
+
+    @Override
     public HttpResponse payloadBody(final Buffer payloadBody) {
         this.payloadBody = requireNonNull(payloadBody);
         original.payloadBody(from(payloadBody));
@@ -76,6 +82,13 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
 
     @Override
     public <T> HttpResponse payloadBody(final T pojo, final HttpSerializer<T> serializer) {
+        this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
+        original.payloadBody(from(payloadBody));
+        return this;
+    }
+
+    @Override
+    public <T> HttpResponse payloadBody(final T pojo, final HttpSerializer2<T> serializer) {
         this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
         original.payloadBody(from(payloadBody));
         return this;

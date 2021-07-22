@@ -36,6 +36,13 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.Single.zip;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.ENTITY_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.FULL_RECOMMEND_STREAM_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.METADATA_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RATING_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RECOMMEND_STREAM_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_SERIALIZER;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
@@ -43,26 +50,19 @@ import static io.servicetalk.examples.http.service.composition.backends.ErrorRes
  * {@link FullRecommendation} objects as JSON.
  */
 final class StreamingGatewayService implements StreamingHttpService {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamingGatewayService.class);
-
-    private static final String USER_ID_QP_NAME = "userId";
-    private static final String ENTITY_ID_QP_NAME = "entityId";
 
     private final StreamingHttpClient recommendationsClient;
     private final HttpClient metadataClient;
     private final HttpClient ratingsClient;
     private final HttpClient userClient;
-    private final HttpSerializationProvider serializers;
 
     StreamingGatewayService(final StreamingHttpClient recommendationsClient, final HttpClient metadataClient,
-                            final HttpClient ratingsClient, final HttpClient userClient,
-                            HttpSerializationProvider serializers) {
+                            final HttpClient ratingsClient, final HttpClient userClient) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
         this.ratingsClient = ratingsClient;
         this.userClient = userClient;
-        this.serializers = serializers;
     }
 
     @Override
@@ -79,8 +79,7 @@ final class StreamingGatewayService implements StreamingHttpService {
                 .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                 .map(response -> response.transformPayloadBody(recommendations ->
                                 queryRecommendationDetails(recommendations, errorQpValues),
-                        serializers.deserializerFor(Recommendation.class),
-                        serializers.serializerFor(FullRecommendation.class)));
+                        RECOMMEND_STREAM_SERIALIZER, FULL_RECOMMEND_STREAM_SERIALIZER));
     }
 
     private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations,
@@ -91,21 +90,21 @@ final class StreamingGatewayService implements StreamingHttpService {
                             .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.
-                            .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
+                            .map(response -> response.payloadBody(METADATA_SERIALIZER));
 
             Single<User> user =
                     userClient.request(userClient.get("/user")
                             .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into User.
-                            .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
+                            .map(response -> response.payloadBody(USER_SERIALIZER));
 
             Single<Rating> rating =
                     ratingsClient.request(ratingsClient.get("/rating")
                             .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into Rating.
-                            .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
+                            .map(response -> response.payloadBody(RATING_SERIALIZER))
                             // We consider ratings to be a non-critical data and hence we substitute the response
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".

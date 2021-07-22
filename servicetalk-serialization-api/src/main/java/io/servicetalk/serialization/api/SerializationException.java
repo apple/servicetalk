@@ -17,7 +17,9 @@ package io.servicetalk.serialization.api;
 
 /**
  * Exception indicating an error during serialization or deserialization.
+ * @deprecated Use {@link io.servicetalk.serializer.api.SerializationException}.
  */
+@Deprecated
 public final class SerializationException extends RuntimeException {
 
     private static final long serialVersionUID = 4181881136732849119L;

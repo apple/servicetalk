@@ -19,7 +19,9 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 /**
  * Common available encoding implementations.
+ * @deprecated Use {@link NettyCompression} and {@link NettyBufferEncoders}.
  */
+@Deprecated
 public final class ContentCodings {
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
