@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
@@ -51,10 +52,13 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         }
     };
 
+    final BooleanSupplier shouldOffload;
     private final Executor executor;
 
-    TaskBasedAsyncSingleOperator(Single<T> original, Executor executor) {
+    TaskBasedAsyncSingleOperator(final Single<T> original,
+                                 final BooleanSupplier shouldOffload, final Executor executor) {
         super(original);
+        this.shouldOffload = shouldOffload;
         this.executor = executor;
     }
 
@@ -63,8 +67,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+    protected void handleSubscribe(final Subscriber<? super T> subscriber,
+                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
         Subscriber<? super T> upstreamSubscriber = apply(subscriber);
 
@@ -76,26 +80,25 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
             implements SingleSource.Subscriber<T> {
         private final SingleSource.Subscriber<T> target;
 
-        SingleSubscriberOffloadedTerminals(final Subscriber<T> target, final Executor executor) {
-            super(executor);
+        SingleSubscriberOffloadedTerminals(final Subscriber<T> target,
+                                           final BooleanSupplier shouldOffload, final Executor executor) {
+            super(shouldOffload, executor);
             this.target = requireNonNull(target);
         }
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            LOGGER.trace("offloading Single onSuccess on {}", executor);
             terminal(result == null ? NULL_WRAPPER : result);
         }
 
         @Override
         public void onError(final Throwable t) {
-            LOGGER.trace("offloading Single onError on {}", executor);
             terminal(TerminalNotification.error(t));
         }
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
-            LOGGER.error("Failed to execute task on the executor {}. " +
+            LOGGER.warn("Failed to execute task on the executor {}. " +
                     "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target, cause);
             target.onError(cause);
         }
@@ -105,10 +108,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
             if (terminal instanceof TerminalNotification) {
                 final Throwable error = ((TerminalNotification) terminal).cause();
                 assert error != null;
-                LOGGER.trace("delivering Single onError");
                 safeOnError(target, error);
             } else {
-                LOGGER.trace("delivering Single onSuccess");
                 safeOnSuccess(target, uncheckCast(terminal));
             }
         }
@@ -116,7 +117,6 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         @Override
         void sendOnSubscribe(final Cancellable cancellable) {
             try {
-                LOGGER.trace("delivering Single onSubscribe");
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
@@ -134,16 +134,20 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
 
     static final class SingleSubscriberOffloadedCancellable<T> implements SingleSource.Subscriber<T> {
         private final SingleSource.Subscriber<? super T> subscriber;
+        private final BooleanSupplier shouldOffload;
         private final Executor executor;
 
-        SingleSubscriberOffloadedCancellable(final Subscriber<? super T> subscriber, final Executor executor) {
+        SingleSubscriberOffloadedCancellable(final Subscriber<? super T> subscriber,
+                                             final BooleanSupplier shouldOffload, final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
+            this.shouldOffload = shouldOffload;
             this.executor = executor;
         }
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            subscriber.onSubscribe(new TaskBasedAsyncCompletableOperator.OffloadedCancellable(cancellable, executor));
+            subscriber.onSubscribe(
+                    new TaskBasedAsyncCompletableOperator.OffloadedCancellable(cancellable, shouldOffload, executor));
         }
 
         @Override

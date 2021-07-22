@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -46,6 +47,15 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         SUBSCRIBE_ON_SUCCESS(2, "subscribe, request",
                 Publisher::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
+                (p, e) -> p.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_CONDITIONAL_SECOND(1, "request",
+                (p, e) -> p.defer(() -> {
+                    AtomicInteger countdown = new AtomicInteger(1);
+                    return p.subscribeOn(e, () -> countdown.decrementAndGet() < 0);
+                }), TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_ERROR(2, "subscribe, request",
                 Publisher::subscribeOn, TerminalOperation.ERROR,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
@@ -54,6 +64,15 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, OFFLOAD_EXECUTOR),
         PUBLISH_ON_SUCCESS(3, "onSubscribe, onNext, onComplete",
                 Publisher::publishOn, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
+                (p, e) -> p.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_SECOND(2, "onNext, onComplete",
+                (p, e) -> p.defer(() -> {
+                    AtomicInteger countdown = new AtomicInteger(1);
+                    return p.publishOn(e, () -> countdown.decrementAndGet() < 0);
+                }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_ERROR(2, "onSubscribe, onError",
                 Publisher::publishOn, TerminalOperation.ERROR,

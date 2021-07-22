@@ -18,8 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -29,8 +28,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  * {@link Publisher}.
  */
 final class PublishAndSubscribeOnPublishers {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
 
     private PublishAndSubscribeOnPublishers() {
         // No instance.
@@ -42,12 +39,12 @@ final class PublishAndSubscribeOnPublishers {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
-        return immediate() == executor ? original : new PublishOn<>(original, executor);
+    static <T> Publisher<T> publishOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
-    static <T> Publisher<T> subscribeOn(Publisher<T> original, Executor executor) {
-        return immediate() == executor ? original : new SubscribeOn<>(original, executor);
+    static <T> Publisher<T> subscribeOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+        return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
     /**
@@ -59,13 +56,13 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        PublishOn(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
+        PublishOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
-        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriber<>(subscriber, executor());
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+            return new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -89,13 +86,13 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        SubscribeOn(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
+        SubscribeOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
-        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriptionSubscriber<>(subscriber, executor());
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+            return new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -107,8 +104,11 @@ final class PublishAndSubscribeOnPublishers {
                         contextProvider.wrapSubscription(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Publisher subscribe() on {}", executor());
-                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                if (shouldOffload.getAsBoolean()) {
+                    executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                } else {
+                    super.handleSubscribe(wrapped, contextMap, contextProvider);
+                }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 // note that the subscriber error is not offloaded.

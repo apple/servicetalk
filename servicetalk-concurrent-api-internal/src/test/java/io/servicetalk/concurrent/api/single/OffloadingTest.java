@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -35,25 +36,37 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
 
     enum OffloadCase {
         NO_OFFLOAD_SUCCESS(0, "none",
-                (p, e) -> p, TerminalOperation.COMPLETE,
+                (s, e) -> s, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         NO_OFFLOAD_ERROR(0, "none",
-                (p, e) -> p, TerminalOperation.ERROR,
+                (s, e) -> s, TerminalOperation.ERROR,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         NO_OFFLOAD_CANCEL(0, "none",
-                (p, e) -> p, TerminalOperation.CANCEL,
+                (s, e) -> s, TerminalOperation.CANCEL,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, APP_EXECUTOR),
-        SUBSCRIBE_ON_SUCCESS(1, "subscribe, request",
+        SUBSCRIBE_ON_SUCCESS(1, "subscribe",
                 Single::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
-        SUBSCRIBE_ON_ERROR(1, "subscribe, request",
+        SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
+                (s, e) -> s.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_ERROR(1, "subscribe",
                 Single::subscribeOn, TerminalOperation.ERROR,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
-        SUBSCRIBE_ON_CANCEL(2, "subscribe, request, cancel",
+        SUBSCRIBE_ON_CANCEL(2, "subscribe, cancel",
                 Single::subscribeOn, TerminalOperation.CANCEL,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, OFFLOAD_EXECUTOR),
         PUBLISH_ON_SUCCESS(2, "onSubscribe, onComplete",
                 Single::publishOn, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
+                (s, e) -> s.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
+                (s, e) -> s.defer(() -> {
+                    AtomicInteger countdown = new AtomicInteger(1);
+                    return s.publishOn(e, () -> countdown.decrementAndGet() < 0);
+                }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_ERROR(2, "onSubscribe, onError",
                 Single::publishOn, TerminalOperation.ERROR,

@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -46,6 +47,9 @@ class OffloadingTest extends AbstractCompletableOffloadingTest {
         SUBSCRIBE_ON_SUCCESS(1, "subscribe",
                 Completable::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
+                (c, e) -> c.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.ERROR,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_ERROR(1, "subscribe",
                 Completable::subscribeOn, TerminalOperation.ERROR,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
@@ -54,6 +58,15 @@ class OffloadingTest extends AbstractCompletableOffloadingTest {
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue(), APP_EXECUTOR, OFFLOAD_EXECUTOR),
         PUBLISH_ON_SUCCESS(2, "onSubscribe, onComplete",
                 Completable::publishOn, TerminalOperation.COMPLETE,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
+                (c, e) -> c.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.ERROR,
+                APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
+        PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
+                (c, e) -> c.defer(() -> {
+                    AtomicInteger countdown = new AtomicInteger(1);
+                    return c.publishOn(e, () -> countdown.decrementAndGet() < 0);
+                }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_ERROR(2, "onSubscribe, onError",
                 Completable::publishOn, TerminalOperation.ERROR,
