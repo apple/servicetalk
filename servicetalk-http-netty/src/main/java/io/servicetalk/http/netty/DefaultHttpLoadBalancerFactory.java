@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
@@ -122,12 +123,14 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * by the returned {@link Builder}.
          * @return A new {@link Builder}.
          */
+        @SuppressWarnings("deprecation")
         public static <ResolvedAddress> Builder<ResolvedAddress> from(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
             final HttpExecutionStrategyInfluencer strategyInfluencer;
             if (rawFactory instanceof HttpExecutionStrategyInfluencer) {
                 strategyInfluencer = (HttpExecutionStrategyInfluencer) rawFactory;
-            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory) {
+            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory
+                    || rawFactory instanceof RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory) {
                 strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
             } else {
                 // user provided load balancer assumed to be blocking unless it implements
