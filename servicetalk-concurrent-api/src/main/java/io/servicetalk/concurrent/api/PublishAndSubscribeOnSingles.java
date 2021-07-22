@@ -19,9 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -32,8 +29,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  * {@link Single}.
  */
 final class PublishAndSubscribeOnSingles {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
 
     private PublishAndSubscribeOnSingles() {
         // No instance.
@@ -68,7 +63,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedTerminals<>(subscriber, this::offload, executor());
+            return new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -97,7 +92,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedCancellable<>(subscriber, this::offload, executor());
+            return new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -108,9 +103,8 @@ final class PublishAndSubscribeOnSingles {
                 Subscriber<? super T> wrapped =
                         contextProvider.wrapCancellable(subscriber, contextMap);
 
-                if (offload()) {
+                if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    LOGGER.trace("Offloading Single subscribe() on {}", executor());
                     executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
                 } else {
                     // continue on the current thread

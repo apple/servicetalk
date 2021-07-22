@@ -19,9 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -36,8 +33,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  * No assumption should be made by applications that a consistent thread will be used for subsequent signals.
  */
 final class PublishAndSubscribeOnCompletables {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
 
     private PublishAndSubscribeOnCompletables() {
         // No instance.
@@ -72,7 +67,7 @@ final class PublishAndSubscribeOnCompletables {
 
         @Override
         public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedTerminals(subscriber, this::offload, executor());
+            return new CompletableSubscriberOffloadedTerminals(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -101,7 +96,7 @@ final class PublishAndSubscribeOnCompletables {
 
         @Override
         public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedCancellable(subscriber, this::offload, executor());
+            return new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
         }
 
         @Override
@@ -112,8 +107,7 @@ final class PublishAndSubscribeOnCompletables {
                 Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                if (offload()) {
-                    LOGGER.trace("Offloading Completable subscribe() on {}", executor());
+                if (shouldOffload.getAsBoolean()) {
                     executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
                 } else {
                     super.handleSubscribe(wrapped, contextMap, contextProvider);
