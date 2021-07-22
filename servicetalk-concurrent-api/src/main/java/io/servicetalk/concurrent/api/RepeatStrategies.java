@@ -20,6 +20,7 @@ import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.baseDelayNanos;
+import static io.servicetalk.concurrent.api.RetryStrategies.checkFullJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkJitterDelta;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkMaxRetries;
 import static io.servicetalk.concurrent.api.RetryStrategies.maxShift;
@@ -69,6 +70,7 @@ public final class RepeatStrategies {
                                                                                final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         final long delayNanos = delay.toNanos();
+        checkFullJitter(delayNanos);
         return repeatCount -> timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS);
     }
 
@@ -90,6 +92,7 @@ public final class RepeatStrategies {
         checkMaxRetries(maxRepeats);
         requireNonNull(timerExecutor);
         final long delayNanos = delay.toNanos();
+        checkFullJitter(delayNanos);
         return repeatCount -> repeatCount <= maxRepeats ?
                 timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : terminateRepeat();
     }
