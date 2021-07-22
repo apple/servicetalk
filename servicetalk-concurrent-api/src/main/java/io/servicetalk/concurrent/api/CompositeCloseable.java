@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 
 import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * A {@link AsyncCloseable} and {@link Closeable} that allows for adding new {@link AsyncCloseable}s till it is
  * closed.
  */
-public interface CompositeCloseable extends AsyncCloseable, GracefulAutoCloseable {
+public interface CompositeCloseable extends AsyncCloseable, GracefulCloseable {
 
     /**
      * Merges the passed {@link AsyncCloseable} with this {@link CompositeCloseable} such that when this {@link
@@ -147,11 +148,11 @@ public interface CompositeCloseable extends AsyncCloseable, GracefulAutoCloseabl
 
     /**
      * Closes all contained {@link AsyncCloseable}s and awaits termination of all of them. If any of the contained
-     * {@link AsyncCloseable}s terminated with a failure, this method terminates with an {@link Exception} only after
+     * {@link AsyncCloseable}s terminated with a failure, this method terminates with an {@link IOException} only after
      * all the contained {@link AsyncCloseable}s have terminated.
      *
-     * @throws Exception If any of the contained {@link AsyncCloseable}s terminate with a failure.
+     * @throws IOException If any of the contained {@link AsyncCloseable}s terminate with a failure.
      */
     @Override
-    void close() throws Exception;
+    void close() throws IOException;
 }

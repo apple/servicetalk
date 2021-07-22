@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,13 @@
  */
 package io.servicetalk.concurrent;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /**
- * An extension of {@link AutoCloseable} to add graceful closure semantics.
+ * An extension of {@link Closeable} to add graceful closure semantics.
  */
-public interface GracefulAutoCloseable extends AutoCloseable {
+public interface GracefulCloseable extends Closeable {
 
     /**
      * Used to close/shutdown a resource, similar to {@link #close()}, but attempts to cleanup state before
@@ -29,9 +32,9 @@ public interface GracefulAutoCloseable extends AutoCloseable {
      * want to wait indefinitely, and are unsure if the implementation applies a timeout, it is advisable to apply a
      * timeout and force a call to {@link #close()}.
      *
-     * @throws Exception if graceful closure failed.
+     * @throws IOException if graceful closure failed.
      */
-    default void closeGracefully() throws Exception {
+    default void closeGracefully() throws IOException {
         close();
     }
 }

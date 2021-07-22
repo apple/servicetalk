@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.utils.internal.PlatformDependent;
 
 import java.util.concurrent.Future;
@@ -23,27 +23,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * A utility class for methods related to {@link AutoCloseable}.
+ * A utility class for methods related to {@link java.io.Closeable}.
  */
-public final class AutoCloseables {
+public final class Closeables {
 
-    private AutoCloseables() {
+    private Closeables() {
         // No instances
     }
 
     /**
-     * Invokes {@link GracefulAutoCloseable#closeGracefully()} on the {@code closable}, applies a timeout, and if the
-     * timeout fires forces a call to {@link GracefulAutoCloseable#close()}.
+     * Invokes {@link GracefulCloseable#closeGracefully()} on the {@code closable}, applies a timeout, and if the
+     * timeout fires forces a call to {@link GracefulCloseable#close()}.
      *
      * @param executor {@link Executor} to use for applying timeout.
-     * @param closable The {@link GracefulAutoCloseable} to initiate {@link GracefulAutoCloseable#closeGracefully()} on.
-     * @param gracefulCloseTimeout The timeout duration to wait for {@link GracefulAutoCloseable#closeGracefully()} to
+     * @param closable The {@link GracefulCloseable} to initiate {@link GracefulCloseable#closeGracefully()} on.
+     * @param gracefulCloseTimeout The timeout duration to wait for {@link GracefulCloseable#closeGracefully()} to
      * complete.
      * @param gracefulCloseTimeoutUnit The time unit applied to {@code gracefulCloseTimeout}.
      *
      * @throws Exception if graceful closure failed.
      */
-    public static void closeGracefully(final Executor executor, final GracefulAutoCloseable closable,
+    public static void closeGracefully(final Executor executor, final GracefulCloseable closable,
                                        final long gracefulCloseTimeout, final TimeUnit gracefulCloseTimeoutUnit)
             throws Exception {
         Future<Void> graceful = executor.submit(() -> {

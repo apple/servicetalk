@@ -75,6 +75,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -1279,8 +1280,13 @@ class ProtocolCompatibilityTest {
             }
 
             @Override
-            public void close() throws Exception {
-                channel.shutdown().awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+            public void close() throws IOException {
+                try {
+                    channel.shutdown().awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException(e);
+                }
             }
 
             @Override

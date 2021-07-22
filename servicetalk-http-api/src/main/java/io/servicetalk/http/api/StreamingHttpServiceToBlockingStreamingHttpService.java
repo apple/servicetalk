@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
@@ -77,13 +78,13 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
     }
 
     @Override
-    public void close() throws Exception {
-        original.closeAsync().toFuture().get();
+    public void close() throws IOException {
+        awaitTermination(original.closeAsync().toFuture());
     }
 
     @Override
-    public void closeGracefully() throws Exception {
-        original.closeAsyncGracefully().toFuture().get();
+    public void closeGracefully() throws IOException {
+        awaitTermination(original.closeAsyncGracefully().toFuture());
     }
 
     private static final class MessageBodyToPayloadWriter extends SubscribableCompletable {

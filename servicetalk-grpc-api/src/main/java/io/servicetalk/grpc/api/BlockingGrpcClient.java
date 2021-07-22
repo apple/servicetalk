@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 
 /**
  * A blocking client to a <a href="https://www.grpc.io">gRPC</a> service.
  *
  * @param <Client> The corresponding {@link GrpcClient}
  */
-public interface BlockingGrpcClient<Client extends GrpcClient> extends GracefulAutoCloseable {
+public interface BlockingGrpcClient<Client extends GrpcClient> extends GracefulCloseable {
 
     /**
      * Converts this {@link BlockingGrpcClient} to a client.

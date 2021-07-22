@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.api.Single;
+
+import java.io.IOException;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 @FunctionalInterface
-public interface BlockingHttpService extends GracefulAutoCloseable {
+public interface BlockingHttpService extends GracefulCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -36,7 +38,7 @@ public interface BlockingHttpService extends GracefulAutoCloseable {
             throws Exception;
 
     @Override
-    default void close() throws Exception {
+    default void close() throws IOException {
         // noop
     }
 }
