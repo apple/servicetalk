@@ -34,7 +34,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static java.time.Duration.ofDays;
-import static java.time.Duration.ofNanos;
+import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
     private static final Duration FULL_JITTER = ofDays(1024);
-    private static final Duration NULL_JITTER = ofNanos(1);
+    private static final Duration NULL_JITTER = ofMillis(1);
     private int maxRetries;
     @Nullable
     private BiPredicate<Meta, Throwable> retryForPredicate;
