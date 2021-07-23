@@ -23,7 +23,7 @@ import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
 
 /**
- * Utilities to cache serializer instances.
+ * Utilities to cache POJO to JSON serializer instances.
  */
 public final class SerializerUtils {
     public static final HttpSerializerDeserializer<CreatePojoRequest> REQ_SERIALIZER =
