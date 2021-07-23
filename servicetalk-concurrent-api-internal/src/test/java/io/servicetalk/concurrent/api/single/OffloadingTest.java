@@ -48,7 +48,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
                 Single::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
-                (s, e) -> s.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (s, e) -> s.subscribeOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_ERROR(1, "subscribe",
                 Single::subscribeOn, TerminalOperation.ERROR,
@@ -60,12 +60,12 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
                 Single::publishOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
-                (s, e) -> s.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (s, e) -> s.publishOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
                 (s, e) -> s.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return s.publishOn(e, () -> countdown.decrementAndGet() < 0);
+                    return s.publishOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_ERROR(2, "onSubscribe, onError",

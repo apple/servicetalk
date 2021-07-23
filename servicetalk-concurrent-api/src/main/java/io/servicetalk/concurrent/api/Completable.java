@@ -1388,7 +1388,7 @@ public abstract class Completable {
      * {@link Subscriber}.
      */
     public final Completable publishOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnCompletables.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1405,7 +1405,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
      */
-    public final Completable publishOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Completable publishOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.publishOn(this, shouldOffload, executor);
     }
 
@@ -1424,7 +1424,7 @@ public abstract class Completable {
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
     public final Completable subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1444,7 +1444,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
-    public final Completable subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Completable subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, shouldOffload, executor);
     }
 

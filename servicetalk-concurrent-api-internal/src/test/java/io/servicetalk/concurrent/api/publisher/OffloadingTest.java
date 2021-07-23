@@ -48,12 +48,12 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
                 Publisher::subscribeOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
-                (p, e) -> p.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (p, e) -> p.subscribeOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_CONDITIONAL_SECOND(1, "request",
                 (p, e) -> p.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return p.subscribeOn(e, () -> countdown.decrementAndGet() < 0);
+                    return p.subscribeOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         SUBSCRIBE_ON_ERROR(2, "subscribe, request",
@@ -66,12 +66,12 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
                 Publisher::publishOn, TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
-                (p, e) -> p.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (p, e) -> p.publishOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_CONDITIONAL_SECOND(2, "onNext, onComplete",
                 (p, e) -> p.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return p.publishOn(e, () -> countdown.decrementAndGet() < 0);
+                    return p.publishOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,
                 APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, APP_EXECUTOR, OFFLOAD_EXECUTOR, nullValue(), nullValue()),
         PUBLISH_ON_ERROR(2, "onSubscribe, onError",

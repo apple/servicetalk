@@ -2871,7 +2871,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}.
      */
     public final Publisher<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnPublishers.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -2888,7 +2888,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}.
      */
-    public final Publisher<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Publisher<T> publishOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
@@ -2907,7 +2907,7 @@ public abstract class Publisher<T> {
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
     public final Publisher<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -2927,7 +2927,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
-    public final Publisher<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Publisher<T> subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 

@@ -1361,7 +1361,7 @@ public abstract class Single<T> {
      * {@link Subscriber}.
      */
     public final Single<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnSingles.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1377,7 +1377,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
      */
-    public final Single<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Single<T> publishOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
@@ -1396,7 +1396,7 @@ public abstract class Single<T> {
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
     public final Single<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnSingles.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1416,7 +1416,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
-    public final Single<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Single<T> subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 

@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
@@ -47,7 +48,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *
  * @see AbstractSynchronousPublisherOperator
  */
-abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPublisherOperator<T, T> {
+abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncPublisherOperator.class);
     private static final Object NULL_WRAPPER = new Object() {
@@ -57,14 +58,19 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
     };
 
-    final BooleanSupplier shouldOffload;
+    private final Publisher<T> original;
+    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
-                                    final BooleanSupplier shouldOffload, final Executor executor) {
-        super(original);
-        this.shouldOffload = shouldOffload;
+                                    final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+        this.original = original;
+        this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
+    }
+
+    final BooleanSupplier shouldOffload() {
+        return shouldOffloadSupplier.get();
     }
 
     final Executor executor() {
@@ -72,12 +78,9 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super T> subscriber,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-
-        final Subscriber<? super T> upstreamSubscriber = apply(subscriber);
-
-        original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
+    void handleSubscribe(final Subscriber<? super T> subscriber,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(subscriber, contextMap, contextProvider);
     }
 
     /**

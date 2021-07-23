@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -39,11 +40,13 @@ final class PublishAndSubscribeOnPublishers {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Publisher<T> publishOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+    static <T> Publisher<T> publishOn(final Publisher<T> original,
+                                      final Supplier<BooleanSupplier> shouldOffload, final Executor executor) {
         return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
-    static <T> Publisher<T> subscribeOn(Publisher<T> original, BooleanSupplier shouldOffload, Executor executor) {
+    static <T> Publisher<T> subscribeOn(final Publisher<T> original,
+                                        final Supplier<BooleanSupplier> shouldOffload, final Executor executor) {
         return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
@@ -56,21 +59,22 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        PublishOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
-            super(original, shouldOffload, executor);
+        PublishOn(final Publisher<T> original,
+                  final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
-        }
-
-        @Override
-        public void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        void handleSubscribe(final Subscriber<? super T> subscriber,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // re-wrap the subscriber so that async context is restored during offloading.
             Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
-            super.handleSubscribe(wrapped, contextMap, contextProvider);
+
+            BooleanSupplier shouldOffload = shouldOffload();
+            final Subscriber<? super T> upstreamSubscriber =
+                    new OffloadedSubscriber<>(wrapped, shouldOffload, executor());
+
+            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
     }
 
@@ -85,13 +89,9 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        SubscribeOn(final Publisher<T> original, final BooleanSupplier shouldOffload, final Executor executor) {
-            super(original, shouldOffload, executor);
-        }
-
-        @Override
-        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
+        SubscribeOn(final Publisher<T> original,
+                    final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
@@ -99,14 +99,18 @@ final class PublishAndSubscribeOnPublishers {
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
                 // re-wrap the subscriber so that async context is restored during offloading.
-                Subscriber<? super T> wrapped =
-                        contextProvider.wrapSubscription(subscriber, contextMap);
+                Subscriber<? super T> wrapped = contextProvider.wrapSubscription(subscriber, contextMap);
+
+                BooleanSupplier shouldOffload = shouldOffload();
+                final Subscriber<? super T> upstreamSubscriber =
+                        new OffloadedSubscriptionSubscriber<>(wrapped, shouldOffload, executor());
 
                 // offload the remainder of subscribe()
                 if (shouldOffload.getAsBoolean()) {
-                    executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                    executor().execute(
+                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
                 } else {
-                    super.handleSubscribe(wrapped, contextMap, contextProvider);
+                    super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
                 }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception

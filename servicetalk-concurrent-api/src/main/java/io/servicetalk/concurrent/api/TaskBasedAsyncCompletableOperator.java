@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -38,17 +39,23 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *  {@link Executor} invoked via the {@link Executor#execute(Runnable)} method independently for each signal.
  *  No assumption should be made by applications that a consistent thread will be used for subsequent signals.
  */
-abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCompletableOperator {
+abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscribeCompletable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
-    final BooleanSupplier shouldOffload;
+    private final Completable original;
+    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
-    TaskBasedAsyncCompletableOperator(Completable original, BooleanSupplier shouldOffload, Executor executor) {
-        super(original);
-        this.shouldOffload = shouldOffload;
+    TaskBasedAsyncCompletableOperator(final Completable original,
+                                      final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+        this.original = original;
+        this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
+    }
+
+    final BooleanSupplier shouldOffload() {
+        return shouldOffloadSupplier.get();
     }
 
     final Executor executor() {
@@ -56,12 +63,10 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
     }
 
     @Override
-    void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap,
-                         AsyncContextProvider contextProvider) {
+    void handleSubscribe(final Subscriber subscriber,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
-        Subscriber upstreamSubscriber = apply(subscriber);
-
-        original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
+        original.delegateSubscribe(subscriber, contextMap, contextProvider);
     }
 
     abstract static class AbstractOffloadedSingleValueSubscriber {

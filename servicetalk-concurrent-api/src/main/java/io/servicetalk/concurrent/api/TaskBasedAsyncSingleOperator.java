@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
@@ -42,7 +43,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see AbstractSynchronousSingleOperator
  */
-abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingleOperator<T, T> {
+abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncSingleOperator.class);
     private static final Object NULL_WRAPPER = new Object() {
@@ -52,14 +53,19 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         }
     };
 
-    final BooleanSupplier shouldOffload;
+    private final Single<T> original;
+    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
     TaskBasedAsyncSingleOperator(final Single<T> original,
-                                 final BooleanSupplier shouldOffload, final Executor executor) {
-        super(original);
-        this.shouldOffload = shouldOffload;
+                                 final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+        this.original = original;
+        this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
+    }
+
+    final BooleanSupplier shouldOffload() {
+        return shouldOffloadSupplier.get();
     }
 
     final Executor executor() {
@@ -67,12 +73,10 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super T> subscriber,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
-        Subscriber<? super T> upstreamSubscriber = apply(subscriber);
-
-        original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
+        original.delegateSubscribe(subscriber, contextMap, contextProvider);
     }
 
     static final class SingleSubscriberOffloadedTerminals<T>
