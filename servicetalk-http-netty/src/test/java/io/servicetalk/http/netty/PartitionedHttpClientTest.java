@@ -333,7 +333,8 @@ class PartitionedHttpClientTest {
             clients = ClientGroup.from(group ->
                     HttpClients.forSingleAddress(group.address())
                             .ioExecutor(group.executionContext.ioExecutor())
-                            .executionStrategy(defaultStrategy(group.executionContext.executor()))
+                            .executor(group.executionContext.executor())
+                            .executionStrategy(defaultStrategy())
                             .bufferAllocator(group.executionContext.bufferAllocator())
                             .buildStreaming());
         }

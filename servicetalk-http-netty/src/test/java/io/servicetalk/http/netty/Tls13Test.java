@@ -90,7 +90,8 @@ class Tls13Test {
         }
         try (ServerContext serverContext = forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .executor(SERVER_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
             .sslConfig(serverSslBuilder.build())
             .listenBlockingAndAwait((ctx, request, responseFactory) -> {
@@ -108,8 +109,9 @@ class Tls13Test {
             }
             try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                     .ioExecutor(CLIENT_CTX.ioExecutor())
-                    .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
+                    .executor(CLIENT_CTX.executor())
+                    .executionStrategy(defaultStrategy())
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.FALSE::booleanValue)
                     .sslConfig(clientSslBuilder.build()).buildBlocking();
                  BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 

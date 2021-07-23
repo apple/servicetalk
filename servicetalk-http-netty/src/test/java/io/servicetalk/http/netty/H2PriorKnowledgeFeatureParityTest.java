@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -134,7 +133,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -186,8 +185,8 @@ class H2PriorKnowledgeFeatureParityTest {
     private static Stream<Arguments> clientExecutors() {
         return Stream.of(Arguments.of(NO_OFFLOAD, true),
                          Arguments.of(NO_OFFLOAD, false),
-                         Arguments.of(CACHED, true),
-                         Arguments.of(CACHED, false));
+                         Arguments.of(DEFAULT, true),
+                         Arguments.of(DEFAULT, false));
     }
 
     @AfterEach
@@ -199,10 +198,6 @@ class H2PriorKnowledgeFeatureParityTest {
             h1ServerContext.close();
         }
         serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
-        Executor executor = clientExecutionStrategy.executor();
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")

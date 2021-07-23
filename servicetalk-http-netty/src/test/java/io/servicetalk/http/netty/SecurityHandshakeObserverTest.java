@@ -160,7 +160,8 @@ class SecurityHandshakeObserverTest {
 
         try (ServerContext serverContext = serverBuilderFactory.apply(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .executor(SERVER_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
             .transportObserver(serverTransportObserver)
@@ -168,7 +169,8 @@ class SecurityHandshakeObserverTest {
 
              BlockingHttpClient client = clientBuilderFactory.apply(serverHostAndPort(serverContext))
                  .ioExecutor(CLIENT_CTX.ioExecutor())
-                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                 .executor(CLIENT_CTX.executor())
+                 .executionStrategy(defaultStrategy())
                  .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .peerHost(serverPemHostname()).build())
                  .appendConnectionFactoryFilter(

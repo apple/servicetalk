@@ -55,11 +55,9 @@ class HttpServerMultipleRequestsTest {
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
 
     @RegisterExtension
-    final ExecutionContextExtension serverExecution =
-            cached(new NettyIoThreadFactory("server-io"));
+    final ExecutionContextExtension serverContext = cached(new NettyIoThreadFactory("server-io"));
     @RegisterExtension
-    final ExecutionContextExtension clientExecution =
-            cached(new NettyIoThreadFactory("client-io"));
+    final ExecutionContextExtension clientContext = cached(new NettyIoThreadFactory("client-io"));
 
     @Disabled("https://github.com/apple/servicetalk/issues/981")
     @Test
@@ -80,8 +78,9 @@ class HttpServerMultipleRequestsTest {
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
-                .ioExecutor(serverExecution.ioExecutor())
-                .executionStrategy(defaultStrategy(serverExecution.executor()))
+                .ioExecutor(serverContext.ioExecutor())
+                .executor(serverContext.executor())
+                .executionStrategy(defaultStrategy())
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {
@@ -95,8 +94,9 @@ class HttpServerMultipleRequestsTest {
                         StreamingHttpClient client = compositeCloseable.append(
                                 HttpClients.forResolvedAddress(serverHostAndPort(ctx))
                                         .protocols(h1().maxPipelinedRequests(numRequests).build())
-                                        .ioExecutor(clientExecution.ioExecutor())
-                                        .executionStrategy(defaultStrategy(clientExecution.executor()))
+                                        .ioExecutor(clientContext.ioExecutor())
+                                        .executor(clientContext.executor())
+                                        .executionStrategy(defaultStrategy())
                                         .buildStreaming());
                         ReservedStreamingHttpConnection connection = client.reserveConnection(client.get("/"))
                                 .toFuture().get();

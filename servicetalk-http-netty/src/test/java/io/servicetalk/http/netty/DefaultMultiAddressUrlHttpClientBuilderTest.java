@@ -67,7 +67,8 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     void buildWithDefaults() throws Exception {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CTX.executor()))
+                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .buildStreaming();
         assertNotNull(newRequester);
         newRequester.closeAsync().toFuture().get();
@@ -77,7 +78,8 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     void buildAggregatedWithDefaults() throws Exception {
         HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CTX.executor()))
+                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .build();
         assertNotNull(newAggregatedRequester);
         newAggregatedRequester.closeAsync().toFuture().get();
@@ -87,7 +89,8 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     void buildBlockingWithDefaults() throws Exception {
         BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CTX.executor()))
+                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .buildBlockingStreaming();
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
@@ -97,7 +100,8 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     void buildBlockingAggregatedWithDefaults() throws Exception {
         BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CTX.executor()))
+                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .buildBlocking();
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
@@ -110,7 +114,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                 ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(mockedServiceDiscoverer)
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CTX.executor()))
+                .executionStrategy(defaultStrategy())
                 .buildStreaming();
         newRequester.closeAsync().toFuture().get();
         verify(mockedServiceDiscoverer, never()).closeAsync();
@@ -121,9 +125,9 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         // Assert prerequisites first.
         // Use different strategies, as ExecutionContextExtension shares the same strategy.
         HttpExecutionStrategy internalExecutionStrategy = HttpExecutionStrategies.customStrategyBuilder()
-                .offloadNone().executor(INTERNAL_CLIENT_CTX.executor()).build();
+                .offloadNone().build();
         HttpExecutionStrategy externalExecutionStrategy = HttpExecutionStrategies.customStrategyBuilder()
-                .offloadAll().executor(CTX.executor()).build();
+                .offloadAll().build();
         assertThat(internalExecutionStrategy, not(equalTo(externalExecutionStrategy)));
 
         BufferAllocator internalBufferAllocator = BufferAllocators.PREFER_DIRECT_ALLOCATOR;
@@ -144,6 +148,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
             final StreamingHttpClient streamingHttpClient = HttpClients.forMultiAddressUrl()
                     .initializer((scheme, address, builder) ->
                             builder.executionStrategy(internalExecutionStrategy)
+                                    .executor(INTERNAL_CLIENT_CTX.executor())
                                     .ioExecutor(INTERNAL_CLIENT_CTX.ioExecutor())
                                     .bufferAllocator(internalBufferAllocator)
                                     .executionStrategy(internalExecutionStrategy)
@@ -156,6 +161,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                                         return new StreamingHttpClientFilter(client) {
                                         };
                                     }))
+                    .executor(CTX.executor())
                     .ioExecutor(CTX.ioExecutor())
                     .executionStrategy(externalExecutionStrategy)
                     .bufferAllocator(externalBufferAllocator)

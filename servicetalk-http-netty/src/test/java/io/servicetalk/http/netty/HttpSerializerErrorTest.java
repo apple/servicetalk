@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -28,7 +27,6 @@ import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.transport.api.ServerContext;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -41,7 +39,7 @@ import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
-import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -53,15 +51,7 @@ class HttpSerializerErrorTest {
     private HttpExecutionStrategy serverExecutionStrategy;
 
     static Collection<HttpTestExecutionStrategy> executors() {
-        return asList(NO_OFFLOAD, CACHED);
-    }
-
-    @AfterEach
-    void teardown() throws Exception {
-        Executor executor = serverExecutionStrategy.executor();
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
+        return asList(NO_OFFLOAD, DEFAULT);
     }
 
     @ParameterizedTest

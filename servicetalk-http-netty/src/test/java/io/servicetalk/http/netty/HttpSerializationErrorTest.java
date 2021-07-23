@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
@@ -36,7 +35,7 @@ import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
-import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -49,15 +48,11 @@ class HttpSerializationErrorTest {
     private HttpExecutionStrategy serverExecutionStrategy;
 
     static Collection<HttpTestExecutionStrategy> executors() {
-        return asList(NO_OFFLOAD, CACHED);
+        return asList(NO_OFFLOAD, DEFAULT);
     }
 
     @AfterEach
     void teardown() throws Exception {
-        Executor executor = serverExecutionStrategy.executor();
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
     }
 
     @ParameterizedTest

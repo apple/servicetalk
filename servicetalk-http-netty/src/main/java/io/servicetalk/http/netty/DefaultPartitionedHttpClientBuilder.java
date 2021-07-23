@@ -252,14 +252,14 @@ final class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpCli
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        builderTemplate.ioExecutor(ioExecutor);
+    public PartitionedHttpClientBuilder<U, R> executor(final Executor executor) {
+        builderTemplate.executor(executor);
         return this;
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> executor(final Executor executor) {
-        builderTemplate.executor(executor);
+    public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
+        builderTemplate.ioExecutor(ioExecutor);
         return this;
     }
 

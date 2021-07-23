@@ -44,6 +44,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
@@ -118,7 +119,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
             assertNotSupported(scenario.requestEncoding);
         }
 
-        verifyNoErrors();
+        assertNoAsyncErrors(errors);
     }
 
     @Override

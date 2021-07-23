@@ -23,6 +23,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -61,6 +62,14 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 public abstract class GrpcClientBuilder<U, R> {
 
     private boolean appendedCatchAllFilter;
+
+    /**
+     * Sets the {@link Executor} for all clients created from this builder.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public abstract GrpcClientBuilder<U, R> executor(Executor executor);
 
     /**
      * Sets the {@link IoExecutor} for all clients created from this builder.

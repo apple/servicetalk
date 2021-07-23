@@ -15,12 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Single;
-
 import java.util.function.BooleanSupplier;
-
-import static java.util.function.Function.identity;
 
 /**
  * An {@link StreamingHttpServiceFilterFactory} implementation which offloads filters using a provided strategy.
@@ -45,40 +40,9 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
 
     @Override
     public StreamingHttpServiceFilter create(StreamingHttpService service) {
-        return new StreamingHttpServiceFilter(offloaded.create(service)) {
-
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                Executor se = strategy.executor();
-                Executor e = null != se ? se : ctx.executionContext().executor();
-
-                // The service should see our ExecutionStrategy inside the ExecutionContext:
-                final HttpServiceContext wrappedCtx =
-                        new ExecutionContextOverridingServiceContext(ctx, strategy, e);
-
-                if (strategy.isDataReceiveOffloaded()) {
-                    request = request.transformMessageBody(p -> p.publishOn(e, shouldOffload));
-                }
-                final Single<StreamingHttpResponse> resp;
-                if (strategy.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
-                    final StreamingHttpRequest r = request;
-                    resp = e.submit(() -> delegate().handle(wrappedCtx, r, responseFactory).subscribeShareContext())
-                            // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                            .flatMap(identity());
-                } else {
-                    resp = delegate().handle(wrappedCtx, request, responseFactory);
-                }
-                return strategy.isSendOffloaded() ?
-                        // This is different from invokeService() where we just offload once on the  flattened
-                        // (meta + data) stream. In this case, we need to preserve the service contract and hence
-                        // have to offload both meta and data separately.
-                        resp.map(r -> r.transformMessageBody(
-                                p -> p.subscribeOn(e, shouldOffload))).subscribeOn(e, shouldOffload) :
-                        resp;
-            }
-        };
+        StreamingHttpService offloadedService = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
+                strategy, null, shouldOffload, offloaded.create(service));
+        return new StreamingHttpServiceFilter(offloadedService);
     }
 
     @Override

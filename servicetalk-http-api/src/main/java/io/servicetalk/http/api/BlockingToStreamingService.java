@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Single.fromCallable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingToStreamingService extends AbstractServiceAdapterHolder {

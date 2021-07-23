@@ -18,6 +18,7 @@ package io.servicetalk.transport.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
 
 /**
  * {@link Executor} that handles IO.
@@ -46,4 +47,17 @@ public interface IoExecutor extends ListenableAsyncCloseable {
      * @see IoThreadFactory.IoThread
      */
     boolean isIoThreadSupported();
+
+    /**
+     * Returns a boolean supplier, if this IoExecutor supports {@link IoThreadFactory.IoThread} markers, that
+     * conditionally recommends offloading if the current thread is an IO thread. If this IoExecutor does not support
+     * IoThread marker interface then the boolean supplier will always return {@code true}.
+     *
+     * @return a Boolean supplier to recommend offloading appropriately based upon IoExecutor configuration.
+     */
+    default BooleanSupplier shouldOffloadSupplier() {
+        return isIoThreadSupported() ?
+                IoThreadFactory.IoThread::currentThreadIsIoThread : // offload if on IO thread
+                Boolean.TRUE::booleanValue; // unconditional
+    }
 }

@@ -87,14 +87,16 @@ class HttpOffloadingTest {
         service = new OffloadingVerifyingServiceStreaming();
         serverContext = forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .executor(SERVER_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .listenStreamingAndAwait(service);
 
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(serverHostAndPort(serverContext))
             .ioExecutor(CLIENT_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+            .executor(CLIENT_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
     }
