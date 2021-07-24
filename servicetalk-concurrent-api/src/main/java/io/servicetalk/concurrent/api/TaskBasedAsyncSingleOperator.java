@@ -54,18 +54,19 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
     };
 
     private final Single<T> original;
-    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
+    private final Supplier<? extends BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
     TaskBasedAsyncSingleOperator(final Single<T> original,
-                                 final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+                                 final Supplier<? extends BooleanSupplier> shouldOffloadSupplier,
+                                 final Executor executor) {
         this.original = original;
         this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
     }
 
     final BooleanSupplier shouldOffload() {
-        return shouldOffloadSupplier.get();
+        return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 
     final Executor executor() {

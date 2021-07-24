@@ -59,18 +59,19 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
     };
 
     private final Publisher<T> original;
-    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
+    private final Supplier<? extends BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
-                                    final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+                                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier,
+                                    final Executor executor) {
         this.original = original;
         this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
     }
 
     final BooleanSupplier shouldOffload() {
-        return shouldOffloadSupplier.get();
+        return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 
     final Executor executor() {
@@ -126,7 +127,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
             signals = newUnboundedSpscQueue(publisherSignalQueueInitialCapacity);
         }
 
-        private boolean offload() {
+        private boolean shouldOffload() {
             if (!hasOffloaded) {
                 if (!shouldOffload.getAsBoolean()) {
                     return false;
@@ -254,7 +255,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
             }
 
             try {
-                if (offload()) {
+                if (shouldOffload()) {
                     executor.execute(this::deliverSignals);
                 } else {
                     deliverSignals();
@@ -350,7 +351,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
             this.target = requireNonNull(target);
         }
 
-        private boolean offload() {
+        private boolean shouldOffload() {
             if (!hasOffloaded) {
                 if (!shouldOffload.getAsBoolean()) {
                     return false;
@@ -383,7 +384,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
             final int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
-                    if (offload()) {
+                    if (shouldOffload()) {
                         executor.execute(this::executeTask);
                     } else {
                         executeTask();

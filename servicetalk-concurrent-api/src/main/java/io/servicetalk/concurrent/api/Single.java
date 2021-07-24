@@ -1371,13 +1371,12 @@ public abstract class Single<T> {
      * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
-     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
-     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
      */
-    public final Single<T> publishOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
+    public final Single<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
@@ -1410,13 +1409,12 @@ public abstract class Single<T> {
      * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. If true is ever returned then
-     * all subsequent offload opportunities will be offloaded to the provided executor. If only false is returned then
-     * offloading to executor may still occur, for example, to preserve item or invocation ordering.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
-    public final Single<T> subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
+    public final Single<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 

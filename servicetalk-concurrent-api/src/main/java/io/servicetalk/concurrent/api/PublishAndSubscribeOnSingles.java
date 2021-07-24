@@ -42,12 +42,12 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> Single<T> publishOn(final Single<T> original,
-                                   final Supplier<BooleanSupplier> shouldOffload, final Executor executor) {
+                                   final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
         return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
     static <T> Single<T> subscribeOn(final Single<T> original,
-                                     final Supplier<BooleanSupplier> shouldOffload, final Executor executor) {
+                                     final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
         return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
@@ -61,7 +61,7 @@ final class PublishAndSubscribeOnSingles {
     private static final class PublishOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         PublishOn(final Single<T> original,
-                  final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+                  final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
             super(original, shouldOffloadSupplier, executor);
         }
 
@@ -90,7 +90,7 @@ final class PublishAndSubscribeOnSingles {
     private static final class SubscribeOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         SubscribeOn(final Single<T> original,
-                    final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
             super(original, shouldOffloadSupplier, executor);
         }
 

@@ -44,18 +44,19 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
     private final Completable original;
-    private final Supplier<BooleanSupplier> shouldOffloadSupplier;
+    private final Supplier<? extends BooleanSupplier> shouldOffloadSupplier;
     private final Executor executor;
 
     TaskBasedAsyncCompletableOperator(final Completable original,
-                                      final Supplier<BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+                                      final Supplier<? extends BooleanSupplier> shouldOffloadSupplier,
+                                      final Executor executor) {
         this.original = original;
         this.shouldOffloadSupplier = shouldOffloadSupplier;
         this.executor = executor;
     }
 
     final BooleanSupplier shouldOffload() {
-        return shouldOffloadSupplier.get();
+        return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 
     final Executor executor() {
@@ -96,7 +97,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
             this.executor = executor;
         }
 
-        private boolean offload() {
+        private boolean shouldOffload() {
             if (!hasOffloaded) {
                 if (!shouldOffload.getAsBoolean()) {
                     return false;
@@ -110,7 +111,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
             this.cancellable = cancellable;
             state = ON_SUBSCRIBE_RECEIVED_MASK;
             try {
-                if (offload()) {
+                if (shouldOffload()) {
                     executor.execute(this::deliverSignals);
                 } else {
                     deliverSignals();
@@ -171,7 +172,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
                     // have not seen onSubscribe and there is a sequencing issue on the Subscriber. Either way we avoid
                     // looping and deliver the terminal event.
                     try {
-                        if (offload()) {
+                        if (shouldOffload()) {
                             executor.execute(this::deliverSignals);
                         } else {
                             deliverSignals();
@@ -325,7 +326,16 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
         @Override
         public void cancel() {
-            if (shouldOffload.getAsBoolean()) {
+            boolean offloadCancel;
+            try {
+                offloadCancel = shouldOffload.getAsBoolean();
+            } catch (Throwable t) {
+                // As a policy, we call the target in the calling thread when the "hint" fails. In the future we could
+                // make this configurable.
+                offloadCancel = false;
+            }
+
+            if (offloadCancel) {
                 try {
                     executor.execute(() -> safeCancel(cancellable));
                 } catch (Throwable t) {
