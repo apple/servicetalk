@@ -2336,16 +2336,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.

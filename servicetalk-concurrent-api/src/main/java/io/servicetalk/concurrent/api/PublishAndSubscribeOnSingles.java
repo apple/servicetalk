@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  */
 final class PublishAndSubscribeOnSingles {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnSingles.class);
 
     private PublishAndSubscribeOnSingles() {
         // No instance.
@@ -52,7 +52,7 @@ final class PublishAndSubscribeOnSingles {
     }
 
     /**
-     * Completable that invokes the following methods on the provided executor
+     * Completable that invokes the following methods on the provided executor:
      *
      * <ul>
      *     <li>All {@link CompletableSource.Subscriber} methods.</li>
@@ -73,9 +73,8 @@ final class PublishAndSubscribeOnSingles {
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // re-wrap the subscriber so that async context is restored during offloading.
-            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
-
-            super.handleSubscribe(wrapped, contextMap, contextProvider);
+            super.handleSubscribe(contextProvider.wrapSingleSubscriber(subscriber, contextMap),
+                    contextMap, contextProvider);
         }
     }
 

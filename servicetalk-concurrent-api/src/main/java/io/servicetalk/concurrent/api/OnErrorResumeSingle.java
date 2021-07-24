@@ -88,13 +88,7 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                // We are subscribing to a new Single which will send signals to the original Subscriber. This means
-                // that the threading semantics may differ with respect to the original Subscriber when we emit signals
-                // from the new Single. This is the reason we use the original offloader now to offload signals which
-                // originate from this new Single.
-                final Subscriber<? super T> wrappedSubscriber =
-                        contextProvider.wrapSingleSubscriber(this, contextMap);
-                next.subscribeInternal(wrappedSubscriber);
+                next.subscribeInternal(contextProvider.wrapSingleSubscriber(this, contextMap));
             }
         }
     }

@@ -52,7 +52,7 @@ final class InOrderRouter implements StreamingHttpService {
      */
     InOrderRouter(final StreamingHttpService fallbackService, final List<Route> routes) {
         this.fallbackService = requireNonNull(fallbackService);
-        this.routes = routes.toArray(new Route[routes.size()]);
+        this.routes = routes.toArray(new Route[0]);
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
                 .mergeAll(routes.stream().map(Route::service).collect(toList()));

@@ -37,6 +37,7 @@ import java.util.function.Function;
  * @param <T> Type of the result of the {@link Single} this operator is applied.
  * @param <R> Type of the result of this operator.
  */
+@FunctionalInterface
 public interface SingleOperator<T, R> extends Function<Subscriber<? super R>, Subscriber<? super T>> {
 
     /**

@@ -37,8 +37,8 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
     @Override
     protected void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap,
                                    AsyncContextProvider contextProvider) {
-        Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
-        original.delegateSubscribe(new ConcatWithSubscriber(wrappedSubscriber, next), contextMap, contextProvider);
+        original.delegateSubscribe(new ConcatWithSubscriber(
+                contextProvider.wrapCompletableSubscriber(subscriber, contextMap), next), contextMap, contextProvider);
     }
 
     private static final class ConcatWithSubscriber implements Subscriber {

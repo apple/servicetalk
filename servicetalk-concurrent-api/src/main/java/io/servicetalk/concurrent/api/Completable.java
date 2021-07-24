@@ -2010,8 +2010,7 @@ public abstract class Completable {
      */
     void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         try {
-            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
-            handleSubscribe(wrapped);
+            handleSubscribe(contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

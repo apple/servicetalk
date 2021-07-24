@@ -3576,16 +3576,6 @@ public abstract class Publisher<T> {
     //
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
@@ -3618,8 +3608,7 @@ public abstract class Publisher<T> {
     void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
-            handleSubscribe(wrapped);
+            handleSubscribe(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

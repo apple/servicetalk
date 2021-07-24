@@ -40,12 +40,10 @@ abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeComp
     @Override
     final void handleSubscribe(final Subscriber subscriber,
                                final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        // We are now subscribing to the original Publisher chain for the first time.
-        // Using the delegateSubscribe() method the Subscription (done in the public subscribe() method). So, we have to
-        // wrap it here.
-        PublisherSource.Subscriber<? super T> wrappedSubscriber =
-                contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap);
-        source.delegateSubscribe(wrappedSubscriber, contextMap, contextProvider);
+        // We are now subscribing to the original Publisher chain for the first time, wrap Subscription to preserve the
+        // context.
+        source.delegateSubscribe(contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap),
+                contextMap, contextProvider);
     }
 
     abstract static class AbstractPubToCompletableSubscriber<T> extends DelayedCancellable
