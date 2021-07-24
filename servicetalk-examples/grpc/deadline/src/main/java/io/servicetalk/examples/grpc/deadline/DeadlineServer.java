@@ -23,9 +23,9 @@ import io.grpc.examples.deadline.Greeter;
 import io.grpc.examples.deadline.HelloReply;
 import io.grpc.examples.deadline.HelloRequest;
 
-import java.time.Duration;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async "Hello World!" example to demonstrate use of
@@ -40,7 +40,7 @@ public class DeadlineServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 // Set default timeout for completion of RPC calls made to this server
-                .defaultTimeout(Duration.ofMinutes(2))
+                .defaultTimeout(ofMinutes(2))
                 .listenAndAwait(new MyGreeterService())
                 .awaitShutdown();
     }
@@ -50,7 +50,7 @@ public class DeadlineServer {
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             // Force a 5 second delay in the response.
-            return ctx.executionContext().executor().timer(Duration.ofSeconds(5))
+            return ctx.executionContext().executor().timer(ofSeconds(5))
                     .concat(succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()));
         }
     }

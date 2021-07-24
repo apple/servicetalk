@@ -24,8 +24,10 @@ import io.grpc.examples.deadline.Greeter;
 import io.grpc.examples.deadline.HelloRequest;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+
+import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async "Hello World!" example to demonstrate use of
@@ -40,7 +42,7 @@ public final class DeadlineClient {
     public static void main(String... args) throws Exception {
         GrpcClientBuilder<HostAndPort, InetSocketAddress> builder = GrpcClients.forAddress("localhost", 8080)
                 // set the default timeout for completion of gRPC calls made using this client to 1 minute
-                .defaultTimeout(Duration.ofMinutes(1));
+                .defaultTimeout(ofMinutes(1));
         try (Greeter.GreeterClient client = builder.build(new Greeter.ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
@@ -54,7 +56,7 @@ public final class DeadlineClient {
                     .subscribe(System.out::println);
 
             // Set the timeout for completion of this gRPC call to 3 seconds (this will timeout)
-            client.sayHello(new DefaultGrpcClientMetadata(Duration.ofSeconds(3)),
+            client.sayHello(new DefaultGrpcClientMetadata(ofSeconds(3)),
                             HelloRequest.newBuilder().setName("3SecondTimeout").build())
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)

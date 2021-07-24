@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async 'Hello World!' example to demonstrate use of timeout filters and timeout operators. If a single
@@ -41,7 +42,7 @@ public final class TimeoutClient {
                 HttpClients.forSingleAddress("localhost", 8080)
                         // Filter enforces that requests made with this client must fully complete
                         // within 10 seconds or will be cancelled.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter(Duration.ofSeconds(10), true));
+                        .appendClientFilter(new TimeoutHttpRequesterFilter(ofSeconds(10), true));
 
         try (HttpClient client = builder.build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
@@ -61,7 +62,7 @@ public final class TimeoutClient {
             // second request, with custom timeout that is lower than the client default (this will timeout)
             client.request(client.get("/3secondTimeout"))
                     // This request and response must complete within 3 seconds or the request will be cancelled.
-                    .timeout(Duration.ofSeconds(3))
+                    .timeout(ofSeconds(3))
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
                     .subscribe(resp -> {

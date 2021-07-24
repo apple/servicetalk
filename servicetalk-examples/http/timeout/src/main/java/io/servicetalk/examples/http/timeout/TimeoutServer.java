@@ -18,10 +18,9 @@ package io.servicetalk.examples.http.timeout;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
-import java.time.Duration;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async 'Hello World!' example to demonstrate use of timeout filter.
@@ -30,9 +29,10 @@ public final class TimeoutServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 // Filter enforces that responses must complete within 30 seconds or will be cancelled.
-                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofSeconds(30), true))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(ofSeconds(30), true))
                 .listenAndAwait((ctx, request, responseFactory) ->
-                            ctx.executionContext().executor().timer(Duration.ofSeconds(5))
+                            // Force a 5 second delay in the response.
+                            ctx.executionContext().executor().timer(ofSeconds(5))
                         .concat(succeeded(responseFactory.ok()
                                 .payloadBody("Hello World!", textSerializerUtf8()))))
                 .awaitShutdown();
