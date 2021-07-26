@@ -411,7 +411,7 @@ final class NettyHttpServer {
                 response = streamingResponseFactory().serviceUnavailable();
             } else if (cause instanceof SerializationException) {
                 // It is assumed that a failure occurred when attempting to deserialize the request.
-                response = streamingResponseFactory().badRequest();
+                response = streamingResponseFactory().unsupportedMediaType();
             } else {
                 LOGGER.error("Internal server error service={} connection={}", service, this, cause);
                 response = streamingResponseFactory().internalServerError();
