@@ -2351,8 +2351,14 @@ public abstract class Single<T> {
     private void subscribeWithContext(Subscriber<? super T> subscriber,
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        Subscriber<? super T> wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        }
     }
 
     /**

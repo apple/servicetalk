@@ -3592,7 +3592,13 @@ public abstract class Publisher<T> {
                                       AsyncContextProvider provider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, contextMap);
-        provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
+        if (provider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, provider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
+        }
     }
 
     /**

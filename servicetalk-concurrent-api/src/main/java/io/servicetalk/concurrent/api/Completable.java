@@ -1997,7 +1997,13 @@ public abstract class Completable {
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        }
     }
 
     /**
