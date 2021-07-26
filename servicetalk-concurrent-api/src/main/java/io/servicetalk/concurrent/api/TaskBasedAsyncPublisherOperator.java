@@ -63,7 +63,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         this.executor = executor;
     }
 
-    Executor executor() {
+    final Executor executor() {
         return executor;
     }
 
@@ -122,7 +122,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
 
         @Override
-        public void onNext(final T t) {
+        public void onNext(@Nullable final T t) {
             LOGGER.trace("offloading Publisher onNext on {}", executor);
             offerSignal(t == null ? NULL_WRAPPER : t);
         }
@@ -293,7 +293,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
 
         @Override
-        public void onNext(final T t) {
+        public void onNext(@Nullable final T t) {
             subscriber.onNext(t);
         }
 

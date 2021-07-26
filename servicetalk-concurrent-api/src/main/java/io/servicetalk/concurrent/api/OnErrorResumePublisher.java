@@ -87,10 +87,6 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
             if (next == null) {
                 subscriber.onError(t);
             } else {
-                // We are subscribing to a new Publisher which will send signals to the original Subscriber. This means
-                // that the threading semantics may differ with respect to the original Subscriber when we emit signals
-                // from the new Publisher. This is the reason we use the original offloader now to offload signals which
-                // originate from this new Publisher.
                 final Subscriber<? super T> offloadedSubscriber =
                         contextProvider.wrapPublisherSubscriber(this, contextMap);
                 next.subscribeInternal(offloadedSubscriber);

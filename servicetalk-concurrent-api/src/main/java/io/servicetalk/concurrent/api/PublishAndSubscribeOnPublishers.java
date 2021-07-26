@@ -73,7 +73,6 @@ final class PublishAndSubscribeOnPublishers {
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // re-wrap the subscriber so that async context is restored during offloading.
             Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
-
             super.handleSubscribe(wrapped, contextMap, contextProvider);
         }
     }

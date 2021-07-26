@@ -30,7 +30,8 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
         // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
-        // resulting Completable is subscribed.
+        // resulting Completable is subscribed. Since, it is the same source, just viewed as a Single, there is no
+        // additional risk of deadlock.
         original.delegateSubscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -46,8 +47,6 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             public void onError(Throwable t) {
                 subscriber.onError(t);
             }
-        },
-                // Since, it is the same source, just viewed as a Single, there is no additional risk of deadlock.
-                contextMap, contextProvider);
+        }, contextMap, contextProvider);
     }
 }

@@ -23,9 +23,6 @@ import javax.annotation.Nullable;
 
 abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHandleSubscribeSingle<T> {
 
-    AbstractCompletableAndSingleConcatenated() {
-    }
-
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {

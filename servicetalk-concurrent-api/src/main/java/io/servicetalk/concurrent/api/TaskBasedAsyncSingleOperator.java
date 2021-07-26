@@ -58,7 +58,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractAsynchronousSingl
         this.executor = executor;
     }
 
-    Executor executor() {
+    final Executor executor() {
         return executor;
     }
 

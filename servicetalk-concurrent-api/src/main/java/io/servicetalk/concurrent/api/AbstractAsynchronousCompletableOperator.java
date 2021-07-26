@@ -36,22 +36,11 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
 
     @Override
     void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
-        // asynchronously processes signals. This is because the thread that processes the signals may have different
-        // thread safety characteristics than the typical thread interacting with the execution chain.
-        //
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber operatorSubscriber =
                 contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
-        // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
-        // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: beforeCancel(). So, we should offload
-        // Cancellable method here.
-        //
-        // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
-        // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber upstreamSubscriber = apply(operatorSubscriber);
         original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
     }

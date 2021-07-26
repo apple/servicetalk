@@ -2336,16 +2336,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
@@ -2361,8 +2351,14 @@ public abstract class Single<T> {
     private void subscribeWithContext(Subscriber<? super T> subscriber,
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        Subscriber<? super T> wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        }
     }
 
     /**

@@ -93,9 +93,6 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                // We are subscribing to a new Completable which will send signals to the original Subscriber. This
-                // means that the threading semantics may differ with respect to the original Subscriber when we emit
-                // signals from the new Completable.
                 final Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(this, contextMap);
                 next.subscribeInternal(wrappedSubscriber);
             }

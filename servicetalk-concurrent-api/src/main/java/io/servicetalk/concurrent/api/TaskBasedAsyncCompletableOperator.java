@@ -48,7 +48,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         this.executor = executor;
     }
 
-    Executor executor() {
+    final Executor executor() {
         return executor;
     }
 

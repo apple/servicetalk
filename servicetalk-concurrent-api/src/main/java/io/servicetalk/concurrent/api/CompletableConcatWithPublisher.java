@@ -33,8 +33,7 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConcatSubscriber<>(subscriber, next), contextMap,
-                contextProvider);
+        original.delegateSubscribe(new ConcatSubscriber<>(subscriber, next), contextMap, contextProvider);
     }
 
     private static final class ConcatSubscriber<T> extends DelayedCancellableThenSubscription
