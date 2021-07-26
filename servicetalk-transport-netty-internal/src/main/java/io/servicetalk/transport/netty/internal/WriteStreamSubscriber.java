@@ -337,8 +337,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         boolean isWritable() {
             assert channel.eventLoop().inEventLoop();
-            return !hasAnyFlags(CHANNEL_CLOSED, SUBSCRIBER_TERMINATED, SOURCE_TERMINATED,
-                    CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
+            return state != 0;  // of any of the flags set, it's non-writable
         }
 
         void writeNext(Object msg) {
@@ -537,10 +536,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private boolean hasAnyFlags(final byte flag1, final byte flag2) {
             return (state & (flag1 | flag2)) > 0;
-        }
-
-        private boolean hasAnyFlags(final byte flag1, final byte flag2, final byte flag3, final byte flag4) {
-            return (state & (flag1 | flag2 | flag3 | flag4)) > 0;
         }
 
         private void setFlag(final byte flag) {
