@@ -73,8 +73,8 @@ final class PublishAndSubscribeOnSingles {
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // re-wrap the subscriber so that async context is restored during offloading.
-            super.handleSubscribe(contextProvider.wrapSingleSubscriber(subscriber, contextMap),
-                    contextMap, contextProvider);
+            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
+            super.handleSubscribe(wrapped, contextMap, contextProvider);
         }
     }
 

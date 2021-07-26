@@ -3608,7 +3608,8 @@ public abstract class Publisher<T> {
     void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            handleSubscribe(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
+            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+            handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

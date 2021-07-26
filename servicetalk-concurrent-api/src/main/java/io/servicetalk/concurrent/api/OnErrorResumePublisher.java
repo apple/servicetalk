@@ -87,7 +87,9 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
             if (next == null) {
                 subscriber.onError(t);
             } else {
-                next.subscribeInternal(contextProvider.wrapPublisherSubscriber(this, contextMap));
+                final Subscriber<? super T> offloadedSubscriber =
+                        contextProvider.wrapPublisherSubscriber(this, contextMap);
+                next.subscribeInternal(offloadedSubscriber);
             }
         }
 

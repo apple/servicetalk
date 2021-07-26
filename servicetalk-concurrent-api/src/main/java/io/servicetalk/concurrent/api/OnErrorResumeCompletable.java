@@ -93,7 +93,8 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                next.subscribeInternal(contextProvider.wrapCompletableSubscriber(this, contextMap));
+                final Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(this, contextMap);
+                next.subscribeInternal(wrappedSubscriber);
             }
         }
     }

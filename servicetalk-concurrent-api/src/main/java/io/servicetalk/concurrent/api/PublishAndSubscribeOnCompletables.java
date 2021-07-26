@@ -77,8 +77,8 @@ final class PublishAndSubscribeOnCompletables {
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // re-wrap the subscriber so that async context is restored during offloading.
-            super.handleSubscribe(contextProvider.wrapCompletableSubscriber(subscriber, contextMap),
-                    contextMap, contextProvider);
+            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+            super.handleSubscribe(wrapped, contextMap, contextProvider);
         }
     }
 

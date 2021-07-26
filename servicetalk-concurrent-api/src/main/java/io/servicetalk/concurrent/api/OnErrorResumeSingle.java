@@ -88,7 +88,8 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                next.subscribeInternal(contextProvider.wrapSingleSubscriber(this, contextMap));
+                final Subscriber<? super T> wrappedSubscriber = contextProvider.wrapSingleSubscriber(this, contextMap);
+                next.subscribeInternal(wrappedSubscriber);
             }
         }
     }

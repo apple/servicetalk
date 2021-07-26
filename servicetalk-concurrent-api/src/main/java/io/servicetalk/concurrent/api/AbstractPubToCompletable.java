@@ -42,8 +42,9 @@ abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeComp
                                final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, wrap Subscription to preserve the
         // context.
-        source.delegateSubscribe(contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap),
-                contextMap, contextProvider);
+        PublisherSource.Subscriber<? super T> wrappedSubscriber =
+                contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap);
+        source.delegateSubscribe(wrappedSubscriber, contextMap, contextProvider);
     }
 
     abstract static class AbstractPubToCompletableSubscriber<T> extends DelayedCancellable
