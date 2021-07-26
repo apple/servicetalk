@@ -23,8 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.nio.channels.ClosedChannelException;
-
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.function.UnaryOperator.identity;
@@ -157,10 +155,19 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     @Test
     void onNextAfterChannelClose() {
-        subscriber.channelClosed(new ClosedChannelException());
+        subscriber.channelClosed(DELIBERATE_EXCEPTION);
         subscriber.onNext("Hello");
-        channel.runPendingTasks();
+        channel.flushOutbound();
         assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void onNextAfterChannelCloseWhileActiveWritesPending() {
+        subscriber.onNext("Hello");
+        subscriber.channelClosed(DELIBERATE_EXCEPTION);
+        subscriber.onNext("Hello2");
+        assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+        verifyWriteSuccessful("Hello");
     }
 
     @Test
