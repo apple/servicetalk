@@ -346,20 +346,32 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
         verifyNewReadAndNewWrite(1);
 
+        if (protocol == HTTP_1) {
+            verify(clientConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
+            verify(serverConnectionObserver, await()).connectionClosed(any(IOException.class));
+        } else {
+            verify(clientStreamObserver, await()).streamClosed(DELIBERATE_EXCEPTION);
+            verify(serverStreamObserver, await()).streamClosed(any(H2StreamResetException.class));
+            verify(clientConnectionObserver, await()).connectionClosed();
+            verify(serverConnectionObserver, await()).connectionClosed();
+        }
+
+        // After all "closed" events have been received, verify all other events in between. Otherwise, there is a risk
+        // of race between verification and events.
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(clientWriteObserver, atLeastOnce()).itemReceived();
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
         verify(clientWriteObserver, atLeastOnce()).itemWritten();
         verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
 
-        verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(serverReadObserver, atLeastOnce()).itemRead();
-        verify(serverReadObserver, atMostOnce()).readCancelled();
         if (protocol == HTTP_1) {
             verify(serverReadObserver, atMostOnce()).readFailed(any(IOException.class));
         } else {
             verify(serverReadObserver, await()).readFailed(any(H2StreamResetException.class));
         }
+        verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
+        verify(serverReadObserver, atLeastOnce()).itemRead();
+        verify(serverReadObserver, atMostOnce()).readCancelled();
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         // WriteStreamSubscriber.close0(...) cancels subscription and then terminates the subscriber:
@@ -369,19 +381,9 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(clientReadObserver).readFailed(any(IOException.class));
 
-        if (protocol == HTTP_1) {
-            verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
-            verify(serverConnectionObserver).connectionClosed(any(IOException.class));
-        } else {
-            verify(clientStreamObserver).streamClosed(DELIBERATE_EXCEPTION);
-            verify(serverStreamObserver).streamClosed(any(H2StreamResetException.class));
-            verify(clientConnectionObserver).connectionClosed();
-            verify(serverConnectionObserver).connectionClosed();
-        }
-
         verifyNoMoreInteractions(
                 clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverDataObserver, serverMultiplexedObserver, serverReadObserver);
+                serverDataObserver, serverMultiplexedObserver);
     }
 
     private void verifyNewReadAndNewWrite(int nonMultiplexedTimes) {
