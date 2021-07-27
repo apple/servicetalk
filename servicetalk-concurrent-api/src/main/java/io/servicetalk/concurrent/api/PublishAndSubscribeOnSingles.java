@@ -68,12 +68,9 @@ final class PublishAndSubscribeOnSingles {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // re-wrap the subscriber so that async context is restored during offloading.
-            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
-
             BooleanSupplier shouldOffload = shouldOffload();
             Subscriber<? super T> upstreamSubscriber =
-                    new SingleSubscriberOffloadedTerminals<>(wrapped, shouldOffload, executor());
+                    new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
 
             super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
@@ -98,17 +95,14 @@ final class PublishAndSubscribeOnSingles {
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                // re-wrap the subscriber so that async context is restored during offloading.
-                Subscriber<? super T> wrapped =
-                        contextProvider.wrapCancellable(subscriber, contextMap);
-
                 BooleanSupplier shouldOffload = shouldOffload();
                 Subscriber<? super T> upstreamSubscriber =
-                        new SingleSubscriberOffloadedCancellable<>(wrapped, shouldOffload, executor());
+                        new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
 
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
+                    executor().execute(contextProvider.wrapRunnable(
+                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider),contextMap));
                 } else {
                     // continue on the current thread
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);

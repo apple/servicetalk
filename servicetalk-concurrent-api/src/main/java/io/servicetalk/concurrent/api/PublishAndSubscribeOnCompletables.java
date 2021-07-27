@@ -111,7 +111,8 @@ final class PublishAndSubscribeOnCompletables {
 
                 // offload the remainder of subscribe()
                 if (shouldOffload.getAsBoolean()) {
-                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
+                    executor().execute(contextProvider.wrapRunnable(() ->
+                            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider), contextMap));
                 } else {
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
                 }

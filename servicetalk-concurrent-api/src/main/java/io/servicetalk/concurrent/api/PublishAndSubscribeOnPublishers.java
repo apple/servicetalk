@@ -69,14 +69,17 @@ final class PublishAndSubscribeOnPublishers {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // re-wrap the subscriber so that async context is restored during offloading.
-            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+            try {
+                BooleanSupplier shouldOffload = shouldOffload();
+                final Subscriber<? super T> upstreamSubscriber =
+                        new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
 
-            BooleanSupplier shouldOffload = shouldOffload();
-            final Subscriber<? super T> upstreamSubscriber =
-                    new OffloadedSubscriber<>(wrapped, shouldOffload, executor());
-
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
+                // note that the subscriber error is not offloaded.
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 
@@ -101,16 +104,14 @@ final class PublishAndSubscribeOnPublishers {
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
                 // re-wrap the subscriber so that async context is restored during offloading.
-                Subscriber<? super T> wrapped = contextProvider.wrapSubscription(subscriber, contextMap);
-
                 BooleanSupplier shouldOffload = shouldOffload();
                 final Subscriber<? super T> upstreamSubscriber =
-                        new OffloadedSubscriptionSubscriber<>(wrapped, shouldOffload, executor());
+                        new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
 
                 // offload the remainder of subscribe()
                 if (shouldOffload.getAsBoolean()) {
-                    executor().execute(
-                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
+                    executor().execute(contextProvider.wrapRunnable(
+                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider),contextMap));
                 } else {
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
                 }

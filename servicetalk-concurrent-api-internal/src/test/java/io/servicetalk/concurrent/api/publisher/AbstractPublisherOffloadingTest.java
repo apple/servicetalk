@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
@@ -52,53 +53,70 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedThreads.capture(CaptureSlot.IN_APP);
+                // Insert a custom value into AsyncContext map
+                AsyncContext.current().put(ASYNC_CONTEXT_CUSTOM_KEY, ASYNC_CONTEXT_VALUE);
+
+                capture(CaptureSlot.IN_APP);
 
                 // Add thread recording test points
                 final Publisher<String> original = testPublisher
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
+                            capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
                             return subscriber;
                         })
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_ORIGINAL_ON_SUBSCRIBE))
+                        .beforeRequest((requested) ->
+                                capture(CaptureSlot.IN_OFFLOADED_REQUEST)
+                        )
+                        .beforeOnNext((item) ->
+                                capture(CaptureSlot.IN_ORIGINAL_ON_NEXT)
+                        )
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
+                                capture(CaptureSlot.IN_ORIGINAL_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
+                                capture(CaptureSlot.IN_ORIGINAL_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIPTION);
+                                capture(CaptureSlot.IN_OFFLOADED_CANCEL);
                             }
                         });
 
                 // Perform offloading and add more thread recording test points
                 Publisher<String> offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync((PublisherOperator<? super String, String>) subscriber -> {
-                            capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+                            capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
                             return subscriber;
                         })
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_OFFLOADED_ON_SUBSCRIBE))
+                        .beforeRequest((requested) ->
+                                capture(CaptureSlot.IN_ORIGINAL_REQUEST)
+                        )
+                        .beforeOnNext((item) ->
+                                capture(CaptureSlot.IN_OFFLOADED_ON_NEXT)
+                        )
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
+                                capture(CaptureSlot.IN_OFFLOADED_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
+                                capture(CaptureSlot.IN_OFFLOADED_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIPTION);
+                                capture(CaptureSlot.IN_ORIGINAL_CANCEL);
                             }
                         });
 
@@ -177,6 +195,24 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
             default:
                 throw new AssertionError("unexpected terminal mode");
         }
+
+        // // Ensure that Async Context Map was correctly set during signals
+        // AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.IN_APP);
+        // assertThat(appMap, notNullValue());
+        // AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+        // assertThat(subscribeMap, notNullValue());
+        // assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
+        // assertThat("Missing custom async context entry ",
+        //         subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
+        // EnumSet<CaptureSlot> checkSlots =
+        //         EnumSet.complementOf(EnumSet.of(CaptureSlot.IN_APP, CaptureSlot.IN_ORIGINAL_SUBSCRIBE));
+        // checkSlots.stream()
+        //         .filter(slot -> null != capturedContexts.captured(slot))
+        //         .forEach(slot -> {
+        //             AsyncContextMap map = capturedContexts.captured(slot);
+        //             assertThat("Unexpected context map @ slot " + slot + " : " + map,
+        //                     map, sameInstance(subscribeMap));
+        //         });
 
         assertThat("Pending offloading", testExecutor.executor().queuedTasksPending(), is(0));
         return testExecutor.executor().queuedTasksExecuted();

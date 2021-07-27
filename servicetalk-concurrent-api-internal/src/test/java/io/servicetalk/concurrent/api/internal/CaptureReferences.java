@@ -107,6 +107,6 @@ public class CaptureReferences<E extends Enum<E>, R> {
      * @throws AssertionError if the captured value of the slot does not match
      */
     public void assertCaptured(String reason, E slot, Matcher<? super R> matcher) throws AssertionError {
-        org.hamcrest.MatcherAssert.assertThat(reason + " : " + this + " : " + slot, captured(slot), matcher);
+        org.hamcrest.MatcherAssert.assertThat(reason + " : " + slot, captured(slot), matcher);
     }
 }
