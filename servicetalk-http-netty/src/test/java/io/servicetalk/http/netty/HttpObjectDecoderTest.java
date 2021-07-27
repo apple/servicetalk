@@ -99,7 +99,7 @@ abstract class HttpObjectDecoderTest {
         writeMsg(msg, channel());
     }
 
-    final void writeMsg(String msg, EmbeddedChannel channel) {
+    static void writeMsg(String msg, EmbeddedChannel channel) {
         assertThat("writeInbound(msg) did not produce something for readInbound()",
                 channel.writeInbound(fromAscii(msg)), is(true));
     }
@@ -108,12 +108,12 @@ abstract class HttpObjectDecoderTest {
         writeContent(length, channel());
     }
 
-    final void writeContent(int length, EmbeddedChannel channel) {
+    static void writeContent(int length, EmbeddedChannel channel) {
         assertThat("writeInbound(content) did not produce something for readInbound()",
                 channel.writeInbound(content(length)), is(true));
     }
 
-    final void writeChunkSize(int length, EmbeddedChannel channel) {
+    static void writeChunkSize(int length, EmbeddedChannel channel) {
         writeMsg(toHexString(length) + "\r\n", channel);
     }
 
@@ -121,7 +121,7 @@ abstract class HttpObjectDecoderTest {
         writeChunk(length, channel());
     }
 
-    final void writeChunk(int length, EmbeddedChannel channel) {
+    static void writeChunk(int length, EmbeddedChannel channel) {
         if (length == 0) {
             writeMsg("0\r\n", channel);
             return;
@@ -131,7 +131,7 @@ abstract class HttpObjectDecoderTest {
         writeMsg("\r\n", channel);
     }
 
-    final void writeLastChunk(EmbeddedChannel channel) {
+    static void writeLastChunk(EmbeddedChannel channel) {
         writeMsg("0\r\n\r\n", channel);
     }
 
