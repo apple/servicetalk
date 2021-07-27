@@ -99,7 +99,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
                         IN_ORIGINAL_ON_COMPLETE, IN_OFFLOADED_ON_COMPLETE),
                 EnumSet.noneOf(CaptureSlot.class)),
         PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
-                (s, e) -> s.defer(() -> {
+                (s, e) -> Single.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
                     return s.publishOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,

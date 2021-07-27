@@ -75,7 +75,7 @@ final class PublishAndSubscribeOnCompletables {
             // re-wrap the subscriber so that async context is restored during offloading.
             Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
 
-            BooleanSupplier shouldOffload = shouldOffload();
+            BooleanSupplier shouldOffload = shouldOffloadSupplier();
             Subscriber upstreamSubscriber =
                     new CompletableSubscriberOffloadedTerminals(wrapped, shouldOffload, executor());
 
@@ -102,18 +102,15 @@ final class PublishAndSubscribeOnCompletables {
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                // re-wrap the subscriber so that async context is restored during offloading.
-                Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-
-                BooleanSupplier shouldOffload = shouldOffload();
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
                 Subscriber upstreamSubscriber =
-                        new CompletableSubscriberOffloadedCancellable(wrapped, shouldOffload, executor());
+                        new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
 
-                // offload the remainder of subscribe()
                 if (shouldOffload.getAsBoolean()) {
-                    executor().execute(contextProvider.wrapRunnable(() ->
-                            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider), contextMap));
+                    // offload the remainder of subscribe()
+                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
                 } else {
+                    // continue on the current thread
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
                 }
             } catch (Throwable throwable) {

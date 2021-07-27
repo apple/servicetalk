@@ -90,7 +90,7 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
                         IN_ORIGINAL_ON_COMPLETE, IN_OFFLOADED_ON_COMPLETE),
                 EnumSet.noneOf(CaptureSlot.class)),
         SUBSCRIBE_ON_CONDITIONAL_SECOND(1, "request",
-                (p, e) -> p.defer(() -> {
+                (p, e) -> Publisher.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
                     return p.subscribeOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,
@@ -135,7 +135,7 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
                         IN_ORIGINAL_ON_COMPLETE, IN_OFFLOADED_ON_COMPLETE),
                 EnumSet.noneOf(CaptureSlot.class)),
         PUBLISH_ON_CONDITIONAL_SECOND(2, "onNext, onComplete",
-                (p, e) -> p.defer(() -> {
+                (p, e) -> Publisher.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
                     return p.publishOn(e, () -> () -> countdown.decrementAndGet() < 0);
                 }), TerminalOperation.COMPLETE,

@@ -65,7 +65,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
         this.executor = executor;
     }
 
-    final BooleanSupplier shouldOffload() {
+    final BooleanSupplier shouldOffloadSupplier() {
         return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 

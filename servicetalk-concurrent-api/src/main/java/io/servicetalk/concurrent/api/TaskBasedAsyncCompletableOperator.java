@@ -55,7 +55,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
         this.executor = executor;
     }
 
-    final BooleanSupplier shouldOffload() {
+    final BooleanSupplier shouldOffloadSupplier() {
         return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 

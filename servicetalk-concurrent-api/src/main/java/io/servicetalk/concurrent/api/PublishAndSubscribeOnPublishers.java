@@ -70,7 +70,7 @@ final class PublishAndSubscribeOnPublishers {
         void handleSubscribe(final Subscriber<? super T> subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                BooleanSupplier shouldOffload = shouldOffload();
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
 
@@ -103,16 +103,15 @@ final class PublishAndSubscribeOnPublishers {
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                // re-wrap the subscriber so that async context is restored during offloading.
-                BooleanSupplier shouldOffload = shouldOffload();
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
 
-                // offload the remainder of subscribe()
                 if (shouldOffload.getAsBoolean()) {
-                    executor().execute(contextProvider.wrapRunnable(
-                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider),contextMap));
+                    // offload the remainder of subscribe()
+                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
                 } else {
+                    // continue on the current thread
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
                 }
             } catch (Throwable throwable) {

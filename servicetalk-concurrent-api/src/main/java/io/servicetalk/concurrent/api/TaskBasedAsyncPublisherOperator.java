@@ -70,7 +70,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
         this.executor = executor;
     }
 
-    final BooleanSupplier shouldOffload() {
+    final BooleanSupplier shouldOffloadSupplier() {
         return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
     }
 

@@ -68,7 +68,7 @@ final class PublishAndSubscribeOnSingles {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            BooleanSupplier shouldOffload = shouldOffload();
+            BooleanSupplier shouldOffload = shouldOffloadSupplier();
             Subscriber<? super T> upstreamSubscriber =
                     new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
 
@@ -95,14 +95,13 @@ final class PublishAndSubscribeOnSingles {
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                BooleanSupplier shouldOffload = shouldOffload();
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
                 Subscriber<? super T> upstreamSubscriber =
                         new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
 
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(contextProvider.wrapRunnable(
-                            () -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider),contextMap));
+                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
                 } else {
                     // continue on the current thread
                     super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);

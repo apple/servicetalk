@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
@@ -26,11 +27,13 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.api.internal.AbstractOffloadingTest;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import java.util.EnumSet;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -196,23 +199,25 @@ public abstract class AbstractPublisherOffloadingTest extends AbstractOffloading
                 throw new AssertionError("unexpected terminal mode");
         }
 
-        // // Ensure that Async Context Map was correctly set during signals
-        // AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.IN_APP);
-        // assertThat(appMap, notNullValue());
-        // AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
-        // assertThat(subscribeMap, notNullValue());
-        // assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
-        // assertThat("Missing custom async context entry ",
-        //         subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
-        // EnumSet<CaptureSlot> checkSlots =
-        //         EnumSet.complementOf(EnumSet.of(CaptureSlot.IN_APP, CaptureSlot.IN_ORIGINAL_SUBSCRIBE));
-        // checkSlots.stream()
-        //         .filter(slot -> null != capturedContexts.captured(slot))
-        //         .forEach(slot -> {
-        //             AsyncContextMap map = capturedContexts.captured(slot);
-        //             assertThat("Unexpected context map @ slot " + slot + " : " + map,
-        //                     map, sameInstance(subscribeMap));
-        //         });
+        // Ensure that Async Context Map was correctly set during signals
+        AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.IN_APP);
+        assertThat(appMap, notNullValue());
+        AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+        assertThat(subscribeMap, notNullValue());
+        assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
+        assertThat("Missing custom async context entry ",
+                subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
+        EnumSet<CaptureSlot> checkSlots =
+                EnumSet.complementOf(EnumSet.of(CaptureSlot.IN_APP, CaptureSlot.IN_ORIGINAL_SUBSCRIBE));
+        checkSlots.stream()
+                .filter(slot -> null != capturedContexts.captured(slot))
+                .forEach(slot -> {
+                    AsyncContextMap map = capturedContexts.captured(slot);
+                    assertThat("Custom key missing from context map", map.containsKey(ASYNC_CONTEXT_CUSTOM_KEY));
+                    // Disabled because defer() copies the async context rather than sharing
+                    // assertThat("Unexpected context map @ slot " + slot + " : " + map,
+                    //         map, sameInstance(subscribeMap));
+                });
 
         assertThat("Pending offloading", testExecutor.executor().queuedTasksPending(), is(0));
         return testExecutor.executor().queuedTasksExecuted();
