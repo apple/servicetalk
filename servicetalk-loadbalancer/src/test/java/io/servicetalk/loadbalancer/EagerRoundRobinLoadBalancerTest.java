@@ -106,13 +106,7 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
     }
 
     @Override
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
-        return newTestLoadBalancer(true);
-    }
-
-    @Override
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
-            RoundRobinLoadBalancerTest.DelegatingConnectionFactory connectionFactory) {
-        return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, true);
+    protected boolean eagerConnectionShutdown() {
+        return true;
     }
 }

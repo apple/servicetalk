@@ -20,9 +20,13 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 /**
  * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round robin strategy
@@ -50,16 +54,19 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     private final boolean eagerConnectionShutdown;
+    private final Executor backgroundExecutor;
 
-    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown) {
+    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown, final Executor backgroundExecutor) {
         this.eagerConnectionShutdown = eagerConnectionShutdown;
+        this.backgroundExecutor = backgroundExecutor;
     }
 
     @Override
     public <T extends C> LoadBalancer<T> newLoadBalancer(
             final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, eagerConnectionShutdown);
+        return new RoundRobinLoadBalancer<>(
+                eventPublisher, connectionFactory, eagerConnectionShutdown, backgroundExecutor);
     }
 
     /**
@@ -69,7 +76,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
+        private static final String BACKGROUND_PROCESSING_EXECUTOR_NAME = "round-robin-load-balancer-executor";
+        private static final Executor SHARED_EXECUTOR = Executors.newFixedSizeExecutor(1,
+                new DefaultThreadFactory(BACKGROUND_PROCESSING_EXECUTOR_NAME));
         private boolean eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
+        @Nullable
+        private Executor backgroundExecutor;
 
         /**
          * Creates a new instance with default settings.
@@ -96,12 +108,29 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         /**
+         * This {@link LoadBalancer} monitors hosts to which connection establishment has failed
+         * using health checks that run in the background. The health check tries to establish a new connection
+         * and if it succeeds, the host is returned to the load balancing pool. As long as the connection
+         * establishment fails, the host is not considered for opening new connections for processed requests.
+         *
+         * @param backgroundExecutor {@link Executor} on which to schedule health checking.
+         * @return @{code this}.
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> backgroundExecutor(
+                Executor backgroundExecutor) {
+            this.backgroundExecutor = backgroundExecutor;
+            return this;
+        }
+
+        /**
          * Builds the {@link RoundRobinLoadBalancerFactory} configured by this builder.
          *
          * @return a new instance of {@link RoundRobinLoadBalancerFactory} with settings from this builder.
          */
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
-            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown);
+            final Executor backgroundExecutor = this.backgroundExecutor != null ?
+                    this.backgroundExecutor : SHARED_EXECUTOR;
+            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, backgroundExecutor);
         }
     }
 }

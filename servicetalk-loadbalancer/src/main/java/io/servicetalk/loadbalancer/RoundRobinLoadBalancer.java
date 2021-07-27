@@ -22,12 +22,16 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -43,7 +47,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -81,6 +87,10 @@ import static java.util.stream.Collectors.toList;
 public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancer<C> {
 
+    static final String BACKGROUND_PROCESSING_EXECUTOR_NAME = "round-robin-load-balancer-executor";
+    static final Executor SHARED_EXECUTOR = Executors.newFixedSizeExecutor(1,
+            new DefaultThreadFactory(BACKGROUND_PROCESSING_EXECUTOR_NAME));
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
     private static final List<?> CLOSED_LIST = new ArrayList<>(0);
     private static final Object[] EMPTY_ARRAY = new Object[0];
@@ -116,6 +126,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
+    private final Executor healthCheckExecutor;
     private final ListenableAsyncCloseable asyncCloseable;
 
     /**
@@ -129,7 +140,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     @Deprecated
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
-        this(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED);
+        this(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED, SHARED_EXECUTOR);
     }
 
     /**
@@ -144,10 +155,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      */
     RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                           final boolean eagerConnectionShutdown) {
+                           final boolean eagerConnectionShutdown,
+                           final Executor healthCheckExecutor) {
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
+        this.healthCheckExecutor = healthCheckExecutor;
 
         toSource(eventPublisher).subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
@@ -367,8 +380,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 }
             }
 
-            // don't open new connections for expired hosts, try a different one
-            if (host.isActive()) {
+            // Don't open new connections for expired or unhealthy hosts, try a different one.
+            // Unhealthy hosts can in fact have open connections – that's why we don't fail earlier.
+            // When a host accepts a limited amount of connections, we will try to use those that have been established.
+            if (host.isActiveAndHealthy()) {
                 pickedHost = host;
                 break;
             }
@@ -383,6 +398,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
         return connectionFactory.newConnection(host.address, null)
+                // Schedule health check before returning
+                .beforeOnError(t -> host.registerHealthCheck(healthCheckExecutor, connectionFactory, selector))
                 .flatMap(newCnx -> {
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                     // used concurrently and hence a new connection can be rejected by the selector.
@@ -432,7 +449,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED);
+            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
+                    EAGER_CONNECTION_SHUTDOWN_ENABLED, SHARED_EXECUTOR);
         }
     }
 
@@ -441,7 +459,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         return usedHosts.stream().map(Host::asEntry).collect(toList());
     }
 
-    private static final class Host<Addr, C extends ListenableAsyncCloseable> implements ListenableAsyncCloseable {
+    private static final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAsyncCloseable {
         private static final ConnState EMPTY_CONN_STATE = new ConnState(EMPTY_ARRAY, State.ACTIVE);
         private static final ConnState CLOSED_CONN_STATE = new ConnState(EMPTY_ARRAY, State.CLOSED);
 
@@ -451,6 +469,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         private enum State {
             ACTIVE,
+            UNHEALTHY, // only active hosts can be unhealthy, expired hosts should not attempt opening new connections
             EXPIRED,
             CLOSED
         }
@@ -470,6 +489,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         private volatile ConnState connState = EMPTY_CONN_STATE;
 
+        private final AtomicReference<HealthCheck> healthCheck = new AtomicReference<>();
+
         Host(Addr address) {
             this.address = requireNonNull(address);
             this.closeable = toAsyncCloseable(graceful ->
@@ -477,18 +498,21 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         boolean tryToMarkActive() {
-            return connStateUpdater.updateAndGet(this, oldConnState -> {
+            final State newState = connStateUpdater.updateAndGet(this, oldConnState -> {
                 if (oldConnState.state == State.EXPIRED) {
                     return new ConnState(oldConnState.connections, State.ACTIVE);
                 }
                 // If oldConnState.state == State.ACTIVE this could mean either a duplicate event,
                 // or a repeated CAS operation. We could issue a warning, but as we don't know, we don't log anything.
+                // UNHEALTHY state is treated similarly to ACTIVE
                 return oldConnState;
-            }).state == State.ACTIVE;
+            }).state;
+            return newState == State.ACTIVE || newState == State.UNHEALTHY;
         }
 
         void markClosed() {
             final Object[] toRemove = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE).connections;
+            cancelHealthCheck();
             LOGGER.debug("Closing {} connection(s) gracefully to closed address: {}", toRemove.length, address);
             for (Object conn : toRemove) {
                 @SuppressWarnings("unchecked")
@@ -501,13 +525,41 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             final ConnState newState = connStateUpdater.updateAndGet(this,
                     oldConnState -> oldConnState.connections.length == 0 ?
                             CLOSED_CONN_STATE : new ConnState(oldConnState.connections, State.EXPIRED));
+            if (newState.state == State.EXPIRED) {
+                cancelHealthCheck();
+            }
             if (newState == CLOSED_CONN_STATE) {
                 // Trigger the callback to remove the host from usedHosts array.
                 this.closeAsync().subscribe();
             }
         }
 
-        boolean isActive() {
+        void markHealthy(boolean healthy) {
+            connStateUpdater.updateAndGet(this, oldConnState -> {
+                final State oldState = oldConnState.state;
+
+                // Prevent EXPIRED and CLOSED state changes. Only ACTIVE hosts can become UNHEALTHY and vice versa.
+                if (oldState == State.EXPIRED || oldState == State.CLOSED) {
+                    return oldConnState;
+                }
+
+                return new ConnState(oldConnState.connections, healthy ? State.ACTIVE : State.UNHEALTHY);
+            });
+
+            if (healthy) {
+                // TODO(dj): fix a race condition:
+                // t1: schedule healthcheck, mark unhealthy
+                // t1: connection opened, update state to ACTIVE
+                // t2: failed connection, try to schedule health check
+                //      -> fail CAS (check not null yet)
+                //      -> doesn't mark unhealthy
+                // t1: cancel health check, ignoring signal from t2
+                // next fail should schedule a proper check anyway - perhaps we can ignore this race?
+                cancelHealthCheck();
+            }
+        }
+
+        boolean isActiveAndHealthy() {
             return connState.state == State.ACTIVE;
         }
 
@@ -599,9 +651,34 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
             return Completable.defer(() -> {
                 final Object[] connections = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE).connections;
+                cancelHealthCheck();
                 return connections.length == 0 ? completed() :
                         from(connections).flatMapCompletableDelayError(conn -> closeFunction.apply((C) conn));
             });
+        }
+
+        void registerHealthCheck(Executor executor, ConnectionFactory<Addr, ? extends C> connectionFactory, Predicate<C> selector) {
+            @SuppressWarnings("unchecked")
+            HealthCheck<Addr, C> previousCheck = (HealthCheck<Addr, C>) this.healthCheck.get();
+            // If a previous check was in place, it can't have been cancelled so it was still scheduled at CAS.
+            if (previousCheck == null) {
+                // We only schedule a new check. If CAS fails, there is already a check active.
+                HealthCheck<Addr, C> newCheck = new HealthCheck<>(executor, selector, connectionFactory, this);
+                if (this.healthCheck.compareAndSet(null, newCheck)) {
+                    LOGGER.debug("Scheduled health check");
+                    newCheck.schedule();
+                    markHealthy(false);
+                }
+            }
+
+        }
+
+        private void cancelHealthCheck() {
+            // To prevent races, first free the reference – if another connection fails, it will schedule a new check.
+            final HealthCheck healthCheck = this.healthCheck.getAndSet(null);
+            if (healthCheck != null) {
+                healthCheck.cancel();
+            }
         }
 
         @Override
@@ -612,6 +689,58 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     ", state=" + connState.state +
                     ", #connections=" + connState.connections.length +
                     '}';
+        }
+    }
+
+    private static class HealthCheck<ResolvedAddress, C extends LoadBalancedConnection>
+            implements Runnable, Cancellable {
+        private Executor executor;
+        private Predicate<C> selector;
+        private ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
+        private Host<ResolvedAddress, C> host;
+        private volatile boolean cancelled;
+
+        public HealthCheck(final Executor executor, final Predicate<C> selector,
+                           final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+                           final Host<ResolvedAddress, C> host) {
+            this.executor = executor;
+            this.selector = selector;
+            this.connectionFactory = connectionFactory;
+            this.host = host;
+        }
+
+        public void schedule() {
+            executor.schedule(this, 1, TimeUnit.SECONDS);
+        }
+
+        @Override
+        public void run() {
+            if (cancelled) {
+                return;
+            }
+            connectionFactory.newConnection(host.address, null)
+                    .flatMapCompletable(newCnx -> {
+                        if (!selector.test(newCnx)) {
+                            return newCnx.closeAsync().concat(Completable.failed(new RuntimeException()));
+                        }
+                        if (host.addConnection(newCnx)) {
+                            host.markHealthy(true);
+                        } else {
+                            return newCnx.closeAsync().concat(Completable.failed(new RuntimeException()));
+                        }
+                        return completed();
+                    })
+                    .afterOnError(e -> {
+                        if (!cancelled) {
+                            schedule();
+                        }
+                    })
+                    .subscribe();
+        }
+
+        @Override
+        public void cancel() {
+            this.cancelled = true;
         }
     }
 
