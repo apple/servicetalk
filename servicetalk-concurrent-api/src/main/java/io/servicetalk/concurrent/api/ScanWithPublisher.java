@@ -50,7 +50,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ScanWithSubscriber(subscriber, mapperSupplier.get(),
+        original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(),
                 contextProvider, contextMap), contextMap, contextProvider);
     }
 

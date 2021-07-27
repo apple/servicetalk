@@ -1424,7 +1424,8 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of either this
-     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
+     * result is said to be <strong>ambiguous</strong> relative to which source it originated from.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1434,9 +1435,11 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param other {@link Completable} with which the result of this {@link Completable} is to be ambiguated.
+     * @param other {@link Completable} to subscribe to and race with this {@link Completable} to propagate to the
+     * return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of either this
-     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
+     * result is said to be <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Completable ambWith(final Completable other) {
@@ -1885,7 +1888,8 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1895,9 +1899,10 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Completable... completables) {
@@ -1917,10 +1922,10 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
-     * that result.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Iterable<Completable> completables) {
@@ -1940,7 +1945,7 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s which to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
@@ -1961,7 +1966,7 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s which to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
      * that result.
