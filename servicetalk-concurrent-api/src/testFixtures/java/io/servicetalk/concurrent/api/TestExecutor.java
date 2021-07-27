@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.SortedMap;
@@ -31,7 +30,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -323,17 +321,18 @@ public class TestExecutor implements Executor {
      *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
      *  Sets the thread name to {@code TestExecutor-#} while running the task so that capturing the thread name makes
      *  sense and during debugging the execution context is more obvious.
-     *  Adversarially set the {@link AsyncContextMap} to a hostile instance to ensure that any use of
-     *  {@link AsyncContextMap} within the context of the Runnable includes appropriate setting/restoring of the
-     *  context by the task.
+     *  Captures and sets the AsyncContextMap since the thread executing the {@code Runnable} may be different than the
+     *  thread which called {@link #execute(Runnable)}.
      */
     private static final class RunnableWrapper implements Runnable {
         private final String threadName;
         private final Runnable delegate;
+        private final AsyncContextMap contextMap;
 
         private RunnableWrapper(final String threadName, final Runnable delegate) {
             this.threadName = threadName;
             this.delegate = delegate;
+            this.contextMap = AsyncContext.current();
         }
 
         @Override
@@ -341,84 +340,14 @@ public class TestExecutor implements Executor {
             Thread current = Thread.currentThread();
             String oldName = current.getName();
             current.setName(threadName);
+            AsyncContextMap currentMap = AsyncContext.current();
             try {
-                AsyncContext.provider().wrapRunnable(delegate, InvalidAsyncContextMap.INSTANCE).run();
+                AsyncContext.provider().contextMap(contextMap);
+                delegate.run();
             } finally {
+                AsyncContext.provider().contextMap(currentMap);
                 current.setName(oldName);
             }
-        }
-    }
-
-    /**
-     * Any access of this {@link AsyncContextMap} instance is invalid and was meant for some other instance.
-     */
-    private static final class InvalidAsyncContextMap implements AsyncContextMap {
-        static final AsyncContextMap INSTANCE = new InvalidAsyncContextMap();
-
-        private InvalidAsyncContextMap() {
-            // singleton
-        }
-
-        private AssertionError invalidAccess() {
-            return new AssertionError("Invalid access of AsyncContextMap");
-        }
-
-        @Nullable
-        @Override
-        public <T> T get(final Key<T> key) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public boolean isEmpty() {
-            throw invalidAccess();
-        }
-
-        @Override
-        public int size() {
-            throw invalidAccess();
-        }
-
-        @Nullable
-        @Override
-        public <T> T put(final Key<T> key, @Nullable final T value) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public void putAll(final Map<Key<?>, Object> map) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public <T> T remove(final Key<T> key) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public boolean removeAll(final Iterable<Key<?>> entries) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public void clear() {
-            throw invalidAccess();
-        }
-
-        @Nullable
-        @Override
-        public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-            throw invalidAccess();
-        }
-
-        @Override
-        public AsyncContextMap copy() {
-            return this;
         }
     }
 }
