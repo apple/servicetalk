@@ -29,6 +29,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.safeShouldOffload;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
@@ -129,7 +130,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
         private boolean shouldOffload() {
             if (!hasOffloaded) {
-                if (!shouldOffload.getAsBoolean()) {
+                if (!safeShouldOffload(shouldOffload)) {
                     return false;
                 }
                 hasOffloaded = true;
@@ -353,7 +354,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
         private boolean shouldOffload() {
             if (!hasOffloaded) {
-                if (!shouldOffload.getAsBoolean()) {
+                if (!safeShouldOffload(shouldOffload)) {
                     return false;
                 }
                 hasOffloaded = true;
