@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -645,7 +644,6 @@ class PublisherFlatMapSingleTest {
 
     @Test
     void testConcurrentEmissions() throws Exception {
-        final Executor executor = newFixedSizeExecutor(10);
         final int maxSingles = 1_000;
         final int expected = range(1, maxSingles).reduce(0, Integer::sum);
 
@@ -656,6 +654,5 @@ class PublisherFlatMapSingleTest {
                 .toFuture().get();
 
         assertThat(actual, is(equalTo(expected)));
-        executor.closeAsync().toFuture().get();
     }
 }
