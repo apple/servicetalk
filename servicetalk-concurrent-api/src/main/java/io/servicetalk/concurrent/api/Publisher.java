@@ -3178,7 +3178,7 @@ public abstract class Publisher<T> {
      *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
      *     request more data when required. If the returned {@link InputStream} is closed, {@link Subscription} is
      *     cancelled and any unread data is disposed.</li>
-     *     <li>Any items received by {@link Subscriber#onNext(Object)} are convertedto a {@code byte[]} using the
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} are converted to a {@code byte[]} using the
      *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
      *     {@link IOException}) when data is read from the returned {@link InputStream}. This error will be thrown
