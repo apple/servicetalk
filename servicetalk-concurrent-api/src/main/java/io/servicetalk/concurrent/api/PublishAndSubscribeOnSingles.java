@@ -68,11 +68,15 @@ final class PublishAndSubscribeOnSingles {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            BooleanSupplier shouldOffload = shouldOffloadSupplier();
-            Subscriber<? super T> upstreamSubscriber =
-                    new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
+            try {
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber<? super T> upstreamSubscriber =
+                        new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
 
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            } catch (Throwable throwable) {
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 

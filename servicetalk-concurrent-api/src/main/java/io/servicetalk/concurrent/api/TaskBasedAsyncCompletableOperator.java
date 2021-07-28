@@ -330,9 +330,10 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
             try {
                 offloadCancel = shouldOffload.getAsBoolean();
             } catch (Throwable t) {
-                // As a policy, we call the target in the calling thread when the "hint" fails. In the future we could
-                // make this configurable.
-                offloadCancel = false;
+                // As a policy, we offload to call the target when the "hint" fails. In the future we could make this
+                // configurable.
+                LOGGER.warn("Offloading disabled because {} threw ", shouldOffload, t);
+                offloadCancel = true;
             }
 
             if (offloadCancel) {

@@ -72,14 +72,15 @@ final class PublishAndSubscribeOnCompletables {
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // re-wrap the subscriber so that async context is restored during offloading.
-            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+            try {
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber upstreamSubscriber =
+                        new CompletableSubscriberOffloadedTerminals(subscriber, shouldOffload, executor());
 
-            BooleanSupplier shouldOffload = shouldOffloadSupplier();
-            Subscriber upstreamSubscriber =
-                    new CompletableSubscriberOffloadedTerminals(wrapped, shouldOffload, executor());
-
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            } catch (Throwable throwable) {
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 
