@@ -332,7 +332,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
             } catch (Throwable t) {
                 // As a policy, we offload to call the target when the "hint" fails. In the future we could make this
                 // configurable.
-                LOGGER.warn("Offloading disabled because {} threw ", shouldOffload, t);
+                LOGGER.warn("Offloading hint Supplier {} threw", shouldOffload, t);
                 offloadCancel = true;
             }
 
