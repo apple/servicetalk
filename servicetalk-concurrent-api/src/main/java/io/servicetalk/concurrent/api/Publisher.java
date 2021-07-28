@@ -39,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -2870,7 +2871,24 @@ public abstract class Publisher<T> {
      * {@link Subscriber}.
      */
     public final Publisher<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, executor);
+        return PublishAndSubscribeOnPublishers.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}.
+     */
+    public final Publisher<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -2888,7 +2906,27 @@ public abstract class Publisher<T> {
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
     public final Publisher<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     */
+    public final Publisher<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 
     /**

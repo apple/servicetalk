@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -35,8 +35,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  */
 final class PublishAndSubscribeOnCompletables {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnCompletables.class);
-
     private PublishAndSubscribeOnCompletables() {
         // No instance.
     }
@@ -47,12 +45,14 @@ final class PublishAndSubscribeOnCompletables {
         deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
     }
 
-    static Completable publishOn(Completable original, Executor executor) {
-        return executor == immediate() ? original : new PublishOn(original, executor);
+    static Completable publishOn(final Completable original,
+                                 final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
+        return executor == immediate() ? original : new PublishOn(original, shouldOffload, executor);
     }
 
-    static Completable subscribeOn(Completable original, Executor executor) {
-        return executor == immediate() ? original : new SubscribeOn(original, executor);
+    static Completable subscribeOn(final Completable original,
+                                   final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
+        return executor == immediate() ? original : new SubscribeOn(original, shouldOffload, executor);
     }
 
     /**
@@ -64,21 +64,23 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class PublishOn extends TaskBasedAsyncCompletableOperator {
 
-        PublishOn(final Completable original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedTerminals(subscriber, executor());
+        PublishOn(final Completable original,
+                  final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // re-wrap the subscriber so that async context is restored during offloading.
-            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
-            super.handleSubscribe(wrapped, contextMap, contextProvider);
+            try {
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber upstreamSubscriber =
+                        new CompletableSubscriberOffloadedTerminals(subscriber, shouldOffload, executor());
+
+                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            } catch (Throwable throwable) {
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 
@@ -92,25 +94,26 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class SubscribeOn extends TaskBasedAsyncCompletableOperator {
 
-        SubscribeOn(final Completable original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedCancellable(subscriber, executor());
+        SubscribeOn(final Completable original,
+                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                // re-wrap the subscriber so that async context is restored during offloading.
-                Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber upstreamSubscriber =
+                        new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
 
-                // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Completable subscribe() on {}", executor());
-                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                if (shouldOffload.getAsBoolean()) {
+                    // offload the remainder of subscribe()
+                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
+                } else {
+                    // continue on the current thread
+                    super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 deliverErrorFromSource(subscriber, throwable);

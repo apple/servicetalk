@@ -16,6 +16,8 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -24,10 +26,12 @@ import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.internal.AbstractOffloadingTest;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
+import java.util.EnumSet;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,53 +52,58 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
             try {
-                capturedThreads.capture(CaptureSlot.IN_APP);
+                // Insert a custom value into AsyncContext map
+                AsyncContext.current().put(ASYNC_CONTEXT_CUSTOM_KEY, ASYNC_CONTEXT_VALUE);
 
-                // Add thread recording test points
+                capture(CaptureSlot.IN_APP);
+
+                // Add thread/context recording test points
                 final Completable original = testCompletable
                         .liftSync(subscriber -> {
-                            capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
+                            capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
                             return subscriber;
                         })
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_ORIGINAL_ON_SUBSCRIBE))
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
+                                capture(CaptureSlot.IN_ORIGINAL_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBER);
+                                capture(CaptureSlot.IN_ORIGINAL_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIPTION);
+                                capture(CaptureSlot.IN_OFFLOADED_CANCEL);
                             }
                         });
 
-                // Perform offloading and add more thread recording test points
+                // Perform offloading and add more thread/context recording test points
                 Completable offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync(subscriber -> {
-                            capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+                            capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
                             return subscriber;
                         })
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_OFFLOADED_ON_SUBSCRIBE))
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
+                                capture(CaptureSlot.IN_OFFLOADED_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capturedThreads.capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBER);
+                                capture(CaptureSlot.IN_OFFLOADED_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capturedThreads.capture(CaptureSlot.IN_ORIGINAL_SUBSCRIPTION);
+                                capture(CaptureSlot.IN_ORIGINAL_CANCEL);
                             }
                         });
 
@@ -152,6 +161,25 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
             default:
                 throw new AssertionError("unexpected terminal mode");
         }
+
+        // Ensure that Async Context Map was correctly set during signals
+        AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.IN_APP);
+        assertThat(appMap, notNullValue());
+        AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+        assertThat(subscribeMap, notNullValue());
+        assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
+        assertThat("Missing custom async context entry ",
+                subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
+        EnumSet<CaptureSlot> checkSlots =
+                EnumSet.complementOf(EnumSet.of(CaptureSlot.IN_APP, CaptureSlot.IN_ORIGINAL_SUBSCRIBE));
+        checkSlots.stream()
+                .filter(slot -> null != capturedContexts.captured(slot))
+                .forEach(slot -> {
+                    AsyncContextMap map = capturedContexts.captured(slot);
+                    assertThat("Custom key missing from context map", map.containsKey(ASYNC_CONTEXT_CUSTOM_KEY));
+                    assertThat("Unexpected context map @ slot " + slot + " : " + map,
+                             map, sameInstance(subscribeMap));
+                });
 
         // Ensure that all offloading completed.
         assertThat("Offloading pending", testExecutor.executor().queuedTasksPending(), is(0));

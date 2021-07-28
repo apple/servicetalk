@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -1360,7 +1361,23 @@ public abstract class Single<T> {
      * {@link Subscriber}.
      */
     public final Single<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, executor);
+        return PublishAndSubscribeOnSingles.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Single<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1378,7 +1395,27 @@ public abstract class Single<T> {
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
     public final Single<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
+        return PublishAndSubscribeOnSingles.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     */
+    public final Single<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
