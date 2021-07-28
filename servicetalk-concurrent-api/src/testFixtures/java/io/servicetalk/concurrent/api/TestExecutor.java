@@ -327,12 +327,10 @@ public class TestExecutor implements Executor {
     private static final class RunnableWrapper implements Runnable {
         private final String threadName;
         private final Runnable delegate;
-        private final AsyncContextMap contextMap;
 
         private RunnableWrapper(final String threadName, final Runnable delegate) {
             this.threadName = threadName;
-            this.delegate = delegate;
-            this.contextMap = AsyncContext.current();
+            this.delegate = AsyncContext.provider().wrapRunnable(delegate, AsyncContext.current());
         }
 
         @Override
@@ -340,12 +338,9 @@ public class TestExecutor implements Executor {
             Thread current = Thread.currentThread();
             String oldName = current.getName();
             current.setName(threadName);
-            AsyncContextMap currentMap = AsyncContext.current();
             try {
-                AsyncContext.provider().contextMap(contextMap);
                 delegate.run();
             } finally {
-                AsyncContext.provider().contextMap(currentMap);
                 current.setName(oldName);
             }
         }
