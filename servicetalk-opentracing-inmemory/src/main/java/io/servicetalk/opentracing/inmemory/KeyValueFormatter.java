@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.http;
+package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.opentracing.inmemory.DefaultInMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 import io.servicetalk.opentracing.internal.ZipkinHeaderNames;
@@ -31,15 +29,16 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static java.lang.String.valueOf;
 
-final class TracingHttpHeadersFormatter implements InMemorySpanContextFormat<HttpHeaders> {
-    private static final Logger logger = LoggerFactory.getLogger(TracingHttpHeadersFormatter.class);
+public final class KeyValueFormatter implements InMemorySpanContextFormat<CharSequenceKeyValueAccessor> {
+    private static final Logger logger = LoggerFactory.getLogger(KeyValueFormatter.class);
     private static final CharSequence TRACE_ID = newAsciiString(ZipkinHeaderNames.TRACE_ID);
     private static final CharSequence SPAN_ID = newAsciiString(ZipkinHeaderNames.SPAN_ID);
     private static final CharSequence PARENT_SPAN_ID = newAsciiString(ZipkinHeaderNames.PARENT_SPAN_ID);
     private static final CharSequence SAMPLED = newAsciiString(ZipkinHeaderNames.SAMPLED);
-    static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_VALIDATION = new TracingHttpHeadersFormatter(true);
-    static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
-            new TracingHttpHeadersFormatter(false);
+    static final InMemorySpanContextFormat<CharSequenceKeyValueAccessor> FORMATTER_VALIDATION =
+            new KeyValueFormatter(true);
+    static final InMemorySpanContextFormat<CharSequenceKeyValueAccessor> FORMATTER_NO_VALIDATION =
+            new KeyValueFormatter(false);
 
     private final boolean verifyExtractedValues;
 
@@ -49,16 +48,17 @@ final class TracingHttpHeadersFormatter implements InMemorySpanContextFormat<Htt
      * @param verifyExtractedValues {@code true} to make a best effort verification that the extracted values are of the
      * correct format.
      */
-    private TracingHttpHeadersFormatter(boolean verifyExtractedValues) {
+    private KeyValueFormatter(boolean verifyExtractedValues) {
         this.verifyExtractedValues = verifyExtractedValues;
     }
 
-    static InMemorySpanContextFormat<HttpHeaders> traceStateFormatter(boolean validateTraceKeyFormat) {
+    public static InMemorySpanContextFormat<CharSequenceKeyValueAccessor>
+    traceStateFormatter(boolean validateTraceKeyFormat) {
         return validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
     }
 
     @Override
-    public void inject(final InMemorySpanContext context, final HttpHeaders carrier) {
+    public void inject(final InMemorySpanContext context, final CharSequenceKeyValueAccessor carrier) {
         carrier.set(TRACE_ID, context.toTraceId());
         carrier.set(SPAN_ID, context.toSpanId());
         String parentSpanIdHex = context.parentSpanId();
@@ -74,7 +74,7 @@ final class TracingHttpHeadersFormatter implements InMemorySpanContextFormat<Htt
 
     @Nullable
     @Override
-    public InMemorySpanContext extract(final HttpHeaders carrier) {
+    public InMemorySpanContext extract(final CharSequenceKeyValueAccessor carrier) {
         CharSequence traceId = carrier.get(TRACE_ID);
         if (traceId == null) {
             return null;

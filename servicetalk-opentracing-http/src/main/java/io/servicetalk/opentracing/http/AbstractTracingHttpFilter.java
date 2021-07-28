@@ -17,10 +17,10 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.opentracing.inmemory.CharSequenceKeyValueAccessor;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import io.opentracing.Scope;
@@ -32,14 +32,14 @@ import javax.annotation.Nullable;
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
-import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.inmemory.KeyValueFormatter.traceStateFormatter;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractTracingHttpFilter {
 
     protected final Tracer tracer;
     protected final String componentName;
-    protected final InMemorySpanContextFormat<HttpHeaders> formatter;
+    protected final InMemorySpanContextFormat<CharSequenceKeyValueAccessor> formatter;
 
     /**
      * Create a new instance.

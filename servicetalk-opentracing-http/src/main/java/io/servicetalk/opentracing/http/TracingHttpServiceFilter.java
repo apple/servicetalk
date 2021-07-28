@@ -40,6 +40,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
+import static io.servicetalk.opentracing.http.HttpHeadersKeyValueAccessor.accessorOf;
 
 /**
  * A {@link StreamingHttpService} that supports open tracing.
@@ -107,7 +108,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
                 .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
                 .withTag(HTTP_METHOD.getKey(), request.method().name())
                 .withTag(HTTP_URL.getKey(), request.path());
-        SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
+        SpanContext parentSpanContext = tracer.extract(formatter, accessorOf(request.headers()));
         if (parentSpanContext != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpanContext);
         }
@@ -130,7 +131,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
-                tracer.inject(getSpan().context(), formatter, metaData.headers());
+                tracer.inject(getSpan().context(), formatter, accessorOf(metaData.headers()));
             }
         }
     }

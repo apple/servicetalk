@@ -42,6 +42,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
+import static io.servicetalk.opentracing.http.HttpHeadersKeyValueAccessor.accessorOf;
 
 /**
  * An HTTP filter that supports open tracing.
@@ -137,7 +138,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         Span span = spanBuilder.start();
         Scope scope = tracer.activateSpan(span);
         try {
-            tracer.inject(span.context(), formatter, request.headers());
+            tracer.inject(span.context(), formatter, accessorOf(request.headers()));
             return new ScopeTracker(scope, span);
         } catch (Throwable cause) {
             handlePrematureError(span, scope);
