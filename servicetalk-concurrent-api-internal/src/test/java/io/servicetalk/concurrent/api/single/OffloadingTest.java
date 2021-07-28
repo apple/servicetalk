@@ -101,7 +101,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
         PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
                 (s, e) -> Single.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return s.publishOn(e, () -> () -> countdown.decrementAndGet() < 0);
+                    return s.publishOn(e, () -> () -> countdown.decrementAndGet() < 0).subscribeShareContext();
                 }), TerminalOperation.COMPLETE,
                 EnumSet.of(IN_ORIGINAL_SUBSCRIBE, IN_OFFLOADED_SUBSCRIBE,
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_OFFLOADED_ON_SUBSCRIBE,

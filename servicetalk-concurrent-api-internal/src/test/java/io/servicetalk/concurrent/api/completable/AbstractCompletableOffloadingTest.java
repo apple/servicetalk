@@ -177,9 +177,8 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                 .forEach(slot -> {
                     AsyncContextMap map = capturedContexts.captured(slot);
                     assertThat("Custom key missing from context map", map.containsKey(ASYNC_CONTEXT_CUSTOM_KEY));
-                    // Disabled because defer() copies the async context rather than sharing
-                    // assertThat("Unexpected context map @ slot " + slot + " : " + map,
-                    //          map, sameInstance(subscribeMap));
+                    assertThat("Unexpected context map @ slot " + slot + " : " + map,
+                             map, sameInstance(subscribeMap));
                 });
 
         // Ensure that all offloading completed.
