@@ -330,7 +330,7 @@ public class TestExecutor implements Executor {
 
         private RunnableWrapper(final String threadName, final Runnable delegate) {
             this.threadName = threadName;
-            this.delegate = AsyncContext.provider().wrapRunnable(delegate, AsyncContext.current());
+            this.delegate = AsyncContext.wrapRunnable(delegate);
         }
 
         @Override
