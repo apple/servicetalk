@@ -20,11 +20,10 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -54,11 +53,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     private final boolean eagerConnectionShutdown;
-    private final Executor backgroundExecutor;
+    private final RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig;
 
-    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown, final Executor backgroundExecutor) {
+    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown,
+                                          RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig) {
         this.eagerConnectionShutdown = eagerConnectionShutdown;
-        this.backgroundExecutor = backgroundExecutor;
+        this.healthCheckConfig = healthCheckConfig;
     }
 
     @Override
@@ -66,7 +66,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(
-                eventPublisher, connectionFactory, eagerConnectionShutdown, backgroundExecutor);
+                eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**
@@ -76,12 +76,11 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-        private static final String BACKGROUND_PROCESSING_EXECUTOR_NAME = "round-robin-load-balancer-executor";
-        private static final Executor SHARED_EXECUTOR = Executors.newFixedSizeExecutor(1,
-                new DefaultThreadFactory(BACKGROUND_PROCESSING_EXECUTOR_NAME));
         private boolean eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
         @Nullable
         private Executor backgroundExecutor;
+        private int healthCheckIntervalMillis;
+        private int healthCheckFailedConnectionsThreshold;
 
         /**
          * Creates a new instance with default settings.
@@ -114,11 +113,36 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * establishment fails, the host is not considered for opening new connections for processed requests.
          *
          * @param backgroundExecutor {@link Executor} on which to schedule health checking.
-         * @return @{code this}.
+         * @return {@code this}.
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> backgroundExecutor(
                 Executor backgroundExecutor) {
             this.backgroundExecutor = backgroundExecutor;
+            return this;
+        }
+
+        /**
+         * Configure an interval for health checking a host that failed to open connections.
+         * @param intervalMillis interval at which a background health check will be scheduled.
+         * @return {@code this}.
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckIntervalMillis(int intervalMillis) {
+            this.healthCheckIntervalMillis = intervalMillis;
+            return this;
+        }
+
+        /**
+         * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer} fails
+         * to open a connection in more consecutive attempts than the specified value, the host will be marked as
+         * unhealthy and a connection establishment will take place in the background. Until finished, the host will
+         * not take part in load balancing selection.
+         * @param threshold number of consecutive connection failures to consider a host unhealthy and elligible for
+         * background health checking.
+         * @return {@code this}.
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
+                int threshold) {
+            this.healthCheckFailedConnectionsThreshold = threshold;
             return this;
         }
 
@@ -129,8 +153,18 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             final Executor backgroundExecutor = this.backgroundExecutor != null ?
-                    this.backgroundExecutor : SHARED_EXECUTOR;
-            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, backgroundExecutor);
+                    this.backgroundExecutor : RoundRobinLoadBalancer.SHARED_EXECUTOR;
+            final Duration healthCheckInterval = healthCheckIntervalMillis > 0 ?
+                    Duration.ofMillis(healthCheckIntervalMillis)
+                    : RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_INTERVAL;
+            final int healthCheckFailedConnectionsThreshold = this.healthCheckFailedConnectionsThreshold > 0 ?
+                    this.healthCheckFailedConnectionsThreshold
+                    : RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+            final RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig =
+                    new RoundRobinLoadBalancer.HealthCheckConfig(
+                            backgroundExecutor, healthCheckInterval, healthCheckFailedConnectionsThreshold);
+            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown,
+                    healthCheckConfig);
         }
     }
 }
