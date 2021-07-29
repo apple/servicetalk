@@ -22,5 +22,9 @@ import io.opentracing.Scope;
  */
 public interface InMemoryScope extends Scope {
 
+    /**
+     * Return the current {@link InMemorySpan span} of this {@link Scope scope}.
+     * @return The {@link InMemorySpan span} of this {@link Scope scope}.
+     */
     InMemorySpan span();
 }
