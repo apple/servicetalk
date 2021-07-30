@@ -99,7 +99,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
         private boolean shouldOffload() {
             if (!hasOffloaded) {
-                if (!shouldOffload.getAsBoolean()) {
+                if (!safeShouldOffload(shouldOffload)) {
                     return false;
                 }
                 hasOffloaded = true;
@@ -326,17 +326,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
         @Override
         public void cancel() {
-            boolean offloadCancel;
-            try {
-                offloadCancel = shouldOffload.getAsBoolean();
-            } catch (Throwable t) {
-                // As a policy, we offload to call the target when the "hint" fails. In the future we could make this
-                // configurable.
-                LOGGER.warn("Offloading hint Supplier {} threw", shouldOffload, t);
-                offloadCancel = true;
-            }
-
-            if (offloadCancel) {
+            if (safeShouldOffload(shouldOffload)) {
                 try {
                     executor.execute(() -> safeCancel(cancellable));
                 } catch (Throwable t) {
@@ -353,5 +343,14 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
                 safeCancel(cancellable);
             }
         }
+    }
+
+    static boolean safeShouldOffload(BooleanSupplier shouldOffload) {
+        try {
+            return shouldOffload.getAsBoolean();
+        } catch (Throwable t) {
+            LOGGER.warn("Offloading hint Supplier {} threw", shouldOffload, t);
+        }
+        return true;
     }
 }

@@ -16,7 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.AbstractOffloadedSingleValueSubscriber;
+import io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.OffloadedCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.slf4j.Logger;
@@ -75,15 +76,14 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
 
         original.delegateSubscribe(subscriber, contextMap, contextProvider);
     }
 
-    static final class SingleSubscriberOffloadedTerminals<T>
-            extends TaskBasedAsyncCompletableOperator.AbstractOffloadedSingleValueSubscriber
-            implements SingleSource.Subscriber<T> {
-        private final SingleSource.Subscriber<T> target;
+    static final class SingleSubscriberOffloadedTerminals<T> extends AbstractOffloadedSingleValueSubscriber
+            implements Subscriber<T> {
+        private final Subscriber<T> target;
 
         SingleSubscriberOffloadedTerminals(final Subscriber<T> target,
                                            final BooleanSupplier shouldOffload, final Executor executor) {
@@ -137,8 +137,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
         }
     }
 
-    static final class SingleSubscriberOffloadedCancellable<T> implements SingleSource.Subscriber<T> {
-        private final SingleSource.Subscriber<? super T> subscriber;
+    static final class SingleSubscriberOffloadedCancellable<T> implements Subscriber<T> {
+        private final Subscriber<? super T> subscriber;
         private final BooleanSupplier shouldOffload;
         private final Executor executor;
 
@@ -151,8 +151,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            subscriber.onSubscribe(
-                    new TaskBasedAsyncCompletableOperator.OffloadedCancellable(cancellable, shouldOffload, executor));
+            subscriber.onSubscribe(new OffloadedCancellable(cancellable, shouldOffload, executor));
         }
 
         @Override
