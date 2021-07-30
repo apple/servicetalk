@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Executor;
 
 final class ExecutionContextOverridingServiceContext extends DelegatingHttpServiceContext {
-    public final HttpExecutionContext context;
+    private final HttpExecutionContext context;
 
     ExecutionContextOverridingServiceContext(final HttpServiceContext ctx, final HttpExecutionStrategy strategy,
                                              final Executor executor) {
