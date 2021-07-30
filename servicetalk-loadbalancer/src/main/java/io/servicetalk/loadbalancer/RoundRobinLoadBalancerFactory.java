@@ -43,6 +43,10 @@ import javax.annotation.Nullable;
  * to addresses marked as {@link ServiceDiscovererEvent#isAvailable() unavailable} are used for requests,
  * but no new connections are created for them. In case the address' connections are busy, another host is tried.
  * If all hosts are busy, selection fails with a {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
+ * <li>For hosts to which consecutive connection attempts fail, a background health checking task is created and
+ * the host is not considered for opening new connections until the background check succeeds to create a connection.
+ * Upon such event, the connection can immediately be reused and future attempts will again consider this host.
+ * This behaviour can be disabled using a negative argument for {@link Builder#healthCheckIntervalMillis(int)}</li>
  * </ul>
  *
  * @param <ResolvedAddress> The resolved address type.
@@ -56,7 +60,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     private final RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig;
 
     private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown,
-                                          RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig) {
+                                          @Nullable RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig) {
         this.eagerConnectionShutdown = eagerConnectionShutdown;
         this.healthCheckConfig = healthCheckConfig;
     }
@@ -122,8 +126,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         /**
-         * Configure an interval for health checking a host that failed to open connections.
-         * @param intervalMillis interval at which a background health check will be scheduled.
+         * Configure an interval for health checking a host that failed to open connections. To disable the health
+         * checking logic, a negative value can be provided.
+         * @param intervalMillis interval (in milliseconds) at which a background health check will be scheduled.
+         * When the value is negative, the health checking mechanism is disabled.
          * @return {@code this}.
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckIntervalMillis(int intervalMillis) {
@@ -152,19 +158,35 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @return a new instance of {@link RoundRobinLoadBalancerFactory} with settings from this builder.
          */
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
-            final Executor backgroundExecutor = this.backgroundExecutor != null ?
-                    this.backgroundExecutor : RoundRobinLoadBalancer.SHARED_EXECUTOR;
-            final Duration healthCheckInterval = healthCheckIntervalMillis > 0 ?
-                    Duration.ofMillis(healthCheckIntervalMillis)
-                    : RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_INTERVAL;
-            final int healthCheckFailedConnectionsThreshold = this.healthCheckFailedConnectionsThreshold > 0 ?
-                    this.healthCheckFailedConnectionsThreshold
-                    : RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-            final RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig =
+            boolean customHealthCheck = false;
+            Executor backgroundExecutor = RoundRobinLoadBalancer.SHARED_EXECUTOR;
+            Duration healthCheckInterval = RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_INTERVAL;
+            int healthCheckFailedConnectionsThreshold =
+                    RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+
+            if (healthCheckIntervalMillis < 0) {
+                return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, null);
+            }
+
+            if (this.backgroundExecutor != null) {
+                backgroundExecutor = this.backgroundExecutor;
+                customHealthCheck = true;
+            }
+            if (healthCheckIntervalMillis > 0) {
+                healthCheckInterval = Duration.ofMillis(healthCheckIntervalMillis);
+                customHealthCheck = true;
+            }
+            if (this.healthCheckFailedConnectionsThreshold > 0) {
+                healthCheckFailedConnectionsThreshold = this.healthCheckFailedConnectionsThreshold;
+                customHealthCheck = true;
+            }
+
+            RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig = customHealthCheck ?
                     new RoundRobinLoadBalancer.HealthCheckConfig(
-                            backgroundExecutor, healthCheckInterval, healthCheckFailedConnectionsThreshold);
-            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown,
-                    healthCheckConfig);
+                            backgroundExecutor, healthCheckInterval, healthCheckFailedConnectionsThreshold)
+                    : RoundRobinLoadBalancer.SHARED_HEALTH_CHECK_CONFIG;
+
+            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, healthCheckConfig);
         }
     }
 }

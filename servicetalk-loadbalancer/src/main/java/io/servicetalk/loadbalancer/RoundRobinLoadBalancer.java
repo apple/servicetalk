@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
@@ -154,11 +155,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * set to {@code false} should be eagerly closed. When {@code false}, the expired addresses will be used
      * for sending requests, but new connections will not be requested, allowing the server to drive
      * the connection closure and shifting traffic to other addresses.
+     * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
+     * are unable to have a connection established.
      */
     RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                            final boolean eagerConnectionShutdown,
-                           final HealthCheckConfig healthCheckConfig) {
+                           @Nullable final HealthCheckConfig healthCheckConfig) {
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
@@ -548,14 +551,15 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         final Addr address;
+        @Nullable
         private final HealthCheckConfig healthCheckConfig;
         private final ListenableAsyncCloseable closeable;
         private volatile ConnState connState = EMPTY_CONN_STATE;
         private volatile int connectionFailures;
 
-        Host(Addr address, HealthCheckConfig healthCheckConfig) {
+        Host(Addr address, @Nullable HealthCheckConfig healthCheckConfig) {
             this.address = requireNonNull(address);
-            this.healthCheckConfig = requireNonNull(healthCheckConfig);
+            this.healthCheckConfig = healthCheckConfig;
             this.closeable = toAsyncCloseable(graceful ->
                     graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
         }
@@ -717,6 +721,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         void markUnhealthy(ConnectionFactory<Addr, ? extends C> connectionFactory, Predicate<C> selector) {
+            if (healthCheckConfig == null) {
+                return;
+            }
             connectionFailuresUpdater.getAndUpdate(this, val -> val == Integer.MAX_VALUE ? val : val + 1);
             for (;;) {
                 ConnState previous = connStateUpdater.get(this);

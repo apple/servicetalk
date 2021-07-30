@@ -441,6 +441,44 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
+    public void disabledHealthCheckDoesntRun() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final int timeAdvancementsTillHealthy = 3;
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory =
+                new UnhealthyHostConnectionFactory("address-1", timeAdvancementsTillHealthy, properConnection);
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+
+        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckIntervalMillis(-1)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+
+        for (int i = 0; i < RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+        }
+
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
+
+        for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+        }
+
+        unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
+
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+    }
+
+    @Test
     public void hostUnhealthyIsHealthChecked() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
