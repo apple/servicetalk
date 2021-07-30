@@ -37,7 +37,8 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
     @Override
     final void handleSubscribe(final Subscriber<? super T> subscriber,
                                final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        // We are now subscribing to the original Publisher chain for the first time.
+        // We are now subscribing to the original Publisher chain for the first time, wrap Subscription to preserve the
+        // context.
         PublisherSource.Subscriber<? super T> wrappedSubscription =
                 contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap);
         source.delegateSubscribe(wrappedSubscription, contextMap, contextProvider);

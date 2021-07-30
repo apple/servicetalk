@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -1360,7 +1361,23 @@ public abstract class Single<T> {
      * {@link Subscriber}.
      */
     public final Single<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, executor);
+        return PublishAndSubscribeOnSingles.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Single<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1378,7 +1395,27 @@ public abstract class Single<T> {
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
     public final Single<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
+        return PublishAndSubscribeOnSingles.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     */
+    public final Single<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1461,7 +1498,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * said to be <strong>ambiguous</strong> relative to which source it originated from. After the first source
+     * terminates the non-terminated source will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1471,9 +1510,10 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param other {@link Single} with which the result of this {@link Single} is to be ambiguated.
+     * @param other {@link Single} to subscribe to and race with this {@link Single} to propagate to the return value.
      * @return A new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * said to be <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Single<T> ambWith(final Single<T> other) {
@@ -1986,7 +2026,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
+     * cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1996,10 +2038,11 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
@@ -2009,7 +2052,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
+     * cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2019,10 +2064,11 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> amb(final Iterable<Single<? extends T>> singles) {
@@ -2041,7 +2087,7 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
@@ -2064,7 +2110,7 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
@@ -2336,16 +2382,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
@@ -2361,8 +2397,14 @@ public abstract class Single<T> {
     private void subscribeWithContext(Subscriber<? super T> subscriber,
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        Subscriber<? super T> wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        }
     }
 
     /**

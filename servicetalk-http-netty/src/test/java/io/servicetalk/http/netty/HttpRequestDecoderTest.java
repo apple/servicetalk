@@ -272,9 +272,13 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertStandardHeaders(metaData.headers());
+        assertEmptyTrailers(channel);
         // Content is not expected for requests if no "content-length" nor "transfer-encoding: chunked" is present
-        assertThrows(DecoderException.class, () -> writeContent(128));
-        assertThat(channel.inboundMessages(), is(not(empty())));
+        assertThrows(DecoderException.class, () -> writeMsg("some_content"));
+        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     @Test

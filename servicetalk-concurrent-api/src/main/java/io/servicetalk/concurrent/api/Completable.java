@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -1387,7 +1388,24 @@ public abstract class Completable {
      * {@link Subscriber}.
      */
     public final Completable publishOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, executor);
+        return PublishAndSubscribeOnCompletables.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that map use the passed {@link Executor} to invoke {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Completable publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnCompletables.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1405,7 +1423,27 @@ public abstract class Completable {
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
     public final Completable subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.subscribeOn(this, executor);
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that map use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
+     * even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     */
+    public final Completable subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1424,7 +1462,9 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of either this
-     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
+     * result is said to be <strong>ambiguous</strong> relative to which source it originated from. After the first
+     * source terminates the non-terminated source will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1434,9 +1474,11 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param other {@link Completable} with which the result of this {@link Completable} is to be ambiguated.
+     * @param other {@link Completable} to subscribe to and race with this {@link Completable} to propagate to the
+     * return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of either this
-     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
+     * result is said to be <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Completable ambWith(final Completable other) {
@@ -1885,7 +1927,9 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from. After the first source terminates the
+     * non-terminated sources will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1895,9 +1939,10 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Completable... completables) {
@@ -1907,7 +1952,8 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
+     * the passed {@code completables} that terminates first. After the first source terminates the non-terminated
+     * sources will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1917,10 +1963,10 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
-     * the passed {@code completables} that terminates first.
-     * that result.
+     * the passed {@code completables} that terminates first. Therefore the result is said to be
+     * <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Iterable<Completable> completables) {
@@ -1940,7 +1986,7 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s which to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
@@ -1961,7 +2007,7 @@ public abstract class Completable {
      *      }
      * }</pre>
      *
-     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @param completables {@link Completable}s which to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
      * that result.
@@ -1997,7 +2043,13 @@ public abstract class Completable {
                                       AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+        }
     }
 
     /**

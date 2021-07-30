@@ -77,11 +77,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
             wrappedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
-            original.delegateSubscribe(completableSubscriber, contextMap,
-                    contextProvider);
-            // Any signal originating from mergeWith Publisher should be offloaded before they are sent to the
-            // Subscriber of the resulting Publisher of CompletableMergeWithPublisher as the Executor associated with
-            // the original Completable defines the threading semantics for that Subscriber.
+            original.delegateSubscribe(completableSubscriber, contextMap, contextProvider);
             mergeWith.subscribeInternal(this);
         }
 
@@ -198,9 +194,6 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             wrappedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, contextMap, contextProvider);
-            // Any signal originating from mergeWith Publisher should be offloaded before they are sent to the
-            // Subscriber of the resulting Publisher of CompletableMergeWithPublisher as the Executor associated with
-            // the original Completable defines the threading semantics for that Subscriber.
             mergeWith.subscribeInternal(this);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.opentracing.asynccontext;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
@@ -63,7 +64,7 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
         return AsyncContext.get(SCOPE_KEY);
     }
 
-    static final class AsyncContextInMemoryScope implements Scope {
+    static final class AsyncContextInMemoryScope implements InMemoryScope {
         @Nullable
         private final AsyncContextInMemoryScope previousScope;
         private final InMemorySpan span;
@@ -83,7 +84,8 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
             }
         }
 
-        InMemorySpan span() {
+        @Override
+        public InMemorySpan span() {
             return span;
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.http;
+package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.opentracing.inmemory.DefaultInMemorySpanContext;
+import io.servicetalk.concurrent.api.TriConsumer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 import io.servicetalk.opentracing.internal.ZipkinHeaderNames;
@@ -24,68 +23,72 @@ import io.servicetalk.opentracing.internal.ZipkinHeaderNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static java.lang.String.valueOf;
+import static java.util.Objects.requireNonNull;
 
-final class TracingHttpHeadersFormatter implements InMemorySpanContextFormat<HttpHeaders> {
-    private static final Logger logger = LoggerFactory.getLogger(TracingHttpHeadersFormatter.class);
+public class B3KeyValueFormatter<T> implements InMemorySpanContextFormat<T> {
+    private final TriConsumer<T, CharSequence, CharSequence> carrierInjector;
+    private final BiFunction<T, CharSequence, CharSequence> carrierExtractor;
+
+    private static final Logger logger = LoggerFactory.getLogger(B3KeyValueFormatter.class);
     private static final CharSequence TRACE_ID = newAsciiString(ZipkinHeaderNames.TRACE_ID);
     private static final CharSequence SPAN_ID = newAsciiString(ZipkinHeaderNames.SPAN_ID);
     private static final CharSequence PARENT_SPAN_ID = newAsciiString(ZipkinHeaderNames.PARENT_SPAN_ID);
     private static final CharSequence SAMPLED = newAsciiString(ZipkinHeaderNames.SAMPLED);
-    static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_VALIDATION = new TracingHttpHeadersFormatter(true);
-    static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
-            new TracingHttpHeadersFormatter(false);
 
     private final boolean verifyExtractedValues;
 
     /**
      * Create a new instance.
      *
+     * @param carrierInjector A {@link TriConsumer} used to inject entries to a Key-Value carrier.
+     * @param carrierExtractor A {@link BiFunction} used to extract to extract values from a Key-Value carrier.
      * @param verifyExtractedValues {@code true} to make a best effort verification that the extracted values are of the
      * correct format.
      */
-    private TracingHttpHeadersFormatter(boolean verifyExtractedValues) {
+    public B3KeyValueFormatter(TriConsumer<T, CharSequence, CharSequence> carrierInjector,
+                               BiFunction<T, CharSequence, CharSequence> carrierExtractor,
+                               boolean verifyExtractedValues) {
+        this.carrierInjector = requireNonNull(carrierInjector);
+        this.carrierExtractor = requireNonNull(carrierExtractor);
         this.verifyExtractedValues = verifyExtractedValues;
     }
 
-    static InMemorySpanContextFormat<HttpHeaders> traceStateFormatter(boolean validateTraceKeyFormat) {
-        return validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
-    }
-
     @Override
-    public void inject(final InMemorySpanContext context, final HttpHeaders carrier) {
-        carrier.set(TRACE_ID, context.toTraceId());
-        carrier.set(SPAN_ID, context.toSpanId());
+    public void inject(final InMemorySpanContext context, final T carrier) {
+        carrierInjector.accept(carrier, TRACE_ID, context.toTraceId());
+        carrierInjector.accept(carrier, SPAN_ID, context.toSpanId());
         String parentSpanIdHex = context.parentSpanId();
         if (parentSpanIdHex != null) {
-            carrier.set(PARENT_SPAN_ID, parentSpanIdHex);
+            carrierInjector.accept(carrier, PARENT_SPAN_ID, parentSpanIdHex);
         }
 
         final Boolean isSampled = context.isSampled();
         if (isSampled != null) {
-            carrier.set(SAMPLED, isSampled ? "1" : "0");
+            carrierInjector.accept(carrier, SAMPLED, isSampled ? "1" : "0");
         }
     }
 
     @Nullable
     @Override
-    public InMemorySpanContext extract(final HttpHeaders carrier) {
-        CharSequence traceId = carrier.get(TRACE_ID);
+    public InMemorySpanContext extract(final T carrier) {
+        CharSequence traceId = carrierExtractor.apply(carrier, TRACE_ID);
         if (traceId == null) {
             return null;
         }
 
-        CharSequence spanId = carrier.get(SPAN_ID);
+        CharSequence spanId = carrierExtractor.apply(carrier, SPAN_ID);
         if (spanId == null) {
             return null;
         }
 
-        CharSequence parentSpanId = carrier.get(PARENT_SPAN_ID);
+        CharSequence parentSpanId = carrierExtractor.apply(carrier, PARENT_SPAN_ID);
         if (verifyExtractedValues) {
             validateHexBytes(traceId);
             validateHexBytes(spanId);
@@ -98,7 +101,7 @@ final class TracingHttpHeadersFormatter implements InMemorySpanContextFormat<Htt
             }
         }
 
-        CharSequence sampleId = carrier.get(SAMPLED);
+        CharSequence sampleId = carrierExtractor.apply(carrier, SAMPLED);
         return new DefaultInMemorySpanContext(traceId.toString(), spanId.toString(),
                 valueOf(parentSpanId), sampleId != null ? (sampleId.length() == 1 && sampleId.charAt(0) != '0') : null);
     }

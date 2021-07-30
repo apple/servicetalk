@@ -38,21 +38,13 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super R> subscriber,
+    final void handleSubscribe(Subscriber<? super R> subscriber,
                          AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber<? super R> operatorSubscriber =
                 contextProvider.wrapPublisherSubscriberAndSubscription(subscriber, contextMap);
-
-        // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
-        // Subscription methods from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: beforeRequest(). So, we should offload
-        // Subscription methods here.
-        //
-        // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
-        // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber<? super T> upstreamSubscriber = apply(operatorSubscriber);
         original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
     }

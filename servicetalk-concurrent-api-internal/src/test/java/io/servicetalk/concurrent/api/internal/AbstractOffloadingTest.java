@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.internal;
 
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
@@ -36,14 +38,28 @@ public abstract class AbstractOffloadingTest {
 
     protected static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException();
 
-    protected enum CaptureSlot {
+    protected static final String ASYNC_CONTEXT_KEY = "OFFLOAD";
+    protected static final String ASYNC_CONTEXT_VALUE = "TEST";
+
+    protected static final AsyncContextMap.Key<String> ASYNC_CONTEXT_CUSTOM_KEY =
+            AsyncContextMap.Key.newKey(ASYNC_CONTEXT_KEY);
+
+    public enum CaptureSlot {
         IN_APP,
         IN_ORIGINAL_SUBSCRIBE,
         IN_OFFLOADED_SUBSCRIBE,
-        IN_ORIGINAL_SUBSCRIBER,
-        IN_OFFLOADED_SUBSCRIBER,
-        IN_ORIGINAL_SUBSCRIPTION,
-        IN_OFFLOADED_SUBSCRIPTION
+        IN_ORIGINAL_ON_COMPLETE,
+        IN_OFFLOADED_ON_COMPLETE,
+        IN_ORIGINAL_ON_SUBSCRIBE,
+        IN_OFFLOADED_ON_SUBSCRIBE,
+        IN_ORIGINAL_ON_ERROR,
+        IN_OFFLOADED_ON_ERROR,
+        IN_ORIGINAL_REQUEST,
+        IN_OFFLOADED_REQUEST,
+        IN_ORIGINAL_ON_NEXT,
+        IN_OFFLOADED_ON_NEXT,
+        IN_ORIGINAL_CANCEL,
+        IN_OFFLOADED_CANCEL
     }
 
     protected enum TerminalOperation {
@@ -71,8 +87,15 @@ public abstract class AbstractOffloadingTest {
     public final ExecutorExtension<TestExecutor> testExecutor = ExecutorExtension.withTestExecutor();
 
     protected final CaptureReferences<CaptureSlot, String> capturedThreads;
+    protected final CaptureReferences<CaptureSlot, AsyncContextMap> capturedContexts;
 
     protected AbstractOffloadingTest() {
         this.capturedThreads = new CaptureReferences(CaptureSlot.class, () -> Thread.currentThread().getName());
+        this.capturedContexts = new CaptureReferences(CaptureSlot.class, AsyncContext::current);
+    }
+
+    protected void capture(CaptureSlot slot) {
+        capturedThreads.capture(slot);
+        capturedContexts.capture(slot);
     }
 }
