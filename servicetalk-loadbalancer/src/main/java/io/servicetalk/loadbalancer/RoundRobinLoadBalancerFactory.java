@@ -57,6 +57,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     private final boolean eagerConnectionShutdown;
+    @Nullable
     private final RoundRobinLoadBalancer.HealthCheckConfig healthCheckConfig;
 
     private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown,
