@@ -175,7 +175,7 @@ the same across all the HTTP APIs.
 [#Redirects]
 == Redirects
 
-Extends the async "Hello World" example to demonstrate different ways how users can support redirects in ServiceTalk
+Extends the async "Hello World" example to demonstrate different ways that users can support redirects in ServiceTalk
 applications. You should read and understand the async "Hello World" example first to understand the additions this
 example adds. No separate example is needed for the other API variants as the usage of the debugging features are the
 same for all API styles.
