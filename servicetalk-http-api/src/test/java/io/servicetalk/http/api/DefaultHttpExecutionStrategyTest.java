@@ -36,7 +36,6 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -134,23 +133,6 @@ class DefaultHttpExecutionStrategyTest {
                                         .ignoreElements().concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
             .toFuture().get();
-        analyzer.verify();
-    }
-
-    @ParameterizedTest
-    @EnumSource(Params.class)
-    void invokeService(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        StreamingHttpRequest req = analyzer.createNewRequest();
-        StreamingHttpResponse resp = analyzer.createNewResponse();
-
-        analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
-            analyzer.checkServiceInvocation();
-            return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.messageBody());
-        }, (throwable, executor1) -> failed(throwable))).toFuture().get();
-
         analyzer.verify();
     }
 

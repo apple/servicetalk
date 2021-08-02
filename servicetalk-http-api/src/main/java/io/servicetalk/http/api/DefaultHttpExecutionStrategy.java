@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -86,31 +85,6 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         }
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
             resp = resp.map(response -> response.transformMessageBody(payload -> payload.publishOn(e)));
-        }
-        return resp;
-    }
-
-    @Override
-    public Publisher<Object> invokeService(
-            final Executor fallback, StreamingHttpRequest request,
-            final Function<StreamingHttpRequest, Publisher<Object>> service,
-            final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        final Executor e = executor(fallback);
-        if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            request = request.transformMessageBody(payload -> payload.publishOn(e));
-        }
-        Publisher<Object> resp;
-        if (offloaded(OFFLOAD_RECEIVE_META)) {
-            final StreamingHttpRequest r = request;
-            resp = e.submit(() -> service.apply(r).subscribeShareContext())
-                    .onErrorReturn(cause -> errorHandler.apply(cause, e))
-                    // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
-                    .flatMapPublisher(identity());
-        } else {
-            resp = service.apply(request);
-        }
-        if (offloaded(OFFLOAD_SEND)) {
-            resp = resp.subscribeOn(e);
         }
         return resp;
     }

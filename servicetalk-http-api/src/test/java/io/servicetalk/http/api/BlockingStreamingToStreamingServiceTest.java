@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -443,11 +442,9 @@ class BlockingStreamingToStreamingServiceTest {
                                        StreamingHttpRequest request) throws Exception {
         ServiceAdapterHolder holder = toStreamingHttpService(syncService, strategy -> strategy);
 
-        Collection<Object> responseCollection = holder.serviceInvocationStrategy()
-                .invokeService(executorExtension.executor(), request,
-                        req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
+        Collection<Object> responseCollection = holder.adaptor().handle(mockCtx, request, reqRespFactory)
                                 .flatMapPublisher(response -> Publisher.<Object>from(response)
-                                        .concat(response.messageBody())), (t, e) -> failed(t))
+                                        .concat(response.messageBody()))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);

@@ -32,7 +32,7 @@ import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -170,7 +170,7 @@ final class NettyHttpServer {
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
-                .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
+                .map(conn -> new NettyHttpServerConnection(conn, service,
                         HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
                         config.allowDropTrailersReadFromTransport())), HTTP_1_1, channel);
     }
@@ -235,7 +235,6 @@ final class NettyHttpServer {
     static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
         private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
         private final StreamingHttpService service;
-        private final HttpExecutionStrategy strategy;
         private final NettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
@@ -245,7 +244,6 @@ final class NettyHttpServer {
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
-                                  final HttpExecutionStrategy strategy,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
                                   final boolean drainRequestPayloadBody,
@@ -261,9 +259,8 @@ final class NettyHttpServer {
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
-                    strategy);
+                    HttpExecutionStrategies.noOffloadsStrategy());
             this.service = service;
-            this.strategy = strategy;
             this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
                     itemWritten -> {
                         if (itemWritten instanceof HttpResponseMetaData) {
@@ -347,26 +344,19 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
-                Publisher<Object> responsePublisher = strategy
-                        .invokeService(executionContext().executor(), request,
-                                req -> service.handle(this, req, streamingResponseFactory())
-                                        .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
-                                                        req.version(), keepAlive))
-                                        .flatMapPublisher(response -> {
-                                            keepAlive.addConnectionHeaderIfNecessary(response);
+                Publisher<Object> responsePublisher = service.handle(this, request, streamingResponseFactory())
+                        .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
+                                request.version(), keepAlive))
+                        .flatMapPublisher(response -> {
+                            keepAlive.addConnectionHeaderIfNecessary(response);
 
-                                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
-                                            if (flushStrategy != null) {
-                                                splittingFlushStrategy.updateFlushStrategy(
-                                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
-                                            }
-                                            return handleResponse(protocol(), requestMethod, response);
-                                        }),
-                                (cause, executor) -> {
-                                    final StreamingHttpResponse errorResponse = newErrorResponse(cause, executor,
-                                            request.version(), keepAlive);
-                                    return flatEmptyMessage(protocol(), errorResponse, errorResponse.messageBody());
-                                });
+                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                            if (flushStrategy != null) {
+                                splittingFlushStrategy.updateFlushStrategy(
+                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
+                            }
+                            return handleResponse(protocol(), requestMethod, response);
+                        });
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?

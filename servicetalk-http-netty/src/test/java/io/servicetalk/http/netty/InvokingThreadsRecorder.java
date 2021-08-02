@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
@@ -38,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -189,14 +187,6 @@ final class InvokingThreadsRecorder<T> {
                 final ClientInvoker<FS> client) {
             usedForClientOffloading = true;
             return super.invokeClient(fallback, flattenedRequest, flushStrategy, client);
-        }
-
-        @Override
-        public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
-                                               final Function<StreamingHttpRequest, Publisher<Object>> service,
-                                               final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-            usedForServerOffloading = true;
-            return super.invokeService(fallback, request, service, errorHandler);
         }
 
         @Override

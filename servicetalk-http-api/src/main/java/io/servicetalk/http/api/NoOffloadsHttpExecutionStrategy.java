@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -49,13 +48,6 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
                                                            final Publisher<Object> flattenedRequest,
                                                            final FS flushStrategy, final ClientInvoker<FS> client) {
         return client.invokeClient(flattenedRequest, flushStrategy);
-    }
-
-    @Override
-    public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
-                                           final Function<StreamingHttpRequest, Publisher<Object>> service,
-                                           final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        return service.apply(request);
     }
 
     @Override
