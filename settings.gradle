@@ -46,6 +46,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:deadline",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
+        "servicetalk-examples:http:redirects",
         "servicetalk-examples:http:http2",
         "servicetalk-examples:http:jaxrs",
         "servicetalk-examples:http:metadata",
@@ -108,4 +109,5 @@ project(":servicetalk-examples:http:serialization").name = "servicetalk-examples
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"
+project(":servicetalk-examples:http:redirects").name = "servicetalk-examples-http-redirects"
 project(":servicetalk-examples:http:compression").name = "servicetalk-examples-http-compression"
