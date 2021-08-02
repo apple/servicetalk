@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest.parseFrom;
+import static com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL;
 import static io.servicetalk.grpc.protoc.StringUtils.parseOptions;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyMap;
@@ -110,7 +111,10 @@ public final class Main {
      * @return The code generation response
      */
     private static CodeGeneratorResponse generate(final CodeGeneratorRequest request) {
-        final CodeGeneratorResponse.Builder responseBuilder = CodeGeneratorResponse.newBuilder();
+        final CodeGeneratorResponse.Builder responseBuilder = CodeGeneratorResponse.newBuilder()
+                // Optional support only impacts "message" types, this plugin only targets "service" types.
+                // However the protoc compiler will fail if the feature isn't marked as supported.
+                .setSupportedFeatures(FEATURE_PROTO3_OPTIONAL.getNumber());
 
         final Set<String> filesToGenerate = new HashSet<>(request.getFileToGenerateList());
 
