@@ -23,7 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
 /**
- * Deserialize a {@link Publisher} of {@link Buffer} to {@link Publisher} of {@link Object}.
+ * Deserialize a {@link Publisher} of {@link Buffer} to {@link Publisher} of {@link T}.
  * @param <T> The type of objects that can be deserialized.
  */
 @FunctionalInterface

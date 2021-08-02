@@ -90,7 +90,6 @@ public final class HeaderUtils {
             return null;
         }
 
-        int jNonTrimmed;
         int i = 0;
         do {
             // Find the next comma separated value.
@@ -104,7 +103,7 @@ public final class HeaderUtils {
             }
 
             // Trim spaces from end.
-            jNonTrimmed = j;
+            int jNonTrimmed = j;
             while (acceptEncodingHeaderValue.charAt(j - 1) == ' ') {
                 if (--j == i) {
                     return null;

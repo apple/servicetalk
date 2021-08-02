@@ -34,11 +34,11 @@ public final class CompressionFilterExampleServer {
     public static void main(String... args) throws Exception {
         HttpServers.forPort(8080)
                 .appendServiceFilter(new ContentEncodingHttpServiceFilter(
+                        asList(gzipDefault(), deflateDefault(), identityEncoder()),
                         new BufferDecoderGroupBuilder()
                                 .add(gzipDefault(), true)
                                 .add(deflateDefault(), true)
-                                .add(identityEncoder(), false).build(),
-                        asList(gzipDefault(), deflateDefault(), identityEncoder())))
+                                .add(identityEncoder(), false).build()))
                 .listenAndAwait((ctx, request, responseFactory) -> {
                         String who = request.payloadBody(textSerializerUtf8());
                         return succeeded(responseFactory.ok().payloadBody("Hello " + who +  "!", textSerializerUtf8()));

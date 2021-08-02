@@ -19,22 +19,22 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 /**
- * Serialize from {@link Object} to {@link Buffer} and deserialize objects from {@link Buffer} to {@link Object}.
+ * Serialize from {@link T} to {@link Buffer}.
  * @param <T> The type of objects that can be serialized.
  */
 @FunctionalInterface
 public interface Serializer<T> {
     /**
-     * Serialize the {@link Object} parameter to the {@link Buffer} parameter.
-     * @param toSerialize The {@link Object} to serialize.
+     * Serialize the {@link T} parameter to the {@link Buffer} parameter.
+     * @param toSerialize The {@link T} to serialize.
      * @param allocator Used to allocate intermediate {@link Buffer}s if required.
      * @param buffer Where the results of the serialization will be written to.
      */
     void serialize(T toSerialize, BufferAllocator allocator, Buffer buffer);
 
     /**
-     * Serialize the {@link Object} parameter to a {@link Buffer}.
-     * @param toSerialize The {@link Object} to serialize.
+     * Serialize the {@link T} parameter to a {@link Buffer}.
+     * @param toSerialize The {@link T} to serialize.
      * @param allocator Used to allocate the buffer to serialize to.
      * @return The results of the serialization.
      */

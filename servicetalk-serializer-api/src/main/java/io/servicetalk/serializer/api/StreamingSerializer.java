@@ -24,7 +24,7 @@ import io.servicetalk.oio.api.PayloadWriter;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
 /**
- * Serialize a {@link Publisher} of {@link Object} to {@link Publisher} of {@link Buffer}.
+ * Serialize a {@link Publisher} of {@link T} to {@link Publisher} of {@link Buffer}.
  * @param <T> The type of objects that can be serialized.
  */
 @FunctionalInterface

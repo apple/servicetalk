@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.encoding.api.BufferEncoder;
+import io.servicetalk.encoding.api.EmptyBufferDecoderGroup;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,6 +32,7 @@ import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncodingRaw;
+import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
@@ -56,18 +58,25 @@ public final class ContentEncodingHttpServiceFilter
     private final List<BufferEncoder> compressors;
 
     /**
-     * Enable support of the provided encodings for both client requests and server responses.
-     * The encodings can differ for requests and responses, allowing a server that supports different compressions for
-     * requests and different ones for responses.
-     * <p>
-     * The order of the codecs provided, affect selection priority alongside the order of the incoming
-     * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.4">accept-encoding</a> header from the client.
+     * Create a new instance and specify the supported compression (matched against
+     * {@link HttpHeaderNames#ACCEPT_ENCODING}). The order of entries may impact the selection preference.
      *
-     * @param decompressors used to decompress client requests if compressed.
      * @param compressors used to compress server responses if client accepts them.
      */
-    public ContentEncodingHttpServiceFilter(final BufferDecoderGroup decompressors,
-                                            final List<BufferEncoder> compressors) {
+    public ContentEncodingHttpServiceFilter(final List<BufferEncoder> compressors) {
+        this(compressors, EmptyBufferDecoderGroup.INSTANCE);
+    }
+
+    /**
+     * Create a new instance and specify the supported decompression (matched against
+     * {@link HttpHeaderNames#CONTENT_ENCODING}) and compression (matched against
+     * {@link HttpHeaderNames#ACCEPT_ENCODING}). The order of entries may impact the selection preference.
+     *
+     * @param compressors used to compress server responses if client accepts them.
+     * @param decompressors used to decompress client requests if compressed.
+     */
+    public ContentEncodingHttpServiceFilter(final List<BufferEncoder> compressors,
+                                            final BufferDecoderGroup decompressors) {
         this.decompressors = requireNonNull(decompressors);
         this.compressors = requireNonNull(compressors);
     }
@@ -110,7 +119,7 @@ public final class ContentEncodingHttpServiceFilter
                             return response;
                         }
 
-                        HeaderUtils.addContentEncoding(response.headers(), encoder.encodingName());
+                        addContentEncoding(response.headers(), encoder.encodingName());
                         return response.transformPayloadBody(bufPub ->
                                 encoder.streamingEncoder().serialize(bufPub, ctx.executionContext().bufferAllocator()));
                     }).subscribeShareContext();
@@ -203,7 +212,7 @@ public final class ContentEncodingHttpServiceFilter
                 if (jNonTrimmed + 1 < encoding.length()) {
                     // Order of content-encodings must be preserved, so if the value is CSV add back the remainder of
                     // the unused value.
-                    addContentEncoding(headers, encoding.subSequence(jNonTrimmed + 1, encoding.length()));
+                    resetContentEncoding(headers, encoding.subSequence(jNonTrimmed + 1, encoding.length()));
                 }
 
                 return supportedEncoding;
@@ -213,7 +222,7 @@ public final class ContentEncodingHttpServiceFilter
         return null;
     }
 
-    private static void addContentEncoding(HttpHeaders headers, CharSequence updatedValue) {
+    private static void resetContentEncoding(HttpHeaders headers, CharSequence updatedValue) {
         List<CharSequence> valuesArray = new ArrayList<>(4);
         valuesArray.add(updatedValue);
         for (CharSequence value : headers.values(CONTENT_ENCODING)) {

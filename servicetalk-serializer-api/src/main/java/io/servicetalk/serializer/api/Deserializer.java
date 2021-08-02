@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 /**
- * Deserialize objects from {@link Buffer} to {@link Object}.
+ * Deserialize objects from {@link Buffer} to {@link T}.
  * @param <T> The type of objects that can be deserialized.
  */
 @FunctionalInterface

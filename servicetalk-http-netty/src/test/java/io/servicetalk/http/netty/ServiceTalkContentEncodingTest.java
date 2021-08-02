@@ -88,7 +88,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                                                 "server error: " + cause.toString()), textSerializerUtf8FixLen()));
                     }
                 })
-                .appendServiceFilter(new ContentEncodingHttpServiceFilter(serverDecoder.group, serverEncoder.list))
+                .appendServiceFilter(new ContentEncodingHttpServiceFilter(serverEncoder.list, serverDecoder.group))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     String requestPayload = request.payloadBody(textSerializerUtf8());
                     if (payloadAsString((byte) 'a').equals(requestPayload)) {

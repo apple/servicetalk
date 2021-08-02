@@ -56,7 +56,7 @@ import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 
 /**
- * Serialize a stream of JSON objects.
+ * Serialize and deserialize a stream of JSON objects.
  * @param <T> The type of objects to serialize.
  */
 final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserializer<T> {

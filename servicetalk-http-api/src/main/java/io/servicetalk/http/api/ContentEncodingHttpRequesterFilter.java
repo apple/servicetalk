@@ -43,12 +43,12 @@ public final class ContentEncodingHttpRequesterFilter implements
     private final BufferDecoderGroup decompressors;
 
     /**
-     * Enable support of the provided encodings for requests and responses.
-     * The order of the codecs provided, matters for the presentation of the header, and may affect selection priority
-     * on the receiving endpoint.
+     * Create a new instance and specify the supported decompression (advertised in
+     * {@link HttpHeaderNames#ACCEPT_ENCODING}). The compression is specified via
+     * {@link HttpRequestMetaData#requestEncoder()}. The order of entries may impact the selection preference.
      *
-     * @param decompressors the codecs this clients supports to encode/decode requests and responses accordingly
-     * and also used to advertise to the server.
+     * @param decompressors the decompression supported to decode responses accordingly and also used to advertise
+     * {@link HttpHeaderNames#ACCEPT_ENCODING} to the server.
      */
     public ContentEncodingHttpRequesterFilter(final BufferDecoderGroup decompressors) {
         this.decompressors = requireNonNull(decompressors);

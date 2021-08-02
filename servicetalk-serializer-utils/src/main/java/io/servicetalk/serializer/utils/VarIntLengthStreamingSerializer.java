@@ -31,7 +31,7 @@ import static java.util.function.Function.identity;
 
 /**
  * A {@link StreamingSerializerDeserializer} that uses a {@link SerializerDeserializer} and frames each object by
- * preceding it with the length in bytes. The length component is variable length an encoded as
+ * preceding it with the length in bytes. The length component is variable length and encoded as
  * <a href="https://developers.google.com/protocol-buffers/docs/encoding">base 128 VarInt</a>.
  * @param <T> The type of object to serialize.
  */

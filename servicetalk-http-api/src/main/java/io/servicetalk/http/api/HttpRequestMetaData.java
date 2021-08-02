@@ -421,14 +421,19 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HostAndPort effectiveHostAndPort();
 
     /**
-     * Get the {@link BufferEncoder} to use for this request.
+     * Get the {@link BufferEncoder} to use for this request. The value can be used by filters
+     * (such as {@link ContentEncodingHttpRequesterFilter}) to apply {@link HttpHeaderNames#CONTENT_ENCODING} to the
+     * request.
+     *
      * @return the {@link BufferEncoder} to use for this request.
      */
     @Nullable
     BufferEncoder requestEncoder();
 
     /**
-     * Set the {@link BufferEncoder} to use for this request.
+     * Set the {@link BufferEncoder} to use for this request. The value can be used by filters
+     * (such as {@link ContentEncodingHttpRequesterFilter}) to apply {@link HttpHeaderNames#CONTENT_ENCODING} to the
+     * request.
      * @param encoder {@link BufferEncoder} to use for this request.
      * @return {@code this}.
      */
