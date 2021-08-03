@@ -25,9 +25,9 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * Implementation of the
- * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
+ * <a href="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
  * using async ServiceTalk APIS.
- * <p/>
+ * <p>
  * Start the {@link HelloWorldServer} first.
  */
 public final class HelloWorldClient {
