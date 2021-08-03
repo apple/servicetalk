@@ -1382,27 +1382,37 @@ public abstract class Completable {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor, Supplier)}, current operator always enforces offloading to the passed
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
-     * {@link Subscriber}.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * @see #publishOn(Executor, Supplier).
      */
     public final Completable publishOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Completable} that map use the passed {@link Executor} to invoke {@link Subscriber}
+     * Creates a new {@link Completable} that may use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
-     * even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
-     * {@link Subscriber}.
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link CompletableSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * @see #publishOn(Executor).
      */
     public final Completable publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.publishOn(this, shouldOffload, executor);
@@ -1417,17 +1427,21 @@ public abstract class Completable {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor, Supplier)}, current operator always enforces offloading to the passed
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     * @see #subscribeOn(Executor, Supplier).
      */
     public final Completable subscribeOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Completable} that map use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Completable} that may use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
@@ -1435,12 +1449,18 @@ public abstract class Completable {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
-     * even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link CompletableSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     * @see #subscribeOn(Executor).
      */
     public final Completable subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, shouldOffload, executor);

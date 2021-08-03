@@ -73,6 +73,8 @@ final class PublishAndSubscribeOnSingles {
                 Subscriber<? super T> upstreamSubscriber =
                         new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
 
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
                 super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
             } catch (Throwable throwable) {
                 deliverErrorFromSource(subscriber, throwable);
@@ -103,6 +105,8 @@ final class PublishAndSubscribeOnSingles {
                 Subscriber<? super T> upstreamSubscriber =
                         new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
 
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));

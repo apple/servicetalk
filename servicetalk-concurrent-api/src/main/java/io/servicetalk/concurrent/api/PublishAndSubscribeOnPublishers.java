@@ -74,6 +74,8 @@ final class PublishAndSubscribeOnPublishers {
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
 
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
                 super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
@@ -107,6 +109,8 @@ final class PublishAndSubscribeOnPublishers {
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
 
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
