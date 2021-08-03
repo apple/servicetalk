@@ -156,10 +156,10 @@ public class HelloWorldJaxRsResource {
      * operators for processing it on the produce side.
      * <p>
      * Test with:
-     * <pre>
+     * <pre>{@code
      * echo "An empty file" > sample.txt && curl -vF "file=@sample.txt" \
      * http://localhost:8080/greetings/multipart-hello
-     * </pre>
+     * }</pre>
      *
      * @param ctx the {@link ConnectionContext}.
      * @param file the multi-part file contents.
