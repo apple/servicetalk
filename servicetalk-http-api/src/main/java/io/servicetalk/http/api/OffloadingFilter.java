@@ -21,10 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.RejectedExecutionException;
-
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static java.util.function.Function.identity;
 
 /**
@@ -56,50 +52,27 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 Executor e = null != strategy.executor() ? strategy.executor() : ctx.executionContext().executor();
 
-                try {
-                    // The service should see our ExecutionStrategy inside the ExecutionContext:
-                    final HttpServiceContext wrappedCtx =
-                            new ExecutionContextOverridingServiceContext(ctx, strategy, e);
+                // The service should see our ExecutionStrategy inside the ExecutionContext:
+                final HttpServiceContext wrappedCtx =
+                        new ExecutionContextOverridingServiceContext(ctx, strategy, e);
 
-                    if (strategy.isDataReceiveOffloaded()) {
-                        request = request.transformMessageBody(p -> p.publishOn(e));
-                    }
-                    final Single<StreamingHttpResponse> resp;
-                    if (strategy.isMetadataReceiveOffloaded()) {
-                        final StreamingHttpRequest r = request;
-                        resp = e.submit(() -> delegate().handle(wrappedCtx, r, responseFactory).subscribeShareContext())
-                                .onErrorReturn(cause ->
-                                        Single.fromSupplier(() -> newErrorResponse(cause, e, ctx, r.version())))
-                                // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                                .flatMap(identity());
-                    } else {
-                        resp = delegate().handle(wrappedCtx, request, responseFactory);
-                    }
-                    return strategy.isSendOffloaded() ?
-                            // This is different from invokeService() where we just offload once on the  flattened
-                            // (meta + data) stream. In this case, we need to preserve the service contract and hence
-                            // have to offload both meta and data separately.
-                            resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
-                } catch (Throwable all) {
-                    StreamingHttpRequest r = request;
-                    return Single.fromSupplier(() -> newErrorResponse(all, e, ctx, r.version()));
+                if (strategy.isDataReceiveOffloaded()) {
+                    request = request.transformMessageBody(p -> p.publishOn(e));
                 }
-            }
-
-            private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,
-                                                           HttpServiceContext ctx,
-                                                           final HttpProtocolVersion version) {
-                final StreamingHttpResponse response;
-                if (cause instanceof RejectedExecutionException) {
-                    LOGGER.error("Task rejected by Executor {} for service={}, connection={}",
-                            executor, delegate(), this, cause);
-                    response = ctx.streamingResponseFactory().serviceUnavailable();
+                final Single<StreamingHttpResponse> resp;
+                if (strategy.isMetadataReceiveOffloaded()) {
+                    final StreamingHttpRequest r = request;
+                    resp = e.submit(() -> delegate().handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                            // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
+                            .flatMap(identity());
                 } else {
-                    LOGGER.error("Internal server error service={} connection={}", delegate(), this, cause);
-                    response = ctx.streamingResponseFactory().internalServerError();
+                    resp = delegate().handle(wrappedCtx, request, responseFactory);
                 }
-                response.version(version).setHeader(CONTENT_LENGTH, ZERO);
-                return response;
+                return strategy.isSendOffloaded() ?
+                        // This is different from invokeService() where we just offload once on the  flattened
+                        // (meta + data) stream. In this case, we need to preserve the service contract and hence
+                        // have to offload both meta and data separately.
+                        resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
             }
         };
     }
