@@ -27,9 +27,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 
 /**
  * Implementation of the
- * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
+ * <a href="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
  * using async ServiceTalk APIS.
- * <p/>
+ * <p>
  * Start this server first and then run the {@link HelloWorldClient}.
  */
 public class HelloWorldServer {
