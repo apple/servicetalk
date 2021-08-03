@@ -1389,7 +1389,7 @@ public abstract class Completable {
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor, Supplier).
+     * @see #publishOn(Executor, Supplier)
      */
     public final Completable publishOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
@@ -1412,7 +1412,7 @@ public abstract class Completable {
      * signal ordering.
      * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor).
+     * @see #publishOn(Executor)
      */
     public final Completable publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.publishOn(this, shouldOffload, executor);
@@ -1434,7 +1434,7 @@ public abstract class Completable {
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
-     * @see #subscribeOn(Executor, Supplier).
+     * @see #subscribeOn(Executor, Supplier)
      */
     public final Completable subscribeOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
@@ -1460,7 +1460,7 @@ public abstract class Completable {
      * signal ordering.
      * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
-     * @see #subscribeOn(Executor).
+     * @see #subscribeOn(Executor)
      */
     public final Completable subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, shouldOffload, executor);

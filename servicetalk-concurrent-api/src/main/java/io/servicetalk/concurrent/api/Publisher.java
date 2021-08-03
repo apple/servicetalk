@@ -2872,7 +2872,7 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor, Supplier).
+     * @see #publishOn(Executor, Supplier)
      */
     public final Publisher<T> publishOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
@@ -2895,7 +2895,7 @@ public abstract class Publisher<T> {
      * signal ordering.
      * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor).
+     * @see #publishOn(Executor)
      */
     public final Publisher<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
@@ -2917,7 +2917,7 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @see #subscribeOn(Executor, Supplier).
+     * @see #subscribeOn(Executor, Supplier)
      */
     public final Publisher<T> subscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
@@ -2943,7 +2943,7 @@ public abstract class Publisher<T> {
      * signal ordering.
      * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @see #subscribeOn(Executor).
+     * @see #subscribeOn(Executor)
      */
     public final Publisher<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
