@@ -28,24 +28,24 @@ import static io.servicetalk.grpc.api.GrpcStreamingSerializer.METADATA_SIZE;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcDeserializer<T> implements Deserializer<T> {
-    private final Deserializer<T> serializer;
+    private final Deserializer<T> deserializer;
     @Nullable
-    private final BufferDecoder compressor;
+    private final BufferDecoder decompressor;
 
-    GrpcDeserializer(final Deserializer<T> serializer) {
-        this.serializer = requireNonNull(serializer);
-        this.compressor = null;
+    GrpcDeserializer(final Deserializer<T> deserializer) {
+        this.deserializer = requireNonNull(deserializer);
+        this.decompressor = null;
     }
 
-    GrpcDeserializer(final Deserializer<T> serializer,
-                     @Nullable final BufferDecoder compressor) {
-        this.serializer = requireNonNull(serializer);
-        this.compressor = compressor;
+    GrpcDeserializer(final Deserializer<T> deserializer,
+                     @Nullable final BufferDecoder decompressor) {
+        this.deserializer = requireNonNull(deserializer);
+        this.decompressor = decompressor;
     }
 
     @Nullable
     CharSequence messageEncoding() {
-        return compressor == null ? null : compressor.encodingName();
+        return decompressor == null ? null : decompressor.encodingName();
     }
 
     @Override
@@ -54,7 +54,7 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
             throw new SerializationException("Not enough data");
         }
         boolean compressed = isCompressed(buffer);
-        if (compressed && compressor == null) {
+        if (compressed && decompressor == null) {
             throw new SerializationException("Compressed flag set, but no compressor");
         }
         int expectedLength = buffer.readInt();
@@ -64,8 +64,8 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
 
         Buffer result = buffer.readBytes(expectedLength);
         if (compressed) {
-            result = compressor.decoder().deserialize(result, allocator);
+            result = decompressor.decoder().deserialize(result, allocator);
         }
-        return serializer.deserialize(result, allocator);
+        return deserializer.deserialize(result, allocator);
     }
 }

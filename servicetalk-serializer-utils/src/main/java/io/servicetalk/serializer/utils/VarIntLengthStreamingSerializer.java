@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -101,9 +102,10 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     }
 
     static int getVarInt(Buffer buffer) {
-        final int readableBytes = buffer.readableBytes();
+        final int maxBytesToInspect = min(MAX_LENGTH_BYTES, buffer.readableBytes());
         final int readerIndex = buffer.readerIndex();
-        for (int i = 0; i < readableBytes; ++i) {
+        int i = 0;
+        for (; i < maxBytesToInspect; ++i) {
             final byte b = buffer.getByte(i + readerIndex);
             if ((b & 0x80) == 0) {
                 if (i == 0) {
@@ -123,7 +125,8 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
                             ((varInt & 0x7F00) << 6) |
                             ((varInt & 0x7F0000) >> 9) |
                             ((varInt & 0x7F000000) >> 24);
-                } else if (i == 4) {
+                } else {
+                    assert i == 4;
                     final byte b0 = buffer.readByte();
                     final int varInt = buffer.readInt();
                     if ((varInt & 0xF8) != 0) {
@@ -135,9 +138,11 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
                            ((varInt & 0x7F000000) >> 17) |
                             (b0 & 0x7F);
                 }
-            } else if (i == 4) {
-                throw new SerializationException("java int cannot support more than 5 bytes of VarInt");
             }
+        }
+        if (i == MAX_LENGTH_BYTES) {
+            throw new SerializationException("java int cannot support more than " + MAX_LENGTH_BYTES +
+                    " bytes of VarInt");
         }
 
         return -1;
@@ -146,6 +151,10 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     static void setVarInt(int val, Buffer buffer, int index) {
         assert val >= 0;
         if (val < ONE_BYTE_VAL) {
+            // The initial buffer allocation allows for MAX_LENGTH_BYTES space to encode the length because we don't
+            // know the length of the serialization until it is completed, and we want to avoid copying data to write
+            // the length prefix. So we write the length adjacent to the data and skip the bytes not required to encode
+            // the length.
             buffer.setByte(index + 4, (byte) val).skipBytes(4);
         } else if (val < TWO_BYTE_VAL) {
             final int varIntEncoded =
