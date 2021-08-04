@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,23 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
  * {@link Completable}.
+ *
+ * <p>This implementation uses <i>task based</i> offloading. Signals are delivered on a thread owned by the provided
+ * {@link Executor} invoked via the {@link Executor#execute(Runnable)} method independently for each signal.
+ * No assumption should be made by applications that a consistent thread will be used for subsequent signals.
  */
 final class PublishAndSubscribeOnCompletables {
 
@@ -32,108 +39,89 @@ final class PublishAndSubscribeOnCompletables {
         // No instance.
     }
 
-    static void deliverOnSubscribeAndOnError(Subscriber subscriber, SignalOffloader signalOffloader,
+    static void deliverOnSubscribeAndOnError(Subscriber subscriber,
                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
-        deliverErrorFromSource(
-                signalOffloader.offloadSubscriber(contextProvider.wrapCompletableSubscriber(subscriber, contextMap)),
-                cause);
+        deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
     }
 
-    static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishAndSubscribeOn(original, executor);
+    static Completable publishOn(final Completable original,
+                                 final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
+        return executor == immediate() ? original : new PublishOn(original, shouldOffload, executor);
     }
 
-    static Completable publishOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new PublishOn(original, executor);
+    static Completable subscribeOn(final Completable original,
+                                   final Supplier<? extends BooleanSupplier> shouldOffload, final Executor executor) {
+        return executor == immediate() ? original : new SubscribeOn(original, shouldOffload, executor);
     }
 
-    static Completable subscribeOn(Completable original, Executor executor) {
-        return original.executor() == executor ? original : new SubscribeOn(original, executor);
-    }
+    /**
+     * Completable that invokes the following methods on the provided executor:
+     *
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     * </ul>
+     */
+    private static final class PublishOn extends TaskBasedAsyncCompletableOperator {
 
-    private abstract static class OffloadingCompletable extends AbstractNoHandleSubscribeCompletable {
-        protected final Executor executor;
-        protected final Completable original;
-
-        protected OffloadingCompletable(Completable original, Executor executor) {
-            this.original = original;
-            this.executor = executor;
+        PublishOn(final Completable original,
+                  final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
-        final Executor executor() {
-            return executor;
-        }
-    }
-
-    private static final class PublishAndSubscribeOn extends OffloadingCompletable {
-
-        PublishAndSubscribeOn(final Completable original, final Executor executor) {
-            super(original, executor);
-        }
-
-        @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+        void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            // We use executor to create the returned Completable which means executor will be used
-            // to offload handleSubscribe as well as the Subscription that is sent to the subscriber here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(
-                            contextProvider.wrapCompletableSubscriber(subscriber, contextMap)), contextProvider);
+            try {
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber upstreamSubscriber =
+                        new CompletableSubscriberOffloadedTerminals(subscriber, shouldOffload, executor());
+
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
+                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            } catch (Throwable throwable) {
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 
-    private static final class PublishOn extends OffloadingCompletable {
+    /**
+     * Completable that invokes on the provided executor the following methods:
+     *
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     */
+    private static final class SubscribeOn extends TaskBasedAsyncCompletableOperator {
 
-        PublishOn(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.executor(), executor));
+        SubscribeOn(final Completable original,
+                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
+            super(original, shouldOffloadSupplier, executor);
         }
 
         @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+        void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(
-                            contextProvider.wrapCompletableSubscriber(subscriber, contextMap)), contextProvider);
-        }
-    }
+            try {
+                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                Subscriber upstreamSubscriber =
+                        new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
 
-    private static final class SubscribeOn extends OffloadingCompletable {
-
-        SubscribeOn(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
-        }
-
-        @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
-            // by this operator.
-            //
-            // Subscription and handleSubscribe are offloaded at subscribe so we do not need to do anything specific
-            // here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(subscriber, contextProvider);
+                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
+                // the Subscriber.
+                if (shouldOffload.getAsBoolean()) {
+                    // offload the remainder of subscribe()
+                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
+                } else {
+                    // continue on the current thread
+                    super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                }
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 }

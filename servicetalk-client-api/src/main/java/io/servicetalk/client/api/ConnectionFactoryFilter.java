@@ -17,8 +17,6 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A contract to decorate {@link ConnectionFactory} instances for the purpose of filtering.
  *
@@ -35,29 +33,6 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @return Decorated {@link ConnectionFactory} that contains the filtering logic.
      */
     ConnectionFactory<ResolvedAddress, C> create(ConnectionFactory<ResolvedAddress, C> original);
-
-    /**
-     * Returns a composed function that first applies the {@code before} function to its input, and then applies
-     * this function to the result.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
-     * </pre>
-     *
-     * @deprecated Use {@code appendConnectionFactoryFilter(ConnectionFactoryFilter)} at the builder of a client
-     * @param before the function to apply before this function is applied
-     * @return a composed function that first applies the {@code before} function and then applies this function.
-     */
-    @Deprecated
-    default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
-        requireNonNull(before);
-        return original -> create(before.create(original));
-    }
 
     /**
      * Returns a function that always returns its input {@link ConnectionFactory}.

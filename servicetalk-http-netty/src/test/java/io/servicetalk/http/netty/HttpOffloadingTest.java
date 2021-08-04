@@ -63,9 +63,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
 
 class HttpOffloadingTest {
 
@@ -159,8 +156,8 @@ class HttpOffloadingTest {
             }
         });
         terminated.await();
-        assertThat("Unexpected client errors.", errors, is(empty()));
-        assertThat("Unexpected server errors.", service.errors, is(empty()));
+        assertNoAsyncErrors("Unexpected client errors.", errors);
+        assertNoAsyncErrors("Unexpected server errors.", service.errors);
     }
 
     @Test
@@ -328,7 +325,7 @@ class HttpOffloadingTest {
 
     private static final class OffloadingVerifyingServiceStreaming implements StreamingHttpService {
 
-        private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
+        private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

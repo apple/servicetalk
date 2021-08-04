@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.test.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
@@ -29,24 +29,24 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-public class TestSingleSubscriberTest {
+class TestSingleSubscriberTest {
     @Test
-    public void onSubscribe() {
+    void onSubscribe() {
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         doOnSubscribe(subscriber);
         assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
     }
 
     @Test
-    public void onSubscribeOnComplete() {
+    void onSubscribeOnComplete() {
         onSubscribeOnTerminal(true);
     }
 
     @Test
-    public void onSubscribeOnError() {
+    void onSubscribeOnError() {
         onSubscribeOnTerminal(false);
     }
 
@@ -58,17 +58,17 @@ public class TestSingleSubscriberTest {
     }
 
     @Test
-    public void singleItem() {
+    void singleItem() {
         singleItem(ThreadLocalRandom.current().nextInt());
     }
 
     @Test
-    public void singleItemNull() {
+    void singleItemNull() {
         singleItem(null);
     }
 
     @Test
-    public void singleItemCancelBefore() {
+    void singleItemCancelBefore() {
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         doOnSubscribe(subscriber).cancel();
         subscriber.onSuccess(10);
@@ -76,7 +76,7 @@ public class TestSingleSubscriberTest {
     }
 
     @Test
-    public void singleItemCancelAfter() {
+    void singleItemCancelAfter() {
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         Cancellable c = doOnSubscribe(subscriber);
         subscriber.onSuccess(10);

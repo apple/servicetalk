@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
@@ -33,15 +32,13 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -58,17 +55,15 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-@RunWith(Parameterized.class)
-public class GrpcServiceContextProtocolTest {
+class GrpcServiceContextProtocolTest {
+    @Nullable
+    private String expectedValue;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private BlockingTesterClient client;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final String expectedValue;
-    private final ServerContext serverContext;
-    private final BlockingTesterClient client;
-
-    public GrpcServiceContextProtocolTest(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
+    private void setUp(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         expectedValue = "gRPC over " + httpProtocol;
 
         serverContext = GrpcServers.forAddress(localAddress(0))
@@ -82,9 +77,11 @@ public class GrpcServiceContextProtocolTest {
                 .buildBlocking(new ClientFactory());
     }
 
-    @Parameters(name = "httpVersion={0} streamingService={0}")
-    public static Object[] params() {
-        return new Object[][]{{HTTP_2_0, true}, {HTTP_2_0, false}, {HTTP_1_1, true}, {HTTP_1_1, false}};
+    static Stream<Arguments> params() {
+        return Stream.of(Arguments.of(HTTP_2_0, true),
+                Arguments.of(HTTP_2_0, false),
+                Arguments.of(HTTP_1_1, true),
+                Arguments.of(HTTP_1_1, false));
     }
 
     private static HttpProtocolConfig protocolConfig(HttpProtocolVersion httpProtocol) {
@@ -97,8 +94,8 @@ public class GrpcServiceContextProtocolTest {
         throw new IllegalArgumentException("Unknown httpProtocol: " + httpProtocol);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -106,26 +103,34 @@ public class GrpcServiceContextProtocolTest {
         }
     }
 
-    @Test
-    public void testAggregated() throws Exception {
+    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @MethodSource("params")
+    void testAggregated(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
+        setUp(httpProtocol, streamingService);
         assertResponse(client.test(newRequest()));
     }
 
-    @Test
-    public void testRequestStream() throws Exception {
+    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @MethodSource("params")
+    void testRequestStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
+        setUp(httpProtocol, streamingService);
         assertResponse(client.testRequestStream(Arrays.asList(newRequest(), newRequest())));
     }
 
-    @Test
-    public void testBiDiStream() throws Exception {
+    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @MethodSource("params")
+    void testBiDiStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
+        setUp(httpProtocol, streamingService);
         try (BlockingIterator<TestResponse> iterator = client.testBiDiStream(singleton(newRequest())).iterator()) {
             assertResponse(iterator.next());
             assertThat(iterator.hasNext(), is(false));
         }
     }
 
-    @Test
-    public void testResponseStream() throws Exception {
+    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @MethodSource("params")
+    void testResponseStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
+        setUp(httpProtocol, streamingService);
         try (BlockingIterator<TestResponse> iterator = client.testResponseStream(newRequest()).iterator()) {
             assertResponse(iterator.next());
             assertThat(iterator.hasNext(), is(false));

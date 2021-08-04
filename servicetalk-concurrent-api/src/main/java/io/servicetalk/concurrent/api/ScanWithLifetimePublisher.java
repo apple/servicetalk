@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,20 +38,15 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
+    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        return provider.contextMap();
     }
 
     @Override
-    boolean shareContextOnSubscribe() {
-        return true;
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super R> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ScanWithLifetimeSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
-                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ScanWithLifetimeSubscriber<>(subscriber, mapperSupplier.get(),
+                contextMap, contextProvider), contextMap, contextProvider);
     }
 
     /**
@@ -76,9 +69,8 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
                                    final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
-                                   final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
-                                   final AsyncContextProvider contextProvider) {
-            super(subscriber, mapper, signalOffloader, contextMap, contextProvider);
+                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            super(subscriber, mapper, contextProvider, contextMap);
             this.mapper = mapper;
         }
 

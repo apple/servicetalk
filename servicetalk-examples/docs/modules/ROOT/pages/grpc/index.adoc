@@ -11,7 +11,7 @@ endif::[]
 The link:{source-root}/servicetalk-examples/grpc[`grpc`] folder contains examples for
 link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]. We provide
 implementations for the examples proto services provided by
-link:https://github.com/grpc/grpc/tree/main/examples/protos[gRPC].
+link:https://github.com/grpc/grpc/tree/master/examples/protos[gRPC].
 
 [#HelloWorld]
 == Hello World
@@ -106,9 +106,9 @@ level error. In this case the application level error type happens to be defined
 link:https://github.com/googleapis/googleapis/blob/master/google/rpc/error_details.proto[error_details.proto], but it
 could be any protobuf object.
 
-* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[ErrorExampleServer] - Requires each request has a non-empty `token` field or else returns an
+* link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[ErrorExampleServer] - Requires each request has a non-empty `token` field or else returns an
 error.
-* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java[ErrorExampleClient] - Sends a request with missing `token` field to simulate an error
+* link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java[ErrorExampleClient] - Sends a request with missing `token` field to simulate an error
   condition on the server.
 
 [#protoc-options]

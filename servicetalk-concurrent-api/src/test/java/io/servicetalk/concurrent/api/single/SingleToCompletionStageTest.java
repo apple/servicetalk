@@ -87,7 +87,7 @@ class SingleToCompletionStageTest {
     @BeforeEach
     void beforeTest() {
         testSingle = new LegacyTestSingle<>(true, true);
-        source = testSingle.publishAndSubscribeOn(executorExtension.executor());
+        source = testSingle.publishOn(executorExtension.executor());
     }
 
     @Test
@@ -1038,7 +1038,8 @@ class SingleToCompletionStageTest {
     }
 
     private static void verifyInJUnitThread() {
-        if (!currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
+        if (!currentThread().getName().startsWith(JUNIT_THREAD_PREFIX) &&
+                !currentThread().getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX)) {
             throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
@@ -1052,8 +1053,9 @@ class SingleToCompletionStageTest {
 
     private static void verifyInStOrJUnitThread() {
         if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME) &&
-                !currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
-            throw new IllegalStateException("unexpected thread: " + currentThread());
+                !currentThread().getName().startsWith(JUNIT_THREAD_PREFIX) &&
+                !currentThread().getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX)) {
+            throw new AssertionError("unexpected thread: " + currentThread());
         }
     }
 

@@ -40,14 +40,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class TestExecutor implements Executor {
 
+    private static final AtomicInteger INSTANCES = new AtomicInteger();
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
     private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano =
             new ConcurrentSkipListMap<>();
     private final long nanoOffset;
     private long currentNanos;
-    private CompletableProcessor closeProcessor = new CompletableProcessor();
-    private AtomicInteger tasksExecuted = new AtomicInteger();
-    private AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    private final CompletableProcessor closeProcessor = new CompletableProcessor();
+    private final AtomicInteger tasksExecuted = new AtomicInteger();
+    private final AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+    private final String instanceName = getClass().getSimpleName() + "-" + INSTANCES.incrementAndGet();
 
     /**
      * Create a new instance.
@@ -63,7 +65,7 @@ public class TestExecutor implements Executor {
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         tasks.add(wrappedTask);
         return () -> tasks.remove(wrappedTask);
     }
@@ -71,7 +73,7 @@ public class TestExecutor implements Executor {
     @Override
     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
             throws RejectedExecutionException {
-        final RunnableWrapper wrappedTask = new RunnableWrapper(task);
+        final RunnableWrapper wrappedTask = new RunnableWrapper(instanceName, task);
         final long scheduledNanos = currentScheduledNanos() + unit.toNanos(delay);
         final Queue<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
                 k -> new ConcurrentLinkedQueue<>());
@@ -314,18 +316,33 @@ public class TestExecutor implements Executor {
         return false;
     }
 
-    // Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
-    // Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+    /**
+     *  Wraps Runnables to ensure that object-equality (and hashcode) is used for removal from Lists.
+     *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
+     *  Sets the thread name to {@code TestExecutor-#} while running the task so that capturing the thread name makes
+     *  sense and during debugging the execution context is more obvious.
+     *  Captures and sets the AsyncContextMap since the thread executing the {@code Runnable} may be different than the
+     *  thread which called {@link #execute(Runnable)}.
+     */
     private static final class RunnableWrapper implements Runnable {
+        private final String threadName;
         private final Runnable delegate;
 
-        private RunnableWrapper(final Runnable delegate) {
-            this.delegate = delegate;
+        private RunnableWrapper(final String threadName, final Runnable delegate) {
+            this.threadName = threadName;
+            this.delegate = AsyncContext.wrapRunnable(delegate);
         }
 
         @Override
         public void run() {
-            delegate.run();
+            Thread current = Thread.currentThread();
+            String oldName = current.getName();
+            current.setName(threadName);
+            try {
+                delegate.run();
+            } finally {
+                current.setName(oldName);
+            }
         }
     }
 }

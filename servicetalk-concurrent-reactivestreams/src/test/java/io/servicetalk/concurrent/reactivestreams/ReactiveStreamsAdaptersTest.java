@@ -27,9 +27,7 @@ import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -49,10 +47,10 @@ import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCR
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.fromReactiveStreamsPublisher;
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -60,13 +58,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class ReactiveStreamsAdaptersTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+class ReactiveStreamsAdaptersTest {
 
     @Test
-    public void fromRSSuccess() throws Exception {
+    void fromRSSuccess() throws Exception {
         Publisher<Integer> rsPublisher = newMockRsPublisher((subscriber, __) -> {
             subscriber.onNext(1);
             subscriber.onComplete();
@@ -76,17 +71,16 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void fromRSError() throws Exception {
+    void fromRSError() {
         Publisher<Integer> rsPublisher = newMockRsPublisher((subscriber, __) ->
                 subscriber.onError(DELIBERATE_EXCEPTION));
         Future<Integer> future = fromReactiveStreamsPublisher(rsPublisher).firstOrElse(() -> null).toFuture();
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        future.get();
+        ExecutionException ex = assertThrows(ExecutionException.class, future::get);
+        assertThat(ex.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void fromRSCancel() {
+    void fromRSCancel() {
         AtomicReference<Subscription> receivedSubscription = new AtomicReference<>();
         Publisher<Integer> rsPublisher = newMockRsPublisher((__, subscription) ->
                 receivedSubscription.set(subscription));
@@ -97,12 +91,12 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void singleToRSSuccess() {
+    void singleToRSSuccess() {
         verifyRSSuccess(toRSPublisherAndSubscribe(succeeded(1)), true);
     }
 
     @Test
-    public void singleToRSFromSourceSuccess() {
+    void singleToRSFromSourceSuccess() {
         SingleSource<Integer> source = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onSuccess(1);
@@ -111,12 +105,12 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void completableToRSSuccess() {
+    void completableToRSSuccess() {
         verifyRSSuccess(toRSPublisherAndSubscribe(Completable.completed()), false);
     }
 
     @Test
-    public void completableToRSFromSourceSuccess() {
+    void completableToRSFromSourceSuccess() {
         CompletableSource source = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onComplete();
@@ -125,12 +119,12 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void toRSSuccess() {
+    void toRSSuccess() {
         verifyRSSuccess(toRSPublisherAndSubscribe(from(1)), true);
     }
 
     @Test
-    public void toRSFromSourceSuccess() {
+    void toRSFromSourceSuccess() {
         PublisherSource<Integer> source = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
         verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source), true);
     }
@@ -145,22 +139,22 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void singleToRSError() {
+    void singleToRSError() {
         verifyRSError(toRSPublisherAndSubscribe(Single.failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void completableToRSError() {
+    void completableToRSError() {
         verifyRSError(toRSPublisherAndSubscribe(Completable.failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void toRSError() {
+    void toRSError() {
         verifyRSError(toRSPublisherAndSubscribe(failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
-    public void singleToRSFromSourceError() {
+    void singleToRSFromSourceError() {
         SingleSource<Integer> source = s -> {
             s.onSubscribe(IGNORE_CANCEL);
             s.onError(DELIBERATE_EXCEPTION);
@@ -169,7 +163,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void completableToRSFromSourceError() {
+    void completableToRSFromSourceError() {
         CompletableSource source = s -> {
             s.onSubscribe(EMPTY_SUBSCRIPTION);
             s.onError(DELIBERATE_EXCEPTION);
@@ -178,7 +172,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void toRSFromSourceError() {
+    void toRSFromSourceError() {
         PublisherSource<Integer> source = s -> {
             s.onSubscribe(EMPTY_SUBSCRIPTION);
             s.onError(DELIBERATE_EXCEPTION);
@@ -193,7 +187,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void singleToRSCancel() {
+    void singleToRSCancel() {
         TestSingle<Integer> stSingle = new TestSingle<>();
         Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stSingle);
         TestSubscription subscription = new TestSubscription();
@@ -206,7 +200,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void completableToRSCancel() {
+    void completableToRSCancel() {
         TestCompletable stCompletable = new TestCompletable();
         Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stCompletable);
         TestSubscription subscription = new TestSubscription();
@@ -219,7 +213,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void toRSCancel() {
+    void toRSCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
         Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stPublisher);
         TestSubscription subscription = new TestSubscription();
@@ -232,7 +226,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void singleToRSFromSourceCancel() {
+    void singleToRSFromSourceCancel() {
         Cancellable srcCancellable = mock(Cancellable.class);
         SingleSource<Integer> source = s -> s.onSubscribe(srcCancellable);
         Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);
@@ -243,7 +237,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void completableToRSFromSourceCancel() {
+    void completableToRSFromSourceCancel() {
         Cancellable srcCancellable = mock(Cancellable.class);
         CompletableSource source = s -> s.onSubscribe(srcCancellable);
         Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);
@@ -254,7 +248,7 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
-    public void toRSFromSourceCancel() {
+    void toRSFromSourceCancel() {
         PublisherSource.Subscription srcSubscription = mock(PublisherSource.Subscription.class);
         PublisherSource<Integer> source = s -> s.onSubscribe(srcSubscription);
         Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);

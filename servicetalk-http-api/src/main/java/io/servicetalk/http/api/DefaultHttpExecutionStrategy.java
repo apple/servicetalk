@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,13 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
 
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
@@ -47,12 +46,12 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     private final MergeStrategy mergeStrategy;
     private final boolean threadAffinity;
 
-    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads, final boolean threadAffinity,
+    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads,
                                  final MergeStrategy mergeStrategy) {
         this.mergeStrategy = mergeStrategy;
-        this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
+        this.executor = executor;
         this.offloads = offloads;
-        this.threadAffinity = threadAffinity;
+        this.threadAffinity = false;
     }
 
     DefaultHttpExecutionStrategy(byte offloadOverride, HttpExecutionStrategy original) {
@@ -61,11 +60,10 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (original instanceof DefaultHttpExecutionStrategy) {
             DefaultHttpExecutionStrategy originalAsDefault = (DefaultHttpExecutionStrategy) original;
             mergeStrategy = originalAsDefault.mergeStrategy;
-            threadAffinity = originalAsDefault.threadAffinity;
         } else {
             mergeStrategy = Merge;
-            threadAffinity = false;
         }
+        this.threadAffinity = false;
     }
 
     @Nullable
@@ -201,10 +199,10 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 } else if (other instanceof DefaultHttpExecutionStrategy) {
                     DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
                     return new DefaultHttpExecutionStrategy(executor, otherAsDefault.offloads,
-                            otherAsDefault.threadAffinity, otherAsDefault.mergeStrategy);
+                            otherAsDefault.mergeStrategy);
                 } else {
                     return new DefaultHttpExecutionStrategy(executor, generateOffloadsFlag(other),
-                            extractThreadAffinity(other.executor()), Merge);
+                            Merge);
                 }
             case Merge:
                 break;
@@ -224,11 +222,10 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 // If other strategy just returns the mergeWith strategy, then no point in merging here.
                 // return this;
                 return this.executor == otherExecutor ? this :
-                        new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
+                        new DefaultHttpExecutionStrategy(executor, offloads, mergeStrategy);
             }
             // We checked above that the two strategies are not equal, so just merge and return.
             return new DefaultHttpExecutionStrategy(executor, (byte) (otherAsDefault.offloads | offloads),
-                    threadAffinity || otherAsDefault.threadAffinity,
                     // Conservatively always merge if the two merge strategies are not equal
                     otherAsDefault.mergeStrategy == mergeStrategy ? mergeStrategy : Merge);
         }
@@ -242,13 +239,11 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
         return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity &&
                 otherMergeStrategy == mergeStrategy) ? this :
-                new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads),
-                        threadAffinity || otherThreadAffinity, otherMergeStrategy);
+                new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads), otherMergeStrategy);
     }
 
     private static boolean extractThreadAffinity(@Nullable final Executor otherExecutor) {
-        return otherExecutor instanceof SignalOffloaderFactory &&
-                ((SignalOffloaderFactory) otherExecutor).hasThreadAffinity();
+        return false;
     }
 
     private static byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
@@ -290,7 +285,8 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private Executor executor(final Executor fallback) {
         requireNonNull(fallback);
-        return executor == null ? threadAffinity ? ensureThreadAffinity(fallback) : fallback : executor;
+        assert !threadAffinity : "Thread affinity not supported";
+        return executor == null ? fallback : executor;
     }
 
     // Visible for testing
@@ -320,7 +316,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (threadAffinity != that.threadAffinity) {
             return false;
         }
-        if (executor != null ? !executor.equals(that.executor) : that.executor != null) {
+        if (!Objects.equals(executor, that.executor)) {
             return false;
         }
         return mergeStrategy == that.mergeStrategy;

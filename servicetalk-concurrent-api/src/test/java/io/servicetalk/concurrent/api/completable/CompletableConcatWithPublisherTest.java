@@ -110,16 +110,15 @@ class CompletableConcatWithPublisherTest {
     @Test
     void request0Propagated() {
         subscriber.awaitSubscription().request(0);
-        triggerNextSubscribe();
-        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
+        triggerNextSubscribe(); // If subscribe happens after request(0) it will be mapped into -1
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
                 is(true));
     }
 
     @Test
     void request0PropagatedAfterComplete() {
-        source.onComplete();
+        triggerNextSubscribe();
         subscriber.awaitSubscription().request(0);
-        next.onSubscribe(subscription);
         assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
                 is(true));
     }

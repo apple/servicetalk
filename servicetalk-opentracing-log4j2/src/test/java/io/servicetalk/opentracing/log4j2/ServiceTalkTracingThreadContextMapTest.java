@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.slf4j.MDC;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
+import static io.servicetalk.opentracing.internal.TracingIdUtils.idOrNullAsValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -60,8 +61,8 @@ class ServiceTalkTracingThreadContextMapTest {
 
         LOGGER.debug("testing logging and MDC");
         String v = stableAccumulated(1000);
-        assertContainsMdcPair(v, "traceId=", span.traceIdHex());
-        assertContainsMdcPair(v, "spanId=", span.spanIdHex());
-        assertContainsMdcPair(v, "parentSpanId=", span.nonnullParentSpanIdHex());
+        assertContainsMdcPair(v, "traceId=", span.context().toTraceId());
+        assertContainsMdcPair(v, "spanId=", span.context().toSpanId());
+        assertContainsMdcPair(v, "parentSpanId=", idOrNullAsValue(span.context().parentSpanId()));
     }
 }

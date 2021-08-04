@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * Base class for operators on a {@link Single} that process signals asynchronously hence in order to guarantee safe
- * downstream invocations require to wrap their {@link Subscriber}s with a {@link SignalOffloader}.
+ * downstream invocations require to wrap their {@link Subscriber}s.
  * Operators that process signals synchronously can use {@link AbstractSynchronousSingleOperator} to avoid wrapping
  * their {@link Subscriber}s and hence reduce object allocation.
  *
@@ -33,37 +31,21 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractAsynchronousSingleOperator<T, R> extends AbstractNoHandleSubscribeSingle<R>
         implements SingleOperator<T, R> {
 
-    private final Single<T> original;
+    final Single<T> original;
 
     AbstractAsynchronousSingleOperator(Single<T> original) {
         this.original = requireNonNull(original);
     }
 
     @Override
-    final Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
-        // asynchronously processes signals. This is because the thread that processes the signals may have different
-        // thread safety characteristics than the typical thread interacting with the execution chain.
-        //
+    final void handleSubscribe(Subscriber<? super R> subscriber,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
-        final Subscriber<? super R> operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapSingleSubscriberAndCancellable(subscriber, contextMap));
-        // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
-        // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: beforeCancel(). So, we should offload
-        // Cancellable method here.
-        //
-        // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
-        // and restore the AsyncContext before/after the asynchronous boundary.
-        final Subscriber<? super T> upstreamSubscriber = signalOffloader.offloadCancellable(apply(operatorSubscriber));
-        original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+        final Subscriber<? super R> operatorSubscriber =
+                contextProvider.wrapSingleSubscriberAndCancellable(subscriber, contextMap);
+        final Subscriber<? super T> upstreamSubscriber = apply(operatorSubscriber);
+        original.delegateSubscribe(upstreamSubscriber, contextMap, contextProvider);
     }
 }

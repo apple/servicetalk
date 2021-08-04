@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A factory to create <a href="https://www.grpc.io">gRPC</a> service filters.
  *
@@ -33,28 +31,4 @@ public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
      * @return {@link Filter} using the provided {@link Service}.
      */
     Filter create(Service service);
-
-    /**
-     * Returns a composed factory that first applies the {@code before} factory to its input, and then applies
-     * this factory to the result.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
-     * </pre>
-     *
-     * @deprecated Use {@link GrpcServiceFactory#appendServiceFilter(GrpcServiceFilterFactory)}
-     * @param before the factory to apply before this factory is applied.
-     * @return a composed factory that first applies the {@code before} factory and then applies this factory.
-     */
-    @Deprecated
-    default GrpcServiceFilterFactory<Filter, Service> append(
-            GrpcServiceFilterFactory<Filter, Service> before) {
-        requireNonNull(before);
-        return service -> create(before.create(service));
-    }
 }

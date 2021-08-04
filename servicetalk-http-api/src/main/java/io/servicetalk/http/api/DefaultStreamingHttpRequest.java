@@ -40,8 +40,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
         if (encoding != null) {
             encoding(encoding);
         }
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
-                version);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
     }
 
     @Override

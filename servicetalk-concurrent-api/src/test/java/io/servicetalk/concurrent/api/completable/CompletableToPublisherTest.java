@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -113,6 +114,7 @@ class CompletableToPublisherTest {
     }
 
     @Test
+    @Disabled("The Publisher subscriber is now not offloaded")
     void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();

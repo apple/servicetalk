@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscriber>
@@ -30,27 +28,15 @@ abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscr
     }
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    final void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap,
                                AsyncContextProvider contextProvider) {
-        // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
-        // asynchronously processes signals. This is because the thread that processes the signals may have different
-        // thread safety characteristics than the typical thread interacting with the execution chain.
-        //
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
-        final Subscriber operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap));
+        final Subscriber operatorSubscriber =
+                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
         T mergeSubscriber = apply(operatorSubscriber);
-        // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
-        // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: beforeCancel(). So, we should offload
-        // Cancellable method here.
-        //
-        // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
-        // and restore the AsyncContext before/after the asynchronous boundary.
-        final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(mergeSubscriber);
-        original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(mergeSubscriber, contextMap, contextProvider);
         doMerge(mergeSubscriber);
     }
 
@@ -63,9 +49,4 @@ abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscr
      * @param subscriber {@link T} to be used to merge.
      */
     abstract void doMerge(T subscriber);
-
-    @Override
-    final Executor executor() {
-        return original.executor();
-    }
 }

@@ -28,6 +28,9 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultThreadFactory implements ThreadFactory {
 
     private static final AtomicInteger factoryCount = new AtomicInteger();
+    /**
+     * The default prefix used for new thread names.
+     */
     public static final String DEFAULT_NAME_PREFIX = "servicetalk-executor";
 
     private final String namePrefix;

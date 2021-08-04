@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.SingleToFuture;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -48,7 +48,6 @@ import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -181,7 +180,7 @@ public abstract class Single<T> {
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> Single.succeeded(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)));
     }
 
     /**
@@ -351,31 +350,6 @@ public abstract class Single<T> {
     public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
         return new OnErrorResumeSingle<>(this, predicate, nextFactory);
-    }
-
-    /**
-     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     T result;
-     *     try {
-     *         result = resultOfThisSingle();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
-     *         result = nextFactory.apply(cause);
-     *     }
-     *     return result;
-     * }</pre>
-     * @deprecated Use {@link #onErrorResume(Function)}.
-     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
-     * {@link Single} provided by the passed {@code nextFactory}.
-     */
-    @Deprecated
-    public final Single<T> recoverWith(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
-        return onErrorResume(nextFactory);
     }
 
     /**
@@ -645,7 +619,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor());
+        return timeout(duration, unit, immediate());
     }
 
     /**
@@ -683,7 +657,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
-        return timeout(duration, executor());
+        return timeout(duration, immediate());
     }
 
     /**
@@ -752,6 +726,10 @@ public abstract class Single<T> {
      * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
      * {@link Publisher} is forwarded to the returned {@link Publisher}.
      * <p>
+     * Note: this method is an overload for {@link #concat(Publisher, boolean)} with {@code deferSubscribe} equal to
+     * {@code false}, which triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully.
+     * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
      * <pre>{@code
@@ -763,9 +741,37 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Publisher, boolean)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return new SingleConcatWithPublisher<>(this, next, executor());
+        return new SingleConcatWithPublisher<>(this, next, false);
+    }
+
+    /**
+     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all
+     * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
+     * {@link Publisher} is forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     results.add(resultOfThisSingle());
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
+     * @param next {@link Publisher} to concat.
+     * @param deferSubscribe if {@code true} subscribe to the {@code next} {@link Publisher} will be deferred until
+     * demand is received. Otherwise, it subscribes to the {@code next} {@link Publisher} as soon as {@code this}
+     * {@link Single} completes successfully. Choosing the deferred ({@code true}) behavior is important if the
+     * {@code next} {@link Publisher} does not or might not support multiple subscribers (non-replayable). Choosing the
+     * immediate subscribe ({@code false}) behavior may have better performance and may be a preferable choice for
+     * replayable {@link Publisher}(s) or when eager subscribe is beneficial.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * all elements from {@code next} {@link Publisher}.
+     */
+    public final Publisher<T> concat(Publisher<? extends T> next, boolean deferSubscribe) {
+        return new SingleConcatWithPublisher<>(this, next, deferSubscribe);
     }
 
     /**
@@ -1349,13 +1355,37 @@ public abstract class Single<T> {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor, Supplier)}, current operator always enforces offloading to the passed
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
-     * {@link Subscriber}.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * @see #publishOn(Executor, Supplier)
      */
     public final Single<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, executor);
+        return PublishAndSubscribeOnSingles.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link SingleSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * @see #publishOn(Executor)
+     */
+    public final Single<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1366,33 +1396,44 @@ public abstract class Single<T> {
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor, Supplier)}, current operator always enforces offloading to the passed
      * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(Executor, Supplier)
      */
     public final Single<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
+        return PublishAndSubscribeOnSingles.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke the following methods:
      * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link SingleSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(Executor)
      */
-    public final Single<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
+    public final Single<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
@@ -1475,7 +1516,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * said to be <strong>ambiguous</strong> relative to which source it originated from. After the first source
+     * terminates the non-terminated source will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1485,9 +1528,10 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param other {@link Single} with which the result of this {@link Single} is to be ambiguated.
+     * @param other {@link Single} to subscribe to and race with this {@link Single} to propagate to the return value.
      * @return A new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * said to be <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Single<T> ambWith(final Single<T> other) {
@@ -1585,9 +1629,7 @@ public abstract class Single<T> {
      */
     protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
 
-    //
-    // Static Utility Methods Begin
-    //
+    // <editor-fold desc="Static Utility Methods">
 
     /**
      * Creates a realized {@link Single} which always completes successfully with the provided {@code value}.
@@ -1607,8 +1649,8 @@ public abstract class Single<T> {
      * emitted by the {@link Callable} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param callable {@link Callable} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -1625,8 +1667,8 @@ public abstract class Single<T> {
      * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
-     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
-     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     *      * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     *      * {@link #subscribeOn(Executor)} which offloads the subscribe call.
      *
      * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -2002,7 +2044,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
+     * cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2012,10 +2056,11 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
@@ -2025,7 +2070,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
+     * cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2035,10 +2082,11 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> amb(final Iterable<Single<? extends T>> singles) {
@@ -2057,7 +2105,7 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
@@ -2080,7 +2128,7 @@ public abstract class Single<T> {
      *      }
      * }</pre>
      *
-     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
@@ -2322,13 +2370,20 @@ public abstract class Single<T> {
         return SingleZipper.zipDelayError(zipper, singles);
     }
 
-    //
-    // Static Utility Methods End
-    //
+    // </editor-fold>
 
-    //
-    // Internal Methods Begin
-    //
+    // <editor-fold desc="Internal Methods">
+
+    /**
+     * Returns the {@link AsyncContextMap} to be used for a subscribe.
+     *
+     * @param provider The {@link AsyncContextProvider} which is the source of the map
+     * @return {@link AsyncContextMap} for this subscribe operation.
+     */
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        // the default behavior is to copy the map. Some operators may want to use shared map
+        return provider.contextMap().copy();
+    }
 
     /**
      * Subscribes to this {@link Single} and returns the {@link AsyncContextMap} associated for this subscribe
@@ -2339,79 +2394,52 @@ public abstract class Single<T> {
      * @return {@link AsyncContextMap} for this subscribe operation.
      */
     final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        final AsyncContextMap contextMap = shareContextOnSubscribe() ? provider.contextMap() :
-                provider.contextMap().copy();
+        final AsyncContextMap contextMap = contextForSubscribe(provider);
         subscribeWithContext(subscriber, provider, contextMap);
         return contextMap;
     }
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     * @param provider {@link AsyncContextProvider} to use.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+    final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        handleSubscribe(subscriber, contextMap, contextProvider);
     }
 
-    private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+    private void subscribeWithContext(Subscriber<? super T> subscriber,
+                                      AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber<? super T> offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
-            // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor());
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
-        } catch (Throwable t) {
-            deliverErrorFromSource(subscriber, t);
-            return;
+        Subscriber<? super T> wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        if (contextProvider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
         }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
-                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
     /**
-     * Override for {@link #handleSubscribe(SingleSource.Subscriber)} to offload the
-     * {@link #handleSubscribe(SingleSource.Subscriber)} call to the passed {@link SignalOffloader}.
+     * Override for {@link #handleSubscribe(SingleSource.Subscriber)} to perform context wrapping.
      * <p>
-     * This method wraps the passed {@link Subscriber} using
-     * {@link SignalOffloader#offloadSubscriber(SingleSource.Subscriber)} and then calls
-     * {@link #handleSubscribe(SingleSource.Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(SingleSource.Subscriber, Consumer)}. Operators that do not wish to wrap
-     * the passed {@link Subscriber} can override this method and omit the wrapping.
-     *
+     * This method wraps the passed {@link Subscriber}. Operators that do not wish to wrap the passed {@link Subscriber}
+     * can override this method and omit the wrapping.
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
-                         AsyncContextProvider contextProvider) {
+    void handleSubscribe(Subscriber<? super T> subscriber,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         try {
-            Subscriber<? super T> offloaded =
-                    signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap));
-            handleSubscribe(offloaded);
+            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
+            handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
@@ -2428,26 +2456,5 @@ public abstract class Single<T> {
         }
     }
 
-    /**
-     * Returns the {@link Executor} used for this {@link Single}.
-     *
-     * @return {@link Executor} used for this {@link Single}.
-     */
-    Executor executor() {
-        return immediate();
-    }
-
-    /**
-     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
-     * copied.
-     *
-     * @return true if the async context should be shared on subscribe
-     */
-    boolean shareContextOnSubscribe() {
-        return false;
-    }
-
-    //
-    // Internal Methods End
-    //
+    // </editor-fold>
 }

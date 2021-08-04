@@ -32,9 +32,4 @@ public class PublisherFrom2TckTest extends AbstractPublisherTckTest<Integer> {
     public long maxElementsFromPublisher() {
         return 2;
     }
-
-    @Override
-    public long boundedDepthOfOnNextAndRequestRecursion() {
-        return 2;
-    }
 }

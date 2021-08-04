@@ -18,7 +18,6 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
@@ -39,19 +38,15 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -73,50 +68,36 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-@RunWith(Parameterized.class)
-public class PredicateRouterOffloadingTest {
+class PredicateRouterOffloadingTest {
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
     private static final String EXECUTOR_NAME_PREFIX = "router-executor";
     private static final String GLOBAL_EXECUTOR_NAME_PREFIX = "servicetalk-global";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutionContextRule executionContextRule = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+    @RegisterExtension
+    final ExecutionContextExtension executionContextRule = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
             () -> createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)),
             () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)));
     @Nullable
-    protected ServerContext context;
+    private ServerContext context;
     @Nullable
     private BlockingHttpClient client;
-    protected ConcurrentMap<RouterOffloadPoint, Thread> invokingThreads;
-    protected HttpServerBuilder serverBuilder;
-    private final RouteServiceType routeServiceType;
+    private ConcurrentMap<RouterOffloadPoint, Thread> invokingThreads;
+    private HttpServerBuilder serverBuilder;
+    private RouteServiceType routeServiceType;
 
-    public PredicateRouterOffloadingTest(final RouteServiceType routeServiceType) {
-        this.routeServiceType = routeServiceType;
-    }
-
-    @Parameters(name = "{index} - {0}")
-    public static Collection<Object[]> routeServiceTypes() {
-        return stream(RouteServiceType.values()).map(v -> new Object[]{v}).collect(toList());
-    }
-
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         serverBuilder = HttpServers.forAddress(localAddress(0)).ioExecutor(executionContextRule.ioExecutor());
         invokingThreads = new ConcurrentHashMap<>();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (client != null) {
             client.close();
         }
@@ -127,8 +108,10 @@ public class PredicateRouterOffloadingTest {
         closeable.closeAsync().toFuture().get();
     }
 
-    @Test
-    public void predicateAndRouteAreOffloaded() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void predicateAndRouteAreOffloaded(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(newPredicate()).executionStrategy(defaultStrategy(executionContextRule.executor())),
@@ -139,8 +122,10 @@ public class PredicateRouterOffloadingTest {
         assertRouteAndPredicateOffloaded();
     }
 
-    @Test
-    public void predicateOffloadedAndNotRoute() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void predicateOffloadedAndNotRoute(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         routeServiceType.addThreadRecorderService(
@@ -153,8 +138,10 @@ public class PredicateRouterOffloadingTest {
         assertRouteAndPredicateOffloaded();
     }
 
-    @Test
-    public void routeOffloadedAndNotPredicate() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void routeOffloadedAndNotPredicate(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
@@ -166,8 +153,10 @@ public class PredicateRouterOffloadingTest {
         assertRouteOffloadedAndNotPredicate(EXECUTOR_NAME_PREFIX);
     }
 
-    @Test
-    public void routeDefaultAndPredicateNotOffloaded() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void routeDefaultAndPredicateNotOffloaded(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
@@ -179,8 +168,10 @@ public class PredicateRouterOffloadingTest {
         assertRouteOffloadedAndNotPredicate(GLOBAL_EXECUTOR_NAME_PREFIX);
     }
 
-    @Test
-    public void noOffloads() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void noOffloads(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
@@ -193,8 +184,10 @@ public class PredicateRouterOffloadingTest {
         assertRouteAndPredicateNotOffloaded();
     }
 
-    @Test
-    public void routeStrategySameAsRouter() throws Exception {
+    @ParameterizedTest
+    @EnumSource(RouteServiceType.class)
+    void routeStrategySameAsRouter(RouteServiceType routeServiceType) throws Exception {
+        this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         final HttpExecutionStrategy routerStrat = newMetaUnaffectingExecutionStrategy();
@@ -316,11 +309,11 @@ public class PredicateRouterOffloadingTest {
     private abstract static class ThreadRecorderService {
         private final Consumer<RouterOffloadPoint> threadRecorder;
 
-        protected ThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
+        ThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
             this.threadRecorder = threadRecorder;
         }
 
-        protected void recordThread() {
+        void recordThread() {
             threadRecorder.accept(RouterOffloadPoint.Route);
         }
     }
@@ -328,7 +321,7 @@ public class PredicateRouterOffloadingTest {
     private static final class StreamingThreadRecorderService extends ThreadRecorderService
             implements StreamingHttpService {
 
-        protected StreamingThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
+        StreamingThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
             super(threadRecorder);
         }
 
@@ -344,7 +337,7 @@ public class PredicateRouterOffloadingTest {
     private static final class StreamingAggregatedThreadRecorderService extends ThreadRecorderService
             implements HttpService {
 
-        protected StreamingAggregatedThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
+        StreamingAggregatedThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
             super(threadRecorder);
         }
 
@@ -360,7 +353,7 @@ public class PredicateRouterOffloadingTest {
     private static final class BlockingStreamingThreadRecorderService extends ThreadRecorderService
             implements BlockingStreamingHttpService {
 
-        protected BlockingStreamingThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
+        BlockingStreamingThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
             super(threadRecorder);
         }
 
@@ -376,7 +369,7 @@ public class PredicateRouterOffloadingTest {
     private static final class BlockingAggregatedThreadRecorderService extends ThreadRecorderService
             implements BlockingHttpService {
 
-        protected BlockingAggregatedThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
+        BlockingAggregatedThreadRecorderService(final Consumer<RouterOffloadPoint> threadRecorder) {
             super(threadRecorder);
         }
 
@@ -390,7 +383,6 @@ public class PredicateRouterOffloadingTest {
     }
 
     private void assumeSafeToDisableOffloading(final RouteServiceType api) {
-        assumeThat("BlockingStreaming + noOffloads = deadlock",
-                api == RouteServiceType.BLOCKING_STREAMING, is(false));
+        assumeFalse(api == RouteServiceType.BLOCKING_STREAMING, "BlockingStreaming + noOffloads = deadlock");
     }
 }

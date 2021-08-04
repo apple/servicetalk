@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
@@ -32,15 +31,9 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConcatSubscriber<>(subscriber, next), signalOffloader, contextMap,
-                contextProvider);
+        original.delegateSubscribe(new ConcatSubscriber<>(subscriber, next), contextMap, contextProvider);
     }
 
     private static final class ConcatSubscriber<T> extends DelayedCancellableThenSubscription

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
@@ -110,7 +110,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
-            return from(newRoundRobinFactory());
+            return from(new RoundRobinLoadBalancerFactory
+                    .Builder<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>().build());
         }
 
         /**
@@ -122,12 +123,14 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * by the returned {@link Builder}.
          * @return A new {@link Builder}.
          */
+        @SuppressWarnings("deprecation")
         public static <ResolvedAddress> Builder<ResolvedAddress> from(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
             final HttpExecutionStrategyInfluencer strategyInfluencer;
             if (rawFactory instanceof HttpExecutionStrategyInfluencer) {
                 strategyInfluencer = (HttpExecutionStrategyInfluencer) rawFactory;
-            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory) {
+            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory
+                    || rawFactory instanceof RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory) {
                 strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
             } else {
                 // user provided load balancer assumed to be blocking unless it implements

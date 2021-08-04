@@ -17,16 +17,13 @@ package io.servicetalk.data.jackson;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.EmptyBuffer;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.StreamingDeserializer;
 import io.servicetalk.serialization.api.TypeHolder;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.List;
@@ -37,20 +34,17 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class JacksonSerializationProviderTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class JacksonSerializationProviderTest {
 
     private final JacksonSerializationProvider serializationProvider = new JacksonSerializationProvider();
 
     @Test
-    public void testFromClass() {
+    void testFromClass() {
         TestPojo expected = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null, new String[] {"bar"},
                 null);
 
@@ -64,7 +58,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void testFromTypeHolder() {
+    void testFromTypeHolder() {
         TypeHolder<List<TestPojo>> listTypeHolder = new TypeHolder<List<TestPojo>>() { };
 
         TestPojo expected = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null, new String[] {"bar"},
@@ -82,7 +76,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeInvalidData() {
+    void deserializeInvalidData() {
         TestPojo expected = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null, new String[] {"bar"},
                 null);
         final Buffer serialized = serializePojo(expected);
@@ -99,7 +93,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeEmpty() {
+    void deserializeEmpty() {
         final StreamingDeserializer<TestPojo> deserializer = serializationProvider.getDeserializer(TestPojo.class);
         Iterable<TestPojo> pojos = deserializer.deserialize(EmptyBuffer.EMPTY_BUFFER);
         Iterator<TestPojo> pojoItr = pojos.iterator();
@@ -108,7 +102,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeSingleItem() {
+    void deserializeSingleItem() {
         TestPojo expected = new TestPojo(true, Byte.MAX_VALUE, Short.MAX_VALUE, Character.MAX_VALUE, Integer.MIN_VALUE,
                 Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, "foo", new String[] {"bar", "baz"}, null);
         final StreamingDeserializer<TestPojo> deserializer = serializationProvider.getDeserializer(TestPojo.class);
@@ -120,7 +114,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeTwoItemsFromTwoBuffers() {
+    void deserializeTwoItemsFromTwoBuffers() {
         TestPojo expected1 = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null,
                 new String[] {"bar", "baz"}, null);
         TestPojo expected2 = new TestPojo(false, (byte) 500, (short) 353, 'r', 100, 534, 33.25f, 888.5, null,
@@ -140,7 +134,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeTwoItemsFromSingleBuffer() {
+    void deserializeTwoItemsFromSingleBuffer() {
         TestPojo expected1 = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null,
                 new String[] {"bar", "baz"}, null);
         TestPojo expected2 = new TestPojo(false, (byte) 500, (short) 353, 'r', 100, 534, 33.25f, 888.5, null,
@@ -158,14 +152,15 @@ public class JacksonSerializationProviderTest {
         assertTrue(iter.hasNext());
         assertEquals(expected1, iter.next());
         assertTrue(iter.hasNext());
-        assertEquals(expected2, iter.next());
+        final TestPojo next = iter.next();
+        assertEquals(expected2, next);
         assertFalse(iter.hasNext());
 
         assertThat("Unexpected data remaining in deserializer", deserializer.hasData(), is(false));
     }
 
     @Test
-    public void deserializeSplitAcrossMultipleBuffers() {
+    void deserializeSplitAcrossMultipleBuffers() {
         TestPojo expected1 = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null,
                 new String[] {"bar", "baz"}, null);
         TestPojo expected2 = new TestPojo(false, (byte) 500, (short) 353, 'r', 100, 534, 33.25f, 888.5, null,
@@ -184,7 +179,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void deserializeIncompleteBufferAsAggregated() {
+    void deserializeIncompleteBufferAsAggregated() {
         TestPojo expected = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null, new String[] {"bar"},
                 null);
         final Buffer buffer = serializePojo(expected);
@@ -199,7 +194,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void testParseOnlyValueString() {
+    void testParseOnlyValueString() {
         String json = "\"x\"";
         final Buffer buffer = DEFAULT_ALLOCATOR.fromAscii(json);
         final StreamingDeserializer<String> deSerializer = serializationProvider.getDeserializer(String.class);
@@ -210,7 +205,7 @@ public class JacksonSerializationProviderTest {
     }
 
     @Test
-    public void testParseOnlyValueNull() {
+    void testParseOnlyValueNull() {
         String json = "null";
         final Buffer buffer = DEFAULT_ALLOCATOR.fromAscii(json);
         final StreamingDeserializer<String> deSerializer = serializationProvider.getDeserializer(String.class);
@@ -219,9 +214,9 @@ public class JacksonSerializationProviderTest {
         deSerializer.close();
     }
 
-    @Ignore("Jackson currently does not support parsing only boolean value.")
+    @Disabled("Jackson currently does not support parsing only boolean value.")
     @Test
-    public void testParseOnlyValueBoolean() {
+    void testParseOnlyValueBoolean() {
         String json = "true";
         final Buffer buffer = DEFAULT_ALLOCATOR.fromAscii(json);
         final StreamingDeserializer<Boolean> deSerializer = serializationProvider.getDeserializer(Boolean.class);
@@ -231,9 +226,9 @@ public class JacksonSerializationProviderTest {
         deSerializer.close();
     }
 
-    @Ignore("Jackson currently does not support parsing only number value.")
+    @Disabled("Jackson currently does not support parsing only number value.")
     @Test
-    public void testParseOnlyValueInt() {
+    void testParseOnlyValueInt() {
         String json = "1";
         final Buffer buffer = DEFAULT_ALLOCATOR.fromAscii(json);
         final StreamingDeserializer<Integer> deSerializer = serializationProvider.getDeserializer(Integer.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,9 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
@@ -38,28 +32,14 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
-@RunWith(Parameterized.class)
-public class ExecutorThrowsTest {
+class ExecutorThrowsTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final LinkedBlockingQueue<Throwable> errors;
-
-    public ExecutorThrowsTest(@SuppressWarnings("unused") final boolean threadBased) {
-        errors = new LinkedBlockingQueue<>();
-    }
-
-    @Parameterized.Parameters(name = " {index} thread based? {0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
-    }
+    private final LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     @Test
-    public void publisherExecutorThrows() throws Throwable {
+    void publisherExecutorThrows() {
         Publisher<String> p = new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
@@ -71,7 +51,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         SourceAdapters.toSource(p).subscribe(new Subscriber<String>() {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -97,7 +77,7 @@ public class ExecutorThrowsTest {
     }
 
     @Test
-    public void singleExecutorThrows() throws Throwable {
+    void singleExecutorThrows() {
         Single<String> s = new Single<String>() {
             @Override
             protected void handleSubscribe(final SingleSource.Subscriber<? super String> subscriber) {
@@ -109,7 +89,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         toSource(s).subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -130,7 +110,7 @@ public class ExecutorThrowsTest {
     }
 
     @Test
-    public void completableExecutorThrows() throws Throwable {
+    void completableExecutorThrows() {
         Completable c = new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
@@ -142,7 +122,7 @@ public class ExecutorThrowsTest {
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
-        }.publishAndSubscribeOn(newAlwaysFailingExecutor());
+        }.subscribeOn(newAlwaysFailingExecutor());
         toSource(c).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -163,13 +143,12 @@ public class ExecutorThrowsTest {
     }
 
     private Executor newAlwaysFailingExecutor() {
-        Executor original = from(task -> {
+        return from(task -> {
             throw DELIBERATE_EXCEPTION;
         });
-        return new OffloaderAwareExecutor(original, defaultOffloaderFactory());
     }
 
-    private void verifyError() throws Throwable {
+    private void verifyError() {
         Throwable err = errors.peek();
         if (err != DELIBERATE_EXCEPTION) {
             assertNoAsyncErrors(errors);

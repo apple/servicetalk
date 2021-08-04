@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnCompletables.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
@@ -54,16 +54,11 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    protected void handleSubscribe(final Subscriber subscriber, final SignalOffloader offloader,
+    protected void handleSubscribe(final Subscriber subscriber,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap, contextProvider),
-                offloader, contextMap, contextProvider);
+                TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
     private static final class TimeoutSubscriber implements Subscriber, Cancellable, Runnable {
@@ -83,22 +78,20 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
         private volatile int subscriberState;
         private final TimeoutCompletable parent;
         private final Subscriber target;
-        private final SignalOffloader offloader;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private Cancellable timerCancellable;
 
-        private TimeoutSubscriber(TimeoutCompletable parent, Subscriber target, SignalOffloader offloader,
+        private TimeoutSubscriber(TimeoutCompletable parent, Subscriber target,
                                   AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.target = target;
-            this.offloader = offloader;
             this.contextProvider = contextProvider;
         }
 
-        static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target, SignalOffloader offloader,
+        static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target,
                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-            TimeoutSubscriber s = new TimeoutSubscriber(parent, target, offloader, contextProvider);
+            TimeoutSubscriber s = new TimeoutSubscriber(parent, target, contextProvider);
             Cancellable localTimerCancellable;
             try {
                 // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
@@ -113,7 +106,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
                 s.cancellable = LOCAL_IGNORE_CANCEL;
-                deliverOnSubscribeAndOnError(target, offloader, contextMap, contextProvider, cause);
+                deliverOnSubscribeAndOnError(target, contextMap, contextProvider, cause);
             }
             s.timerCancellable = localTimerCancellable;
             return s;
@@ -175,13 +168,10 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
         public void run() {
             Cancellable oldCancellable = cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL);
             if (oldCancellable != LOCAL_IGNORE_CANCEL) {
-                // The timeout may be running on a different Executor than the original async source. If that is the
-                // case we should offload to the correct Executor.
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
-                final Subscriber offloadedTarget = parent.timeoutExecutor == parent.executor() ? target :
-                        offloader.offloadSubscriber(contextProvider.wrapCompletableSubscriber(target,
-                                contextProvider.contextMap()));
+                final Subscriber wrappedTarget = parent.timeoutExecutor == immediate() ? target :
+                        contextProvider.wrapCompletableSubscriber(target, contextProvider.contextMap());
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();
@@ -190,13 +180,13 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                     // know that the call to target.onSubscribe completed so we don't interact with the Subscriber
                     // concurrently.
                     if (subscriberStateUpdater.getAndSet(this, STATE_TIMED_OUT_ERROR) == STATE_ON_SUBSCRIBE_DONE) {
-                        offloadedTarget.onError(newTimeoutException());
+                        wrappedTarget.onError(newTimeoutException());
                     }
                 } else {
                     // If there is no Cancellable, that means this.onSubscribe wasn't called before the timeout. In this
                     // case there is no risk of concurrent invocation on target because we won't invoke
                     // target.onSubscribe from this.onSubscribe.
-                    deliverErrorFromSource(offloadedTarget, newTimeoutException());
+                    deliverErrorFromSource(wrappedTarget, newTimeoutException());
                 }
             }
         }

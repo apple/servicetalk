@@ -94,7 +94,7 @@ public final class Executors {
      * {@link java.util.concurrent.Executor} is an instance of {@link ScheduledExecutorService}.<p>
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
      * is an instance of {@link ExecutorService}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -115,7 +115,7 @@ public final class Executors {
      * is an instance of {@link ScheduledExecutorService}.<p>
      * When a running task is cancelled, the thread running it will be interrupted.
      * For overriding this behavior use {@link #from(ExecutorService, boolean)}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -134,7 +134,7 @@ public final class Executors {
      * Creates a new {@link Executor} from the provided {@link ExecutorService}.
      * Delayed task execution will be delegated to a global scheduler, unless passed {@link ExecutorService}
      * is an instance of {@link ScheduledExecutorService}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -155,7 +155,7 @@ public final class Executors {
      * Creates a new {@link Executor} from the provided {@link ScheduledExecutorService}.
      * When a running task is cancelled, the thread running it will be interrupted.
      * For overriding this behavior use {@link #from(ScheduledExecutorService, boolean)}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -172,7 +172,7 @@ public final class Executors {
 
     /**
      * Creates a new {@link Executor} from the provided {@link ScheduledExecutorService}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -197,7 +197,7 @@ public final class Executors {
      * For overriding this behavior use {@link #from(java.util.concurrent.Executor, ScheduledExecutorService, boolean)}.
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
      * is an instance of {@link ExecutorService}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -221,7 +221,7 @@ public final class Executors {
      * schedule delayed tasks.
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
      * is an instance of {@link ExecutorService}.
-     * <h2>Long running tasks</h2>
+     * <p><strong>Long running tasks</strong></p>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
      * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the

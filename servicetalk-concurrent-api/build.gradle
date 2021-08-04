@@ -35,6 +35,7 @@ dependencies {
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation project(":servicetalk-utils-internal")
+  testFixturesImplementation project(":servicetalk-concurrent-test-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testFixturesImplementation "junit:junit:$junitVersion"

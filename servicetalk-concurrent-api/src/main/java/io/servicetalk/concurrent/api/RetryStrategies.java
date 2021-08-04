@@ -59,6 +59,7 @@ public final class RetryStrategies {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
+        checkFullJitter(delayNanos);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
     }
@@ -82,6 +83,7 @@ public final class RetryStrategies {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
+        checkFullJitter(delayNanos);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
     }
@@ -298,9 +300,15 @@ public final class RetryStrategies {
     }
 
     static void checkJitterDelta(long jitterNanos, long delayNanos) {
-        if (jitterNanos > delayNanos || Long.MAX_VALUE - delayNanos < jitterNanos) {
+        if (jitterNanos >= delayNanos || Long.MAX_VALUE - delayNanos < jitterNanos) {
             throw new IllegalArgumentException("jitter " + jitterNanos +
                     "ns would result in [under|over]flow as a delta to delay " + delayNanos + "ns");
+        }
+    }
+
+    static void checkFullJitter(long jitterNanos) {
+        if (jitterNanos <= 0) {
+            throw new IllegalArgumentException("jitter " + jitterNanos + "ns must be >=0.");
         }
     }
 

@@ -8,9 +8,6 @@ endif::[]
 
 = gRPC
 
-IMPORTANT: ServiceTalk gRPC support is an active work-in-progress and is not yet
-xref:{page-version}@servicetalk::performance.adoc[peformance tested].
-
 == Motivation
 
 A design philosophy for ServiceTalk is

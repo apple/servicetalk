@@ -55,6 +55,6 @@ final class ReadOnlyHttpServerConfig {
     }
 
     boolean isH2PriorKnowledge() {
-        return h2Config != null && h1Config == null;
+        return h2Config != null && h1Config == null && !tcpConfig.isAlpnConfigured();
     }
 }

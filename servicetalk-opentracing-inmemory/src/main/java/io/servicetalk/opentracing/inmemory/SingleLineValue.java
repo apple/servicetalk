@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.opentracing.internal.HexUtils.hexBytesOfLong;
-import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
+import static io.servicetalk.opentracing.internal.TracingIdUtils.idOrNullAsValue;
 
 /**
  * Wrapper for supporting injecting and extracting single-string values.
@@ -104,7 +104,7 @@ public interface SingleLineValue {
      * @return the formatted trace information as {@link String}.
      */
     static String format(String traceIdHex, String spanIdHex, @Nullable String parentSpanIdHex) {
-        return traceIdHex + '.' + spanIdHex + "<:" + (parentSpanIdHex == null ? NO_PARENT_ID : parentSpanIdHex);
+        return traceIdHex + '.' + spanIdHex + "<:" + idOrNullAsValue(parentSpanIdHex);
     }
 
     /**

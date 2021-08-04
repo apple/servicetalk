@@ -38,8 +38,6 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-internal")
   testImplementation project(":servicetalk-concurrent-api-internal")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit:$junitVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
 
 jmh {

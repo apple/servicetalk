@@ -16,14 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.FlowControlUtils;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.wrapWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -44,26 +43,15 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    /**
-     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
-     * copied.
-     *
-     * @return true if the async context should be shared on subscribe
-     */
-    @Override
-    boolean shareContextOnSubscribe() {
-        return true;
+    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        return provider.contextMap();
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super R> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
-                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(),
+                contextProvider, contextMap), contextMap, contextProvider);
     }
 
     static class ScanWithSubscriber<T, R> implements Subscriber<T> {
@@ -81,7 +69,6 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private static final long INVALID_DEMAND = -1;
 
         private final Subscriber<? super R> subscriber;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         private final ScanWithMapper<? super T, ? extends R> mapper;
@@ -94,12 +81,10 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private Throwable errorCause;
 
         ScanWithSubscriber(final Subscriber<? super R> subscriber, final ScanWithMapper<? super T, ? extends R> mapper,
-                           final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
-                           final AsyncContextProvider contextProvider) {
+                           final AsyncContextProvider contextProvider, final AsyncContextMap contextMap) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
-            this.contextMap = contextMap;
             this.contextProvider = contextProvider;
+            this.contextMap = contextMap;
             this.mapper = requireNonNull(mapper);
         }
 
@@ -145,7 +130,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 }
 
                 private Subscriber<? super R> newOffloadedSubscriber() {
-                    return offloadWithDummyOnSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+                    return wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
                 }
             };
         }

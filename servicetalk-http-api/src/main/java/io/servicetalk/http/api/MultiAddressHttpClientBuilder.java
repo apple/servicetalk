@@ -84,7 +84,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * </pre>
      * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @deprecated Use
@@ -113,7 +113,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * </pre>
      * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
      *
      * @deprecated Use

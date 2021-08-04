@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
@@ -36,33 +35,10 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    protected void handleSubscribe(Subscriber subscriber, SignalOffloader offloader, AsyncContextMap contextMap,
+    protected void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap,
                                    AsyncContextProvider contextProvider) {
-        // We have the following cases to consider w.r.t offloading signals:
-        //
-        //  (1) Original Completable was not using an Executor but the next Completable uses an Executor.
-        //  (2) Original Completable uses an Executor but the next Completable does not.
-        //  (3) None of the sources use an Executor.
-        //  (4) Both the sources use an Executor.
-        //
-        // SignalOffloader passed here is created from the Executor of the original Completable.
-        // While subscribing to the next Completable, we do not pass any SignalOffloader so whatever is chosen for that
-        // Completable will be used.
-        //
-        // The only interesting case is (2) above where for the first Subscriber we are running on an Executor thread
-        // but for the second we are not which changes the threading model such that blocking code could run on the
-        // eventloop. Important thing to note is that once the next Completable is subscribed we never touch the
-        // Cancellable of the original Completable. So, we do not need to do anything special there.
-        // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        Subscriber offloadSubscriber = offloader.offloadSubscriber(
-                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
-        original.delegateSubscribe(new ConcatWithSubscriber(offloadSubscriber, next), offloader,
-                contextMap, contextProvider);
+        Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+        original.delegateSubscribe(new ConcatWithSubscriber(wrappedSubscriber, next), contextMap, contextProvider);
     }
 
     private static final class ConcatWithSubscriber implements Subscriber {
@@ -93,7 +69,6 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
                 target.onComplete();
             } else {
                 nextSubscribed = true;
-                // Do not use the same SignalOffloader as used for original as that may cause deadlock.
                 // Using a regular subscribe helps us to inherit the threading model for this next source. However,
                 // since we always offload the original Subscriber (in handleSubscribe above) we are assured that this
                 // Subscriber is not called unexpectedly on an eventloop if this source does not use an Executor.

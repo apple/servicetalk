@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.B3KeyValueFormatter;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -32,14 +33,14 @@ import javax.annotation.Nullable;
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
-import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.AbstractTracingHttpFilter.HttpHeadersB3KeyValueFormatter.traceStateFormatter;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractTracingHttpFilter {
 
     protected final Tracer tracer;
     protected final String componentName;
-    protected final InMemoryTraceStateFormat<HttpHeaders> formatter;
+    protected final InMemorySpanContextFormat<HttpHeaders> formatter;
 
     /**
      * Create a new instance.
@@ -54,6 +55,22 @@ abstract class AbstractTracingHttpFilter {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.formatter = traceStateFormatter(validateTraceKeyFormat);
+    }
+
+    static final class HttpHeadersB3KeyValueFormatter extends B3KeyValueFormatter<HttpHeaders> {
+
+        static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_VALIDATION =
+                new HttpHeadersB3KeyValueFormatter(true);
+        static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
+                new HttpHeadersB3KeyValueFormatter(false);
+
+        HttpHeadersB3KeyValueFormatter(boolean verifyExtractedValues) {
+            super(HttpHeaders::set, HttpHeaders::get, verifyExtractedValues);
+        }
+
+        static InMemorySpanContextFormat<HttpHeaders> traceStateFormatter(boolean validateTraceKeyFormat) {
+            return validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
+        }
     }
 
     static class ScopeTracker implements TerminalSignalConsumer {

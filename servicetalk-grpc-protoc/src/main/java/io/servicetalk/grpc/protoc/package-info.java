@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * ServiceTalk protoc compiler for the gRPC protocol.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.grpc.protoc;
 

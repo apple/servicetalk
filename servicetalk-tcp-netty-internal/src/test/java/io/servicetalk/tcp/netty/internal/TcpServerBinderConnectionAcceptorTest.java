@@ -27,11 +27,12 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -44,11 +45,10 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@RunWith(Parameterized.class)
-public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
+class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> completed()),
@@ -89,12 +89,12 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
         }
     }
 
-    private final FilterMode filterMode;
+    private FilterMode filterMode;
     private volatile boolean acceptedConnection;
     @Nullable
     private volatile SSLSession sslSession;
 
-    public TcpServerBinderConnectionAcceptorTest(final boolean enableSsl, final FilterMode filterMode) {
+    private void setUp(final boolean enableSsl, final FilterMode filterMode) throws Exception {
         this.filterMode = filterMode;
         sslEnabled(enableSsl);
         service(conn -> {
@@ -111,6 +111,7 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
         } else {
             connectionAcceptor(filterMode.getContextFilter(SERVER_CTX.executor()));
         }
+        setUp();
     }
 
     @Override
@@ -129,19 +130,19 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
         return super.createServer();
     }
 
-    @Parameters(name = "ssl={0} {1}")
-    public static Object[] getContextFilters() {
-        int filterModes = FilterMode.values().length;
-        Object[] parameters = new Object[filterModes * 2];
-        for (int i = 0; i < filterModes; ++i) {
-            parameters[i] = new Object[]{false, FilterMode.values()[i]};
-            parameters[i + filterModes] = new Object[]{true, FilterMode.values()[i]};
+    static List<Arguments> getContextFilters() {
+        List<Arguments> parameters = new ArrayList<>();
+        for (FilterMode filterMode : FilterMode.values()) {
+            parameters.add(Arguments.of(false, filterMode));
+            parameters.add(Arguments.of(true, filterMode));
         }
         return parameters;
     }
 
-    @Test
-    public void testAcceptConnection() {
+    @ParameterizedTest(name = "ssl={0} {1}")
+    @MethodSource("getContextFilters")
+    void testAcceptConnection(final boolean enableSsl, final FilterMode filterMode) throws Exception {
+        setUp(enableSsl, filterMode);
         // Write something, then try to read something and wait for a result.
         // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
         // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
@@ -151,8 +152,8 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
             connection.write(Publisher.from(buffer)).toFuture().get();
             Single<Buffer> read = connection.read().firstOrElse(() -> null);
             Buffer responseBuffer = awaitIndefinitelyNonNull(read);
-            assertEquals("Did not receive response payload echoing request",
-                    "Hello", responseBuffer.toString(US_ASCII));
+            assertEquals(
+                "Hello", responseBuffer.toString(US_ASCII), "Did not receive response payload echoing request");
         } catch (ExecutionException | InterruptedException e) {
             // If we expect the connection to be rejected, then an exception here is ok.
             // We want to continue after the exception, to assert that the server did not accept the connection.
@@ -161,12 +162,13 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
             }
         }
 
-        assertEquals("Filter did not " + (filterMode.expectAccept ? "accept" : "reject") + " connection",
-                filterMode.expectAccept, acceptedConnection);
+        assertEquals(
+            filterMode.expectAccept, acceptedConnection,
+            "Filter did not " + (filterMode.expectAccept ? "accept" : "reject") + " connection");
 
         // If the initializer throws, the filter will not execute, so we can't check the SSL Session.
         if (isSslEnabled() && !filterMode.initializerThrow) {
-            assertNotNull("SslSession was not set by the time filter executed", sslSession);
+            assertNotNull(sslSession, "SslSession was not set by the time filter executed");
         }
     }
 }

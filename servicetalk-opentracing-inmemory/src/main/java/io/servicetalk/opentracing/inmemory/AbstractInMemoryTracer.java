@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package io.servicetalk.opentracing.inmemory;
 
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
 
 import io.opentracing.propagation.Format;
@@ -30,12 +29,11 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Base class for {@link InMemoryTraceState} tracer implementations.
+ * Base class for {@link InMemoryTracer} tracer implementations.
  */
 abstract class AbstractInMemoryTracer implements InMemoryTracer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractInMemoryTracer.class);
 
-    @SuppressWarnings("unchecked")
     @Override
     public final <C> void inject(InMemorySpanContext spanContext, Format<C> format, C carrier) {
         requireNonNull(spanContext);
@@ -43,10 +41,10 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
         requireNonNull(carrier);
 
         try {
-            if (format instanceof InMemoryTraceStateFormat) {
-                ((InMemoryTraceStateFormat<C>) format).inject(spanContext.traceState(), carrier);
+            if (format instanceof InMemorySpanContextFormat) {
+                ((InMemorySpanContextFormat<C>) format).inject(spanContext, carrier);
             } else if (format == Format.Builtin.TEXT_MAP) {
-                TextMapFormatter.INSTANCE.inject(spanContext.traceState(), (TextMap) carrier);
+                TextMapFormatter.INSTANCE.inject(spanContext, (TextMap) carrier);
             } else {
                 throw new UnsupportedOperationException("Format " + format + " is not supported");
             }
@@ -63,27 +61,17 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
         requireNonNull(carrier);
 
         try {
-            final InMemoryTraceState state;
-            if (format instanceof InMemoryTraceStateFormat) {
-                state = ((InMemoryTraceStateFormat<C>) format).extract(carrier);
+            if (format instanceof InMemorySpanContextFormat) {
+                return ((InMemorySpanContextFormat<C>) format).extract(carrier);
             } else if (format == Format.Builtin.TEXT_MAP) {
-                state = TextMapFormatter.INSTANCE.extract((TextMap) carrier);
+                return TextMapFormatter.INSTANCE.extract((TextMap) carrier);
             } else {
                 throw new UnsupportedOperationException("Format " + format + " is not supported");
             }
-            return state != null ? newSpanContext(state) : null;
         } catch (Exception e) {
             // Tracing should be low impact, so don't throw if formatting failed
             LOGGER.warn("Failed to inject SpanContext into carrier", e);
             return null;
         }
     }
-
-    /**
-     * Create a span context with given trace state. Called when extracting from carriers.
-     *
-     * @param state The state for the trace.
-     * @return span context
-     */
-    protected abstract InMemorySpanContext newSpanContext(InMemoryTraceState state);
 }

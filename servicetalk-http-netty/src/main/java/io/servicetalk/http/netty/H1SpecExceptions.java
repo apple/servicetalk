@@ -65,17 +65,6 @@ public final class H1SpecExceptions {
         /**
          * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
          * part of the payload body before the connection closure.
-         * @deprecated Use {@link #allowPrematureClosureBeforePayloadBody(boolean)}.
-         * @return {@code this}
-         */
-        @Deprecated
-        public Builder allowPrematureClosureBeforePayloadBody() {
-            return allowPrematureClosureBeforePayloadBody(true);
-        }
-
-        /**
-         * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
-         * part of the payload body before the connection closure.
          * @param allow {@code true} if the receiver should interpret connection closures as the end of HTTP/1.1
          * messages if it did not receive any part of the payload body before the connection closure.
          * @return {@code this}

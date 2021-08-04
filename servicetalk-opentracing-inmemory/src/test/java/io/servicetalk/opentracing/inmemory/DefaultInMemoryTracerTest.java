@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanBuilder;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
 
 import org.junit.jupiter.api.Test;
@@ -44,13 +43,11 @@ class DefaultInMemoryTracerTest {
     private static void verifyParentReference(final String parentTraceIdHex, boolean childOf) {
         InMemoryScopeManager mockScopeManager = mock(InMemoryScopeManager.class);
         InMemorySpanContext mockParentContext = mock(InMemorySpanContext.class);
-        InMemoryTraceState mockParentTraceState = mock(InMemoryTraceState.class);
-        when(mockParentContext.traceState()).thenReturn(mockParentTraceState);
-        when(mockParentTraceState.traceIdHex()).thenReturn(parentTraceIdHex);
+        when(mockParentContext.toTraceId()).thenReturn(parentTraceIdHex);
         InMemoryTracer tracer = new DefaultInMemoryTracer.Builder(mockScopeManager).build();
         InMemorySpanBuilder spanBuilder = tracer.buildSpan("foo");
         spanBuilder.addReference(childOf ? CHILD_OF : FOLLOWS_FROM, mockParentContext);
         InMemorySpan span = spanBuilder.start();
-        assertEquals(parentTraceIdHex, span.context().traceState().traceIdHex());
+        assertEquals(parentTraceIdHex, span.context().toTraceId());
     }
 }

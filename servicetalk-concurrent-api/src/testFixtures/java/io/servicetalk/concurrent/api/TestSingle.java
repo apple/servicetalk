@@ -23,11 +23,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -54,6 +56,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
     private volatile Subscriber<? super T> subscriber = new WaitingSubscriber<>();
+    private final CountDownLatch subscriberLatch = new CountDownLatch(1);
 
     /**
      * Create a {@code TestSingle} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -75,6 +78,14 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
         return !(subscriber instanceof WaitingSubscriber);
     }
 
+    /**
+     * Awaits until this Single is subscribed, even if interrupted. If interrupted the {@link Thread#isInterrupted()}
+     * will be set upon return.
+     */
+    public void awaitSubscribed() {
+        awaitUninterruptibly(subscriberLatch);
+    }
+
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         try {
@@ -87,6 +98,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
                         final WaitingSubscriber<T> waiter = (WaitingSubscriber<T>) currSubscriber;
                         waiter.realSubscriber(newSubscriber);
                     }
+                    subscriberLatch.countDown();
                     break;
                 }
             }

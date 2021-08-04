@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,20 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.concurrent.api.NoopOffloader.NOOP_OFFLOADER;
 
-final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
+final class ImmediateExecutor extends AbstractExecutor {
 
     private static final Executor IMMEDIATE = from(Runnable::run);
     static final Executor IMMEDIATE_EXECUTOR = new ImmediateExecutor();
 
     private ImmediateExecutor() {
         // No instances
-    }
-
-    @Override
-    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
-        return NOOP_OFFLOADER;
-    }
-
-    @Override
-    public boolean hasThreadAffinity() {
-        return false;
     }
 
     @Override

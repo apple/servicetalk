@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AmbSingles.AmbSubscriber;
 import io.servicetalk.concurrent.api.AmbSingles.State;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
@@ -32,12 +31,7 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         State<T> state = new State<>(subscriber);
         try {
@@ -51,11 +45,10 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
             AmbSubscriber<T> originalSubscriber = new AmbSubscriber<>(state);
             AmbSubscriber<T> ambWithSubscriber = new AmbSubscriber<>(state);
             state.delayedCancellable(CompositeCancellable.create(originalSubscriber, ambWithSubscriber));
-            original.delegateSubscribe(originalSubscriber, signalOffloader, contextMap, contextProvider);
-            // If the other Single's result is propagated then we should offload it to the original Single's Executor
-            ambWith.subscribeInternal(signalOffloader.offloadSubscriber(
+            original.delegateSubscribe(originalSubscriber, contextMap, contextProvider);
+            ambWith.subscribeInternal(
                     // If the other Single delivers the result, we should restore the context.
-                    contextProvider.wrapSingleSubscriber(ambWithSubscriber, contextMap)));
+                    contextProvider.wrapSingleSubscriber(ambWithSubscriber, contextMap));
         } catch (Throwable t) {
             state.tryError(t);
         }

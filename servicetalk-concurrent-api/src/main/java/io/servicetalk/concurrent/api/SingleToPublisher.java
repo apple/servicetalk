@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.wrapWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -40,15 +39,10 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
-                signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
@@ -61,7 +55,6 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private static final AtomicIntegerFieldUpdater<ConversionSubscriber> stateUpdater =
                 newUpdater(ConversionSubscriber.class, "state");
         private final Subscriber<? super T> subscriber;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
@@ -69,10 +62,9 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private T result;
         private volatile int state;
 
-        ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+        ConversionSubscriber(Subscriber<? super T> subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
@@ -117,8 +109,8 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                             stateUpdater.compareAndSet(this, STATE_AWAITING_REQUESTED, STATE_TERMINATED)) {
                         // We have not offloaded the Subscriber as we generally emit to the Subscriber from the
                         // Single Subscriber methods which is correctly offloaded. This is the case where we invoke the
-                        // Subscriber directly, hence we explicitly offload.
-                        terminateSuccessfully(result, offloadWithDummyOnSubscribe(subscriber, signalOffloader,
+                        // Subscriber directly, hence we explicitly wrap with Async context.
+                        terminateSuccessfully(result, wrapWithDummyOnSubscribe(subscriber,
                                 contextMap, contextProvider));
                         return;
                     } else if (cState == STATE_IDLE &&
@@ -129,16 +121,15 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     }
                 }
             } else if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
-                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(subscriber, signalOffloader,
-                        contextMap, contextProvider);
+                Subscriber<? super T> wrapped = wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
                 try {
                     // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
                     cancel();
                 } catch (Throwable t) {
-                    offloaded.onError(t);
+                    wrapped.onError(t);
                     return;
                 }
-                offloaded.onError(newExceptionForInvalidRequestN(n));
+                wrapped.onError(newExceptionForInvalidRequestN(n));
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -50,6 +50,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
@@ -59,7 +60,6 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
@@ -570,32 +570,6 @@ public abstract class Publisher<T> {
     public final Publisher<T> onErrorResume(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
         return new OnErrorResumePublisher<>(this, predicate, nextFactory);
-    }
-
-    /**
-     * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     List<T> results;
-     *     try {
-     *         results = resultOfThisPublisher();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
-     *         results = nextFactory.apply(cause);
-     *     }
-     *     return results;
-     * }</pre>
-     * @deprecated Use {@link #onErrorResume(Function)}.
-     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
-     * @return A {@link Publisher} that recovers from an error from this {@code Publisher} by using another
-     * {@link Publisher} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
-     */
-    @Deprecated
-    public final Publisher<T> recoverWith(Function<Throwable, ? extends Publisher<? extends T>> nextFactory) {
-        return onErrorResume(nextFactory);
     }
 
     /**
@@ -1530,7 +1504,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor());
+        return timeout(duration, unit, immediate());
     }
 
     /**
@@ -1548,7 +1522,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
-        return timeout(duration, executor());
+        return timeout(duration, immediate());
     }
 
     /**
@@ -1603,7 +1577,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration) {
-        return timeoutTerminal(duration, executor());
+        return timeoutTerminal(duration, immediate());
     }
 
     /**
@@ -1639,7 +1613,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
-        return timeoutTerminal(duration, unit, executor());
+        return timeoutTerminal(duration, unit, immediate());
     }
 
     /**
@@ -1819,7 +1793,7 @@ public abstract class Publisher<T> {
     public final Publisher<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() == null) {
-                return Completable.completed();
+                return completed();
             }
             return retryWhen.apply(retryCount, notification.cause());
         }, true);
@@ -1885,7 +1859,7 @@ public abstract class Publisher<T> {
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() != null) {
-                return Completable.completed();
+                return completed();
             }
             return repeatWhen.apply(retryCount);
         }, false);
@@ -1979,19 +1953,19 @@ public abstract class Publisher<T> {
      * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
      * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
      * returned {@link Publisher}.
-     *
-     * <h2>Flow control</h2>
+     * <p>
+     * Flow control
+     * <p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
-     * size can be controlled with the {@code maxQueuePerGroup} argument.
-     *
-     * <h2>Cancellation</h2>
-     *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
-     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
-     * will be cancelled.
+     * size can be controlled via {@link #groupBy(Function, int)}.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
      * <p>
      * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
      * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
@@ -2016,38 +1990,34 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
      * {@code keySelector} {@link Function}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
-                                                                   int groupMaxQueueSize) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize);
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector) {
+        return groupBy(keySelector, 64);
     }
 
     /**
-     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s. Item to group
-     * association is done by {@code keySelector} {@link Function}. If the selector selects a key which is previously
-     * seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item is sent to
-     * that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the returned
-     * {@link Publisher}.
-     *
-     * <h2>Flow control</h2>
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s.
+     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is
+     * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
+     * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
+     * returned {@link Publisher}.
+     * <p>
+     * Flow control
+     * <p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
-     * size can be controlled with the {@code maxQueuePerGroup} argument.
-     *
-     * <h2>Cancellation</h2>
-     *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
-     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
-     * will be cancelled.
+     * size can be controlled with the {@code queueLimit} argument.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
      * <p>
      * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
      * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
@@ -2072,8 +2042,65 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
+     * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
+     */
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
+                                                                   int queueLimit) {
+        return new PublisherGroupBy<>(this, keySelector, queueLimit);
+    }
+
+    /**
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s.
+     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is
+     * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
+     * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
+     * returned {@link Publisher}.
+     * <p>
+     * Flow control
+     * <p>
+     * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
+     * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
+     * elements requested by one group may end up producing items for a different group, which has not yet requested
+     * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
+     * size can be controlled with the {@code queueLimit} argument.
+     * <p>
+     * Cancellation
+     * <p>
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, and there are no
+     * active {@link GroupedPublisher}s {@link Subscriber}s then upstream will be cancelled.
+     * <p>
+     * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
+     * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
+     * emitted from the returned {@link Publisher}. Any queued items for a cancelled {@link Subscriber} for a
+     * {@link GroupedPublisher} will be discarded and hence will not be emitted if the same {@link GroupedPublisher} is
+     * emitted again.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         Key k = keySelector.apply(result);
+     *         List<T> v = results.get(k);
+     *         if (v == null) {
+     *             v = // new List
+     *             results.put(k, v);
+     *         }
+     *         v.add(result);
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
+     * {@link GroupedPublisher}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
      * This is just a hint for internal data structures and does not have to be precise.
      * @param <Key> Type of {@link GroupedPublisher} keys.
@@ -2082,8 +2109,8 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
-                                                                   int groupMaxQueueSize, int expectedGroupCountHint) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+                                                                   int queueLimit, int expectedGroupCountHint) {
+        return new PublisherGroupBy<>(this, keySelector, queueLimit, expectedGroupCountHint);
     }
 
     /**
@@ -2109,7 +2136,9 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
@@ -2117,8 +2146,8 @@ public abstract class Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
-            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize);
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int queueLimit) {
+        return new PublisherGroupToMany<>(this, keySelector, queueLimit);
     }
 
     /**
@@ -2144,8 +2173,9 @@ public abstract class Publisher<T> {
      *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
-     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param queueLimit The number of elements which will be queued for each grouped {@link Subscriber} in order to
+     * compensate for unequal demand. This also applies to the returned {@link Publisher} which may also have to queue
+     * signals.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
      * This is just a hint for internal data structures and does not have to be precise.
      * @param <Key> Type of {@link GroupedPublisher} keys.
@@ -2154,9 +2184,9 @@ public abstract class Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
-            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int queueLimit,
             int expectedGroupCountHint) {
-        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+        return new PublisherGroupToMany<>(this, keySelector, queueLimit, expectedGroupCountHint);
     }
 
     /**
@@ -2177,13 +2207,14 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     *
+     * @deprecated Use {@link #multicast(int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
+    @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers) {
-        return new MulticastPublisher<>(this, expectedSubscribers);
+        return multicastToExactly(expectedSubscribers, 64);
     }
 
     /**
@@ -2194,7 +2225,7 @@ public abstract class Publisher<T> {
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
      * {@link Subscription#request(long) request(10)}, and the second only calls
-     * {@link Subscription#request(long) request(10)}, then 9 elements will be queued to deliver to second when more
+     * {@link Subscription#request(long) request(1)}, then 9 elements will be queued to deliver to second when more
      * {@link Subscription#request(long)} demand is made.
      * <p>
      * In sequential programming this is similar to the following:
@@ -2206,15 +2237,112 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     *
+     * @deprecated Use {@link #multicast(int, int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
-     * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there
-     * is no demand for data before the {@link Subscriber} will be discarded.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
-        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize);
+    @Deprecated
+    public final Publisher<T> multicastToExactly(int expectedSubscribers, int queueLimit) {
+        return new MulticastPublisher<>(this, expectedSubscribers, true, queueLimit, t -> completed());
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers) {
+        return multicast(minSubscribers, 64);
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit) {
+        return multicast(minSubscribers, queueLimit, t -> completed());
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
+     * returns a {@link Completable} whose termination resets the state of the returned {@link Publisher} and allows
+     * for downstream resubscribing. The argument to this function is as follows:
+     * <ul>
+     *     <li>{@code null} if upstream terminates with {@link Subscriber#onComplete()}</li>
+     *     <li>otherwise the {@link Throwable} from {@link Subscriber#onError(Throwable)}</li>
+     * </ul>
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit,
+                                        Function<Throwable, Completable> terminalResubscribe) {
+        return new MulticastPublisher<>(this, minSubscribers, false, queueLimit, terminalResubscribe);
     }
 
     /**
@@ -2235,6 +2363,17 @@ public abstract class Publisher<T> {
      *     }
      *     return buffers;
      * }</pre>
+     * Notes:
+     * <ol>
+     *     <li>If this {@link Publisher} does not emit items within the {@link BufferStrategy#boundaries() boundary},
+     *     it's expected it will emit an empty {@link Accumulator#finish() accumulated value} as the result of
+     *     accumulating nothing. Use {@link #filter(Predicate)} operator if empty accumulations have to be discarded.
+     *     </li>
+     *     <li>If more than one {@link BufferStrategy#boundaries() boundary} is emitted while this operator
+     *     {@link Accumulator#accumulate(Object) accumulates} or emits the
+     *     {@link PublisherSource.Subscriber#onNext(Object) next} result of accumulation, those boundaries will be
+     *     discarded without invoking {@link Accumulator#finish()} method.</li>
+     * </ol>
      *
      * @param strategy A {@link BufferStrategy} to use for buffering items from this {@link Publisher}.
      * @param <BC> Type of the {@link Accumulator} to buffer items from this {@link Publisher}.
@@ -2726,13 +2865,40 @@ public abstract class Publisher<T> {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor, Supplier)}, current operator always enforces offloading to the passed
+     * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * @see #publishOn(Executor, Supplier)
      */
     public final Publisher<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, executor);
+        return PublishAndSubscribeOnPublishers.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
+     *
+     * @param executor {@link Executor} to use.
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link PublisherSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * @see #publishOn(Executor)
+     */
+    public final Publisher<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
     /**
@@ -2743,33 +2909,44 @@ public abstract class Publisher<T> {
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor, Supplier)}, current operator always enforces offloading to the passed
      * {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @see #subscribeOn(Executor, Supplier)
      */
     public final Publisher<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke the following methods:
      * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @param shouldOffload {@link Supplier} that will be triggered on each
+     * {@link PublisherSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
+     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
+     * signal ordering.
+     * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all methods of
+     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @see #subscribeOn(Executor)
      */
-    public final Publisher<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
+    public final Publisher<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 
     /**
@@ -3037,7 +3214,7 @@ public abstract class Publisher<T> {
      *     {@code -1} to indicate end of stream after emitting all received data.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch may pre-fetch items from {@code this} {@link Publisher} if available to reduce
      * blocking for read operations from the returned {@link InputStream}. In order to increase responsiveness of the
      * {@link InputStream} some amount of buffering may be done. Use {@link #toInputStream(Function, int)} to manage
@@ -3059,7 +3236,7 @@ public abstract class Publisher<T> {
      *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
      *     request more data when required. If the returned {@link InputStream} is closed, {@link Subscription} is
      *     cancelled and any unread data is disposed.</li>
-     *     <li>Any items received by {@link Subscriber#onNext(Object)} are convertedto a {@code byte[]} using the
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} are converted to a {@code byte[]} using the
      *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
      *     {@link IOException}) when data is read from the returned {@link InputStream}. This error will be thrown
@@ -3068,7 +3245,7 @@ public abstract class Publisher<T> {
      *     {@code -1} to indicate end of stream after emitting all received data.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking for read
      * operations from the returned {@link InputStream}. In order to increase responsiveness of the {@link InputStream}
      * some amount of buffering may be done. {@code queueCapacity} can be used to bound this buffer.
@@ -3102,13 +3279,13 @@ public abstract class Publisher<T> {
      *     {@link NoSuchElementException}. This error will be thrown only after draining all queued data, if any.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
      * {@link Iterator#hasNext()} from the returned {@link BlockingIterable}. In order to increase responsiveness of
      * the {@link Iterator} some amount of buffering may be done. Use {@link #toIterable(int)} to manage capacity of
      * this buffer.
      *
-     * <h2>Blocking</h2>
+     * <p><strong>Blocking</strong></p>
      * The returned {@link BlockingIterator} from the returned {@link BlockingIterable} will block on
      * {@link BlockingIterator#hasNext()} and {@link BlockingIterator#next()} if no data is available. This operator may
      * try to reduce this blocking by requesting data ahead of time.
@@ -3139,13 +3316,13 @@ public abstract class Publisher<T> {
      *     {@link NoSuchElementException}. This error will be thrown only after draining all queued data, if any.</li>
      * </ul>
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
      * {@link BlockingIterator#hasNext()} from the returned {@link BlockingIterable}. In order to increase
      * responsiveness of the {@link BlockingIterator} some amount of buffering may be done. {@code queueCapacityHint}
      * can be used to bound this buffer.
      *
-     * <h2>Blocking</h2>
+     * <p><strong>Blocking</strong></p>
      * The returned {@link BlockingIterator} from the returned {@link BlockingIterable} will block on
      * {@link BlockingIterator#hasNext()} and {@link BlockingIterator#next()} if no data is available. This operator may
      * try to reduce this blocking by requesting data ahead of time.
@@ -3167,15 +3344,26 @@ public abstract class Publisher<T> {
     //
 
     /**
+     * Returns the {@link AsyncContextMap} to be used for a subscribe.
+     *
+     * @param provider The {@link AsyncContextProvider} which is the source of the map
+     * @return {@link AsyncContextMap} for this subscribe operation.
+     */
+    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        // the default behavior is to copy the map. Some operators may want to use shared map
+        return provider.contextMap().copy();
+    }
+
+    /**
      * A internal subscribe method similar to {@link PublisherSource#subscribe(Subscriber)} which can be used by
      * different implementations to subscribe.
      *
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
-    protected final void subscribeInternal(Subscriber<? super T> subscriber) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe() ? provider.contextMap() : provider.contextMap().copy());
+    protected void subscribeInternal(Subscriber<? super T> subscriber) {
+        AsyncContextProvider contextProvider = AsyncContext.provider();
+        AsyncContextMap contextMap = contextForSubscribe(contextProvider);
+        subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 
     /**
@@ -3219,7 +3407,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2) {
-        return new From2Publisher<>(v1, v2);
+        return new FromNPublisher<>(v1, v2);
     }
 
     /**
@@ -3237,7 +3425,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
-        return new From3Publisher<>(v1, v2, v3);
+        return new FromNPublisher<>(v1, v2, v3);
     }
 
     /**
@@ -3446,72 +3634,46 @@ public abstract class Publisher<T> {
     //
 
     /**
-     * Subscribes to this {@link Single} and shares the current context.
-     *
-     * @param subscriber the subscriber.
-     */
-    final void subscribeWithSharedContext(Subscriber<? super T> subscriber) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider, provider.contextMap());
-    }
-
-    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+    final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        handleSubscribe(subscriber, contextMap, contextProvider);
     }
 
-    private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+    private void subscribeWithContext(Subscriber<? super T> subscriber,
+                                      AsyncContextProvider provider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber<? super T> offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
-            // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor());
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber =
-                    signalOffloader.offloadSubscription(provider.wrapSubscription(subscriber, contextMap));
-        } catch (Throwable t) {
-            deliverErrorFromSource(subscriber, t);
-            return;
+        Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, contextMap);
+        if (provider.contextMap() == contextMap) {
+            // No need to wrap as we sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, provider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
         }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
-                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
     /**
-     * Override for {@link #handleSubscribe(PublisherSource.Subscriber)} to offload the
-     * {@link #handleSubscribe(PublisherSource.Subscriber)} call to the passed {@link SignalOffloader}.
-     * <p>
-     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(PublisherSource.Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
+     * This method wraps the passed {@link Subscriber} using
+     * @link AsyncContextProvider#wrapPublisherSubscriber(Subscriber,AsyncContextMap)} and
+     * then calls {@link #handleSubscribe(PublisherSource.Subscriber)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            Subscriber<? super T> offloaded =
-                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
-            handleSubscribe(offloaded);
+            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+            handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
@@ -3526,25 +3688,6 @@ public abstract class Publisher<T> {
             // further signals occur.
             deliverErrorFromSource(subscriber, t);
         }
-    }
-
-    /**
-     * Returns the {@link Executor} used for this {@link Publisher}.
-     *
-     * @return {@link Executor} used for this {@link Publisher}.
-     */
-    Executor executor() {
-        return immediate();
-    }
-
-    /**
-     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
-     * copied.
-     *
-     * @return true if the async context should be shared on subscribe
-     */
-    boolean shareContextOnSubscribe() {
-        return false;
     }
 
     //

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,33 +17,25 @@ package io.servicetalk.opentracing.inmemory.api;
 
 import io.opentracing.SpanContext;
 
+import javax.annotation.Nullable;
+
 /**
  * A span that allows reading values at runtime.
  */
 public interface InMemorySpanContext extends SpanContext {
     /**
-     * Get the {@link InMemoryTraceState} associated with this object.
-     * @return the {@link InMemoryTraceState} associated with this object.
-     */
-    InMemoryTraceState traceState();
-
-    /**
-     * Returns whether the span should be sampled.
+     * Returns whether the span should be sampled or {@code null} if the sampling was not decided.
      * <p>
-     * Note this may differ from {@link InMemorySpan#isSampled()} from {@link #traceState()} if the value is overridden
-     * based upon some sampling policy.
-     *
      * @return whether the span should be sampled
      */
-    default boolean isSampled() {
-        return traceState().isSampled();
-    }
+    @Nullable
+    Boolean isSampled();
 
-    default String toTraceId() {
-        return traceState().traceIdHex();
-    }
-
-    default String toSpanId() {
-        return traceState().spanIdHex();
-    }
+    /**
+     * Returns the parent span ID in hex, or {@code null} if the parent span ID is not present.
+     *
+     * @return parent span ID in hex
+     */
+    @Nullable
+    String parentSpanId();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
-
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
@@ -36,14 +34,9 @@ final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleC
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void delegateSubscribeToOriginal(final Subscriber<? super T> offloadSubscriber, final SignalOffloader offloader,
+    void delegateSubscribeToOriginal(final Subscriber<? super T> offloadSubscriber,
                                      final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader, contextMap,
+        original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), contextMap,
                 contextProvider);
     }
 

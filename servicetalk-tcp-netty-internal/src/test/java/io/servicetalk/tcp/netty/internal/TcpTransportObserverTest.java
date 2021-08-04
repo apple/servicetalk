@@ -19,8 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
@@ -34,11 +35,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class TcpTransportObserverTest extends AbstractTransportObserverTest {
+class TcpTransportObserverTest extends AbstractTransportObserverTest {
 
-    @Ignore("https://github.com/apple/servicetalk/issues/1262")
+    @BeforeEach
+    void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @Disabled("https://github.com/apple/servicetalk/issues/1262")
     @Test
-    public void testConnectionObserverEvents() throws Exception {
+    void testConnectionObserverEvents() throws Exception {
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();

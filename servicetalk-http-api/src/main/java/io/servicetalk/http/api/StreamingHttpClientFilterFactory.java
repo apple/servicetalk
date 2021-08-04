@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A factory for {@link StreamingHttpClientFilter}.
@@ -31,30 +30,6 @@ public interface StreamingHttpClientFilterFactory {
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
     StreamingHttpClientFilter create(FilterableStreamingHttpClient client);
-
-    /**
-     * Returns a composed function that first applies the {@code before} function to its input, and then applies
-     * this function to the result.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     filter1.append(filter2).append(filter3)
-     * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
-     * </pre>
-     *
-     * @deprecated Use {@link HttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
-     * @param before the function to apply before this function is applied
-     * @return a composed function that first applies the {@code before}
-     * function and then applies this function
-     */
-    @Deprecated
-    default StreamingHttpClientFilterFactory append(StreamingHttpClientFilterFactory before) {
-        requireNonNull(before);
-        return client -> create(before.create(client));
-    }
 
     /**
      * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a

@@ -9,6 +9,7 @@
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#MetaData[MetaData]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[HTTP/2]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Mutual-TLS[Mutual TLS]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#Redirects[Redirects]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#uds[Unix Domain Sockets]
 ** xref:{page-version}@servicetalk-examples::http/service-composition.adoc[Service Composition]
 * xref:{page-version}@servicetalk-examples::grpc/index.adoc[gRPC]

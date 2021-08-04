@@ -118,7 +118,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         return this;
     }
 
-    @Deprecated
     @Override
     public GrpcClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                      final BooleanSupplier logUserData) {
@@ -156,6 +155,24 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     public GrpcClientBuilder<U, R> sslConfig(final ClientSslConfig sslConfig) {
         httpClientBuilder.sslConfig(sslConfig);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> inferPeerHost(final boolean shouldInfer) {
+        httpClientBuilder.inferPeerHost(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> inferPeerPort(final boolean shouldInfer) {
+        httpClientBuilder.inferPeerPort(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
+        httpClientBuilder.inferSniHostname(shouldInfer);
         return this;
     }
 

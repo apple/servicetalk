@@ -23,12 +23,17 @@ import org.testng.annotations.Test;
 @Test
 public class SingleConcatWithPublisherTckTest extends AbstractSingleTckTest<Integer> {
 
+    boolean deferSubscribe() {
+        return false;
+    }
+
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
         if (elements < 2) {
             return Single.succeeded(1).toPublisher();
         }
-        return Single.succeeded(1).concat(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1));
+        return Single.succeeded(1)
+                .concat(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1), deferSubscribe());
     }
 
     @Override

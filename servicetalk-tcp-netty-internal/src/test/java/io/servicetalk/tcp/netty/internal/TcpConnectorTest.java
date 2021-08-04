@@ -25,9 +25,8 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -41,19 +40,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public final class TcpConnectorTest extends AbstractTcpServerTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+final class TcpConnectorTest extends AbstractTcpServerTest {
+
+    @BeforeEach
+    void setUp() throws Exception {
+        super.setUp();
+    }
 
     @Test
-    public void testConnect() throws Exception {
+    void testConnect() throws Exception {
         client.connectBlocking(CLIENT_CTX, serverAddress);
     }
 
     @Test
-    public void testWriteAndRead() throws Exception {
+    void testWriteAndRead() throws Exception {
         testWriteAndRead(client.connectBlocking(CLIENT_CTX, serverAddress));
     }
 
@@ -68,27 +71,29 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     }
 
     @Test
-    public void testResolvedAddress() throws Exception {
+    void testResolvedAddress() throws Exception {
         testWriteAndRead(client.connectBlocking(CLIENT_CTX,
                 new InetSocketAddress(serverAddress.getHostString(), serverAddress.getPort())));
     }
 
     @Test
-    public void testConnectToUnknownPort() throws Exception {
-        thrown.expectCause(anyOf(instanceOf(RetryableConnectException.class),
-                instanceOf(ClosedChannelException.class)));
-        serverContext.closeAsync().toFuture().get();
+    void testConnectToUnknownPort() throws Exception {
         // Closing the server to increase probability of finding a port on which no one is listening.
-        client.connectBlocking(CLIENT_CTX, serverAddress);
+        serverContext.closeAsync().toFuture().get();
+
+        Exception ex = assertThrows(Exception.class,
+                () -> client.connectBlocking(CLIENT_CTX, serverAddress));
+        assertThat(ex.getCause(), anyOf(instanceOf(RetryableConnectException.class),
+                instanceOf(ClosedChannelException.class)));
     }
 
     @Test
-    public void testConnectWithFD() throws Exception {
+    void testConnectWithFD() throws Exception {
         testWriteAndRead(client.connectWithFdBlocking(CLIENT_CTX, serverContext.listenAddress()));
     }
 
     @Test
-    public void testRegisteredAndActiveEventsFired() throws Exception {
+    void testRegisteredAndActiveEventsFired() throws Exception {
         final CountDownLatch registeredLatch = new CountDownLatch(1);
         final CountDownLatch activeLatch = new CountDownLatch(1);
 

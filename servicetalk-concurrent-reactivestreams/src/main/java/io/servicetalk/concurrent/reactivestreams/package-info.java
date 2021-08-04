@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Adapters between Reactive Streams {@link org.reactivestreams.Publisher} and ServiceTalk concurrent APIs.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.concurrent.reactivestreams;
 

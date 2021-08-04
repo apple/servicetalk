@@ -48,6 +48,8 @@ import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
+import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.util.Objects.requireNonNull;
@@ -107,10 +109,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             final Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
             if (canAddRequestContentLength(request)) {
-                flatRequest = setRequestContentLength(request);
+                flatRequest = setRequestContentLength(connectionContext().protocol(), request);
             } else {
-                flatRequest = Publisher.<Object>from(request).concat(request.messageBody())
-                        .scanWith(HeaderUtils::insertTrailersMapper);
+                flatRequest = emptyMessageBody(request, request.messageBody()) ?
+                        flatEmptyMessage(connectionContext().protocol(), request, request.messageBody()) :
+                        // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
+                        // requests with non-replayable messageBody
+                        Single.<Object>succeeded(request).concat(request.messageBody(), true)
+                                .scanWith(HeaderUtils::insertTrailersMapper);
                 addRequestTransferEncodingIfNecessary(request);
             }
             return strategy.invokeClient(executionContext.executor(), flatRequest,

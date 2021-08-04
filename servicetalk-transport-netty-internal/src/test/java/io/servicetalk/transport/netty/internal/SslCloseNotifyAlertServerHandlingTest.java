@@ -61,7 +61,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
         StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(this::closeNotifyAndVerifyClosing)
-                .expectError(RetryableClosureException.class)
+                .expectError(RetryableClosedChannelException.class)
                 .verify();
     }
 
@@ -88,7 +88,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
                     closeNotifyAndVerifyClosing();
                 })
                 .expectNext(BEGIN)
-                .expectError(RetryableClosureException.class)
+                .expectError(RetryableClosedChannelException.class)
                 .verify();
     }
 

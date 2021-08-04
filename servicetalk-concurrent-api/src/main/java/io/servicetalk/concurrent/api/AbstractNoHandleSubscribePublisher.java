@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Publisher} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link #handleSubscribe(Subscriber, SignalOffloader, AsyncContextMap, AsyncContextProvider)}.
+ * {@link Publisher#handleSubscribe(Subscriber, AsyncContextMap, AsyncContextProvider)}.
  *
  * @param <T> Type of items emitted.
  */

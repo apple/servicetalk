@@ -86,21 +86,6 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     }
 
     /**
-     * Disable host name verification.
-     * @deprecated Disabling hostname verification may leave you vulnerable to man-in-the-middle attacks. See
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> on the risks of disabling.
-     * If the expected value isn't automatically inferred use {@link #peerHost(String)} to set the expected value.
-     * When disabling is intended, use {@link #hostnameVerificationAlgorithm} with {@code ""} as argument.
-     * @return {@code this}.
-     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
-     */
-    @Deprecated
-    public ClientSslConfigBuilder disableHostnameVerification() {
-        hostnameVerificationAlgorithm = null;
-        return this;
-    }
-
-    /**
      * Set the non-authoritative name of the peer.
      * @param peerHost the non-authoritative name of the peer.
      * @return {@code this}.

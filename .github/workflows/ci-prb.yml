@@ -1,14 +1,14 @@
 name: PR Builder
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, '0.41' ]
 jobs:
   build:
     name: Build JDK ${{ matrix.java }} ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        java: [ 8, 11 ]
+        java: [ 8, 11, 16 ]
         os: [ ubuntu-latest ]
     steps:
       - name: Checkout Code

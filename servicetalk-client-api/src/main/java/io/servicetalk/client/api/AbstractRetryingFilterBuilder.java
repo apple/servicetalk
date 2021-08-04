@@ -34,6 +34,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static java.time.Duration.ofDays;
+import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,6 +49,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
     private static final Duration FULL_JITTER = ofDays(1024);
+    private static final Duration NULL_JITTER = ofMillis(1);
     private int maxRetries;
     @Nullable
     private BiPredicate<Meta, Throwable> retryForPredicate;
@@ -85,33 +87,39 @@ public abstract class AbstractRetryingFilterBuilder<Builder
 
     /**
      * Creates a new retrying {@link Filter} which retries without delay.
-     *
+     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration)} or
+     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      * @return a new retrying {@link Filter} which retries without delay
      */
+    @Deprecated
     public final Filter buildWithImmediateRetries() {
-        return build(readOnlySettings(null, null, null, null, false));
+        return build(readOnlySettings(null, NULL_JITTER, null, null, false));
     }
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     *
+     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
+     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
+    @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(readOnlySettings(delay, null, null, null, false));
+        return build(readOnlySettings(delay, NULL_JITTER, null, null, false));
     }
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     *
+     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
+     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
      * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
+    @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, null, null, timerExecutor, false));
+        return build(readOnlySettings(delay, NULL_JITTER, null, timerExecutor, false));
     }
 
     /**
@@ -247,7 +255,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
     }
 
     private ReadOnlyRetryableSettings<Meta> readOnlySettings(@Nullable final Duration initialDelay,
-                                                             @Nullable final Duration jitter,
+                                                             final Duration jitter,
                                                              @Nullable final Duration maxDelay,
                                                              @Nullable final Executor timerExecutor,
                                                              final boolean exponential) {
@@ -267,7 +275,6 @@ public abstract class AbstractRetryingFilterBuilder<Builder
         private final BiPredicate<Meta, Throwable> retryForPredicate;
         @Nullable
         private final Duration initialDelay;
-        @Nullable
         private final Duration jitter;
         @Nullable
         private final Duration maxDelay;
@@ -278,7 +285,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
         private ReadOnlyRetryableSettings(final int maxRetries,
                                           final BiPredicate<Meta, Throwable> retryForPredicate,
                                           @Nullable final Duration initialDelay,
-                                          @Nullable final Duration jitter,
+                                          final Duration jitter,
                                           @Nullable final Duration maxDelay,
                                           @Nullable final Executor timerExecutor,
                                           final boolean exponential) {
@@ -287,7 +294,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
             this.initialDelay = initialDelay;
             this.timerExecutor = timerExecutor;
             this.exponential = exponential;
-            this.jitter = jitter;
+            this.jitter = requireNonNull(jitter);
             this.maxDelay = maxDelay;
         }
 
@@ -315,7 +322,6 @@ public abstract class AbstractRetryingFilterBuilder<Builder
             if (initialDelay == null) {
                 return (count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
             } else {
-                assert jitter != null;
                 final Executor effectiveExecutor = timerExecutor == null ?
                         requireNonNull(alternativeTimerExecutor) : timerExecutor;
                 if (exponential) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 package io.servicetalk.concurrent;
 
 /**
- * An entity that can be cancelled. <p>
+ * An entity that can be cancelled.
+ * <p>
  * Cancellations are a hint from a consumer of any asynchronous result to the producer that it is no more interested in
  * the result. ServiceTalk does not provide any guarantees that at a certain time, whether the asynchronous execution is
  * cancellable or not. It is up to the producer of data to take any action on cancellation or ignore the same.

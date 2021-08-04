@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,22 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
-    private final Completable parent;
+    private final Completable original;
 
-    CompletableToSingle(Completable parent) {
-        this.parent = parent;
+    CompletableToSingle(Completable original) {
+        this.original = original;
     }
 
     @Override
-    Executor executor() {
-        return parent.executor();
-    }
-
-    @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader offloader,
+    protected void handleSubscribe(Subscriber<? super T> subscriber,
                                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
         // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
-        // resulting Completable is subscribed.
-        parent.delegateSubscribe(new CompletableSource.Subscriber() {
+        // resulting Completable is subscribed. Since, it is the same source, just viewed as a Single, there is no
+        // additional risk of deadlock.
+        original.delegateSubscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 subscriber.onSubscribe(cancellable);
@@ -52,10 +47,6 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             public void onError(Throwable t) {
                 subscriber.onError(t);
             }
-        },
-                // Since this is converting a Completable to a Single, we should try to use the same SignalOffloader for
-                // subscribing to the original Completable to avoid thread hop. Since, it is the same source, just
-                // viewed as a Single, there is no additional risk of deadlock.
-                offloader, contextMap, contextProvider);
+        }, contextMap, contextProvider);
     }
 }

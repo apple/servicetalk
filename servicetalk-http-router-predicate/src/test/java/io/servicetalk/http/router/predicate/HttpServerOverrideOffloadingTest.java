@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,11 +30,10 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -49,6 +47,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -58,11 +57,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class HttpServerOverrideOffloadingTest {
+class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final IoExecutor ioExecutor;
     private final Executor executor;
@@ -71,7 +67,7 @@ public class HttpServerOverrideOffloadingTest {
     private final HttpClient client;
     private final ServerContext server;
 
-    public HttpServerOverrideOffloadingTest() throws Exception {
+    HttpServerOverrideOffloadingTest() throws Exception {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY));
         executor = newCachedThreadExecutor();
@@ -88,8 +84,8 @@ public class HttpServerOverrideOffloadingTest {
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
     }
 
@@ -98,24 +94,23 @@ public class HttpServerOverrideOffloadingTest {
     }
 
     @Test
-    public void offloadDifferentRoutes() throws Exception {
+    void offloadDifferentRoutes() throws Exception {
         client.request(client.get("/service1")).toFuture().get();
         assertThat("Service-1 unexpected invocation count.", service1.invoked.get(), is(1));
         assertThat("Service-1, unexpected errors: " + service1.errors, service1.errors, hasSize(0));
         client.request(client.get("/service2")).toFuture().get();
         assertThat("Service-2 unexpected invocation count.", service2.invoked.get(), is(1));
-        assertThat("Service-2, unexpected errors: " + service2.errors, service2.errors, hasSize(0));
+        assertNoAsyncErrors("Service-2, unexpected errors: " + service2.errors, service2.errors);
     }
 
     private static final class OffloadingTesterService implements StreamingHttpService {
 
         private final AtomicInteger invoked = new AtomicInteger();
         private final Predicate<Thread> isInvalidThread;
-        private final ConcurrentLinkedQueue<AssertionError> errors;
+        private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
 
         private OffloadingTesterService(final Predicate<Thread> isInvalidThread) {
             this.isInvalidThread = isInvalidThread;
-            errors = new ConcurrentLinkedQueue<>();
         }
 
         @Override

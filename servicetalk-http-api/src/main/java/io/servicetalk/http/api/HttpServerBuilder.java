@@ -69,20 +69,6 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
-     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
-     * @param backlog the backlog to use when accepting connections.
-     * @return {@code this}.
-     */
-    @Deprecated
-    public HttpServerBuilder backlog(int backlog) {
-        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
-        return this;
-    }
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
@@ -184,7 +170,7 @@ public abstract class HttpServerBuilder {
      * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
      * be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3
+     *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
      *
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
@@ -213,7 +199,7 @@ public abstract class HttpServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      *
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
@@ -241,7 +227,7 @@ public abstract class HttpServerBuilder {
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.

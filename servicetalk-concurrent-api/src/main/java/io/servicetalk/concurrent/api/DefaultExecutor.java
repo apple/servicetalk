@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
-import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -34,7 +32,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -43,7 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute
  * tasks.
  */
-final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Consumer<Runnable> {
+final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnable> {
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
@@ -58,7 +55,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
-    private final SignalOffloaderFactory offloaderFactory;
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
@@ -89,7 +85,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
                             boolean interruptOnCancel) {
         if (jdkExecutor == null) {
             if (scheduler != null) {
-                scheduler.run();
+                scheduler.close();
             }
             throw new NullPointerException("jdkExecutor");
         } else if (scheduler == null) {
@@ -99,7 +95,11 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         executor = newInternalExecutor(jdkExecutor, interruptOnCancel);
         this.scheduler = scheduler;
-        offloaderFactory = defaultOffloaderFactory();
+    }
+
+    @Override
+    public String toString() {
+        return DefaultExecutor.class.getSimpleName() + "{executor=" + executor + ", scheduler=" + scheduler + '}';
     }
 
     @Override
@@ -109,26 +109,16 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     @Override
     public Cancellable schedule(final Runnable task, final long duration, final TimeUnit unit) {
-        return scheduler.apply(task, duration, unit);
+        return scheduler.schedule(task, duration, unit);
     }
 
     @Override
     void doClose() {
         try {
-            executor.run();
+            executor.close();
         } finally {
-            scheduler.run();
+            scheduler.close();
         }
-    }
-
-    @Override
-    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
-        return offloaderFactory.newSignalOffloader(executor);
-    }
-
-    @Override
-    public boolean hasThreadAffinity() {
-        return offloaderFactory.hasThreadAffinity();
     }
 
     @Override
@@ -137,16 +127,23 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
     }
 
     /**
-     * {@link Runnable} interface will invoke {@link ExecutorService#shutdown()}.
+     * {@link AutoCloseable} interface will invoke {@link ExecutorService#shutdown()}.
      */
-    private interface InternalExecutor extends Function<Runnable, Cancellable>, Runnable {
+    private interface InternalExecutor extends Function<Runnable, Cancellable>, AutoCloseable {
+
+        @Override
+        void close();
     }
 
     /**
-     * {@link Runnable} interface will invoke {@link ScheduledExecutorService#shutdown()}.
+     * {@link AutoCloseable} interface will invoke {@link ScheduledExecutorService#shutdown()}.
      */
-    private interface InternalScheduler extends Runnable {
-        Cancellable apply(Runnable task, long delay, TimeUnit unit);
+    private interface InternalScheduler extends AutoCloseable {
+
+        @Override
+        void close();
+
+        Cancellable schedule(Runnable task, long delay, TimeUnit unit);
     }
 
     private static void shutdownExecutor(java.util.concurrent.Executor jdkExecutor) {
@@ -168,7 +165,13 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
                 private final ExecutorService service = (ExecutorService) jdkExecutor;
 
                 @Override
-                public void run() {
+                public String toString() {
+                    return "InternalExecutor{service=ExecutorService@" +
+                            Integer.toHexString(System.identityHashCode(jdkExecutor)) + '}';
+                }
+
+                @Override
+                public void close() {
                     service.shutdown();
                 }
 
@@ -181,7 +184,13 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
         }
         return new InternalExecutor() {
             @Override
-            public void run() {
+            public String toString() {
+                return "InternalExecutor{service=Executor@" +
+                        Integer.toHexString(System.identityHashCode(jdkExecutor)) + '}';
+            }
+
+            @Override
+            public void close() {
                 shutdownExecutor(jdkExecutor);
             }
 
@@ -196,12 +205,18 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
     private static InternalScheduler newScheduler(ScheduledExecutorService service, boolean interruptOnCancel) {
         return new InternalScheduler() {
             @Override
-            public void run() {
+            public String toString() {
+                return "InternalScheduler{service=ScheduledExecutorService@" +
+                        Integer.toHexString(System.identityHashCode(service)) + '}';
+            }
+
+            @Override
+            public void close() {
                 service.shutdown();
             }
 
             @Override
-            public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 ScheduledFuture<?> future = service.schedule(task, delay, unit);
                 return () -> future.cancel(interruptOnCancel);
             }
@@ -217,14 +232,20 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
         }
 
         @Override
-        public void run() {
+        public String toString() {
+            return "SingleThreadedScheduler{offload=Executor@" +
+                    Integer.toHexString(System.identityHashCode(offloadExecutor)) + '}';
+        }
+
+        @Override
+        public void close() {
             // This uses shared scheduled executor service and hence there is no clear lifetime, so, we ignore shutdown.
             // Since GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR uses daemon threads, the threads will be shutdown on JVM
             // shutdown.
         }
 
         @Override
-        public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
             // When using the global scheduler, offload timer ticks to the user specified Executor since user code
             // executed on the timer tick can block.
             ScheduledFuture<?> future = GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.schedule(

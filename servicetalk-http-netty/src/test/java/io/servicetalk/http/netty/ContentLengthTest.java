@@ -205,7 +205,7 @@ class ContentLengthTest {
                                                          final Matcher<CharSequence> matcher) throws Exception {
         final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
         request.transformMessageBody(publisher -> publisher.afterOnSubscribe(__ -> messageBodySubscribed.set(true)));
-        Collection<Object> flattened = setRequestContentLength(request).toFuture().get();
+        Collection<Object> flattened = setRequestContentLength(request.version(), request).toFuture().get();
         assertFlattened(flattened, matcher, messageBodySubscribed);
     }
 
@@ -214,7 +214,7 @@ class ContentLengthTest {
 
         final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
         response.transformMessageBody(publisher -> publisher.afterOnSubscribe(__ -> messageBodySubscribed.set(true)));
-        Collection<Object> flattened = setResponseContentLength(response).toFuture().get();
+        Collection<Object> flattened = setResponseContentLength(response.version(), response).toFuture().get();
         assertFlattened(flattened, matcher, messageBodySubscribed);
     }
 

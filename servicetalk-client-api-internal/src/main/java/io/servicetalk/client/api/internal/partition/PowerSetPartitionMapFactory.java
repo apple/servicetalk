@@ -26,6 +26,9 @@ import java.util.function.Function;
  * A {@link PartitionMapFactory} that generates {@link PowerSetPartitionMap} type objects.
  */
 public final class PowerSetPartitionMapFactory implements PartitionMapFactory {
+    /**
+     * Singleton instance.
+     */
     public static final PartitionMapFactory INSTANCE = new PowerSetPartitionMapFactory();
 
     private PowerSetPartitionMapFactory() {

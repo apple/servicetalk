@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A factory for {@link StreamingHttpServiceFilter}.
  */
@@ -30,28 +28,4 @@ public interface StreamingHttpServiceFilterFactory {
      * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
      */
     StreamingHttpServiceFilter create(StreamingHttpService service);
-
-    /**
-     * Returns a composed function that first applies the {@code before} function to its input, and then applies
-     * this function to the result.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
-     * </pre>
-     *
-     * @deprecated Use {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
-     * @param before the function to apply before this function is applied
-     * @return a composed function that first applies the {@code before}
-     * function and then applies this function
-     */
-    @Deprecated
-    default StreamingHttpServiceFilterFactory append(StreamingHttpServiceFilterFactory before) {
-        requireNonNull(before);
-        return service -> create(before.create(service));
-    }
 }

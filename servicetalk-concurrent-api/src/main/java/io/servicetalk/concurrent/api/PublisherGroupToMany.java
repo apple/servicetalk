@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,46 +30,35 @@ final class PublisherGroupToMany<Key, T> extends AbstractPublisherGroupBy<Key, T
     private final Function<? super T, ? extends Iterator<? extends Key>> keySelector;
 
     PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                         int groupQueueSize) {
-        super(original, groupQueueSize);
+                         int queueLimit) {
+        super(original, queueLimit);
         this.keySelector = requireNonNull(keySelector);
     }
 
     PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                         int groupQueueSize, int expectedGroupCountHint) {
-        super(original, groupQueueSize, expectedGroupCountHint);
+                         int queueLimit, int expectedGroupCountHint) {
+        super(original, queueLimit, expectedGroupCountHint);
         this.keySelector = requireNonNull(keySelector);
     }
 
     @Override
-    public Subscriber<? super T> apply(Subscriber<? super GroupedPublisher<Key, T>> subscriber) {
-        return new SourceSubscriber<>(executor(), this, subscriber);
+    void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new GroupBySubscriber(subscriber, queueLimit, initialCapacityForGroups,
+                contextMap, contextProvider), contextMap, contextProvider);
     }
 
-    private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
-        private final PublisherGroupToMany<Key, T> source;
-
-        SourceSubscriber(Executor executor, PublisherGroupToMany<Key, T> source,
-                         Subscriber<? super GroupedPublisher<Key, T>> target) {
-            super(executor, source.initialCapacityForGroups, target);
-            this.source = source;
+    private final class GroupBySubscriber extends AbstractGroupBySubscriber<Key, T> {
+        GroupBySubscriber(final Subscriber<? super GroupedPublisher<Key, T>> target, final int maxQueueSize,
+                          final int initialCapacityForGroups, final AsyncContextMap contextMap,
+                          final AsyncContextProvider contextProvider) {
+            super(target, maxQueueSize, initialCapacityForGroups, contextMap, contextProvider);
         }
 
         @Override
-        void onNext0(@Nullable T t) {
-            final Iterator<? extends Key> keys;
-            try {
-                keys = requireNonNull(source.keySelector.apply(t));
-            } catch (Throwable throwable) {
-                cancelSourceFromSource(false, throwable);
-                return;
-            }
-            keys.forEachRemaining(key -> onNextGroup(key, t));
-        }
-
-        @Override
-        int groupQueueSize() {
-            return source.groupQueueSize;
+        public void onNext(@Nullable final T t) {
+            final Iterator<? extends Key> keys = requireNonNull(keySelector.apply(t));
+            keys.forEachRemaining(key -> onNext(key, t));
         }
     }
 }

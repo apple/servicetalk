@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
-
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -36,30 +34,23 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ResumeSubscriber(subscriber, signalOffloader, contextMap, contextProvider),
-                signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ResumeSubscriber(subscriber, contextMap, contextProvider),
+                contextMap, contextProvider);
     }
 
     private final class ResumeSubscriber implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
-        private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialSubscription sequentialSubscription;
         private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+        ResumeSubscriber(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
@@ -96,12 +87,8 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
             if (next == null) {
                 subscriber.onError(t);
             } else {
-                // We are subscribing to a new Publisher which will send signals to the original Subscriber. This means
-                // that the threading semantics may differ with respect to the original Subscriber when we emit signals
-                // from the new Publisher. This is the reason we use the original offloader now to offload signals which
-                // originate from this new Publisher.
-                final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
-                        contextProvider.wrapPublisherSubscriber(this, contextMap));
+                final Subscriber<? super T> offloadedSubscriber =
+                        contextProvider.wrapPublisherSubscriber(this, contextMap);
                 next.subscribeInternal(offloadedSubscriber);
             }
         }

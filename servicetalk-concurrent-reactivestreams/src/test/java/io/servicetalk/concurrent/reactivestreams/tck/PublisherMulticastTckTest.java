@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,42 +15,14 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
-
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static java.lang.Math.max;
 
 @Test
 public class PublisherMulticastTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        Publisher<Integer> multicastPublisher = publisher.multicastToExactly(2, max(elements, 10));
-
-        // The TCK expects a single publisher, and the multicast operator must have the expected number of subscriptions
-        // before subscribing to the original Publisher. To facilitate this operator being used by the TCK tests we
-        // specify a multicast factor of 2, and we immediately subscribe once here, just to let the TCK tests drive
-        // the Subscription and consumption of data.
-        toSource(multicastPublisher).subscribe(new Subscriber<Integer>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-            }
-
-            @Override
-            public void onNext(Integer integer) {
-            }
-
-            @Override
-            public void onError(Throwable t) {
-            }
-
-            @Override
-            public void onComplete() {
-            }
-        });
-        return multicastPublisher;
+        return publisher.multicast(1);
     }
 }
