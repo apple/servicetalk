@@ -405,7 +405,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     }
 
     static int addFixedLengthFramingOverhead(int length) {
-        return length == 0 ? 0 : length + 4;
+        return length == 0 ? 0 : length + Integer.BYTES;
     }
 
     private interface Transformer<T extends HttpMetaData> {

@@ -521,6 +521,6 @@ class BlockingStreamingToStreamingServiceTest {
     }
 
     private static int addFixedLengthFramingOverhead(int length, int chunks) {
-        return length == 0 ? 0 : length + 4 * chunks;
+        return length == 0 ? 0 : length + Integer.BYTES * chunks;
     }
 }
