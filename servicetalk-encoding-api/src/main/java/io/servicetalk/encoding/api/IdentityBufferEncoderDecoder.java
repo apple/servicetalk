@@ -28,10 +28,13 @@ import io.servicetalk.serializer.api.StreamingDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 final class IdentityBufferEncoderDecoder implements BufferEncoderDecoder {
     private static final CharSequence IDENTITY_NAME = newAsciiString("identity");
+    private static final int HASH_CODE = caseInsensitiveHashCode(IDENTITY_NAME);
     static final BufferEncoderDecoder INSTANCE = new IdentityBufferEncoderDecoder();
 
     private IdentityBufferEncoderDecoder() {
@@ -65,6 +68,18 @@ final class IdentityBufferEncoderDecoder implements BufferEncoderDecoder {
     @Override
     public String toString() {
         return IDENTITY_NAME.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o ||
+                o instanceof BufferEncoderDecoder &&
+                        contentEqualsIgnoreCase(encodingName(), ((BufferEncoderDecoder) o).encodingName());
+    }
+
+    @Override
+    public int hashCode() {
+        return HASH_CODE;
     }
 
     private static final class NoopBufferSerializer implements SerializerDeserializer<Buffer> {

@@ -23,13 +23,24 @@ import io.servicetalk.serializer.api.SerializerDeserializer;
  * Serialize/deserialize {@code byte[]}.
  */
 public final class ByteArraySerializer implements SerializerDeserializer<byte[]> {
-    public static final SerializerDeserializer<byte[]> BYTE_SERIALIZER = new ByteArraySerializer(false);
-    public static final SerializerDeserializer<byte[]> BYTE_SERIALIZER_COPY = new ByteArraySerializer(true);
+    private static final SerializerDeserializer<byte[]> BYTE_SERIALIZER = new ByteArraySerializer(false);
+    private static final SerializerDeserializer<byte[]> BYTE_SERIALIZER_COPY = new ByteArraySerializer(true);
 
     private final boolean forceCopy;
 
     private ByteArraySerializer(boolean forceCopy) {
         this.forceCopy = forceCopy;
+    }
+
+    /**
+     * Create a new instance.
+     * @param forceCopy {@code true} means that data will always be copied from {@link Buffer} memory. {@code false}
+     * means that if {@link Buffer#hasArray()} is {@code true} and the array offsets are aligned the result of
+     * serialization doesn't have to be copied.
+     * @return A serializer that produces/consumes {@code byte[]}.
+     */
+    public static SerializerDeserializer<byte[]> byteArraySerializer(boolean forceCopy) {
+        return forceCopy ? BYTE_SERIALIZER_COPY : BYTE_SERIALIZER;
     }
 
     @Override

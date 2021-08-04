@@ -63,7 +63,7 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
             final int beforeWriterIndex = buffer.writerIndex();
             buffer.writerIndex(beforeWriterIndex + BYTES);
             serializer.serialize(t, allocator, buffer);
-            buffer.setInt(beforeWriterIndex, buffer.writerIndex() - beforeWriterIndex - 4);
+            buffer.setInt(beforeWriterIndex, buffer.writerIndex() - beforeWriterIndex - BYTES);
             return buffer;
         });
     }

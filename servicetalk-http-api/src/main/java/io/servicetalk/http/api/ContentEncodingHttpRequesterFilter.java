@@ -111,7 +111,7 @@ public final class ContentEncodingHttpRequesterFilter implements
                 if (!hasContentEncoding) {
                     return response;
                 }
-                BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decompressors(),
+                BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decoders(),
                         BufferDecoder::encodingName, contentEncodingItr, response.headers());
                 if (decoder == null) {
                     throw new UnsupportedContentEncodingException(response.headers().get(CONTENT_ENCODING,

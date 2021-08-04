@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.serializer.api.Serializer;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 import io.servicetalk.serializer.utils.FixedLengthStreamingSerializer;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
@@ -36,6 +39,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_US_ASCII;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
+import static io.servicetalk.serializer.utils.ByteArraySerializer.byteArraySerializer;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -44,12 +48,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Factory for creation of {@link HttpSerializerDeserializer} and {@link HttpStreamingSerializerDeserializer}.
  */
 public final class HttpSerializers {
-    private static final CharSequence APPLICATION_TEXT_FIXED = newAsciiString("application/text-fix-int");
+    private static final String APPLICATION_TEXT_FIXED_STR = "application/text-fix-int";
+    private static final CharSequence APPLICATION_TEXT_FIXED = newAsciiString(APPLICATION_TEXT_FIXED_STR);
     private static final CharSequence APPLICATION_TEXT_FIXED_UTF_8 =
             newAsciiString(APPLICATION_TEXT_FIXED + "; charset=UTF-8");
     private static final CharSequence APPLICATION_TEXT_FIXED_US_ASCII =
             newAsciiString(APPLICATION_TEXT_FIXED + "; charset=US-ASCII");
-    private static final CharSequence APPLICATION_TEXT_VARINT = newAsciiString("application/text-var-int");
+    private static final String APPLICATION_TEXT_VARINT_STR = "application/text-var-int";
+    private static final CharSequence APPLICATION_TEXT_VARINT = newAsciiString(APPLICATION_TEXT_VARINT_STR);
     private static final CharSequence APPLICATION_TEXT_VAR_INT_UTF_8 =
             newAsciiString(APPLICATION_TEXT_VARINT + "; charset=UTF-8");
     private static final CharSequence APPLICATION_TEXT_VAR_INT_US_ASCII =
@@ -163,7 +169,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@link StandardCharsets#UTF_8} encoding using fixed {@code int} length delimited framing.
+     * {@link StandardCharsets#UTF_8} encoding using fixed {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_FIXED_STR}.
      *
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
      * {@link StandardCharsets#UTF_8} encoding using fixed {@code int} length delimited framing.
@@ -175,7 +182,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@link StandardCharsets#UTF_8} encoding using variable {@code int} length delimited framing.
+     * {@link StandardCharsets#UTF_8} encoding using variable {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_VARINT_STR}.
      *
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
      * {@link StandardCharsets#UTF_8} encoding using variable {@code int} length delimited framing.
@@ -187,7 +195,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@link StandardCharsets#US_ASCII} encoding using fixed {@code int} length delimited framing.
+     * {@link StandardCharsets#US_ASCII} encoding using fixed {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_FIXED_STR}.
      *
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
      * {@link StandardCharsets#US_ASCII} encoding using fixed {@code int} length delimited framing.
@@ -199,7 +208,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@link StandardCharsets#US_ASCII} encoding using variable {@code int} length delimited framing.
+     * {@link StandardCharsets#US_ASCII} encoding using variable {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_VARINT_STR}.
      *
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
      * {@link StandardCharsets#US_ASCII} encoding using variable {@code int} length delimited framing.
@@ -211,7 +221,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@code charset} encoding using fixed {@code int} length delimited framing.
+     * {@code charset} encoding using fixed {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_FIXED_STR}.
      *
      * @param charset The character encoding to use for serialization.
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
@@ -234,7 +245,8 @@ public final class HttpSerializers {
 
     /**
      * Creates a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
-     * {@code charset} encoding using fixed {@code int} length delimited framing.
+     * {@code charset} encoding using fixed {@code int} length delimited framing. The
+     * {@link HttpHeaderNames#CONTENT_TYPE} value prefix is {@value #APPLICATION_TEXT_VARINT_STR}.
      *
      * @param charset The character encoding to use for serialization.
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
@@ -253,6 +265,38 @@ public final class HttpSerializers {
                         str -> str.length() * maxBytesPerChar),
                 headers -> headers.set(CONTENT_TYPE, contentType),
                 headers -> hasContentType(headers, APPLICATION_TEXT_VARINT, charset));
+    }
+
+    /**
+     * Create a {@link HttpStreamingSerializer} that serializes {@link String}. This method is useful if the payload
+     * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
+     * (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
+     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * @param charset The character encoding to use for serialization.
+     * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
+     * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
+     */
+    public static HttpStreamingSerializer<String> stringStreamingSerializer(
+            Charset charset, Consumer<HttpHeaders> headersSerializeConsumer) {
+        final int maxBytesPerChar = (int) charset.newEncoder().maxBytesPerChar();
+        return streamingSerializer(stringSerializer(charset), str -> str.length() * maxBytesPerChar,
+                headersSerializeConsumer);
+    }
+
+    /**
+     * Create a {@link HttpStreamingSerializer} that serializes {@link String}. This method is useful if the payload
+     * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
+     * (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
+     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * @param forceCopy {@code true} means that data will always be copied from {@link Buffer} memory. {@code false}
+     * means that if {@link Buffer#hasArray()} is {@code true} and the array offsets are aligned the result of
+     * serialization doesn't have to be copied.
+     * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
+     * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
+     */
+    public static HttpStreamingSerializer<byte[]> bytesStreamingSerializer(
+            boolean forceCopy, Consumer<HttpHeaders> headersSerializeConsumer) {
+        return streamingSerializer(byteArraySerializer(forceCopy), bytes -> bytes.length, headersSerializeConsumer);
     }
 
     /**
@@ -314,5 +358,21 @@ public final class HttpSerializers {
             Predicate<HttpHeaders> headersDeserializePredicate) {
         return new DefaultHttpStreamingSerializerDeserializer<>(serializer, headersSerializeConsumer,
                 headersDeserializePredicate);
+    }
+
+    /**
+     * Create a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization. This method is useful
+     * if the payload body is provided in non-{@link Buffer} type and the {@link HttpHeaderNames#CONTENT_TYPE} is known
+     * a-prior (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
+     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * @param serializer Used to serialize each {@link T} chunk.
+     * @param bytesEstimator Provides an estimate of how many bytes to allocate for each {@link Buffer} to serialize to.
+     * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
+     * @param <T> Type of object to serialize.
+     * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
+     */
+    public static <T> HttpStreamingSerializer<T> streamingSerializer(
+            Serializer<T> serializer, ToIntFunction<T> bytesEstimator, Consumer<HttpHeaders> headersSerializeConsumer) {
+        return new DefaultHttpStreamingSerializer<>(serializer, bytesEstimator, headersSerializeConsumer);
     }
 }

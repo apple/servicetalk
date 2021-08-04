@@ -26,7 +26,7 @@ public interface BufferDecoderGroup {
      * Get the supported {@link BufferDecoder} for this group.
      * @return the supported {@link BufferDecoder} for this group.
      */
-    List<BufferDecoder> decompressors();
+    List<BufferDecoder> decoders();
 
     /**
      * Get the combined encoding to advertise. This is typically a combination of

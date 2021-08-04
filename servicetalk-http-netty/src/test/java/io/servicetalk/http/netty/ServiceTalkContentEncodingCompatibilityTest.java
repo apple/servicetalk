@@ -81,7 +81,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
                 protected void initChannel(final Channel ch) {
                     ChannelPipeline p = ch.pipeline();
                     p.addLast(new HttpServerCodec());
-                    if (!serverDecoder.group.decompressors().isEmpty()) {
+                    if (!serverDecoder.group.decoders().isEmpty()) {
                         p.addLast(new HttpContentDecompressor());
                     }
                     if (!serverEncoder.list.isEmpty()) {

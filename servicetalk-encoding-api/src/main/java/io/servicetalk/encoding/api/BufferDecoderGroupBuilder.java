@@ -28,7 +28,7 @@ import static java.util.Collections.emptyList;
 public final class BufferDecoderGroupBuilder {
     private static final char CONTENT_ENCODING_SEPARATOR = ',';
     private final StringBuilder messageEncoding;
-    private final List<BufferDecoder> encoders;
+    private final List<BufferDecoder> decoders;
 
     /**
      * Create a new instance.
@@ -39,28 +39,28 @@ public final class BufferDecoderGroupBuilder {
 
     /**
      * Create a new instance.
-     * @param encodersSizeEstimate estimate as to how many {@link BufferDecoder} will be included in the
+     * @param decodersSizeEstimate estimate as to how many {@link BufferDecoder} will be included in the
      * {@link BufferDecoderGroup} built by this builder.
      */
-    public BufferDecoderGroupBuilder(int encodersSizeEstimate) {
-        messageEncoding = new StringBuilder(encodersSizeEstimate * 8);
-        encoders = new ArrayList<>(encodersSizeEstimate);
+    public BufferDecoderGroupBuilder(int decodersSizeEstimate) {
+        messageEncoding = new StringBuilder(decodersSizeEstimate * 8);
+        decoders = new ArrayList<>(decodersSizeEstimate);
     }
 
     /**
      * Add a new {@link BufferDecoder} to the {@link BufferDecoderGroup} built by this builder.
-     * @param encoder The encoder to add.
-     * @param advertised {@code true} if the encoder should be included in
+     * @param decoder The decoder to add.
+     * @param advertised {@code true} if the decoder should be included in
      * {@link BufferDecoderGroup#advertisedMessageEncoding()}.
      * @return {@code this}.
      */
-    public BufferDecoderGroupBuilder add(BufferDecoder encoder, boolean advertised) {
-        encoders.add(encoder);
+    public BufferDecoderGroupBuilder add(BufferDecoder decoder, boolean advertised) {
+        decoders.add(decoder);
         if (advertised) {
             if (messageEncoding.length() > 0) {
                 messageEncoding.append(CONTENT_ENCODING_SEPARATOR);
             }
-            messageEncoding.append(encoder.encodingName());
+            messageEncoding.append(decoder.encodingName());
         }
         return this;
     }
@@ -71,14 +71,14 @@ public final class BufferDecoderGroupBuilder {
      */
     public BufferDecoderGroup build() {
         return new BufferDecoderGroup() {
-            private final List<BufferDecoder> bufferEncoders = encoders.isEmpty() ? emptyList() :
-                    new ArrayList<>(encoders);
+            private final List<BufferDecoder> bufferEncoders = decoders.isEmpty() ? emptyList() :
+                    new ArrayList<>(decoders);
             @Nullable
             private final CharSequence advertisedMessageEncoding = messageEncoding.length() == 0 ?
                     null : newAsciiString(messageEncoding);
 
             @Override
-            public List<BufferDecoder> decompressors() {
+            public List<BufferDecoder> decoders() {
                 return bufferEncoders;
             }
 

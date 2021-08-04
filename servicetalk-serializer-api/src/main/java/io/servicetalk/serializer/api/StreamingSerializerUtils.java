@@ -50,17 +50,29 @@ final class StreamingSerializerUtils {
 
             @Override
             public void close(final Throwable cause) throws IOException {
-                writer.close(cause);
+                try {
+                    connectablePayloadWriter.close(cause);
+                } finally {
+                    writer.close(cause);
+                }
             }
 
             @Override
             public void close() throws IOException {
-                writer.close();
+                try {
+                    connectablePayloadWriter.close();
+                } finally {
+                    writer.close();
+                }
             }
 
             @Override
             public void flush() throws IOException {
-                writer.flush();
+                try {
+                    connectablePayloadWriter.flush();
+                } finally {
+                    writer.flush();
+                }
             }
         };
     }

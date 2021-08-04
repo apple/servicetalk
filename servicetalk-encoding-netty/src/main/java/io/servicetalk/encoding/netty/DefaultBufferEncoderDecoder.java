@@ -24,6 +24,8 @@ import io.servicetalk.serializer.api.StreamingDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultBufferEncoderDecoder implements BufferEncoderDecoder {
@@ -62,5 +64,22 @@ final class DefaultBufferEncoderDecoder implements BufferEncoderDecoder {
     @Override
     public CharSequence encodingName() {
         return encodingName;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        return this == o ||
+                o instanceof DefaultBufferEncoderDecoder &&
+                        contentEqualsIgnoreCase(encodingName(), ((DefaultBufferEncoderDecoder) o).encodingName());
+    }
+
+    @Override
+    public int hashCode() {
+        return caseInsensitiveHashCode(encodingName);
+    }
+
+    @Override
+    public String toString() {
+        return encodingName.toString();
     }
 }

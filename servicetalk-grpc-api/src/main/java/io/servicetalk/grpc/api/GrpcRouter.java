@@ -248,7 +248,7 @@ final class GrpcRouter {
             GrpcSerializer<Resp> serializerIdentity = serializer(methodDescriptor);
             List<GrpcSerializer<Resp>> serializers = serializers(methodDescriptor, compressors);
             GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor);
-            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decompressors());
+            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -312,7 +312,7 @@ final class GrpcRouter {
             List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
             GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
             List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decompressors());
+                    streamingDeserializers(methodDescriptor, decompressors.decoders());
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -442,7 +442,7 @@ final class GrpcRouter {
             GrpcSerializer<Resp> serializerIdentity = serializer(methodDescriptor);
             List<GrpcSerializer<Resp>> serializers = serializers(methodDescriptor, compressors);
             GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor);
-            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decompressors());
+            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -502,7 +502,7 @@ final class GrpcRouter {
             List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
             GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
             List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decompressors());
+                    streamingDeserializers(methodDescriptor, decompressors.decoders());
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());

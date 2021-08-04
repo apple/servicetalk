@@ -30,7 +30,7 @@ public final class EmptyBufferDecoderGroup implements BufferDecoderGroup {
     }
 
     @Override
-    public List<BufferDecoder> decompressors() {
+    public List<BufferDecoder> decoders() {
         return emptyList();
     }
 

@@ -88,7 +88,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final HttpClient client = streamingHttpClient.asClient();
         GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
         GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
-        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decompressors());
+        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
         CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
         CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                 .serializerDescriptor().contentType());
@@ -131,7 +131,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         GrpcStreamingSerializer<Req> serializerIdentity = streamingSerializer(methodDescriptor);
         GrpcStreamingDeserializer<Resp> deserializerIdentity = streamingDeserializer(methodDescriptor);
         List<GrpcStreamingDeserializer<Resp>> deserializers = streamingDeserializers(methodDescriptor,
-                decompressors.decompressors());
+                decompressors.decoders());
         CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
         CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                 .serializerDescriptor().contentType());
@@ -220,7 +220,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
         GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
         GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
-        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decompressors());
+        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
         CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
         CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                 .serializerDescriptor().contentType());
@@ -267,7 +267,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         GrpcStreamingSerializer<Req> serializerIdentity = streamingSerializer(methodDescriptor);
         GrpcStreamingDeserializer<Resp> deserializerIdentity = streamingDeserializer(methodDescriptor);
         List<GrpcStreamingDeserializer<Resp>> deserializers = streamingDeserializers(methodDescriptor,
-                decompressors.decompressors());
+                decompressors.decoders());
         CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
         CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                 .serializerDescriptor().contentType());

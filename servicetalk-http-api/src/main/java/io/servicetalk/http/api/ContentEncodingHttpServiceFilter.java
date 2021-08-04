@@ -94,7 +94,7 @@ public final class ContentEncodingHttpServiceFilter
                             request.headers().valuesIterator(CONTENT_ENCODING);
                     final boolean hasContentEncoding = contentEncodingItr.hasNext();
                     if (hasContentEncoding) {
-                        BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decompressors(),
+                        BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decoders(),
                                 BufferDecoder::encodingName, contentEncodingItr, request.headers());
                         if (decoder == null) {
                             return succeeded(responseFactory.unsupportedMediaType());

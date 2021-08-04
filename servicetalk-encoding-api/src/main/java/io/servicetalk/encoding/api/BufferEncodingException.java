@@ -18,7 +18,7 @@ package io.servicetalk.encoding.api;
 import io.servicetalk.serializer.api.SerializationException;
 
 /**
- * A specialization of {@link SerializationException} used to indicate a encoding exception.
+ * A specialization of {@link SerializationException} used to indicate an encoding exception.
  */
 public final class BufferEncodingException extends SerializationException {
     private static final long serialVersionUID = -7422215018667837872L;
