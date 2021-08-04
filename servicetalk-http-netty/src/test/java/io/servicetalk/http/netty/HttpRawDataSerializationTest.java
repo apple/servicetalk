@@ -62,7 +62,7 @@ class HttpRawDataSerializationTest {
             expectedContentLength += s.length;
         }
 
-        runTest(content, contentType, expectedContentLength, bytesStreamingSerializer(false,
+        runTest(content, contentType, expectedContentLength, bytesStreamingSerializer(
                 headers -> headers.set(CONTENT_TYPE, contentType)));
     }
 

@@ -39,7 +39,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_US_ASCII;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
-import static io.servicetalk.serializer.utils.ByteArraySerializer.byteArraySerializer;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -288,15 +287,13 @@ public final class HttpSerializers {
      * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
      * (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
      * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
-     * @param forceCopy {@code true} means that data will always be copied from {@link Buffer} memory. {@code false}
-     * means that if {@link Buffer#hasArray()} is {@code true} and the array offsets are aligned the result of
-     * serialization doesn't have to be copied.
      * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
      * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
      */
     public static HttpStreamingSerializer<byte[]> bytesStreamingSerializer(
-            boolean forceCopy, Consumer<HttpHeaders> headersSerializeConsumer) {
-        return streamingSerializer(byteArraySerializer(forceCopy), bytes -> bytes.length, headersSerializeConsumer);
+            Consumer<HttpHeaders> headersSerializeConsumer) {
+        return new DefaultHttpStreamingSerializer<>(NonFramedBytesStreamingSerializer.INSTANCE,
+                headersSerializeConsumer);
     }
 
     /**

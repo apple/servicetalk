@@ -36,7 +36,12 @@ final class DefaultHttpStreamingSerializer<T> implements HttpStreamingSerializer
     DefaultHttpStreamingSerializer(final Serializer<T> serializer,
                                    final ToIntFunction<T> bytesEstimator,
                                    final Consumer<HttpHeaders> headersSerializeConsumer) {
-        this.serializer = new NonFramedStreamingSerializer<>(serializer, bytesEstimator);
+        this(new NonFramedStreamingSerializer<>(serializer, bytesEstimator), headersSerializeConsumer);
+    }
+
+    DefaultHttpStreamingSerializer(final StreamingSerializer<T> serializer,
+                                   final Consumer<HttpHeaders> headersSerializeConsumer) {
+        this.serializer = requireNonNull(serializer);
         this.headersSerializeConsumer = requireNonNull(headersSerializeConsumer);
     }
 

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Serializer utilities.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.serializer.utils;
 
