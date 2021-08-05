@@ -18,17 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static java.util.function.Function.identity;
 
 /**
  * An {@link StreamingHttpServiceFilterFactory} implementation which offloads filters using a provided strategy.
  */
 final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(OffloadingFilter.class);
 
     private final HttpExecutionStrategy strategy;
     private final StreamingHttpServiceFilterFactory offloaded;
@@ -50,7 +45,8 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                Executor e = null != strategy.executor() ? strategy.executor() : ctx.executionContext().executor();
+                Executor se = strategy.executor();
+                Executor e = null != se ? se : ctx.executionContext().executor();
 
                 // The service should see our ExecutionStrategy inside the ExecutionContext:
                 final HttpServiceContext wrappedCtx =

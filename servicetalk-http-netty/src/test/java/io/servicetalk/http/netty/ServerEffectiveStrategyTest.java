@@ -218,7 +218,7 @@ class ServerEffectiveStrategyTest {
         BlockingHttpClient client = params.startBlocking();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        //params.verifyOffloads(ServiceType.Blocking);
+        params.verifyOffloads(ServiceType.Blocking);
     }
 
     @ParameterizedTest
@@ -230,7 +230,7 @@ class ServerEffectiveStrategyTest {
         BlockingHttpClient client = params.startBlockingStreaming();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        //params.verifyOffloads(ServiceType.BlockingStreaming);
+        params.verifyOffloads(ServiceType.BlockingStreaming);
     }
 
     @ParameterizedTest
@@ -241,7 +241,7 @@ class ServerEffectiveStrategyTest {
         BlockingHttpClient client = params.startAsyncStreaming();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        //params.verifyOffloads(ServiceType.AsyncStreaming);
+        params.verifyOffloads(ServiceType.AsyncStreaming);
     }
 
     @ParameterizedTest
@@ -252,7 +252,7 @@ class ServerEffectiveStrategyTest {
         BlockingHttpClient client = params.startAsync();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        //params.verifyOffloads(ServiceType.Async);
+        params.verifyOffloads(ServiceType.Async);
     }
 
     private static final class Params {

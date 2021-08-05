@@ -23,8 +23,6 @@ import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT
 @FunctionalInterface
 public interface HttpExecutionStrategyInfluencer {
 
-    HttpExecutionStrategyInfluencer NO_INFLUENCE = strategy -> strategy;
-
     /**
      * Optionally modify the passed {@link HttpExecutionStrategy} to a new {@link HttpExecutionStrategy} that suits
      * this {@link HttpExecutionStrategyInfluencer}.
@@ -33,6 +31,15 @@ public interface HttpExecutionStrategyInfluencer {
      * @return {@link HttpExecutionStrategy} that suits this {@link HttpExecutionStrategyInfluencer}
      */
     HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy);
+
+    /**
+     * Returns the execution strategy required by this influencer.
+     *
+     * @return the execution strategy required by this influencer.
+     */
+    default HttpExecutionStrategy requiredStrategy() {
+        return influenceStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+    }
 
     /**
      * Returns an {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.

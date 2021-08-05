@@ -631,7 +631,7 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 HttpServiceContext checkCtx = ctx instanceof DelegatingHttpServiceContext ?
-                    ((DelegatingHttpServiceContext) ctx).getDelegate() : ctx;
+                    ((DelegatingHttpServiceContext) ctx).delegate() : ctx;
                 // Capture for future assertions on the transport errors
                 NettyConnectionContext asNCC;
                 if (checkCtx instanceof NettyConnectionContext) {

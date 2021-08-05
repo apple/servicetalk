@@ -40,7 +40,12 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
         this.delegate = other;
     }
 
-    public HttpServiceContext getDelegate() {
+    /**
+     * Returns the delegate {@link HttpServiceContext}.
+     *
+     * @return the delegate {@link HttpServiceContext}.
+     */
+    public HttpServiceContext delegate() {
         return delegate;
     }
 

@@ -34,6 +34,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -57,11 +58,9 @@ public abstract class HttpServerBuilder {
     private HttpExecutionStrategy strategy = defaultStrategy();
     private boolean drainRequestPayloadBody = true;
 
-    public HttpServerBuilder() {
+    protected HttpServerBuilder() {
         // Async context clear goes before everything else.
-        StreamingHttpServiceFilterFactory asyncContextFilter = new ClearAsyncContextHttpServiceFilter();
-        assert OFFLOAD_NONE_STRATEGY == influenceStrategy(asyncContextFilter, OFFLOAD_NONE_STRATEGY);
-        noOffloadServiceFilters.add(asyncContextFilter);
+        appendNonOffloadingServiceFilter(new ClearAsyncContextHttpServiceFilter());
     }
 
     /**
@@ -197,19 +196,21 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used
+     * by this builder
      * builder.
      * <p>
      * Note this method will be used to decorate the {@link StreamingHttpService} passed to
      * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
      * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * The order of execution of these filters are in order of append, before the filters added with
+     * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendServiceFilter(filter1).appendNonOffloadingServiceFilter(filter2).appendServiceFilter(filter3)
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
+     *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
@@ -222,6 +223,42 @@ public abstract class HttpServerBuilder {
             throw new IllegalArgumentException("Non-offloading filter required offloading " + factoryStrategy);
         }
         noOffloadServiceFilters.add(factory);
+        return this;
+    }
+
+    /**
+     * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used
+     * by this builder, for every request that passes the provided {@link Predicate}. Filters added via this method
+     * will be executed before offloading occurs and before filters appended via
+     * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpService} passed to
+     * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
+     * The order of execution of these filters are in order of append, before the filters added with
+     * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendServiceFilter(filter1).appendNonOffloadingServiceFilter(filter2).appendServiceFilter(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied. This must not block.
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                       final StreamingHttpServiceFilterFactory factory) {
+        HttpExecutionStrategy predicateStrategy = influenceStrategy(predicate, OFFLOAD_NONE_STRATEGY);
+        if (!OFFLOAD_NONE_STRATEGY.equals(predicateStrategy)) {
+            throw new IllegalArgumentException("Non-offloading predicate required offloading " + predicateStrategy);
+        }
+        HttpExecutionStrategy factoryStrategy = influenceStrategy(factory, OFFLOAD_NONE_STRATEGY);
+        if (!OFFLOAD_NONE_STRATEGY.equals(factoryStrategy)) {
+            throw new IllegalArgumentException("Non-offloading filter required offloading " + factoryStrategy);
+        }
+        appendServiceFilter(service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
         return this;
     }
 
@@ -266,7 +303,7 @@ public abstract class HttpServerBuilder {
      *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
      * </pre>
      *
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param predicate the {@link Predicate} to test if the filter must be applied. This must not block.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
@@ -299,14 +336,14 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     public final HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
+        this.strategy = requireNonNull(strategy, "strategy");
         return this;
     }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -321,7 +358,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -336,7 +373,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -351,7 +388,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -367,7 +404,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -381,7 +418,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -395,7 +432,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -409,7 +446,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
@@ -423,7 +460,7 @@ public abstract class HttpServerBuilder {
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
-     * If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
@@ -446,28 +483,28 @@ public abstract class HttpServerBuilder {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
 
-        Deque<StreamingHttpServiceFilterFactory> nonOffloadingFilters = new ArrayDeque<>(noOffloadServiceFilters);
+        final StreamingHttpService filteredService;
 
-        StreamingHttpService filteredService;
-
-        if (nonOffloadingFilters.isEmpty()) {
-            filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters, rawService);
+        if (noOffloadServiceFilters.isEmpty()) {
+            filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
         } else {
             boolean anyOffloads = strategy.isSendOffloaded() ||
                     strategy.isMetadataReceiveOffloaded() ||
                     strategy.isDataReceiveOffloaded();
 
+            Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
+
             if (anyOffloads) {
                 // We are going to have to offload, even if just to the raw service
-                nonOffloadingFilters.add(new OffloadingFilter(strategy,
-                        buildFactory(serviceFilters)));
+                nonOffloadingFilters = Stream.concat(nonOffloadingFilters,
+                        Stream.of(new OffloadingFilter(strategy, buildFactory(serviceFilters))));
                 strategy = null != strategy.executor() ?
                         HttpExecutionStrategies.customStrategyBuilder()
                                 .offloadNone().executor(strategy.executor()).build() :
                         HttpExecutionStrategies.noOffloadsStrategy();
             } else {
                 // All the filters can be appended.
-                nonOffloadingFilters.addAll(serviceFilters);
+                nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
             }
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
@@ -489,9 +526,9 @@ public abstract class HttpServerBuilder {
                 .orElse(StreamingHttpServiceFilter::new); // unfortunate that we need extra layer
     }
 
-    private static StreamingHttpService buildService(Deque<StreamingHttpServiceFilterFactory> filters,
+    private static StreamingHttpService buildService(Stream<StreamingHttpServiceFilterFactory> filters,
                                                      StreamingHttpService service) {
-        return filters.stream()
+        return filters
                 .reduce((prev, filter) -> svc -> prev.create(filter.create(svc)))
                 .map(factory -> (StreamingHttpService) factory.create(service))
                 .orElse(service);
