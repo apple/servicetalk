@@ -54,8 +54,12 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * {@link Publisher} containing all data constituting an HTTP response.
      * @param errorHandler In case there is an error before calling the passed {@code service}, this {@link BiFunction}
      * will be called to generate an error response.
-     * @return A flattened {@link Publisher} containing all data constituting an HTTP response..
+     * @return A flattened {@link Publisher} containing all data constituting an HTTP response.
+     *
+     * @deprecated Will be removed as part of improved offloading strategy. If you need this API please file an issue
+     * explaining the use case.
      */
+    @Deprecated
     Publisher<Object> invokeService(Executor fallback, StreamingHttpRequest request,
                                     Function<StreamingHttpRequest, Publisher<Object>> service,
                                     BiFunction<Throwable, Executor, Publisher<Object>> errorHandler);
