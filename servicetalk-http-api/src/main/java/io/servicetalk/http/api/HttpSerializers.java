@@ -283,9 +283,9 @@ public final class HttpSerializers {
     }
 
     /**
-     * Create a {@link HttpStreamingSerializer} that serializes {@link String}. This method is useful if the payload
-     * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
-     * (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
+     * Create a {@link HttpStreamingSerializer} that serializes {@code byte[]}. This method is useful if the payload
+     * body is provided in {@code byte[]} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
+     * (e.g. streaming raw json data from a stream of {@code byte[]}s). Deserialization should be done using
      * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
      * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
      * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
