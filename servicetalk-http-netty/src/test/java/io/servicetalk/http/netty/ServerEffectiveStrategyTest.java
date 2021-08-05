@@ -340,22 +340,22 @@ class ServerEffectiveStrategyTest {
         }
 
         void initStateHolderCustomUserStrategy() {
-            verifyStrategyUsed = !addFilter;
+            verifyStrategyUsed = false;
             newRecorder(customStrategyBuilder().offloadAll().executor(executor).build());
         }
 
         void initStateHolderUserStrategyNoOffloads() {
-            verifyStrategyUsed = !addFilter;
+            verifyStrategyUsed = false;
             newRecorder(customStrategyBuilder().offloadNone().executor(immediate()).build());
         }
 
         void initStateHolderUserStrategyNoOffloadsNoExecutor() {
-            verifyStrategyUsed = !addFilter;
+            verifyStrategyUsed = false;
             newRecorder(noOffloadsStrategy());
         }
 
         void initStateHolderCustomUserStrategyNoExecutor() {
-            verifyStrategyUsed = !addFilter;
+            verifyStrategyUsed = false;
             newRecorder(customStrategyBuilder().offloadAll().build());
         }
 

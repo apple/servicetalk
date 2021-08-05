@@ -57,6 +57,24 @@ class HttpServerFilterOrderTest {
         verifier.verify(filter2).handle(any(), any(), any());
     }
 
+    @Test
+    void nonOffloadOrder() throws Exception {
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(addFilter(filter2))
+                .appendNonOffloadingServiceFilter(addFilter(filter1))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                .buildBlocking();
+        HttpResponse resp = client.request(client.get("/"));
+        assertThat("Unexpected response.", resp.status(), is(OK));
+
+        InOrder verifier = inOrder(filter1, filter2);
+        verifier.verify(filter1).handle(any(), any(), any());
+        verifier.verify(filter2).handle(any(), any(), any());
+    }
+
     private static StreamingHttpService newMockService() {
         StreamingHttpService service = mock(StreamingHttpService.class);
         when(service.closeAsync()).thenReturn(completed());

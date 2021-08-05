@@ -58,6 +58,9 @@ public abstract class HttpServerBuilder {
     private HttpExecutionStrategy strategy = defaultStrategy();
     private boolean drainRequestPayloadBody = true;
 
+    /**
+     * Create a new instance.
+     */
     protected HttpServerBuilder() {
         // Async context clear goes before everything else.
         appendNonOffloadingServiceFilter(new ClearAsyncContextHttpServiceFilter());
@@ -197,8 +200,7 @@ public abstract class HttpServerBuilder {
 
     /**
      * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used
-     * by this builder
-     * builder.
+     * by this builder.
      * <p>
      * Note this method will be used to decorate the {@link StreamingHttpService} passed to
      * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
