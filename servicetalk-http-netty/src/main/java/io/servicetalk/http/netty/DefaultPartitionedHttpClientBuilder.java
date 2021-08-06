@@ -97,11 +97,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
+        final HttpExecutionContext executionContext = buildContext.builder.build().executionContext();
         ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
-                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
+                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(
+                        serviceDiscoverer,
                         serviceDiscovererRetryStrategy == null ?
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
-                                        buildContext.executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
+                                        executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
                                         SD_RETRY_STRATEGY_JITTER).build() :
                                 serviceDiscovererRetryStrategy);
 
@@ -123,11 +125,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
                         clientFactory, partitionAttributesBuilderFactory,
                         defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                buildContext.executionContext.bufferAllocator()),
-                        buildContext.executionContext, partitionMapFactory);
-        return new FilterableClientToClient(partitionedClient, buildContext.executionContext.executionStrategy(),
+                                executionContext.bufferAllocator()),
+                        executionContext, partitionMapFactory);
+        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy(),
                 buildContext.builder.buildStrategyInfluencerForClient(
-                        buildContext.executionContext.executionStrategy()));
+                        executionContext.executionStrategy()));
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements

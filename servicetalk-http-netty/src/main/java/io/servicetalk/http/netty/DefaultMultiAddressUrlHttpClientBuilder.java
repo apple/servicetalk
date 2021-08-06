@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -40,6 +41,7 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,19 +100,20 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
                     clientFilterFactory, unresolvedAddressToHostFunction, singleAddressInitializer);
 
+            HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             FilterableStreamingHttpClient urlClient = closeables.prepend(
-                    new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
+                    new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
                             defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                    buildContext.executionContext.bufferAllocator())));
+                                    executionContext.bufferAllocator())));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = maxRedirects <= 0 ? urlClient :
                     new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient);
 
-            return new FilterableClientToClient(urlClient, buildContext.executionContext.executionStrategy(),
+            return new FilterableClientToClient(urlClient, executionContext.executionStrategy(),
                     buildContext.builder.buildStrategyInfluencerForClient(
-                            buildContext.executionContext.executionStrategy()));
+                            executionContext.executionStrategy()));
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -317,6 +320,26 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
         }
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> ioExecutor(final IoExecutor ioExecutor) {
+        builderTemplate.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> bufferAllocator(
+            final BufferAllocator allocator) {
+        builderTemplate.bufferAllocator(allocator);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
+            final HttpExecutionStrategy strategy) {
+        builderTemplate.executionStrategy(strategy);
+        return this;
     }
 
     @Override

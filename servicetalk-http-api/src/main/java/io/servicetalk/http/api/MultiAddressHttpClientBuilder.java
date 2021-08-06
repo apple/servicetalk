@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.transport.api.IoExecutor;
+
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
@@ -31,7 +34,8 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientBuildFinalizer {
+public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientBuildFinalizer,
+                                                                     ExecutionContextAwareHttpBuilder {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.
@@ -62,6 +66,15 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
             };
         }
     }
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.

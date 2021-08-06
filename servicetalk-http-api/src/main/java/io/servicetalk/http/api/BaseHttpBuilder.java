@@ -15,9 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
@@ -33,31 +31,7 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  *
  * @param <ResolvedAddress> the type of address after resolution (resolved address)
  */
-abstract class BaseHttpBuilder<ResolvedAddress> {
-
-    /**
-     * Sets the {@link IoExecutor} for all connections created from this builder.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
-
-    /**
-     * Sets the {@link BufferAllocator} for all connections created from this builder.
-     *
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
-
-    /**
-     * Sets the {@link HttpExecutionStrategy} for all connections created from this builder.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy);
+abstract class BaseHttpBuilder<ResolvedAddress> implements ExecutionContextAwareHttpBuilder<ResolvedAddress> {
 
     /**
      * Adds a {@link SocketOption} for all connections created by this builder.

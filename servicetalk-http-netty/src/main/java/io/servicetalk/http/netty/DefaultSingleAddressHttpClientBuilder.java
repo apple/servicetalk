@@ -101,7 +101,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private U proxyAddress;
     private final HttpClientConfig config;
-    private final HttpExecutionContextBuilder executionContextBuilder;
+    final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
@@ -218,21 +218,25 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
-        final HttpExecutionContext executionContext;
-        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
+        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
         private final SdStatusCompletable sdStatus;
+
+        @Nullable
+        private final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
         @Nullable
         private final U proxyAddress;
 
         HttpClientBuildContext(
-                final DefaultSingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext executionContext,
-                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd, final SdStatusCompletable sdStatus,
+                final DefaultSingleAddressHttpClientBuilder<U, R> builder,
+                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd,
+                @Nullable final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>>
+                        serviceDiscovererRetryStrategy,
                 @Nullable final U proxyAddress) {
             this.builder = builder;
-            this.executionContext = executionContext;
-            this.serviceDiscoverer = sd;
-            this.sdStatus = sdStatus;
+            this.serviceDiscovererRetryStrategy = serviceDiscovererRetryStrategy;
             this.proxyAddress = proxyAddress;
+            this.sd = sd;
+            this.sdStatus = new SdStatusCompletable();
         }
 
         U address() {
@@ -247,6 +251,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         StreamingHttpClient build() {
             return buildStreaming(this);
         }
+
+        ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
+                HttpExecutionContext executionContext) {
+            return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus),
+                            serviceDiscovererRetryStrategy == null ?
+                                    DefaultServiceDiscoveryRetryStrategy.Builder
+                                            .<R>withDefaults(executionContext.executor(),
+                                                    SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
+                                    serviceDiscovererRetryStrategy);
+        }
     }
 
     @Override
@@ -256,6 +270,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
+        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
@@ -264,7 +279,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             final Publisher<ServiceDiscovererEvent<R>> sdEvents =
-                    ctx.serviceDiscoverer.discover(ctx.address()).flatMapConcatIterable(identity());
+                    ctx.serviceDiscoverer(executionContext).discover(ctx.address()).flatMapConcatIterable(identity());
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
@@ -276,24 +291,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress()), connectionFactoryFilter);
             }
 
-            final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
+            final HttpExecutionStrategy executionStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
-                    ctx.executionContext.bufferAllocator());
+                    executionContext.bufferAllocator());
             if (roConfig.isH2PriorKnowledge()) {
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 assert h2Config != null;
-                connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
-                connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, executionContext,
                         ctx.builder.connectionFilterFactory, new AlpnReqRespFactoryFunc(
-                                ctx.executionContext.bufferAllocator(),
+                                executionContext.bufferAllocator(),
                                 h1Config == null ? null : h1Config.headersFactory(),
                                 h2Config == null ? null : h2Config.headersFactory()),
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
@@ -301,7 +316,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             } else {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 assert h1Config != null;
-                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
@@ -324,7 +339,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
-                    new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
+                    new LoadBalancedStreamingHttpClient(executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
@@ -395,15 +410,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
-        final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-        final SdStatusCompletable sdStatus = new SdStatusCompletable();
-        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
-                new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(serviceDiscoverer, sdStatus),
-                        serviceDiscovererRetryStrategy == null ?
-                                DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(exec.executor(),
-                                        SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
-                                serviceDiscovererRetryStrategy);
-        return new HttpClientBuildContext<>(clonedBuilder, exec, sd, sdStatus, proxyAddress);
+        return new HttpClientBuildContext<>(clonedBuilder,
+                this.serviceDiscoverer, this.serviceDiscovererRetryStrategy, this.proxyAddress);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
