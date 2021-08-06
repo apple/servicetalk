@@ -55,8 +55,8 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpRequest requestEncoder(@Nullable final BufferEncoder encoder) {
-        original.requestEncoder(encoder);
+    public HttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        original.contentEncoding(encoder);
         return this;
     }
 
@@ -271,7 +271,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
-                requestEncoder(), original.payloadHolder().allocator(), payload, payloadInfo,
+                contentEncoding(), original.payloadHolder().allocator(), payload, payloadInfo,
                 original.payloadHolder().headersFactory());
     }
 

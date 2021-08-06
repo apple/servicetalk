@@ -428,7 +428,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @return the {@link BufferEncoder} to use for this request.
      */
     @Nullable
-    BufferEncoder requestEncoder();
+    BufferEncoder contentEncoding();
 
     /**
      * Set the {@link BufferEncoder} to use for this request. The value can be used by filters
@@ -437,7 +437,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param encoder {@link BufferEncoder} to use for this request.
      * @return {@code this}.
      */
-    HttpRequestMetaData requestEncoder(@Nullable BufferEncoder encoder);
+    HttpRequestMetaData contentEncoding(@Nullable BufferEncoder encoder);
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);

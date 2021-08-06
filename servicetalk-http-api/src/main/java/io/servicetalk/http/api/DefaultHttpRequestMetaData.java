@@ -82,12 +82,12 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public BufferEncoder requestEncoder() {
+    public BufferEncoder contentEncoding() {
         return encoder;
     }
 
     @Override
-    public HttpRequestMetaData requestEncoder(@Nullable final BufferEncoder encoder) {
+    public HttpRequestMetaData contentEncoding(@Nullable final BufferEncoder encoder) {
         this.encoder = encoder;
         return this;
     }

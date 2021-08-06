@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.ScanWithMapper;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpDataSourceTransformations.BridgeFlowControlAndDiscardOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
+import io.servicetalk.http.api.HttpDataSourceTransformations.ObjectBridgeFlowControlAndDiscardOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
 import java.util.Objects;
@@ -98,6 +99,16 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         }
     }
 
+    void messageBody(Publisher<?> msgBody) {
+        payloadInfo.setEmpty(messageBody == EMPTY);
+        if (messageBody == null) {
+            messageBody = requireNonNull(msgBody);
+        } else { // discard old trailers
+            messageBody = msgBody.liftSync(new ObjectBridgeFlowControlAndDiscardOperator(messageBody));
+        }
+        payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
+    }
+
     <T> void payloadBody(final Publisher<T> payloadBody, final HttpStreamingSerializer<T> serializer) {
         payloadBody(serializer.serialize(headers, payloadBody, allocator));
         // Because #serialize(...) method may apply operators, check the original payloadBody again:
@@ -141,49 +152,16 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                     from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
                             headersFactory.newEmptyTrailers())).subscribeShareContext());
         } else {
+            payloadInfo.setEmpty(false); // transformer may add payload content
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
                 final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
                 final Publisher<Buffer> transformedPayloadBody = oldMessageBody.liftSync(
                         new PreserveTrailersBufferOperator(trailersProcessor));
                 return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
-                        fromSource(trailersProcessor)).scanWith(() -> new ScanWithMapper<Object, Object>() {
-                    @Nullable
-                    private final T state = trailersTransformer.newState();
-                    @Nullable
-                    private HttpHeaders trailers;
-
-                    @Override
-                    public Object mapOnNext(@Nullable final Object next) {
-                        if (next instanceof HttpHeaders) {
-                            if (trailers != null) {
-                                throwDuplicateTrailersException(trailers, next);
-                            }
-                            trailers = (HttpHeaders) next;
-                            return trailersTransformer.payloadComplete(state, trailers);
-                        } else if (trailers != null) {
-                            throwOnNextAfterTrailersException(trailers, next);
-                        }
-                        @SuppressWarnings("unchecked")
-                        final S nextS = (S) requireNonNull(next);
-                        return trailersTransformer.accept(state, nextS);
-                    }
-
-                    @Override
-                    public Object mapOnError(final Throwable t) throws Throwable {
-                        return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
-                    }
-
-                    @Override
-                    public Object mapOnComplete() {
-                        return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
-                    }
-
-                    @Override
-                    public boolean mapTerminal() {
-                        return trailers == null;
-                    }
-                }).subscribeShareContext();
+                        fromSource(trailersProcessor)).scanWith(() ->
+                                new TrailersMapper<>(trailersTransformer, headersFactory))
+                        .subscribeShareContext();
             });
         }
         payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
@@ -195,42 +173,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
                         headersFactory.newEmptyTrailers())).subscribeShareContext());
         } else {
-            payloadInfo.setEmpty(false);    // transformer may add payload content
-            messageBody = messageBody.scanWith(() -> new ScanWithMapper<Object, Object>() {
-                @Nullable
-                private final T state = trailersTransformer.newState();
-                @Nullable
-                private HttpHeaders trailers;
-
-                @Override
-                public Object mapOnNext(@Nullable final Object next) {
-                    if (next instanceof HttpHeaders) {
-                        if (trailers != null) {
-                            throwDuplicateTrailersException(trailers, next);
-                        }
-                        trailers = (HttpHeaders) next;
-                        return trailersTransformer.payloadComplete(state, trailers);
-                    } else if (trailers != null) {
-                        throwOnNextAfterTrailersException(trailers, next);
-                    }
-                    return trailersTransformer.accept(state, (Buffer) requireNonNull(next));
-                }
-
-                @Override
-                public Object mapOnError(final Throwable t) throws Throwable {
-                    return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
-                }
-
-                @Override
-                public Object mapOnComplete() {
-                    return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
-                }
-
-                @Override
-                public boolean mapTerminal() {
-                    return trailers == null;
-                }
-            });
+            payloadInfo.setEmpty(false); // transformer may add payload content
+            messageBody = messageBody.scanWith(() -> new TrailersMapper<>(trailersTransformer, headersFactory));
         }
         payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
     }
@@ -329,6 +273,53 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private static Publisher<?> merge(Publisher<?> p, Single<HttpHeaders> s) {
         // We filter null from the Single in case the publisher completes and we didn't find trailers.
         return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
+    }
+
+    private static final class TrailersMapper<T, S> implements ScanWithMapper<Object, Object> {
+        private final TrailersTransformer<T, S> trailersTransformer;
+        private final HttpHeadersFactory headersFactory;
+        @Nullable
+        private final T state;
+        @Nullable
+        private HttpHeaders trailers;
+
+        private TrailersMapper(final TrailersTransformer<T, S> trailersTransformer,
+                               final HttpHeadersFactory headersFactory) {
+            this.trailersTransformer = requireNonNull(trailersTransformer);
+            this.headersFactory = headersFactory;
+            state = trailersTransformer.newState();
+        }
+
+        @Override
+        public Object mapOnNext(@Nullable final Object next) {
+            if (next instanceof HttpHeaders) {
+                if (trailers != null) {
+                    throwDuplicateTrailersException(trailers, next);
+                }
+                trailers = (HttpHeaders) next;
+                return trailersTransformer.payloadComplete(state, trailers);
+            } else if (trailers != null) {
+                throwOnNextAfterTrailersException(trailers, next);
+            }
+            @SuppressWarnings("unchecked")
+            final S nextS = (S) requireNonNull(next);
+            return trailersTransformer.accept(state, nextS);
+        }
+
+        @Override
+        public Object mapOnError(final Throwable t) throws Throwable {
+            return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
+        }
+
+        @Override
+        public Object mapOnComplete() {
+            return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
+        }
+
+        @Override
+        public boolean mapTerminal() {
+            return trailers == null;
+        }
     }
 
     private static final class PreserveTrailersBufferOperator implements PublisherOperator<Object, Buffer> {

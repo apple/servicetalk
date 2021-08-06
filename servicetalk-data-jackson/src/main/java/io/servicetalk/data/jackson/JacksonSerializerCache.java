@@ -27,7 +27,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Caches instances of {@link SerializerDeserializer} and {@link StreamingSerializerDeserializer} for jackson.
+ * Caches instances of {@link SerializerDeserializer} and {@link StreamingSerializerDeserializer} for
+ * <a href="https://github.com/FasterXML/jackson">jackson</a>.
  */
 public final class JacksonSerializerCache {
     public static final JacksonSerializerCache INSTANCE = new JacksonSerializerCache();

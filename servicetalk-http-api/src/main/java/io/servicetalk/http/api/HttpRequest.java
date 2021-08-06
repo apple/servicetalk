@@ -138,7 +138,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest encoding(ContentCodec encoding);
 
     @Override
-    HttpRequest requestEncoder(@Nullable BufferEncoder encoder);
+    HttpRequest contentEncoding(@Nullable BufferEncoder encoder);
 
     @Override
     HttpRequest method(HttpRequestMethod method);

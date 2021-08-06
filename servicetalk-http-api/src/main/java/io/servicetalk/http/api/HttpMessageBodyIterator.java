@@ -20,25 +20,20 @@ import io.servicetalk.concurrent.BlockingIterator;
 import javax.annotation.Nullable;
 
 /**
- * Get the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a>.
- * @param <T> The type of the payload body.
+ * {@link Iterable} of the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> that
+ * also provides access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a>.
+ * @param <T> The type of payload body.
  */
-public interface BlockingStreamingHttpMessageBody<T> {
-    /**
-     * Get the payload body associated with this message.
-     * @return the payload body associated with this message.
-     */
-    BlockingIterator<T> payloadBody();
-
+public interface HttpMessageBodyIterator<T> extends BlockingIterator<T> {
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> associated with this message
-     * body. Will return {@code null} until {@link #payloadBody()} has been completely consumed and
-     * {@link BlockingIterator#hasNext()} returns {@code false}. Even after consumption of {@link #payloadBody()} this
-     * method may still return {@code null} if there are no trailers.
+     * body. Will return {@code null} until this {@link BlockingIterator} has been completely consumed and
+     * {@link #hasNext()} returns {@code false}. Even after consumption this method may still return {@code null} if
+     * there are no trailers.
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> associated with this message
-     * body. Will return {@code null} until {@link #payloadBody()} has been completely consumed and
-     * {@link BlockingIterator#hasNext()} returns {@code false}. Even after consumption of {@link #payloadBody()} this
-     * method may still return {@code null} if there are no trailers.
+     * body. Will return {@code null} until this {@link BlockingIterator} has been completely consumed and
+     * {@link #hasNext()} returns {@code false}. Even after consumption this method may still return {@code null} if
+     * there are no trailers.
      */
     @Nullable
     HttpHeaders trailers();

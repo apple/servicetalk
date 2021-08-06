@@ -16,13 +16,18 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.internal.BlockingIterables;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.BlockingStreamingHttpMessageBody;
+import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMessageBodyIterator;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpResponse;
@@ -36,10 +41,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -54,8 +61,11 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -210,6 +220,94 @@ class BlockingStreamingHttpServiceTest {
         }, false);
     }
 
+    @Test
+    void setRequestMessageBody() throws Exception {
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            response.status(OK);
+            try {
+                HttpMessageBodyIterator<Buffer> reqItr = request.messageBody().iterator();
+                StringBuilder sb = new StringBuilder();
+                while (reqItr.hasNext()) {
+                    sb.append(requireNonNull(reqItr.next()).toString(UTF_8));
+                }
+                assertThat(sb.toString(), is(HELLO_WORLD));
+                HttpHeaders trailers = reqItr.trailers();
+                assertThat(trailers, notNullValue());
+                assertThat(trailers.get(X_TOTAL_LENGTH).toString(), is(HELLO_WORLD_LENGTH));
+            } catch (Throwable cause) {
+                HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializerUtf8FixLen());
+                payloadWriter.write(cause.toString());
+                payloadWriter.close();
+                return;
+            }
+            response.sendMetaData(textSerializerUtf8FixLen()).close();
+        });
+        BufferAllocator alloc = client.executionContext().bufferAllocator();
+        BlockingStreamingHttpRequest req = client.get("/");
+        req.setHeader(TRAILER, X_TOTAL_LENGTH);
+        int split = HELLO_WORLD.length() / 2;
+        final BlockingIterable<Buffer> reqIterable =
+                BlockingIterables.from(asList(
+                        alloc.fromAscii(HELLO_WORLD.substring(0, split)),
+                        alloc.fromAscii(HELLO_WORLD.substring(split))));
+        req.messageBody(() -> new HttpMessageBodyIterator<Buffer>() {
+            private final BlockingIterator<Buffer> iterator = reqIterable.iterator();
+            @Nullable
+            private HttpHeaders trailers;
+            private int totalLength;
+
+            @Nullable
+            @Override
+            public HttpHeaders trailers() {
+                if (trailers == null) {
+                    trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
+                    trailers.set(X_TOTAL_LENGTH, String.valueOf(totalLength));
+                }
+                return trailers;
+            }
+
+            @Override
+            public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return iterator.hasNext(timeout, unit);
+            }
+
+            @Nullable
+            @Override
+            public Buffer next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return addTotalLength(iterator.next(timeout, unit));
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Nullable
+            @Override
+            public Buffer next() {
+                return addTotalLength(iterator.next());
+            }
+
+            @Override
+            public void close() throws Exception {
+                iterator.close();
+            }
+
+            @Nullable
+            private Buffer addTotalLength(@Nullable Buffer buffer) {
+                if (buffer != null) {
+                    totalLength += buffer.readableBytes();
+                }
+                return buffer;
+            }
+        });
+
+        BlockingStreamingHttpResponse response = client.request(req);
+        assertThat(response.status(), is(OK));
+        assertThat(stream(response.payloadBody(textSerializerUtf8FixLen()).spliterator(), false)
+                .collect(Collectors.toList()), emptyIterable());
+    }
+
     private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpService handler,
                                                    boolean useDeserializer) throws Exception {
         BlockingStreamingHttpClient client = context(handler);
@@ -221,17 +319,15 @@ class BlockingStreamingHttpServiceTest {
         final StringBuilder sb = new StringBuilder();
         final HttpHeaders trailers;
         if (useDeserializer) {
-            BlockingStreamingHttpMessageBody<String> msgBody = response.messageBody(textSerializerUtf8FixLen());
-            Iterator<String> itr = msgBody.payloadBody();
-            while (itr.hasNext()) {
-                sb.append(itr.next());
+            HttpMessageBodyIterator<String> msgBody = response.messageBody(textSerializerUtf8FixLen()).iterator();
+            while (msgBody.hasNext()) {
+                sb.append(msgBody.next());
             }
             trailers = msgBody.trailers();
         } else {
-            BlockingStreamingHttpMessageBody<Buffer> msgBody = response.messageBody();
-            Iterator<Buffer> itr = msgBody.payloadBody();
-            while (itr.hasNext()) {
-                sb.append(itr.next().toString(UTF_8));
+            HttpMessageBodyIterator<Buffer> msgBody = response.messageBody().iterator();
+            while (msgBody.hasNext()) {
+                sb.append(requireNonNull(msgBody.next()).toString(UTF_8));
             }
             trailers = msgBody.trailers();
         }

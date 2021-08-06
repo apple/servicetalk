@@ -42,7 +42,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
             encoding(encoding);
         }
         payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
-        requestEncoder(encoder);
+        this.contentEncoding(encoder);
     }
 
     @Override
@@ -59,8 +59,8 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest requestEncoder(@Nullable final BufferEncoder encoder) {
-        super.requestEncoder(encoder);
+    public StreamingHttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        super.contentEncoding(encoder);
         return this;
     }
 

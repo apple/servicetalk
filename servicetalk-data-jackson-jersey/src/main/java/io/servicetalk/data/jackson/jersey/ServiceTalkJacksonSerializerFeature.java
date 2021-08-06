@@ -61,7 +61,6 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
                 ST_JSON_FEATURE);
 
         if (!config.isRegistered(JacksonSerializerMessageBodyReaderWriter.class)) {
-            context.register(SerializationExceptionMapperDeprecated.class);
             context.register(SerializationExceptionMapper.class);
             context.register(JacksonSerializerMessageBodyReaderWriter.class);
         }

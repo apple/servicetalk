@@ -24,10 +24,13 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newMessageBody;
@@ -53,8 +56,8 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpRequest requestEncoder(@Nullable final BufferEncoder encoder) {
-        original.requestEncoder(encoder);
+    public BlockingStreamingHttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        original.contentEncoding(encoder);
         return this;
     }
 
@@ -153,13 +156,13 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpMessageBody<Buffer> messageBody() {
-        return newMessageBody(original.messageBody().toIterable().iterator());
+    public HttpMessageBodyIterable<Buffer> messageBody() {
+        return newMessageBody(original.messageBody().toIterable());
     }
 
     @Override
-    public <T> BlockingStreamingHttpMessageBody<T> messageBody(final HttpStreamingDeserializer<T> deserializer) {
-        return newMessageBody(original.messageBody().toIterable().iterator(), headers(), deserializer,
+    public <T> HttpMessageBodyIterable<T> messageBody(final HttpStreamingDeserializer<T> deserializer) {
+        return newMessageBody(original.messageBody().toIterable(), headers(), deserializer,
                 original.payloadHolder().allocator());
     }
 
@@ -182,6 +185,29 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
         return this;
     }
 
+    @Override
+    public BlockingStreamingHttpRequest messageBody(final HttpMessageBodyIterable<Buffer> messageBody) {
+        original.payloadHolder().messageBody(defer(() -> {
+            HttpMessageBodyIterator<Buffer> body = messageBody.iterator();
+            return fromIterable(() -> body)
+                    .map(o -> (Object) o)
+                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+        }));
+        return this;
+    }
+
+    @Override
+    public <T> BlockingStreamingHttpRequest messageBody(final HttpMessageBodyIterable<T> messageBody,
+                                                        final HttpStreamingSerializer<T> serializer) {
+        original.payloadHolder().messageBody(defer(() -> {
+            HttpMessageBodyIterator<T> body = messageBody.iterator();
+            return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
+                    .map(o -> (Object) o)
+                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+        }));
+        return this;
+    }
+
     @Deprecated
     @Override
     public <T> BlockingStreamingHttpRequest payloadBody(final Iterable<T> payloadBody,
@@ -201,13 +227,6 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
                                                         final HttpSerializer<T> serializer) {
-        original.payloadBody(fromIterable(payloadBody), serializer);
-        return this;
-    }
-
-    @Override
-    public <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
-                                                        final HttpStreamingSerializer<T> serializer) {
         original.payloadBody(fromIterable(payloadBody), serializer);
         return this;
     }
@@ -223,28 +242,13 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public <T> BlockingStreamingHttpRequest transformPayloadBody(
-            final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
-            final HttpStreamingSerializer<T> serializer) {
-        original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())),
-                serializer);
-        return this;
-    }
-
-    @Override
-    public <T, R> BlockingStreamingHttpRequest transformPayloadBody(
-            final Function<BlockingIterable<T>, BlockingIterable<R>> transformer,
-            final HttpStreamingDeserializer<T> deserializer, final HttpStreamingSerializer<R> serializer) {
-        return transformPayloadBody(buffers -> transformer.apply(payloadBody(deserializer)), serializer);
-    }
-
-    @Override
     public BlockingStreamingHttpRequest transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
         original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())));
         return this;
     }
 
+    @Deprecated
     @Override
     public <T> BlockingStreamingHttpRequest transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         original.transform(trailersTransformer);

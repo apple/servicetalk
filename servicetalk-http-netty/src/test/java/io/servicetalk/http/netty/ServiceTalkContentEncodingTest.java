@@ -116,7 +116,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                      }
                  })
                 .buildBlocking()) {
-            HttpResponse response = client.request(client.get("/").requestEncoder(clientEncoding.encoder).payloadBody(
+            HttpResponse response = client.request(client.get("/").contentEncoding(clientEncoding.encoder).payloadBody(
                     payloadAsString((byte) 'a'), textSerializerUtf8()));
 
             if (valid) {

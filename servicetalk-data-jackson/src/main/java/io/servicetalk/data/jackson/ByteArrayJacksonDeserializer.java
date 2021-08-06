@@ -40,8 +40,8 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
     @Nonnull
     Iterable<T> doDeserialize(final Buffer buffer, @Nullable List<T> resultHolder) throws IOException {
         if (buffer.hasArray()) {
-            feeder.feedInput(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-                    buffer.arrayOffset() + buffer.readableBytes());
+            final int start = buffer.arrayOffset() + buffer.readerIndex();
+            feeder.feedInput(buffer.array(), start, start + buffer.readableBytes());
         } else {
             int readableBytes = buffer.readableBytes();
             if (readableBytes != 0) {

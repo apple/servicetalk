@@ -97,8 +97,8 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
-    public BufferEncoder requestEncoder() {
-        return original.requestEncoder();
+    public BufferEncoder contentEncoding() {
+        return original.contentEncoding();
     }
 
     @Override

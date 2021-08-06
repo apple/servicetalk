@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.serializer.api.Serializer;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
@@ -264,6 +265,18 @@ public final class HttpSerializers {
                         str -> str.length() * maxBytesPerChar),
                 headers -> headers.set(CONTENT_TYPE, contentType),
                 headers -> hasContentType(headers, APPLICATION_TEXT_VARINT, charset));
+    }
+
+    public static HttpSerializer2<String> strSerializer(Charset charset,
+                                                        Consumer<HttpHeaders> headersSerializeConsumer) {
+        return new HttpSerializer2<String>() {
+            private final Serializer<String> serializer = stringSerializer(charset);
+            @Override
+            public Buffer serialize(final HttpHeaders headers, final String value, final BufferAllocator allocator) {
+                headersSerializeConsumer.accept(headers);
+                return serializer.serialize(value, allocator);
+            }
+        };
     }
 
     /**

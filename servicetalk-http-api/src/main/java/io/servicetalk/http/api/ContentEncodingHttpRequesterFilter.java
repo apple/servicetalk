@@ -45,7 +45,7 @@ public final class ContentEncodingHttpRequesterFilter implements
     /**
      * Create a new instance and specify the supported decompression (advertised in
      * {@link HttpHeaderNames#ACCEPT_ENCODING}). The compression is specified via
-     * {@link HttpRequestMetaData#requestEncoder()}. The order of entries may impact the selection preference.
+     * {@link HttpRequestMetaData#contentEncoding()}. The order of entries may impact the selection preference.
      *
      * @param decompressors the decompression supported to decode responses accordingly and also used to advertise
      * {@link HttpHeaderNames#ACCEPT_ENCODING} to the server.
@@ -93,7 +93,7 @@ public final class ContentEncodingHttpRequesterFilter implements
                 request.headers().set(ACCEPT_ENCODING, encodings);
                 decompressResponse = true;
             }
-            BufferEncoder encoder = request.requestEncoder();
+            BufferEncoder encoder = request.contentEncoding();
             final StreamingHttpRequest encodedRequest;
             if (encoder != null && !identityEncoder().equals(encoder)) {
                 addContentEncoding(request.headers(), encoder.encodingName());

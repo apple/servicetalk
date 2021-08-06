@@ -17,9 +17,11 @@ package io.servicetalk.data.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
-import io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer;
+import io.servicetalk.serializer.api.SerializerDeserializer;
+import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
 import com.google.protobuf.Parser;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,13 +38,15 @@ import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.data.protobuf.ProtobufSerializerCache.INSTANCE;
 import static io.servicetalk.data.protobuf.test.TestProtos.DummyMessage.parser;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 
-class VarIntLengthStreamingSerializerTest {
+class ProtobufSerializerCacheTest {
     private static final List<Arguments> POJOS = Arrays.asList(
             Arguments.of(singletonList(newMsg("hello"))),
             Arguments.of(asList(newMsg("hello"), newMsg("world"))),
@@ -53,12 +57,23 @@ class VarIntLengthStreamingSerializerTest {
             Arguments.of(singletonList(newMsg(1 << 28)))
     );
 
+    @Test
+    void serializeDeserialize() {
+        final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
+        final byte[] testMessageBytes = testMessage.toByteArray();
+        SerializerDeserializer<DummyMessage> serializer = INSTANCE.serializerDeserializer(DummyMessage.parser());
+        Buffer buffer = serializer.serialize(testMessage, DEFAULT_ALLOCATOR);
+        byte[] bytes = new byte[buffer.readableBytes()];
+        buffer.getBytes(buffer.readerIndex(), bytes);
+        assertThat(bytes, equalTo(testMessageBytes));
+        assertThat(serializer.deserialize(buffer, DEFAULT_ALLOCATOR), equalTo(testMessage));
+    }
+
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
-    void protobufWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
+    void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
         Parser<DummyMessage> parser = DummyMessage.parser();
-        VarIntLengthStreamingSerializer<DummyMessage> serializer = new VarIntLengthStreamingSerializer<>(
-                ProtobufSerializerCache.INSTANCE.serializerDeserializer(parser), DummyMessage::getSerializedSize);
+        StreamingSerializerDeserializer<DummyMessage> serializer = INSTANCE.streamingSerializerDeserializer(parser);
 
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         OutputStream os = asOutputStream(buffer);
@@ -71,10 +86,9 @@ class VarIntLengthStreamingSerializerTest {
 
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
-    void protobufParseDelimitedFromSerialized(Collection<DummyMessage> msgs) throws Exception {
+    void streamingParseDelimitedFromSerialized(Collection<DummyMessage> msgs) throws Exception {
         Parser<DummyMessage> parser = parser();
-        VarIntLengthStreamingSerializer<DummyMessage> serializer = new VarIntLengthStreamingSerializer<>(
-                ProtobufSerializerCache.INSTANCE.serializerDeserializer(parser), DummyMessage::getSerializedSize);
+        StreamingSerializerDeserializer<DummyMessage> serializer = INSTANCE.streamingSerializerDeserializer(parser);
 
         Collection<Buffer> serialized = serializer.serialize(fromIterable(msgs), DEFAULT_ALLOCATOR)
                 .toFuture().get();

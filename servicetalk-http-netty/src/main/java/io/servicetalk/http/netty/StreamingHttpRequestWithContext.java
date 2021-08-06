@@ -204,8 +204,8 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
 
     @Nullable
     @Override
-    public BufferEncoder requestEncoder() {
-        return delegate.requestEncoder();
+    public BufferEncoder contentEncoding() {
+        return delegate.contentEncoding();
     }
 
     @Override
@@ -402,8 +402,8 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     }
 
     @Override
-    public StreamingHttpRequest requestEncoder(@Nullable final BufferEncoder encoder) {
-        delegate.requestEncoder(encoder);
+    public StreamingHttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        delegate.contentEncoding(encoder);
         return this;
     }
 

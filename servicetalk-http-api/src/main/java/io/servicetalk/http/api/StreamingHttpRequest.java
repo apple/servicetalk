@@ -278,7 +278,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest encoding(ContentCodec encoding);
 
     @Override
-    StreamingHttpRequest requestEncoder(@Nullable BufferEncoder encoder);
+    StreamingHttpRequest contentEncoding(@Nullable BufferEncoder encoder);
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);

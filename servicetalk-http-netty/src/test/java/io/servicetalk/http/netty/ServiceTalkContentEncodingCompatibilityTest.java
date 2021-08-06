@@ -97,7 +97,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
                     .protocols(protocol.config)
                     .appendClientFilter(new ContentEncodingHttpRequesterFilter(clientDecoder.group))
                     .buildBlocking()) {
-                HttpResponse response = client.request(client.get("/").requestEncoder(clientEncoding.encoder)
+                HttpResponse response = client.request(client.get("/").contentEncoding(clientEncoding.encoder)
                         .payloadBody(payloadAsString((byte) 'a'), textSerializerUtf8()));
 
                 assertThat(response.status(), is(HttpResponseStatus.OK));

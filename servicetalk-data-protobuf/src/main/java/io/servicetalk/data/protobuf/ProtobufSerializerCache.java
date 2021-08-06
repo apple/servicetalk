@@ -17,7 +17,7 @@ package io.servicetalk.data.protobuf;
 
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
-import io.servicetalk.serializer.utils.FixedLengthStreamingSerializer;
+import io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer;
 
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
@@ -51,18 +51,19 @@ public final class ProtobufSerializerCache {
     }
 
     /**
-     * Get a {@link StreamingSerializerDeserializer} which supports &lt;fixed length, value&gt; encoding as described in
-     * <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
+     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @param parser The {@link Parser} used to serialize and deserialize.
      * @param <T> The type to serialize and deserialize.
-     * @return a {@link StreamingSerializerDeserializer} which supports &lt;fixed length, value&gt; encoding as
+     * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
      * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @see VarIntLengthStreamingSerializer
      */
     @SuppressWarnings("unchecked")
     public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(
             Parser<T> parser) {
         return streamingSerializerMap.computeIfAbsent(parser,
-                parser2 -> new FixedLengthStreamingSerializer<>(serializerDeserializer((Parser<T>) parser2),
+                parser2 -> new VarIntLengthStreamingSerializer<>(serializerDeserializer((Parser<T>) parser2),
                         MessageLite::getSerializedSize));
     }
 }

@@ -59,7 +59,7 @@ public interface HttpMetaData {
      *
      * Any encoding passed here, takes precedence. In other words, a compressed response, can
      * be disabled by passing {@link Identity#identity()}.
-     * @deprecated Use {@link HttpRequestMetaData#requestEncoder(BufferEncoder)}.
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding(BufferEncoder)}.
      * @param encoding The {@link ContentCodec} used for the encoding of the payload.
      * @return {@code this}.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
@@ -69,7 +69,7 @@ public interface HttpMetaData {
 
     /**
      * Returns the {@link ContentCodec} used to encode the payload of a request or a response.
-     * @deprecated Use {@link HttpRequestMetaData#requestEncoder()}.
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding()}.
      * @return The {@link ContentCodec} used for the encoding of the payload.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
      */

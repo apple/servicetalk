@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 
 import java.util.NoSuchElementException;
@@ -32,57 +33,66 @@ final class BlockingStreamingHttpMessageBodyUtils {
     private BlockingStreamingHttpMessageBodyUtils() {
     }
 
-    static BlockingStreamingHttpMessageBody<Buffer> newMessageBody(BlockingIterator<Object> rawMsgBody) {
-        return new BlockingStreamingHttpMessageBody<Buffer>() {
-            private final BlockingStreamingHttpMessageBodyAdapter<Object> msgBody =
-                    new BlockingStreamingHttpMessageBodyAdapter<>(rawMsgBody);
-
-            @Override
-            public BlockingIterator<Buffer> payloadBody() {
-                return msgBody;
-            }
-
-            @Nullable
-            @Override
-            public HttpHeaders trailers() {
-                return msgBody.trailers();
-            }
-        };
+    static HttpMessageBodyIterable<Buffer> newMessageBody(BlockingIterable<Object> rawMsgBody) {
+        return () -> new DefaultHttpMessageBodyIterator<>(rawMsgBody.iterator());
     }
 
-    static <T> BlockingStreamingHttpMessageBody<T> newMessageBody(
-            BlockingIterator<Object> rawMsgBody, HttpHeaders headers, HttpStreamingDeserializer<T> deserializer,
+    static <T> HttpMessageBodyIterable<T> newMessageBody(
+            BlockingIterable<Object> rawMsgBody, HttpHeaders headers, HttpStreamingDeserializer<T> deserializer,
             BufferAllocator allocator) {
-        final BlockingStreamingHttpMessageBodyAdapter<Object> msgBody =
-                new BlockingStreamingHttpMessageBodyAdapter<>(rawMsgBody);
-        BlockingIterator<T> deserialized = deserializer.deserialize(headers, () -> msgBody, allocator).iterator();
-        return new BlockingStreamingHttpMessageBody<T>() {
+        return () -> new HttpMessageBodyIterator<T>() {
+            private final HttpMessageBodyIterator<Buffer> itr =
+                    new DefaultHttpMessageBodyIterator<>(rawMsgBody.iterator());
+            private final BlockingIterator<T> deserialized =
+                    deserializer.deserialize(headers, () -> itr, allocator).iterator();
+            @Nullable
             @Override
-            public BlockingIterator<T> payloadBody() {
-                return deserialized;
+            public HttpHeaders trailers() {
+                return itr.trailers();
+            }
+
+            @Override
+            public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return deserialized.hasNext(timeout, unit);
             }
 
             @Nullable
             @Override
-            public HttpHeaders trailers() {
-                return msgBody.trailers();
+            public T next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return deserialized.next(timeout, unit);
+            }
+
+            @Nullable
+            @Override
+            public T next() {
+                return deserialized.next();
+            }
+
+            @Override
+            public void close() throws Exception {
+                deserialized.close();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return deserialized.hasNext();
             }
         };
     }
 
-    private static final class BlockingStreamingHttpMessageBodyAdapter<I> implements BlockingIterator<Buffer> {
+    private static final class DefaultHttpMessageBodyIterator<I> implements HttpMessageBodyIterator<Buffer> {
         private final BlockingIterator<I> rawMessageBody;
         @Nullable
         private HttpHeaders trailers;
         @Nullable
         private Buffer next;
 
-        BlockingStreamingHttpMessageBodyAdapter(BlockingIterator<I> rawMessageBody) {
+        DefaultHttpMessageBodyIterator(BlockingIterator<I> rawMessageBody) {
             this.rawMessageBody = requireNonNull(rawMessageBody);
         }
 
         @Nullable
-        HttpHeaders trailers() {
+        public HttpHeaders trailers() {
             return trailers;
         }
 

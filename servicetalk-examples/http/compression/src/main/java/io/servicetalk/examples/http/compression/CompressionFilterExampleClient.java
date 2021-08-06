@@ -53,7 +53,7 @@ public final class CompressionFilterExampleClient {
             // Make a request with an uncompressed payload.
             HttpRequest request = client.post("/sayHello")
                     // Request will be sent with no compression, same effect as setting encoding to identity
-                    .requestEncoder(identityEncoder())
+                    .contentEncoding(identityEncoder())
                     .payloadBody("George", textSerializerUtf8());
             client.request(request)
                     .afterFinally(responseProcessedLatch::countDown)
@@ -65,7 +65,7 @@ public final class CompressionFilterExampleClient {
             // Make a request with an gzip compressed payload.
             request = client.post("/sayHello")
                     // Encode the request using gzip.
-                    .requestEncoder(gzipDefault())
+                    .contentEncoding(gzipDefault())
                     .payloadBody("Gracie", textSerializerUtf8());
             client.request(request)
                     .afterFinally(responseProcessedLatch::countDown)
