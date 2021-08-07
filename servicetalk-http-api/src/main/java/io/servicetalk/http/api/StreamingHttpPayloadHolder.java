@@ -147,34 +147,31 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     <T, S> void transform(final TrailersTransformer<T, S> trailersTransformer,
                           final HttpStreamingDeserializer<S> serializer) {
+        transform(trailersTransformer, body -> defer(() -> {
+            final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
+            final Publisher<Buffer> transformedPayloadBody = body.liftSync(
+                    new PreserveTrailersBufferOperator(trailersProcessor));
+            return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
+                    fromSource(trailersProcessor)).scanWith(() ->
+                            new TrailersMapper<>(trailersTransformer, headersFactory))
+                    .subscribeShareContext();
+        }));
+    }
+
+    <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
+        transform(trailersTransformer,
+                body -> body.scanWith(() -> new TrailersMapper<>(trailersTransformer, headersFactory)));
+    }
+
+    private <T, S> void transform(final TrailersTransformer<T, S> trailersTransformer,
+                                  final Function<Publisher<?>, Publisher<?>> internalTransformer) {
         if (messageBody == null) {
             messageBody = defer(() ->
                     from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
                             headersFactory.newEmptyTrailers())).subscribeShareContext());
         } else {
             payloadInfo.setEmpty(false); // transformer may add payload content
-            final Publisher<?> oldMessageBody = messageBody;
-            messageBody = defer(() -> {
-                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                final Publisher<Buffer> transformedPayloadBody = oldMessageBody.liftSync(
-                        new PreserveTrailersBufferOperator(trailersProcessor));
-                return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
-                        fromSource(trailersProcessor)).scanWith(() ->
-                                new TrailersMapper<>(trailersTransformer, headersFactory))
-                        .subscribeShareContext();
-            });
-        }
-        payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
-    }
-
-    <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
-        if (messageBody == null) {
-            messageBody = defer(() ->
-                from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
-                        headersFactory.newEmptyTrailers())).subscribeShareContext());
-        } else {
-            payloadInfo.setEmpty(false); // transformer may add payload content
-            messageBody = messageBody.scanWith(() -> new TrailersMapper<>(trailersTransformer, headersFactory));
+            messageBody = internalTransformer.apply(messageBody);
         }
         payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
     }
