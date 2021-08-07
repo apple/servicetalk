@@ -20,7 +20,6 @@ import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -29,19 +28,13 @@ import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.ENTITY_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RATING_SERIALIZER;
 
 /**
  * A service that returns {@link Rating}s for an entity.
  */
 final class RatingBackend implements HttpService {
-
-    private static final String ENTITY_ID_QP_NAME = "entityId";
-    private final HttpSerializationProvider serializer;
-
-    private RatingBackend(HttpSerializationProvider serializer) {
-        this.serializer = serializer;
-    }
-
     @Override
     public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                        HttpResponseFactory responseFactory) {
@@ -52,13 +45,13 @@ final class RatingBackend implements HttpService {
 
         // Create a random rating
         Rating rating = new Rating(entityId, ThreadLocalRandom.current().nextInt(1, 6));
-        return succeeded(responseFactory.ok().payloadBody(rating, serializer.serializerFor(Rating.class)));
+        return succeeded(responseFactory.ok().payloadBody(rating, RATING_SERIALIZER));
     }
 
-    static StreamingHttpService newRatingService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newRatingService() {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/rating")
-                .thenRouteTo(new RatingBackend(serializer))
+                .thenRouteTo(new RatingBackend())
                 .buildStreaming();
     }
 }

@@ -43,6 +43,7 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -408,6 +409,9 @@ final class NettyHttpServer {
                 LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
                         cause);
                 response = streamingResponseFactory().serviceUnavailable();
+            } else if (cause instanceof SerializationException) {
+                // It is assumed that a failure occurred when attempting to deserialize the request.
+                response = streamingResponseFactory().unsupportedMediaType();
             } else {
                 LOGGER.error("Internal server error service={} connection={}", service, this, cause);
                 response = streamingResponseFactory().internalServerError();

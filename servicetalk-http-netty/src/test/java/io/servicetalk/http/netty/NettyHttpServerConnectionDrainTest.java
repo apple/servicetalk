@@ -40,8 +40,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,7 +78,7 @@ class NettyHttpServerConnectionDrainTest {
     void requestIsDrainedByUserWithDrainingDisabled() throws Exception {
         try (ServerContext serverContext = server(false, (ctx, request, responseFactory) ->
                 request.messageBody().ignoreElements() // User consumes payload (ignoring)
-                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializer()))));
+                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .buildBlocking()) {
 
@@ -97,7 +97,7 @@ class NettyHttpServerConnectionDrainTest {
                         .map(StringBuilder::toString)
                         .whenOnSuccess(resultRef::set)
                         .toCompletable()
-                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializer()))));
+                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
 
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .buildBlocking()) {
@@ -116,12 +116,12 @@ class NettyHttpServerConnectionDrainTest {
 
             client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildStreaming();
 
-            client.request(client.post("/").payloadBody(from(LARGE_TEXT), textSerializer()))
+            client.request(client.post("/").payloadBody(from(LARGE_TEXT), appSerializerUtf8FixLen()))
                     // Subscribe to send the request, don't care about the response since graceful close of the server
                     // will hang until the request is consumed, thus we expect the timeout to hit
                     .ignoreElement().subscribe();
 
-            assertThrows(TimeoutException.class, () -> latch.await()); // Wait till the request is received
+            assertThrows(TimeoutException.class, latch::await); // Wait till the request is received
             // before initiating graceful close of the server
         } finally {
             closeClient(client);
@@ -135,14 +135,15 @@ class NettyHttpServerConnectionDrainTest {
     }
 
     private static void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
-        HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializer()));
-        assertThat(response.payloadBody(textDeserializer()), equalTo("OK"));
+        HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializerUtf8()));
+        assertThat(response.toStreamingResponse().payloadBody(appSerializerUtf8FixLen())
+                        .collect(StringBuilder::new, StringBuilder::append).toFuture().get().toString(), equalTo("OK"));
     }
 
     private static StreamingHttpService respondOkWithoutReadingRequest(Runnable onRequest) {
         return (ctx, request, responseFactory) -> {
             onRequest.run();
-            return succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializer()));
+            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()));
         };
     }
 

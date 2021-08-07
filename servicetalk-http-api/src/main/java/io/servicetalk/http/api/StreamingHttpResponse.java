@@ -36,13 +36,24 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Gets and deserializes the payload body.
+     * @deprecated Use {@link #payloadBody(HttpStreamingDeserializer)}.
      * @param deserializer The function that deserializes the underlying {@link Publisher}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
+    @Deprecated
     default <T> Publisher<T> payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
+
+    /**
+     * Gets and deserializes the payload body.
+     *
+     * @param deserializer The function that deserializes the underlying {@link Publisher}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
+     */
+    <T> Publisher<T> payloadBody(HttpStreamingDeserializer<T> deserializer);
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
@@ -77,12 +88,44 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing {@link Publisher} payload body.
+     * @deprecated Use {@link #payloadBody(Publisher, HttpStreamingSerializer)}.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
      */
+    @Deprecated
     <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+
+    /**
+     * Returns a {@link StreamingHttpResponse} with its underlying payload set to the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing {@link Publisher} payload body. If this default
+     * policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpStreamingSerializer)} for more
+     * fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link Publisher} payload body.
+     * @param payloadBody The new payload body, prior to serialization.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return {@code this}
+     */
+    <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpStreamingSerializer<T> serializer);
+
+    /**
+     * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
+     * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
+     * {@link Publisher} will be transformed/consumed or else no more responses may be processed.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return {@code this}
+     */
+    @Deprecated
+    <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                   HttpSerializer<T> serializer);
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
@@ -94,7 +137,27 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @return {@code this}
      */
     <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
-                                                   HttpSerializer<T> serializer);
+                                                   HttpStreamingSerializer<T> serializer);
+
+    /**
+     * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)}.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
+     * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
+     * {@link Publisher} will be transformed/consumed or else no more requests may be processed.
+     * @param deserializer Used to deserialize the existing payload body.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to deserialize.
+     * @param <R> The type of objects to serialize.
+     * @return {@code this}
+     */
+    @Deprecated
+    default <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
+                                                              HttpDeserializer<T> deserializer,
+                                                              HttpSerializer<R> serializer) {
+        return transformPayloadBody(bufferPublisher ->
+                transformer.apply(deserializer.deserialize(headers(), bufferPublisher)), serializer);
+    }
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
@@ -107,12 +170,9 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param <R> The type of objects to serialize.
      * @return {@code this}
      */
-    default <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
-                                                              HttpDeserializer<T> deserializer,
-                                                              HttpSerializer<R> serializer) {
-        return transformPayloadBody(bufferPublisher ->
-                transformer.apply(deserializer.deserialize(headers(), bufferPublisher)), serializer);
-    }
+    <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
+                                                      HttpStreamingDeserializer<T> deserializer,
+                                                      HttpStreamingSerializer<R> serializer);
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s.
@@ -148,6 +208,18 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     <T> StreamingHttpResponse transform(TrailersTransformer<T, Buffer> trailersTransformer);
 
     /**
+     * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link S}s,
+     * with access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a>s.
+     * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
+     * @param deserializer Used to deserialize the existing payload body.
+     * @param <T> The type of state used during the transformation.
+     * @param <S> The type of objects to deserialize.
+     * @return {@code this}
+     */
+    <T, S> StreamingHttpResponse transform(TrailersTransformer<T, S> trailersTransformer,
+                                           HttpStreamingDeserializer<S> deserializer);
+
+    /**
      * Translates this {@link StreamingHttpResponse} to a {@link HttpResponse}.
      * @return a {@link Single} that completes with a {@link HttpResponse} representation of this
      * {@link StreamingHttpResponse}.
@@ -163,6 +235,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     @Override
     StreamingHttpResponse version(HttpProtocolVersion version);
 
+    @Deprecated
     @Override
     StreamingHttpResponse encoding(ContentCodec encoding);
 

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.http.api.HttpSerializerDeserializer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
 import io.servicetalk.opentracing.internal.TracingConstants;
@@ -28,6 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
+import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,6 +42,8 @@ final class TestUtils {
             "filter response onSubscribe path={}",
             "filter response onNext path={}",
             "filter response terminated path={}"};
+    static final HttpSerializerDeserializer<TestSpanState> SPAN_STATE_SERIALIZER =
+            jsonSerializer(JACKSON.serializerDeserializer(TestSpanState.class));
 
     private TestUtils() { } // no instantiation
 

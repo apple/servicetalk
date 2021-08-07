@@ -32,8 +32,7 @@ import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
@@ -101,7 +100,7 @@ class HttpConnectionContextSocketOptionTest {
             assertThat("Client-side connection SocketOption does not match expected value",
                     connection.connectionContext().socketOption(socketOption), clientMatcher);
             assertThat("Server-side connection SocketOption does not match expected value",
-                    connection.request(connection.get("/")).payloadBody(textDeserializer()), serverMatcher);
+                    connection.request(connection.get("/")).payloadBody(textSerializerUtf8()), serverMatcher);
         }
     }
 
@@ -113,7 +112,7 @@ class HttpConnectionContextSocketOptionTest {
             builder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMs);
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                .payloadBody(valueOf(ctx.socketOption(socketOption)), textSerializer()));
+                .payloadBody(valueOf(ctx.socketOption(socketOption)), textSerializerUtf8()));
     }
 
     private BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs,
@@ -136,7 +135,7 @@ class HttpConnectionContextSocketOptionTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                             () -> ctx.socketOption(unsupported));
-                    return responseFactory.ok().payloadBody(ex.getMessage(), textSerializer());
+                    return responseFactory.ok().payloadBody(ex.getMessage(), textSerializerUtf8());
                 });
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .protocols(protocol.config).buildBlocking();
@@ -146,7 +145,7 @@ class HttpConnectionContextSocketOptionTest {
                     () -> connection.connectionContext().socketOption(unsupported));
             assertThat(ex.getMessage(), endsWith("not supported"));
             assertThat(ex.getMessage(),
-                    equalTo(connection.request(connection.get("/")).payloadBody(textDeserializer())));
+                    equalTo(connection.request(connection.get("/")).payloadBody(textSerializerUtf8())));
         }
     }
 

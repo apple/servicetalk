@@ -30,6 +30,7 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
         return original.version();
     }
 
+    @Deprecated
     @Override
     public ContentCodec encoding() {
         return original.encoding();

@@ -56,10 +56,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -97,7 +96,7 @@ class BlockingStreamingToStreamingServiceTest {
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(OK, response);
-        assertPayloadBody("", response);
+        assertPayloadBody("", response, false);
         assertEmptyTrailers(response);
     }
 
@@ -108,7 +107,7 @@ class BlockingStreamingToStreamingServiceTest {
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(NO_CONTENT, response);
-        assertPayloadBody("", response);
+        assertPayloadBody("", response, false);
         assertEmptyTrailers(response);
     }
 
@@ -116,14 +115,15 @@ class BlockingStreamingToStreamingServiceTest {
     void receivePayloadBody() throws Exception {
         StringBuilder receivedPayload = new StringBuilder();
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
-            request.payloadBody().forEach(chunk -> receivedPayload.append(chunk.toString(US_ASCII)));
+            request.payloadBody().forEach(chunk -> receivedPayload.append(chunk.toString(
+                    chunk.readerIndex() + 4, chunk.readableBytes() - 4, UTF_8)));
             response.sendMetaData().close();
         };
 
         List<Object> response = invokeService(syncService, reqRespFactory.post("/")
-                .payloadBody(from("Hello\n", "World\n"), textSerializer()));
+                .payloadBody(from("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertMetaData(OK, response);
-        assertPayloadBody("", response);
+        assertPayloadBody("", response, true);
         assertEmptyTrailers(response);
 
         assertThat(receivedPayload.toString(), is(HELLO_WORLD));
@@ -140,7 +140,7 @@ class BlockingStreamingToStreamingServiceTest {
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(OK, response);
-        assertPayloadBody(HELLO_WORLD, response);
+        assertPayloadBody(HELLO_WORLD, response, false);
         assertEmptyTrailers(response);
     }
 
@@ -167,9 +167,9 @@ class BlockingStreamingToStreamingServiceTest {
     void echoServiceUsingPayloadWriterWithSerializerWithTrailers() throws Exception {
         echoService((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
-            try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
+            try (HttpPayloadWriter<String> pw = response.sendMetaData(appSerializerUtf8FixLen())) {
                 AtomicInteger totalLength = new AtomicInteger();
-                request.payloadBody(textDeserializer()).forEach(chunk -> {
+                request.payloadBody(appSerializerUtf8FixLen()).forEach(chunk -> {
                     try {
                         totalLength.addAndGet(chunk.length());
                         pw.write(chunk);
@@ -177,7 +177,7 @@ class BlockingStreamingToStreamingServiceTest {
                         throwException(e);
                     }
                 });
-                pw.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
+                pw.setTrailer(X_TOTAL_LENGTH, String.valueOf(addFixedLengthFramingOverhead(totalLength.get(), 2)));
             }
         });
     }
@@ -201,11 +201,11 @@ class BlockingStreamingToStreamingServiceTest {
 
     private void echoService(BlockingStreamingHttpService syncService) throws Exception {
         List<Object> response = invokeService(syncService, reqRespFactory.post("/")
-                .payloadBody(from("Hello\n", "World\n"), textSerializer()));
+                .payloadBody(from("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertMetaData(OK, response);
         assertHeader(TRAILER, X_TOTAL_LENGTH, response);
-        assertPayloadBody(HELLO_WORLD, response);
-        assertTrailer(X_TOTAL_LENGTH, String.valueOf(HELLO_WORLD.length()), response);
+        assertPayloadBody(HELLO_WORLD, response, true);
+        assertTrailer(X_TOTAL_LENGTH, String.valueOf(addFixedLengthFramingOverhead(HELLO_WORLD.length(), 2)), response);
     }
 
     @Test
@@ -471,11 +471,38 @@ class BlockingStreamingToStreamingServiceTest {
         assertThat(metaData.headers().contains(expectedHeader, expectedValue), is(true));
     }
 
-    private static void assertPayloadBody(String expectedPayloadBody, List<Object> response) {
-        String payloadBody = response.stream()
-                .filter(obj -> obj instanceof Buffer)
-                .map(obj -> ((Buffer) obj).toString(US_ASCII))
-                .collect(Collectors.joining());
+    private static void assertPayloadBody(String expectedPayloadBody, List<Object> response,
+                                          boolean stripFixedLength) {
+        String payloadBody;
+        if (stripFixedLength) {
+            StringBuilder sb = new StringBuilder();
+            Buffer aggregate = DEFAULT_ALLOCATOR.newBuffer();
+            int toRead = -1;
+            for (Object o : response) {
+                if (o instanceof Buffer) {
+                    aggregate.writeBytes(((Buffer) o));
+                    while (aggregate.readableBytes() >= toRead) {
+                        if (toRead < 0) {
+                            if (aggregate.readableBytes() >= 4) {
+                                toRead = aggregate.readInt();
+                            } else {
+                                break;
+                            }
+                        }
+                        if (aggregate.readableBytes() >= toRead) {
+                            sb.append(aggregate.readBytes(toRead).toString(UTF_8));
+                            toRead = -1;
+                        }
+                    }
+                }
+            }
+            payloadBody = sb.toString();
+        } else {
+            payloadBody = response.stream()
+                    .filter(obj -> obj instanceof Buffer)
+                    .map(obj -> ((Buffer) obj).toString(UTF_8))
+                    .collect(Collectors.joining());
+        }
         assertThat(payloadBody, is(expectedPayloadBody));
     }
 
@@ -491,5 +518,9 @@ class BlockingStreamingToStreamingServiceTest {
         HttpHeaders trailers = (HttpHeaders) lastItem;
         assertThat(trailers, is(notNullValue()));
         assertThat(trailers.contains(expectedTrailer, expectedValue), is(true));
+    }
+
+    private static int addFixedLengthFramingOverhead(int length, int chunks) {
+        return length == 0 ? 0 : length + Integer.BYTES * chunks;
     }
 }

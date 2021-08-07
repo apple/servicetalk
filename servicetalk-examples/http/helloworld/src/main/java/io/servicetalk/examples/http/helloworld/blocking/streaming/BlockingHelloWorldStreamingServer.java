@@ -18,13 +18,13 @@ package io.servicetalk.examples.http.helloworld.blocking.streaming;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.netty.HttpServers;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 
 public final class BlockingHelloWorldStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
-            try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
+            try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(appSerializerUtf8FixLen())) {
                 payloadWriter.write("Hello");
                 payloadWriter.write(" World!");
             }

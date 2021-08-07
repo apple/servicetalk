@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.Identity;
 
@@ -58,19 +59,21 @@ public interface HttpMetaData {
      *
      * Any encoding passed here, takes precedence. In other words, a compressed response, can
      * be disabled by passing {@link Identity#identity()}.
-     *
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding(BufferEncoder)}.
      * @param encoding The {@link ContentCodec} used for the encoding of the payload.
      * @return {@code this}.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
      */
+    @Deprecated
     HttpMetaData encoding(ContentCodec encoding);
 
     /**
      * Returns the {@link ContentCodec} used to encode the payload of a request or a response.
-     *
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding()}.
      * @return The {@link ContentCodec} used for the encoding of the payload.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
      */
+    @Deprecated
     @Nullable
     ContentCodec encoding();
 

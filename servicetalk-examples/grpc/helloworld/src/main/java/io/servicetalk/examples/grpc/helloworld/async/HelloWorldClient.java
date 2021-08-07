@@ -21,8 +21,6 @@ import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
 
-import java.util.concurrent.CountDownLatch;
-
 /**
  * Implementation of the
  * <a href="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
@@ -31,19 +29,14 @@ import java.util.concurrent.CountDownLatch;
  * Start the {@link HelloWorldServer} first.
  */
 public final class HelloWorldClient {
-
     public static void main(String... args) throws Exception {
         try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
+            client.sayHello(HelloRequest.newBuilder().setName("World").build())
+                    .whenOnSuccess(System.out::println)
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
-
-            // block until response is complete and afterFinally() is called
-            responseProcessedLatch.await();
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

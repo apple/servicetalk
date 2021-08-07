@@ -32,8 +32,11 @@ final class Types {
     private static final String grpcRoutesFqcn = grpcApiPkg + ".GrpcRoutes";
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
     private static final String routerApiPkg = basePkg + ".router.api";
+    private static final String protobufDataPkg = basePkg + ".data.protobuf";
 
     static final ClassName List = ClassName.get("java.util", "List");
+    static final ClassName Objects = ClassName.get("java.util", "Objects");
+    static final ClassName Collections = ClassName.get("java.util", "Collections");
 
     private static final ClassName RouteExecutionStrategyFactory =
             bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
@@ -47,6 +50,7 @@ final class Types {
 
     static final ClassName BlockingGrpcClient = bestGuess(grpcApiPkg + ".BlockingGrpcClient");
     static final ClassName BlockingGrpcService = bestGuess(grpcApiPkg + ".BlockingGrpcService");
+    static final ClassName GrpcClientMetadata = bestGuess(grpcApiPkg + ".GrpcClientMetadata");
     static final ClassName DefaultGrpcClientMetadata = bestGuess(grpcApiPkg + ".DefaultGrpcClientMetadata");
     static final ClassName GrpcClient = bestGuess(grpcApiPkg + ".GrpcClient");
     static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
@@ -56,6 +60,11 @@ final class Types {
     static final ClassName GrpcExecutionContext = bestGuess(grpcApiPkg + ".GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
     static final ClassName GrpcStatusException = bestGuess(grpcApiPkg + ".GrpcStatusException");
+    static final ClassName Identity = bestGuess(encodingApiPkg + ".Identity");
+    static final ClassName BufferDecoderGroup = bestGuess(encodingApiPkg + ".BufferDecoderGroup");
+    static final ClassName EmptyBufferDecoderGroup = bestGuess(encodingApiPkg + ".EmptyBufferDecoderGroup");
+    static final ClassName BufferEncoder = bestGuess(encodingApiPkg + ".BufferEncoder");
+    static final TypeName BufferEncoderList = ParameterizedTypeName.get(List, BufferEncoder);
     static final ClassName ContentCodec = bestGuess(encodingApiPkg + ".ContentCodec");
     static final TypeName GrpcSupportedCodings = ParameterizedTypeName.get(List, ContentCodec);
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");
@@ -66,6 +75,8 @@ final class Types {
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");
     static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");
+    static final ClassName GrpcMethodDescriptor = bestGuess(grpcApiPkg + ".MethodDescriptor");
+    static final ClassName GrpcMethodDescriptors = bestGuess(grpcApiPkg + ".MethodDescriptors");
 
     static final ClassName BlockingClientCall = bestGuess(GrpcClientCallFactory + ".BlockingClientCall");
     static final ClassName BlockingRequestStreamingClientCall =
@@ -92,8 +103,10 @@ final class Types {
     static final ClassName BlockingRoute = bestGuess(grpcRoutesFqcn + ".BlockingRoute");
     static final ClassName BlockingStreamingRoute = bestGuess(grpcRoutesFqcn + ".BlockingStreamingRoute");
 
+    @Deprecated
     static final ClassName ProtoBufSerializationProviderBuilder =
             bestGuess(grpcProtobufPkg + ".ProtoBufSerializationProviderBuilder");
+    static final ClassName ProtobufSerializerFactory = bestGuess(protobufDataPkg + ".ProtobufSerializerFactory");
 
     static final TypeName GrpcRouteExecutionStrategyFactory = ParameterizedTypeName.get(RouteExecutionStrategyFactory,
             GrpcExecutionStrategy);

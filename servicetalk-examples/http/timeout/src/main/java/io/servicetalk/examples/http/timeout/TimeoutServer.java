@@ -15,15 +15,12 @@
  */
 package io.servicetalk.examples.http.timeout;
 
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async 'Hello World!' example to demonstrate use of timeout filter.
@@ -32,21 +29,12 @@ public final class TimeoutServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 // Filter enforces that responses must complete within 30 seconds or will be cancelled.
-                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofSeconds(30), true))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(ofSeconds(30), true))
                 .listenAndAwait((ctx, request, responseFactory) ->
-                        Single.defer(() -> {
                             // Force a 5 second delay in the response.
-                            try {
-                                TimeUnit.SECONDS.sleep(5);
-                            } catch (InterruptedException woken) {
-                                Thread.interrupted();
-                                // just continue
-                            }
-
-                            return succeeded(responseFactory.ok()
-                                    .payloadBody("Hello World!", textSerializer()))
-                                    .subscribeShareContext();
-                        }))
+                            ctx.executionContext().executor().timer(ofSeconds(5))
+                        .concat(succeeded(responseFactory.ok()
+                                .payloadBody("Hello World!", textSerializerUtf8()))))
                 .awaitShutdown();
     }
 }

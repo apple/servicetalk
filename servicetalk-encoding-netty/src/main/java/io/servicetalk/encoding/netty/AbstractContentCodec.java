@@ -20,6 +20,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 
+@Deprecated
 abstract class AbstractContentCodec implements ContentCodec {
 
     private final CharSequence name;

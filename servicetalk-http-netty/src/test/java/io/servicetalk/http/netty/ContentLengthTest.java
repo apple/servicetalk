@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
@@ -48,8 +49,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
@@ -110,37 +111,37 @@ class ContentLengthTest {
     @Test
     void shouldCalculateRequestContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(Publisher.from("Hello"), textSerializer());
-        setRequestContentLengthAndVerify(request, contentEqualTo("5"));
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen());
+        setRequestContentLengthAndVerify(request, contentEqualTo("9"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(Publisher.from("Hello", "World"), textSerializer());
-        setRequestContentLengthAndVerify(request, contentEqualTo("10"));
+                .payloadBody(from("Hello", "World"), appSerializerUtf8FixLen());
+        setRequestContentLengthAndVerify(request, contentEqualTo("18"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(Publisher.from("Hello", " ", "World", "!"), textSerializer());
-        setRequestContentLengthAndVerify(request, contentEqualTo("12"));
+                .payloadBody(from("Hello", " ", "World", "!"), appSerializerUtf8FixLen());
+        setRequestContentLengthAndVerify(request, contentEqualTo("28"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromTransformedMultipleItemPublisher() throws Exception {
-        StreamingHttpRequest request = newAggregatedRequest().payloadBody("Hello", textSerializer())
-                .toStreamingRequest().transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),
-                        textDeserializer(), textSerializer());
-        setRequestContentLengthAndVerify(request, contentEqualTo("12"));
+        StreamingHttpRequest request = newStreamingRequest().payloadBody(from("Hello"), appSerializerUtf8FixLen())
+                .transformPayloadBody(payload -> payload.concat(from(" ", "World", "!")),
+                        appSerializerUtf8FixLen(), appSerializerUtf8FixLen());
+        setRequestContentLengthAndVerify(request, contentEqualTo("28"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromTransformedRawMultipleItemPublisher() throws Exception {
-        StreamingHttpRequest request = newAggregatedRequest().payloadBody("Hello", textSerializer())
+        StreamingHttpRequest request = newAggregatedRequest().payloadBody("Hello", textSerializerUtf8())
                 .toStreamingRequest().transformMessageBody(payload -> payload.map(obj -> (Buffer) obj)
-                        .concat(Publisher.from(" ", "World", "!").map(DEFAULT_RO_ALLOCATOR::fromAscii)));
+                        .concat(from(" ", "World", "!").map(DEFAULT_RO_ALLOCATOR::fromAscii)));
         setRequestContentLengthAndVerify(request, contentEqualTo("12"));
     }
 
@@ -160,31 +161,30 @@ class ContentLengthTest {
     @Test
     void shouldCalculateResponseContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(Publisher.from("Hello"), textSerializer());
-        setResponseContentLengthAndVerify(response, contentEqualTo("5"));
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen());
+        setResponseContentLengthAndVerify(response, contentEqualTo("9"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(Publisher.from("Hello", "World"), textSerializer());
-        setResponseContentLengthAndVerify(response, contentEqualTo("10"));
+                .payloadBody(from("Hello", "World"), appSerializerUtf8FixLen());
+        setResponseContentLengthAndVerify(response, contentEqualTo("18"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(Publisher.from("Hello", " ", "World", "!"), textSerializer());
-        setResponseContentLengthAndVerify(response, contentEqualTo("12"));
+                .payloadBody(from("Hello", " ", "World", "!"), appSerializerUtf8FixLen());
+        setResponseContentLengthAndVerify(response, contentEqualTo("28"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromTransformedMultipleItemPublisher() throws Exception {
-        StreamingHttpResponse response = newAggregatedResponse().payloadBody("Hello", textSerializer())
-                .toStreamingResponse()
-                .transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),
-                        textDeserializer(), textSerializer());
-        setResponseContentLengthAndVerify(response, contentEqualTo("12"));
+        StreamingHttpResponse response = newStreamingResponse().payloadBody(from("Hello"), appSerializerUtf8FixLen())
+                .transformPayloadBody(payload -> payload.concat(from(" ", "World", "!")),
+                        appSerializerUtf8FixLen(), appSerializerUtf8FixLen());
+        setResponseContentLengthAndVerify(response, contentEqualTo("28"));
     }
 
     private static HttpRequest newAggregatedRequest() throws Exception {
@@ -192,13 +192,23 @@ class ContentLengthTest {
     }
 
     private static HttpRequest newAggregatedRequest(HttpRequestMethod method) throws Exception {
-        return newRequest(method, "/", HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory)
-                .toRequest().toFuture().get();
+        return newStreamingRequest(method).toRequest().toFuture().get();
+    }
+
+    private static StreamingHttpRequest newStreamingRequest() {
+        return newStreamingRequest(GET);
+    }
+
+    private static StreamingHttpRequest newStreamingRequest(HttpRequestMethod method) {
+        return newRequest(method, "/", HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory);
     }
 
     private static HttpResponse newAggregatedResponse() throws Exception {
-        return newResponse(OK, HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory)
-                .toResponse().toFuture().get();
+        return newStreamingResponse().toResponse().toFuture().get();
+    }
+
+    private static StreamingHttpResponse newStreamingResponse() {
+        return newResponse(OK, HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory);
     }
 
     private static void setRequestContentLengthAndVerify(final StreamingHttpRequest request,

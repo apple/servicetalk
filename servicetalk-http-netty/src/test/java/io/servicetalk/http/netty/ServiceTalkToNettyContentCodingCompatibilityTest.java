@@ -53,6 +53,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@Deprecated
 class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkContentCodingTest {
 
     private EventLoopGroup serverEventLoopGroup;

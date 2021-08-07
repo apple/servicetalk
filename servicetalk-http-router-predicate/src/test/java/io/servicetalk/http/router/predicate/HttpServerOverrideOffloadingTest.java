@@ -46,7 +46,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -133,7 +133,7 @@ class HttpServerOverrideOffloadingTest {
                             "Thread: " + currentThread()));
                 }
             }).ignoreElements()).subscribe(cp);
-            return succeeded(responseFactory.ok().payloadBody(from("Hello"), textSerializer())
+            return succeeded(responseFactory.ok().payloadBody(from("Hello"), appSerializerUtf8FixLen())
                     .transformPayloadBody(p -> p.beforeRequest(__ -> {
                         if (isInvalidThread.test(currentThread())) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +

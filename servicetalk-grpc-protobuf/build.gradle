@@ -32,6 +32,9 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")
+  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-data-protobuf")
+  implementation project(":servicetalk-serializer-utils")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 

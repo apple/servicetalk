@@ -27,11 +27,6 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
         this.status = requireNonNull(status);
     }
 
-    DefaultHttpResponseMetaData(final DefaultHttpResponseMetaData responseMetaData) {
-        super(responseMetaData);
-        this.status = responseMetaData.status;
-    }
-
     @Override
     public HttpResponseMetaData version(final HttpProtocolVersion version) {
         super.version(version);

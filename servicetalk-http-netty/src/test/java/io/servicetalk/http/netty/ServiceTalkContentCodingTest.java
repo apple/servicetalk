@@ -59,6 +59,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.stream;
@@ -71,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Deprecated
 class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     private static final BiFunction<Scenario, List<Throwable>, StreamingHttpServiceFilterFactory> REQ_FILTER =
@@ -215,7 +218,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         assertResponse(client().request(client()
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(payloadAsString((byte) 'a'), textSerializer())).toStreamingResponse());
+                .payloadBody(payloadAsString((byte) 'a'), textSerializerUtf8())).toStreamingResponse());
 
         final BlockingStreamingHttpClient blockingStreamingHttpClient = client().asBlockingStreamingClient();
         assertResponse(blockingStreamingHttpClient.request(blockingStreamingHttpClient
@@ -248,17 +251,17 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         assertEquals(UNSUPPORTED_MEDIA_TYPE, client().request(client()
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(payloadAsString((byte) 'a'), textSerializer())).status());
+                .payloadBody(payloadAsString((byte) 'a'), textSerializerUtf8())).status());
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, blockingStreamingHttpClient.request(blockingStreamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(singletonList(payloadAsString((byte) 'a')), textSerializer())).status());
+                .payloadBody(singletonList(payloadAsString((byte) 'a')), appSerializerUtf8FixLen())).status());
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, streamingHttpClient.request(streamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(from(payloadAsString((byte) 'a')), textSerializer())).toFuture().get().status());
+                .payloadBody(from(payloadAsString((byte) 'a')), appSerializerUtf8FixLen())).toFuture().get().status());
     }
 
     void assertResponseHeaders(final String contentEncodingValue) {

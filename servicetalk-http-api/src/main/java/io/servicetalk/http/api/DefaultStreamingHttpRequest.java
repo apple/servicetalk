@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
@@ -33,14 +34,15 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
-                                @Nullable final ContentCodec encoding, final BufferAllocator allocator,
-                                @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
-                                final HttpHeadersFactory headersFactory) {
+                                @Nullable final ContentCodec encoding, @Nullable final BufferEncoder encoder,
+                                final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
+                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory) {
         super(method, requestTarget, version, headers);
         if (encoding != null) {
             encoding(encoding);
         }
         payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        this.contentEncoding(encoder);
     }
 
     @Override
@@ -49,9 +51,16 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
         return this;
     }
 
+    @Deprecated
     @Override
     public StreamingHttpRequest encoding(final ContentCodec encoding) {
         super.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        super.contentEncoding(encoder);
         return this;
     }
 
@@ -145,6 +154,11 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
+    public <T> Publisher<T> payloadBody(final HttpStreamingDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody(), payloadHolder.allocator());
+    }
+
+    @Override
     public Publisher<Object> messageBody() {
         return payloadHolder.messageBody();
     }
@@ -155,18 +169,44 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
         return this;
     }
 
+    @Deprecated
     @Override
-    public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody,
-                                                      final HttpSerializer<T> serializer) {
-        payloadHolder.payloadBody(payloadBody, serializer);
+    public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
+        payloadHolder.transformPayloadBody(bufPub ->
+                serializer.serialize(headers(), payloadBody, payloadHolder.allocator()));
         return this;
     }
 
     @Override
+    public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody,
+                                                final HttpStreamingSerializer<T> serializer) {
+        payloadHolder.payloadBody(payloadBody, serializer);
+        return this;
+    }
+
+    @Deprecated
+    @Override
     public <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
-                                                               HttpSerializer<T> serializer) {
+                                                         HttpSerializer<T> serializer) {
+        payloadHolder.transformPayloadBody(bufPub ->
+                serializer.serialize(headers(), transformer.apply(bufPub), payloadHolder.allocator()));
+        return this;
+    }
+
+    @Override
+    public <T> StreamingHttpRequest transformPayloadBody(final Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                         final HttpStreamingSerializer<T> serializer) {
         payloadHolder.transformPayloadBody(transformer, serializer);
         return this;
+    }
+
+    @Override
+    public <T, R> StreamingHttpRequest transformPayloadBody(final Function<Publisher<T>, Publisher<R>> transformer,
+                                                            final HttpStreamingDeserializer<T> deserializer,
+                                                            final HttpStreamingSerializer<R> serializer) {
+        return transformPayloadBody(bufPub ->
+                        transformer.apply(deserializer.deserialize(headers(), bufPub, payloadHolder.allocator())),
+                serializer);
     }
 
     @Override
@@ -184,6 +224,13 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     @Override
     public <T> StreamingHttpRequest transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         payloadHolder.transform(trailersTransformer);
+        return this;
+    }
+
+    @Override
+    public <T, S> StreamingHttpRequest transform(final TrailersTransformer<T, S> trailersTransformer,
+                                                 final HttpStreamingDeserializer<S> deserializer) {
+        payloadHolder.transform(trailersTransformer, deserializer);
         return this;
     }
 

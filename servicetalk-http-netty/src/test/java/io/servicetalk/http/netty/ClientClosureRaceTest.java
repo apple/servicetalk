@@ -44,7 +44,7 @@ import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -130,8 +130,9 @@ class ClientClosureRaceTest {
     void testSequentialPosts() throws Exception {
         try (HttpClient client = newClientBuilder().build()) {
             runIterations(() ->
-                    client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
-                    response -> client.request(client.post("/bar").payloadBody("Another payload", textSerializer()))));
+                    client.request(client.post("/foo").payloadBody("Some payload", textSerializerUtf8()))
+                            .flatMap(response -> client.request(client.post("/bar")
+                                    .payloadBody("Another payload", textSerializerUtf8()))));
         }
     }
 
@@ -151,8 +152,8 @@ class ClientClosureRaceTest {
                 .protocols(h1().maxPipelinedRequests(2).build())
                 .build()) {
             runIterations(() -> collectUnordered(
-                    client.request(client.get("/foo").payloadBody("Some payload", textSerializer())),
-                    client.request(client.get("/bar").payloadBody("Another payload", textSerializer()))));
+                    client.request(client.get("/foo").payloadBody("Some payload", textSerializerUtf8())),
+                    client.request(client.get("/bar").payloadBody("Another payload", textSerializerUtf8()))));
         }
     }
 

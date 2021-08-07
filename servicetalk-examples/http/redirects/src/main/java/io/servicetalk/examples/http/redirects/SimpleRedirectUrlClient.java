@@ -20,9 +20,7 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
-import java.util.concurrent.CountDownLatch;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Async `Hello World` example that demonstrates how redirects can be handled automatically by a
@@ -31,7 +29,6 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
  * Automatic redirects have limitations. See {@link RedirectWithStateUrlClient} for more information.
  */
 public final class SimpleRedirectUrlClient {
-
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forMultiAddressUrl()
                 // This is an optional configuration that applies more restrictive limit for the number or redirects:
@@ -45,18 +42,15 @@ public final class SimpleRedirectUrlClient {
                     }
                 })
                 .build()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.request(client.get("http://localhost:8080/sayHello"))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(resp -> {
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
-                    });
-
-            responseProcessedLatch.await();
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
+                    })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

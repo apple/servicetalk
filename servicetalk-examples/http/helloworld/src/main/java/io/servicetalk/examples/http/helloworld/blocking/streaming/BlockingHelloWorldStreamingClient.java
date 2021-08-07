@@ -20,7 +20,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 
 public final class BlockingHelloWorldStreamingClient {
 
@@ -29,7 +29,7 @@ public final class BlockingHelloWorldStreamingClient {
                 .buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {
+            try (BlockingIterator<String> payload = response.payloadBody(appSerializerUtf8FixLen()).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

@@ -15,26 +15,16 @@
  */
 package io.servicetalk.examples.grpc.protocoptions;
 
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.helloworld.GreeterSt;
+import io.grpc.examples.helloworld.GreeterSt.BlockingGreeterService;
 import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
 
 public class BlockingProtocOptionsServer {
-
     public static void main(String[] args) throws Exception {
         GrpcServers.forPort(8080)
-                .listenAndAwait(new GreeterSt.ServiceFactory(new MyGreeterService()))
+                .listenAndAwait((BlockingGreeterService) (ctx, request) ->
+                        HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())
                 .awaitShutdown();
-    }
-
-    private static final class MyGreeterService implements GreeterSt.BlockingGreeterService {
-
-        @Override
-        public HelloReply sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            return HelloReply.newBuilder().setMessage("Hello " + request.getName()).build();
-        }
     }
 }

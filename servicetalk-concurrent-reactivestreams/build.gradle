@@ -21,6 +21,8 @@ dependencies {
   api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-serializer-utils")
+  implementation project(":servicetalk-buffer-netty")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

@@ -17,13 +17,11 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -56,15 +54,14 @@ import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
+import static io.servicetalk.opentracing.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentracing.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentracing.http.TestUtils.isHexId;
 import static io.servicetalk.opentracing.http.TestUtils.verifyTraceIdPresentInLogs;
@@ -90,7 +87,6 @@ import static org.mockito.MockitoAnnotations.initMocks;
 @ExtendWith(MockitoExtension.class)
 class TracingHttpRequesterFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TracingHttpRequesterFilterTest.class);
-    private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     @Mock
     private Tracer mockTracer;
@@ -117,8 +113,7 @@ class TracingHttpRequesterFilterTest {
                     .appendClientFilter(new TracingHttpRequesterFilter(tracer, "testClient"))
                     .appendClientFilter(new TestTracingLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
-                        TestSpanState.class));
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
                 assertThat(serverSpanState.traceId, isHexId());
                 assertThat(serverSpanState.spanId, isHexId());
@@ -155,8 +150,7 @@ class TracingHttpRequesterFilterTest {
                     InMemorySpan clientSpan = tracer.buildSpan("test").start();
                     try (Scope ignored = tracer.activateSpan(clientSpan)) {
                         HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                        TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
-                            TestSpanState.class));
+                        TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
                         assertThat(serverSpanState.traceId, isHexId());
                         assertThat(serverSpanState.spanId, isHexId());
@@ -205,14 +199,14 @@ class TracingHttpRequesterFilterTest {
 
     private static ServerContext buildServer() throws Exception {
         return HttpServers.forAddress(localAddress(0))
-                .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok().payloadBody(from(new TestSpanState(
+                .listenAndAwait((ctx, request, responseFactory) ->
+                        succeeded(responseFactory.ok().payloadBody(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),
                         valueOf(request.headers().get(SPAN_ID)),
                         toStringOrNull(request.headers().get(PARENT_SPAN_ID)),
                         "1".equals(valueOf(request.headers().get(SAMPLED))),
                         false
-                )), httpSerializer.serializerFor(TestSpanState.class))));
+                ), SPAN_STATE_SERIALIZER)));
     }
 
     @Nullable
