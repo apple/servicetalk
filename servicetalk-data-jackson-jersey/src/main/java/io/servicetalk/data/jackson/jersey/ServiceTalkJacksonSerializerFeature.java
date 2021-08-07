@@ -16,7 +16,7 @@
 package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.data.jackson.JacksonSerializerCache;
+import io.servicetalk.data.jackson.JacksonSerializerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
 
     /**
      * Create a new {@link ContextResolver} for {@link JacksonSerializationProvider} used by this feature.
-     * @deprecated Use {@link #newContextResolver(JacksonSerializerCache)}.
+     * @deprecated Use {@link #newContextResolver(JacksonSerializerFactory)}.
      * @param serializationProvider the {@link JacksonSerializationProvider} to use.
      * @return a {@link ContextResolver}.
      */
@@ -93,19 +93,19 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
 
     /**
      * Create a new {@link ContextResolver} for {@link ObjectMapper} used by this feature.
-     * @param objectMapper the {@link ObjectMapper} to use for creating a {@link JacksonSerializerCache}.
+     * @param objectMapper the {@link ObjectMapper} to use for creating a {@link JacksonSerializerFactory}.
      * @return a {@link ContextResolver}.
      */
-    public static ContextResolver<JacksonSerializerCache> newContextResolver(ObjectMapper objectMapper) {
-        return newContextResolver(new JacksonSerializerCache(objectMapper));
+    public static ContextResolver<JacksonSerializerFactory> newContextResolver(ObjectMapper objectMapper) {
+        return newContextResolver(new JacksonSerializerFactory(objectMapper));
     }
 
     /**
-     * Create a new {@link ContextResolver} for {@link JacksonSerializerCache} used by this feature.
-     * @param cache the {@link JacksonSerializerCache} to use.
+     * Create a new {@link ContextResolver} for {@link JacksonSerializerFactory} used by this feature.
+     * @param cache the {@link JacksonSerializerFactory} to use.
      * @return a {@link ContextResolver}.
      */
-    public static ContextResolver<JacksonSerializerCache> newContextResolver(JacksonSerializerCache cache) {
-        return new JacksonSerializerCacheContextResolver(cache);
+    public static ContextResolver<JacksonSerializerFactory> newContextResolver(JacksonSerializerFactory cache) {
+        return new JacksonSerializerFactoryContextResolver(cache);
     }
 }

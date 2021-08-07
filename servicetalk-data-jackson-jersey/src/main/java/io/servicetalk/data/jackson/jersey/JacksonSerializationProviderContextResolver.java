@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.ext.ContextResolver;
 
 /**
- * @deprecated Use {@link JacksonSerializerCacheContextResolver}.
+ * @deprecated Use {@link JacksonSerializerFactoryContextResolver}.
  */
 @Deprecated
 final class JacksonSerializationProviderContextResolver implements ContextResolver<JacksonSerializationProvider> {

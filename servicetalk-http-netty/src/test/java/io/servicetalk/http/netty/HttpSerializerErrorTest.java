@@ -37,7 +37,7 @@ import java.util.Map;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
@@ -69,7 +69,7 @@ class HttpSerializerErrorTest {
     void blockingStreamingDeserializationHeaderMismatch(HttpTestExecutionStrategy serverStrategy) throws Exception {
         serverExecutionStrategy = serverStrategy.executorSupplier.get();
         HttpStreamingSerializerDeserializer<String> streamingSerializer =
-                jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(String.class));
+                jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(String.class));
         try (ServerContext srv = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(serverExecutionStrategy)
                 .listenBlockingStreamingAndAwait((ctx, request, responseFactory) -> {
@@ -98,7 +98,7 @@ class HttpSerializerErrorTest {
     void streamingDeserializationHeaderMismatch(HttpTestExecutionStrategy serverStrategy) throws Exception {
         serverExecutionStrategy = serverStrategy.executorSupplier.get();
         HttpStreamingSerializerDeserializer<String> streamingSerializer =
-                jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(String.class));
+                jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(String.class));
         try (ServerContext srv = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(serverExecutionStrategy)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
@@ -123,9 +123,9 @@ class HttpSerializerErrorTest {
         serverExecutionStrategy = serverStrategy.executorSupplier.get();
         TypeReference<Map<String, Object>> mapType = new TypeReference<Map<String, Object>>() { };
         HttpStreamingSerializerDeserializer<Map<String, Object>> streamingSerializer =
-                jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(mapType));
+                jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(mapType));
         HttpSerializerDeserializer<Map<String, Object>> serializer =
-                HttpSerializers.jsonSerializer(INSTANCE.serializerDeserializer(mapType));
+                HttpSerializers.jsonSerializer(JACKSON.serializerDeserializer(mapType));
         try (ServerContext srv = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(serverExecutionStrategy)
                 // We build an aggregated service, but convert to/from the streaming API so that we can easily throw

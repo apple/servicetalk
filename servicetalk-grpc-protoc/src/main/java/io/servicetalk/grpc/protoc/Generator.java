@@ -90,7 +90,7 @@ import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
 import static io.servicetalk.grpc.protoc.Types.Identity;
 import static io.servicetalk.grpc.protoc.Types.Objects;
 import static io.servicetalk.grpc.protoc.Types.ProtoBufSerializationProviderBuilder;
-import static io.servicetalk.grpc.protoc.Types.ProtobufSerializerCache;
+import static io.servicetalk.grpc.protoc.Types.ProtobufSerializerFactory;
 import static io.servicetalk.grpc.protoc.Types.Publisher;
 import static io.servicetalk.grpc.protoc.Types.RequestStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.RequestStreamingRoute;
@@ -114,6 +114,7 @@ import static io.servicetalk.grpc.protoc.Words.JAVADOC_PARAM;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_RETURN;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_THROWS;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
+import static io.servicetalk.grpc.protoc.Words.PROTOBUF;
 import static io.servicetalk.grpc.protoc.Words.PROTO_CONTENT_TYPE;
 import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
@@ -330,13 +331,13 @@ final class Generator {
         return FieldSpec.builder(methodDescriptorType, methodDescFieldName)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .initializer("$T.newMethodDescriptor($S, $S, $L, $L, $T.class, $S, " +
-                                "$T.INSTANCE.serializerDeserializer($T.parser()), $T::getSerializedSize, $L, $L, " +
-                                "$T.class, $S, $T.INSTANCE.serializerDeserializer($T.parser()), $T::getSerializedSize)",
+                                "$T.$L.serializerDeserializer($T.parser()), $T::getSerializedSize, $L, $L, " +
+                                "$T.class, $S, $T.$L.serializerDeserializer($T.parser()), $T::getSerializedSize)",
                         GrpcMethodDescriptors, methodHttpPath, javaMethodName,
                         clientStreaming, isAsync, inClass, PROTO_CONTENT_TYPE,
-                        ProtobufSerializerCache, inClass, inClass,
+                        ProtobufSerializerFactory, PROTOBUF, inClass, inClass,
                         serverStreaming, isAsync, outClass, PROTO_CONTENT_TYPE,
-                        ProtobufSerializerCache, outClass, outClass).build();
+                        ProtobufSerializerFactory, PROTOBUF, outClass, outClass).build();
     }
 
     private void addServiceRpcInterfaceSpec(final State state,

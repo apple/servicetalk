@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.serialization;
 import io.servicetalk.http.api.HttpSerializerDeserializer;
 import io.servicetalk.http.api.HttpStreamingSerializerDeserializer;
 
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
 
@@ -27,16 +27,16 @@ import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
  */
 public final class SerializerUtils {
     public static final HttpSerializerDeserializer<CreatePojoRequest> REQ_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(CreatePojoRequest.class));
+            jsonSerializer(JACKSON.serializerDeserializer(CreatePojoRequest.class));
 
     public static final HttpStreamingSerializerDeserializer<CreatePojoRequest> REQ_STREAMING_SERIALIZER =
-            jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(CreatePojoRequest.class));
+            jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(CreatePojoRequest.class));
 
     public static final HttpSerializerDeserializer<PojoResponse> RESP_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(PojoResponse.class));
+            jsonSerializer(JACKSON.serializerDeserializer(PojoResponse.class));
 
     public static final HttpStreamingSerializerDeserializer<PojoResponse> RESP_STREAMING_SERIALIZER =
-            jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(PojoResponse.class));
+            jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(PojoResponse.class));
 
     private SerializerUtils() {
     }

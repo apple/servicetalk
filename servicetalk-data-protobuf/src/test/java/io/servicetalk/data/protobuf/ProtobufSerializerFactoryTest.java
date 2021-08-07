@@ -38,7 +38,7 @@ import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.data.protobuf.ProtobufSerializerCache.INSTANCE;
+import static io.servicetalk.data.protobuf.ProtobufSerializerFactory.PROTOBUF;
 import static io.servicetalk.data.protobuf.test.TestProtos.DummyMessage.parser;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -46,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 
-class ProtobufSerializerCacheTest {
+class ProtobufSerializerFactoryTest {
     private static final List<Arguments> POJOS = Arrays.asList(
             Arguments.of(singletonList(newMsg("hello"))),
             Arguments.of(asList(newMsg("hello"), newMsg("world"))),
@@ -61,7 +61,7 @@ class ProtobufSerializerCacheTest {
     void serializeDeserialize() {
         final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
         final byte[] testMessageBytes = testMessage.toByteArray();
-        SerializerDeserializer<DummyMessage> serializer = INSTANCE.serializerDeserializer(DummyMessage.parser());
+        SerializerDeserializer<DummyMessage> serializer = PROTOBUF.serializerDeserializer(DummyMessage.parser());
         Buffer buffer = serializer.serialize(testMessage, DEFAULT_ALLOCATOR);
         byte[] bytes = new byte[buffer.readableBytes()];
         buffer.getBytes(buffer.readerIndex(), bytes);
@@ -73,7 +73,7 @@ class ProtobufSerializerCacheTest {
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
         Parser<DummyMessage> parser = DummyMessage.parser();
-        StreamingSerializerDeserializer<DummyMessage> serializer = INSTANCE.streamingSerializerDeserializer(parser);
+        StreamingSerializerDeserializer<DummyMessage> serializer = PROTOBUF.streamingSerializerDeserializer(parser);
 
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         OutputStream os = asOutputStream(buffer);
@@ -88,7 +88,7 @@ class ProtobufSerializerCacheTest {
     @MethodSource("pojos")
     void streamingParseDelimitedFromSerialized(Collection<DummyMessage> msgs) throws Exception {
         Parser<DummyMessage> parser = parser();
-        StreamingSerializerDeserializer<DummyMessage> serializer = INSTANCE.streamingSerializerDeserializer(parser);
+        StreamingSerializerDeserializer<DummyMessage> serializer = PROTOBUF.streamingSerializerDeserializer(parser);
 
         Collection<Buffer> serialized = serializer.serialize(fromIterable(msgs), DEFAULT_ALLOCATOR)
                 .toFuture().get();

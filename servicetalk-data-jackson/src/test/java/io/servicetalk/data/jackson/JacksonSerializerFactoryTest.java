@@ -33,7 +33,7 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -45,7 +45,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class JacksonSerializerCacheTest {
+class JacksonSerializerFactoryTest {
     private static final TypeReference<TestPojo> TEST_POJO_TYPE_REFERENCE = new TypeReference<TestPojo>() { };
     private static final TypeReference<String> STRING_TYPE_REFERENCE = new TypeReference<String>() { };
     private static final TypeReference<Boolean> BOOLEAN_TYPE_REFERENCE = new TypeReference<Boolean>() { };
@@ -245,42 +245,42 @@ class JacksonSerializerCacheTest {
     }
 
     private static SerializerDeserializer<TestPojo> pojoSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.serializerDeserializer(TEST_POJO_TYPE_REFERENCE) :
-                INSTANCE.serializerDeserializer(TestPojo.class);
+        return typeRef ? JACKSON.serializerDeserializer(TEST_POJO_TYPE_REFERENCE) :
+                JACKSON.serializerDeserializer(TestPojo.class);
     }
 
     private static StreamingSerializerDeserializer<TestPojo> pojoStreamingSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.streamingSerializerDeserializer(TEST_POJO_TYPE_REFERENCE) :
-                INSTANCE.streamingSerializerDeserializer(TestPojo.class);
+        return typeRef ? JACKSON.streamingSerializerDeserializer(TEST_POJO_TYPE_REFERENCE) :
+                JACKSON.streamingSerializerDeserializer(TestPojo.class);
     }
 
     private static SerializerDeserializer<String> stringSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.serializerDeserializer(STRING_TYPE_REFERENCE) :
-                INSTANCE.serializerDeserializer(String.class);
+        return typeRef ? JACKSON.serializerDeserializer(STRING_TYPE_REFERENCE) :
+                JACKSON.serializerDeserializer(String.class);
     }
 
     private static StreamingSerializerDeserializer<String> stringStreamingSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.streamingSerializerDeserializer(STRING_TYPE_REFERENCE) :
-                INSTANCE.streamingSerializerDeserializer(String.class);
+        return typeRef ? JACKSON.streamingSerializerDeserializer(STRING_TYPE_REFERENCE) :
+                JACKSON.streamingSerializerDeserializer(String.class);
     }
 
     private static SerializerDeserializer<Boolean> boolSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.serializerDeserializer(BOOLEAN_TYPE_REFERENCE) :
-                INSTANCE.serializerDeserializer(Boolean.class);
+        return typeRef ? JACKSON.serializerDeserializer(BOOLEAN_TYPE_REFERENCE) :
+                JACKSON.serializerDeserializer(Boolean.class);
     }
 
     private static StreamingSerializerDeserializer<Boolean> boolStreamingSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.streamingSerializerDeserializer(BOOLEAN_TYPE_REFERENCE) :
-                INSTANCE.streamingSerializerDeserializer(Boolean.class);
+        return typeRef ? JACKSON.streamingSerializerDeserializer(BOOLEAN_TYPE_REFERENCE) :
+                JACKSON.streamingSerializerDeserializer(Boolean.class);
     }
 
     private static SerializerDeserializer<Integer> intSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.serializerDeserializer(INTEGER_TYPE_REFERENCE) :
-                INSTANCE.serializerDeserializer(Integer.class);
+        return typeRef ? JACKSON.serializerDeserializer(INTEGER_TYPE_REFERENCE) :
+                JACKSON.serializerDeserializer(Integer.class);
     }
 
     private static StreamingSerializerDeserializer<Integer> intStreamingSerializer(boolean typeRef) {
-        return typeRef ? INSTANCE.streamingSerializerDeserializer(INTEGER_TYPE_REFERENCE) :
-                INSTANCE.streamingSerializerDeserializer(Integer.class);
+        return typeRef ? JACKSON.streamingSerializerDeserializer(INTEGER_TYPE_REFERENCE) :
+                JACKSON.streamingSerializerDeserializer(Integer.class);
     }
 }

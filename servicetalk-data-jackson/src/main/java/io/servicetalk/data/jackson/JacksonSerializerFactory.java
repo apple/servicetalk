@@ -30,8 +30,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Caches instances of {@link SerializerDeserializer} and {@link StreamingSerializerDeserializer} for
  * <a href="https://github.com/FasterXML/jackson">jackson</a>.
  */
-public final class JacksonSerializerCache {
-    public static final JacksonSerializerCache INSTANCE = new JacksonSerializerCache();
+public final class JacksonSerializerFactory {
+    /**
+     * Singleton instance which creates <a href="https://github.com/FasterXML/jackson">jackson</a> serializers.
+     */
+    public static final JacksonSerializerFactory JACKSON = new JacksonSerializerFactory();
     private final ObjectMapper mapper;
     @SuppressWarnings("rawtypes")
     private final Map<Object, StreamingSerializerDeserializer> streamingSerializerMap;
@@ -41,7 +44,7 @@ public final class JacksonSerializerCache {
     /**
      * Create a new instance.
      */
-    private JacksonSerializerCache() {
+    private JacksonSerializerFactory() {
         this(new ObjectMapper());
     }
 
@@ -49,7 +52,7 @@ public final class JacksonSerializerCache {
      * Create a new instance.
      * @param mapper {@link ObjectMapper} to use.
      */
-    public JacksonSerializerCache(final ObjectMapper mapper) {
+    public JacksonSerializerFactory(final ObjectMapper mapper) {
         this.mapper = Objects.requireNonNull(mapper);
         streamingSerializerMap = new ConcurrentHashMap<>();
         serializerMap = new ConcurrentHashMap<>();

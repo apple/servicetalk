@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializerCache;
+import io.servicetalk.data.jackson.JacksonSerializerFactory;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.PublisherSource;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
 import io.servicetalk.serializer.api.Deserializer;
@@ -93,28 +93,28 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     public Object readFrom(final Class<Object> type, final Type genericType, final Annotation[] annotations,
                            final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
-        final JacksonSerializerCache serializerCache = getJacksonSerializerCache(mediaType);
+        final JacksonSerializerFactory serializerFactory = getJacksonSerializerFactory(mediaType);
         final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
         final BufferAllocator allocator = executionContext.bufferAllocator();
         final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> deserialize(p, serializerCache.serializerDeserializer(getSourceClass(genericType)),
+                    (p, a) -> deserialize(p, serializerFactory.serializerDeserializer(getSourceClass(genericType)),
                             contentLength, a),
                     (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a),
-                            serializerCache.serializerDeserializer(getSourceClass(genericType)), contentLength, a)));
+                            serializerFactory.serializerDeserializer(getSourceClass(genericType)), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> serializerCache.streamingSerializerDeserializer(
+                    (p, a) -> serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(p, a),
-                    (is, a) -> new PublisherSource<>(serializerCache.streamingSerializerDeserializer(
+                    (is, a) -> new PublisherSource<>(serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(toBufferPublisher(is, a), a)));
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserializeObject(p, serializerCache.serializerDeserializer(type), contentLength, a),
-                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializerCache.serializerDeserializer(type),
+                (p, a) -> deserializeObject(p, serializerFactory.serializerDeserializer(type), contentLength, a),
+                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializerFactory.serializerDeserializer(type),
                         contentLength, a));
     }
 
@@ -133,27 +133,27 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         final Publisher<Buffer> bufferPublisher;
         if (o instanceof Single) {
             final Class<?> clazz = genericType instanceof Class ? (Class) genericType : getSourceClass(genericType);
-            Serializer serializer = getJacksonSerializerCache(mediaType).serializerDeserializer(clazz);
+            Serializer serializer = getJacksonSerializerFactory(mediaType).serializerDeserializer(clazz);
             bufferPublisher = ((Single) o).map(t -> serializer.serialize(t, allocator)).toPublisher();
         } else if (o instanceof Publisher) {
             final Class<?> clazz = genericType instanceof Class ? (Class) genericType : getSourceClass(genericType);
-            StreamingSerializer serializer = getJacksonSerializerCache(mediaType)
+            StreamingSerializer serializer = getJacksonSerializerFactory(mediaType)
                     .streamingSerializerDeserializer(clazz);
             bufferPublisher = serializer.serialize((Publisher) o, allocator);
         } else {
-            Serializer serializer = getJacksonSerializerCache(mediaType).serializerDeserializer(o.getClass());
+            Serializer serializer = getJacksonSerializerFactory(mediaType).serializerDeserializer(o.getClass());
             bufferPublisher = Publisher.from(serializer.serialize(o, allocator));
         }
 
         setResponseBufferPublisher(bufferPublisher, requestCtxProvider.get());
     }
 
-    private JacksonSerializerCache getJacksonSerializerCache(final MediaType mediaType) {
-        final ContextResolver<JacksonSerializerCache> contextResolver =
-                providers.getContextResolver(JacksonSerializerCache.class, mediaType);
+    private JacksonSerializerFactory getJacksonSerializerFactory(final MediaType mediaType) {
+        final ContextResolver<JacksonSerializerFactory> contextResolver =
+                providers.getContextResolver(JacksonSerializerFactory.class, mediaType);
 
-        return contextResolver != null ? contextResolver.getContext(JacksonSerializerCache.class) :
-                JacksonSerializerCache.INSTANCE;
+        return contextResolver != null ? contextResolver.getContext(JacksonSerializerFactory.class) :
+                JacksonSerializerFactory.JACKSON;
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {

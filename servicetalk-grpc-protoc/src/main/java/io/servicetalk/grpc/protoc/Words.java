@@ -62,6 +62,7 @@ final class Words {
     static final String To = "To";
     static final String PROTO_CONTENT_TYPE = "+proto";
     static final String INSTANCE = "INSTANCE";
+    static final String PROTOBUF = "PROTOBUF";
     static final String RPC_PATH = "PATH";
     static final String COMMENT_PRE_TAG = "<pre>";
     static final String COMMENT_POST_TAG = "</pre>";

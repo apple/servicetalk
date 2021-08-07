@@ -103,9 +103,10 @@ final class Types {
     static final ClassName BlockingRoute = bestGuess(grpcRoutesFqcn + ".BlockingRoute");
     static final ClassName BlockingStreamingRoute = bestGuess(grpcRoutesFqcn + ".BlockingStreamingRoute");
 
+    @Deprecated
     static final ClassName ProtoBufSerializationProviderBuilder =
             bestGuess(grpcProtobufPkg + ".ProtoBufSerializationProviderBuilder");
-    static final ClassName ProtobufSerializerCache = bestGuess(protobufDataPkg + ".ProtobufSerializerCache");
+    static final ClassName ProtobufSerializerFactory = bestGuess(protobufDataPkg + ".ProtobufSerializerFactory");
 
     static final TypeName GrpcRouteExecutionStrategyFactory = ParameterizedTypeName.get(RouteExecutionStrategyFactory,
             GrpcExecutionStrategy);

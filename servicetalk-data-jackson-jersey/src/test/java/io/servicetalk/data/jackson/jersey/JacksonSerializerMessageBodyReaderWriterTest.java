@@ -15,7 +15,7 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import io.servicetalk.data.jackson.JacksonSerializerCache;
+import io.servicetalk.data.jackson.JacksonSerializerFactory;
 import io.servicetalk.serializer.api.SerializationException;
 
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class JacksonSerializerMessageBodyReaderWriterTest {
 
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> deserializeObject(from(DEFAULT_ALLOCATOR.fromAscii("{foo:123}")),
-                        JacksonSerializerCache.INSTANCE.serializerDeserializer(Map.class), 9, DEFAULT_ALLOCATOR));
+                        JacksonSerializerFactory.JACKSON.serializerDeserializer(Map.class), 9, DEFAULT_ALLOCATOR));
         assertThat(ex.getCause(), instanceOf(SerializationException.class));
     }
 }

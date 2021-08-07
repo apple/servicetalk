@@ -15,27 +15,27 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import io.servicetalk.data.jackson.JacksonSerializerCache;
+import io.servicetalk.data.jackson.JacksonSerializerFactory;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.ext.ContextResolver;
 
 import static java.util.Objects.requireNonNull;
 
-final class JacksonSerializerCacheContextResolver implements ContextResolver<JacksonSerializerCache> {
-    private final JacksonSerializerCache cache;
+final class JacksonSerializerFactoryContextResolver implements ContextResolver<JacksonSerializerFactory> {
+    private final JacksonSerializerFactory factory;
 
-    JacksonSerializerCacheContextResolver(final JacksonSerializerCache cache) {
-        this.cache = requireNonNull(cache);
+    JacksonSerializerFactoryContextResolver(final JacksonSerializerFactory factory) {
+        this.factory = requireNonNull(factory);
     }
 
     @Nullable
     @Override
-    public JacksonSerializerCache getContext(final Class<?> aClass) {
-        if (!JacksonSerializerCache.class.isAssignableFrom(aClass)) {
+    public JacksonSerializerFactory getContext(final Class<?> aClass) {
+        if (!JacksonSerializerFactory.class.isAssignableFrom(aClass)) {
             return null;
         }
 
-        return cache;
+        return factory;
     }
 }

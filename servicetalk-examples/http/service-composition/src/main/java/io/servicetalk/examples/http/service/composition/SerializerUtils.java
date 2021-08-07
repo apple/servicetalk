@@ -27,7 +27,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;
 
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
 
@@ -37,19 +37,19 @@ public final class SerializerUtils {
     private static final TypeReference<List<FullRecommendation>> FULL_RECOMMEND_LIST_TYPE =
             new TypeReference<List<FullRecommendation>>() { };
     public static final HttpSerializerDeserializer<User> USER_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(User.class));
+            jsonSerializer(JACKSON.serializerDeserializer(User.class));
     public static final HttpSerializerDeserializer<Rating> RATING_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(Rating.class));
+            jsonSerializer(JACKSON.serializerDeserializer(Rating.class));
     public static final HttpSerializerDeserializer<Metadata> METADATA_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(Metadata.class));
+            jsonSerializer(JACKSON.serializerDeserializer(Metadata.class));
     public static final HttpSerializerDeserializer<List<Recommendation>> RECOMMEND_LIST_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(RECOMMEND_LIST_TYPE));
+            jsonSerializer(JACKSON.serializerDeserializer(RECOMMEND_LIST_TYPE));
     public static final HttpSerializerDeserializer<List<FullRecommendation>> FULL_RECOMMEND_LIST_SERIALIZER =
-            jsonSerializer(INSTANCE.serializerDeserializer(FULL_RECOMMEND_LIST_TYPE));
+            jsonSerializer(JACKSON.serializerDeserializer(FULL_RECOMMEND_LIST_TYPE));
     public static final HttpStreamingSerializerDeserializer<Recommendation> RECOMMEND_STREAM_SERIALIZER =
-            jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(Recommendation.class));
+            jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(Recommendation.class));
     public static final HttpStreamingSerializerDeserializer<FullRecommendation> FULL_RECOMMEND_STREAM_SERIALIZER =
-            jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(FullRecommendation.class));
+            jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(FullRecommendation.class));
 
     public static final String USER_ID_QP_NAME = "userId";
     public static final String ENTITY_ID_QP_NAME = "entityId";

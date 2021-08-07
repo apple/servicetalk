@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
@@ -66,9 +66,9 @@ class HttpSerializationErrorTest {
         serverExecutionStrategy = serverStrategy.executorSupplier.get();
         TypeReference<Map<String, Object>> mapType = new TypeReference<Map<String, Object>>() { };
         HttpSerializerDeserializer<Map<String, Object>> httpSerializer =
-                jsonSerializer(INSTANCE.serializerDeserializer(mapType));
+                jsonSerializer(JACKSON.serializerDeserializer(mapType));
         HttpStreamingSerializerDeserializer<Map<String, Object>> httpStreamingSerializer =
-                jsonStreamingSerializer(INSTANCE.streamingSerializerDeserializer(mapType));
+                jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(mapType));
         try (ServerContext srv = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(serverExecutionStrategy)
                 // We build an aggregated service, but convert to/from the streaming API so that we can easily throw

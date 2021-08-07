@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Map;
 
-import static io.servicetalk.data.jackson.JacksonSerializerCache.INSTANCE;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 
 final class SerializerUtils {
     private static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
@@ -30,11 +30,11 @@ final class SerializerUtils {
     private static final TypeReference<Map<String, String>> MAP_STRING_STRING_TYPE =
             new TypeReference<Map<String, String>>() { };
     static final SerializerDeserializer<Map<String, Object>> MAP_STRING_OBJECT_SERIALIZER =
-            INSTANCE.serializerDeserializer(STRING_OBJECT_MAP_TYPE);
+            JACKSON.serializerDeserializer(STRING_OBJECT_MAP_TYPE);
     static final StreamingSerializerDeserializer<Map<String, Object>> MAP_STRING_OBJECT_STREAM_SERIALIZER =
-            INSTANCE.streamingSerializerDeserializer(STRING_OBJECT_MAP_TYPE);
+            JACKSON.streamingSerializerDeserializer(STRING_OBJECT_MAP_TYPE);
     static final SerializerDeserializer<Map<String, String>> MAP_STRING_STRING_SERIALIZER =
-            INSTANCE.serializerDeserializer(MAP_STRING_STRING_TYPE);
+            JACKSON.serializerDeserializer(MAP_STRING_STRING_TYPE);
 
     private SerializerUtils() {
     }

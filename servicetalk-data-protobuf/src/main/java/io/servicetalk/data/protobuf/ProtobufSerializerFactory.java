@@ -29,14 +29,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * Caches instances of {@link SerializerDeserializer} and {@link StreamingSerializerDeserializer} for
  * <a href="https://developers.google.com/protocol-buffers/">protocol buffer</a>.
  */
-public final class ProtobufSerializerCache {
-    public static final ProtobufSerializerCache INSTANCE = new ProtobufSerializerCache();
+public final class ProtobufSerializerFactory {
+    /**
+     * Singleton instance which creates <a href="https://developers.google.com/protocol-buffers/">protocol buffer</a>
+     * serializers.
+     */
+    public static final ProtobufSerializerFactory PROTOBUF = new ProtobufSerializerFactory();
     @SuppressWarnings("rawtypes")
     private final Map<Parser<?>, SerializerDeserializer> serializerMap = new ConcurrentHashMap<>();
     @SuppressWarnings("rawtypes")
     private final Map<Parser<?>, StreamingSerializerDeserializer> streamingSerializerMap = new ConcurrentHashMap<>();
 
-    private ProtobufSerializerCache() {
+    private ProtobufSerializerFactory() {
     }
 
     /**
