@@ -40,8 +40,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,7 +78,7 @@ class NettyHttpServerConnectionDrainTest {
     void requestIsDrainedByUserWithDrainingDisabled() throws Exception {
         try (ServerContext serverContext = server(false, (ctx, request, responseFactory) ->
                 request.messageBody().ignoreElements() // User consumes payload (ignoring)
-                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializerUtf8FixLen()))));
+                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .buildBlocking()) {
 
@@ -97,7 +97,7 @@ class NettyHttpServerConnectionDrainTest {
                         .map(StringBuilder::toString)
                         .whenOnSuccess(resultRef::set)
                         .toCompletable()
-                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializerUtf8FixLen()))));
+                        .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
 
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .buildBlocking()) {
@@ -116,7 +116,7 @@ class NettyHttpServerConnectionDrainTest {
 
             client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildStreaming();
 
-            client.request(client.post("/").payloadBody(from(LARGE_TEXT), textSerializerUtf8FixLen()))
+            client.request(client.post("/").payloadBody(from(LARGE_TEXT), appSerializerUtf8FixLen()))
                     // Subscribe to send the request, don't care about the response since graceful close of the server
                     // will hang until the request is consumed, thus we expect the timeout to hit
                     .ignoreElement().subscribe();
@@ -136,14 +136,14 @@ class NettyHttpServerConnectionDrainTest {
 
     private static void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
         HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializerUtf8()));
-        assertThat(response.toStreamingResponse().payloadBody(textSerializerUtf8FixLen())
+        assertThat(response.toStreamingResponse().payloadBody(appSerializerUtf8FixLen())
                         .collect(StringBuilder::new, StringBuilder::append).toFuture().get().toString(), equalTo("OK"));
     }
 
     private static StreamingHttpService respondOkWithoutReadingRequest(Runnable onRequest) {
         return (ctx, request, responseFactory) -> {
             onRequest.run();
-            return succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializerUtf8FixLen()));
+            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()));
         };
     }
 

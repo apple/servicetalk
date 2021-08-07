@@ -19,28 +19,20 @@ import io.servicetalk.grpc.netty.GrpcClients;
 
 import io.grpc.examples.routeguide.Point;
 import io.grpc.examples.routeguide.Rectangle;
-import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
-
-import java.util.concurrent.CountDownLatch;
+import io.grpc.examples.routeguide.RouteGuide.RouteGuideClient;
 
 public final class RouteGuideResponseStreamingClient {
-
     public static void main(String[] args) throws Exception {
-        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .build(new ClientFactory())) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+        try (RouteGuideClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
             client.listFeatures(Rectangle.newBuilder()
                     .setHi(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                    .setLo(Point.newBuilder().setLatitude(789000).setLongitude(-789000).build())
-                    .build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .forEach(System.out::println);
-
-            responseProcessedLatch.await();
+                    .setLo(Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()).build())
+                    .whenOnNext(System.out::println)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

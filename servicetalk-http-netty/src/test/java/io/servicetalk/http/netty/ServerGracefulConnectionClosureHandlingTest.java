@@ -39,7 +39,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -85,7 +85,7 @@ class ServerGracefulConnectionClosureHandlingTest {
                         .payloadBody(
                                 request.payloadBody().ignoreElements()
                                         .concat(from(RESPONSE_CONTENT)),
-                                textSerializerUtf8FixLen())
+                                appSerializerUtf8FixLen())
                         // Close ServerContext after response is complete
                         .transformMessageBody(payload -> payload
                                 .whenFinally(serverClose.get()))));

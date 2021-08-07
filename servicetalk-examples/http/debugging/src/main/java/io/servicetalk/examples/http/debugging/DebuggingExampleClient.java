@@ -18,14 +18,12 @@ package io.servicetalk.examples.http.debugging;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.H2ProtocolConfigBuilder;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.logging.api.LogLevel;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
@@ -165,22 +163,15 @@ public final class DebuggingExampleClient {
                         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, Boolean.TRUE::booleanValue)
                         .build())
                 .build()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-
-            // Make a request with a payload.
-            HttpRequest request = client.post("/sayHello").payloadBody("George", textSerializerUtf8());
-            client.request(request)
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(resp -> {
+            client.request(client.post("/sayHello").payloadBody("George", textSerializerUtf8()))
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textSerializerUtf8()));
-                    });
-
-            // block until request is complete and afterFinally() is called
-            responseProcessedLatch.await();
+                    })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

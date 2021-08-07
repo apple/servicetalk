@@ -72,7 +72,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -301,7 +301,7 @@ abstract class AbstractNettyHttpServerTest {
                                   final HttpResponseStatus status, final String expectedPayload)
             throws ExecutionException, InterruptedException {
         assertResponse(response, version, status);
-        String actualPayload = response.payloadBody(textSerializerUtf8FixLen())
+        String actualPayload = response.payloadBody(appSerializerUtf8FixLen())
                 .collect(StringBuilder::new, (sb, chunk) -> {
             sb.append(chunk);
             return sb;

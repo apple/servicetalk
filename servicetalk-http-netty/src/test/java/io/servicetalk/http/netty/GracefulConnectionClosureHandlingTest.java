@@ -74,7 +74,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.ContentLengthAndTrailersTest.addFixedLengthFramingOverhead;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
@@ -188,7 +188,7 @@ class GracefulConnectionClosureHandlingTest {
             response.addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(RESPONSE_CONTENT.length())));
 
             serverSendResponse.await();
-            try (HttpPayloadWriter<String> writer = response.sendMetaData(textSerializerUtf8FixLen())) {
+            try (HttpPayloadWriter<String> writer = response.sendMetaData(appSerializerUtf8FixLen())) {
                 // Subscribe to the request payload body before response writer closes
                 BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                 // Consume request payload body asynchronously:
@@ -484,7 +484,7 @@ class GracefulConnectionClosureHandlingTest {
     private StreamingHttpRequest newRequest(String path) {
         return connection.post(path)
                 .addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(REQUEST_CONTENT.length())))
-                .payloadBody(from(REQUEST_CONTENT), textSerializerUtf8FixLen());
+                .payloadBody(from(REQUEST_CONTENT), appSerializerUtf8FixLen());
     }
 
     private StreamingHttpRequest newRequest(String path, CountDownLatch payloadBodyLatch) {
@@ -496,7 +496,7 @@ class GracefulConnectionClosureHandlingTest {
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
-                }).concat(from(REQUEST_CONTENT)), textSerializerUtf8FixLen());
+                }).concat(from(REQUEST_CONTENT)), appSerializerUtf8FixLen());
     }
 
     private static void assertResponse(StreamingHttpResponse response) {

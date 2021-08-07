@@ -49,8 +49,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
@@ -111,29 +111,29 @@ class ContentLengthTest {
     @Test
     void shouldCalculateRequestContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(from("Hello"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen());
         setRequestContentLengthAndVerify(request, contentEqualTo("9"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(from("Hello", "World"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello", "World"), appSerializerUtf8FixLen());
         setRequestContentLengthAndVerify(request, contentEqualTo("18"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
-                .payloadBody(from("Hello", " ", "World", "!"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello", " ", "World", "!"), appSerializerUtf8FixLen());
         setRequestContentLengthAndVerify(request, contentEqualTo("28"));
     }
 
     @Test
     void shouldCalculateRequestContentLengthFromTransformedMultipleItemPublisher() throws Exception {
-        StreamingHttpRequest request = newStreamingRequest().payloadBody(from("Hello"), textSerializerUtf8FixLen())
+        StreamingHttpRequest request = newStreamingRequest().payloadBody(from("Hello"), appSerializerUtf8FixLen())
                 .transformPayloadBody(payload -> payload.concat(from(" ", "World", "!")),
-                        textSerializerUtf8FixLen(), textSerializerUtf8FixLen());
+                        appSerializerUtf8FixLen(), appSerializerUtf8FixLen());
         setRequestContentLengthAndVerify(request, contentEqualTo("28"));
     }
 
@@ -161,29 +161,29 @@ class ContentLengthTest {
     @Test
     void shouldCalculateResponseContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(from("Hello"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen());
         setResponseContentLengthAndVerify(response, contentEqualTo("9"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(from("Hello", "World"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello", "World"), appSerializerUtf8FixLen());
         setResponseContentLengthAndVerify(response, contentEqualTo("18"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
-                .payloadBody(from("Hello", " ", "World", "!"), textSerializerUtf8FixLen());
+                .payloadBody(from("Hello", " ", "World", "!"), appSerializerUtf8FixLen());
         setResponseContentLengthAndVerify(response, contentEqualTo("28"));
     }
 
     @Test
     void shouldCalculateResponseContentLengthFromTransformedMultipleItemPublisher() throws Exception {
-        StreamingHttpResponse response = newStreamingResponse().payloadBody(from("Hello"), textSerializerUtf8FixLen())
+        StreamingHttpResponse response = newStreamingResponse().payloadBody(from("Hello"), appSerializerUtf8FixLen())
                 .transformPayloadBody(payload -> payload.concat(from(" ", "World", "!")),
-                        textSerializerUtf8FixLen(), textSerializerUtf8FixLen());
+                        appSerializerUtf8FixLen(), appSerializerUtf8FixLen());
         setResponseContentLengthAndVerify(response, contentEqualTo("28"));
     }
 

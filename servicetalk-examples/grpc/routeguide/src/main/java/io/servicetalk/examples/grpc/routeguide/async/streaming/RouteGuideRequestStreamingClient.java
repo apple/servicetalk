@@ -18,28 +18,21 @@ package io.servicetalk.examples.grpc.routeguide.async.streaming;
 import io.servicetalk.grpc.netty.GrpcClients;
 
 import io.grpc.examples.routeguide.Point;
-import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
-
-import java.util.concurrent.CountDownLatch;
+import io.grpc.examples.routeguide.RouteGuide.RouteGuideClient;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
 public final class RouteGuideRequestStreamingClient {
-
     public static void main(String[] args) throws Exception {
-        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .build(new ClientFactory())) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+        try (RouteGuideClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
             client.recordRoute(from(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build(),
                             Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
-
-            responseProcessedLatch.await();
+                    .whenOnSuccess(System.out::println)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

@@ -50,7 +50,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
@@ -184,6 +184,6 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
     private static StreamingHttpRequest newRequest(StreamingHttpRequestFactory requestFactory, String param) {
         return requestFactory.post(SVC_ECHO)
                 .addQueryParameter(PARAM, param)
-                .payloadBody(from(param), textSerializerUtf8FixLen());
+                .payloadBody(from(param), appSerializerUtf8FixLen());
     }
 }

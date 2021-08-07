@@ -15,15 +15,15 @@
  */
 package io.servicetalk.examples.grpc.compression;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
 import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.netty.GrpcClients;
 
 import io.grpc.examples.compression.Greeter.ClientFactory;
 import io.grpc.examples.compression.Greeter.GreeterClient;
+import io.grpc.examples.compression.HelloReply;
 import io.grpc.examples.compression.HelloRequest;
-
-import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.encoding.netty.NettyBufferEncoders.deflateDefault;
@@ -41,26 +41,24 @@ public final class CompressionExampleClient {
                         // .add(NettyBufferEncoders.gzipDefault(), true)
                         .add(deflateDefault(), true)
                         .add(identityEncoder(), false).build()))) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
-
             // This request is sent with the request being uncompressed. The response may
             // be compressed because the ClientFactory will include the encodings we
             // support as a request header.
-            client.sayHello(HelloRequest.newBuilder().setName("NoMeta").build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
+            Single<HelloReply> respSingle1 = client.sayHello(HelloRequest.newBuilder().setName("NoMeta").build())
+                    .whenOnSuccess(System.out::println);
 
             // This request uses a different overload of the "sayHello" method that allows
             // providing request metadata and we use it to request compression of the request.
-            client.sayHello(new DefaultGrpcClientMetadata(deflateDefault()),
+            Single<HelloReply> respSingle2 = client.sayHello(new DefaultGrpcClientMetadata(deflateDefault()),
                     HelloRequest.newBuilder().setName("WithMeta").build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
+                    .whenOnSuccess(System.out::println);
 
-            responseProcessedLatch.await();
+            // Issue the requests sequentially with concat.
+            respSingle1.concat(respSingle2)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

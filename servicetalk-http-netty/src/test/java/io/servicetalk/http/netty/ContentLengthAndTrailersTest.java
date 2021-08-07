@@ -44,7 +44,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
@@ -319,7 +319,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
         StreamingHttpRequest preRequest = streamingHttpConnection().post("/");
         if (!content.isEmpty()) {
-            preRequest.payloadBody(from(content), textSerializerUtf8FixLen());
+            preRequest.payloadBody(from(content), appSerializerUtf8FixLen());
         }
         StreamingHttpRequest request = requestTransformer.transform(preRequest);
         StreamingHttpResponse response = responseTransformer.transform(makeRequest(request));
@@ -389,7 +389,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                                                        final HttpHeaders trailers) throws Throwable {
                     throw cause;
                 }
-            }, textSerializerUtf8FixLen()).messageBody().ignoreElements().toFuture().get();
+            }, appSerializerUtf8FixLen()).messageBody().ignoreElements().toFuture().get();
         }
     }
 

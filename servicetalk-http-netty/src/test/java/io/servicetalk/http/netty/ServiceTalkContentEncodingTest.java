@@ -41,8 +41,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,11 +81,11 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                                     }
                                     return found || !valid ? resp : responseFactory.ok().payloadBody(Publisher.from(
                                             "server error: invalid " + CONTENT_ENCODING + ": " + contentEncoding),
-                                            textSerializerUtf8FixLen());
+                                            appSerializerUtf8FixLen());
                                 })
                                 .onErrorReturn(AssertionError.class, cause ->
                                         responseFactory.ok().payloadBody(Publisher.from(
-                                                "server error: " + cause.toString()), textSerializerUtf8FixLen()));
+                                                "server error: " + cause.toString()), appSerializerUtf8FixLen()));
                     }
                 })
                 .appendServiceFilter(new ContentEncodingHttpServiceFilter(serverEncoder.list, serverDecoder.group))

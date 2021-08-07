@@ -144,9 +144,13 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with {@link StandardCharsets#UTF_8}
      * {@code Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. Use
-     * {@link HttpSerializers#textSerializerUtf8FixLen()} or {@link HttpSerializers#textSerializerAsciiVarLen()} for
-     * streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @return {@link HttpSerializer} that could serialize {@link String}.
      */
     @Deprecated
@@ -156,9 +160,13 @@ public final class HttpSerializationProviders {
 
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with the specified {@link Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. Use
-     * {@link HttpSerializers#textSerializerFixLen(Charset)} or {@link HttpSerializers#textSerializerVarLen(Charset)}
-     * for streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
@@ -169,9 +177,13 @@ public final class HttpSerializationProviders {
 
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with the specified {@link Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. Use
-     * {@link HttpSerializers#textSerializerFixLen(Charset)} or {@link HttpSerializers#textSerializerVarLen(Charset)}
-     * for streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
@@ -185,9 +197,16 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with {@link StandardCharsets#UTF_8}
      * {@code Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. Use
-     * {@link HttpSerializers#textSerializerUtf8FixLen()} or {@link HttpSerializers#textSerializerAsciiVarLen()} for
-     * streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
     @Deprecated
@@ -197,9 +216,16 @@ public final class HttpSerializationProviders {
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with the specified {@link Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. Use
-     * {@link HttpSerializers#textSerializerFixLen(Charset)} or {@link HttpSerializers#textSerializerVarLen(Charset)}
-     * for streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
@@ -210,9 +236,16 @@ public final class HttpSerializationProviders {
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with the specified {@link Charset}.
-     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. Use
-     * {@link HttpSerializers#textSerializerFixLen(Charset)} or {@link HttpSerializers#textSerializerVarLen(Charset)}
-     * for streaming.
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}

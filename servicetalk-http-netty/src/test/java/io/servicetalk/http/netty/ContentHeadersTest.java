@@ -68,8 +68,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
@@ -318,7 +318,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     private static StreamingHttpRequest newStreamingRequest(final HttpRequestMethod requestMethod) {
         return newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
-                DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), textSerializerUtf8FixLen());
+                DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
     }
 
     private static HttpResponse newAggregatedResponse(final HttpResponseStatus status) {
@@ -329,7 +329,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
     private static StreamingHttpResponse newStreamingResponse(final HttpResponseStatus status) {
         return newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
                 DEFAULT_ALLOCATOR, headersFactory)
-                .payloadBody(from(PAYLOAD), textSerializerUtf8FixLen());
+                .payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
     }
 
     private static <T> UnaryOperator<T> describe(UnaryOperator<T> operator, String description) {
@@ -436,7 +436,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 if (failure != null) {
                     return succeeded(rf.internalServerError().payloadBody(
                             from(failure),
-                            textSerializerUtf8FixLen()));
+                            appSerializerUtf8FixLen()));
                 }
                 return succeeded(rf.noContent());
             });

@@ -15,15 +15,12 @@
  */
 package io.servicetalk.examples.grpc.compression;
 
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
 import io.grpc.examples.compression.Greeter;
 import io.grpc.examples.compression.Greeter.GreeterService;
 import io.grpc.examples.compression.HelloReply;
-import io.grpc.examples.compression.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
@@ -44,15 +41,9 @@ public class CompressionExampleServer {
                                 .add(deflateDefault(), true)
                                 .add(identityEncoder(), false).build())
                         .bufferEncoders(asList(gzipDefault(), deflateDefault(), identityEncoder()))
-                        .addService(new MyGreeterService())
+                        .addService((GreeterService) (ctx, request) ->
+                                succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()))
                         .build())
                 .awaitShutdown();
-    }
-
-    private static final class MyGreeterService implements GreeterService {
-        @Override
-        public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        }
     }
 }

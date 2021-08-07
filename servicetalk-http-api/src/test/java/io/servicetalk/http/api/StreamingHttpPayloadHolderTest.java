@@ -42,7 +42,7 @@ import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyIterator;
@@ -128,7 +128,7 @@ class StreamingHttpPayloadHolderTest {
                 break;
             case SetWithSerializer:
                 payloadHolder.payloadBody(updatedPayloadSource.map(b -> ((Buffer) b).toString(UTF_8)),
-                                          textSerializerUtf8FixLen());
+                                          appSerializerUtf8FixLen());
                 assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
                 assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
@@ -465,7 +465,7 @@ class StreamingHttpPayloadHolderTest {
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(false));
                     break;
                 case TransformWithSerializer:
-                    payloadHolder.transformPayloadBody(stringTransformer, textSerializerUtf8FixLen());
+                    payloadHolder.transformPayloadBody(stringTransformer, appSerializerUtf8FixLen());
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
                     assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                     break;

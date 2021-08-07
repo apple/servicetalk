@@ -59,8 +59,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.stream;
@@ -256,12 +256,12 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         assertEquals(UNSUPPORTED_MEDIA_TYPE, blockingStreamingHttpClient.request(blockingStreamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(singletonList(payloadAsString((byte) 'a')), textSerializerUtf8FixLen())).status());
+                .payloadBody(singletonList(payloadAsString((byte) 'a')), appSerializerUtf8FixLen())).status());
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, streamingHttpClient.request(streamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(from(payloadAsString((byte) 'a')), textSerializerUtf8FixLen())).toFuture().get().status());
+                .payloadBody(from(payloadAsString((byte) 'a')), appSerializerUtf8FixLen())).toFuture().get().status());
     }
 
     void assertResponseHeaders(final String contentEncodingValue) {

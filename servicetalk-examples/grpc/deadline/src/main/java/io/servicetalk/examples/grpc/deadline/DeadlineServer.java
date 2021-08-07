@@ -15,13 +15,10 @@
  */
 package io.servicetalk.examples.grpc.deadline;
 
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.deadline.Greeter;
+import io.grpc.examples.deadline.Greeter.GreeterService;
 import io.grpc.examples.deadline.HelloReply;
-import io.grpc.examples.deadline.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.time.Duration.ofMinutes;
@@ -36,22 +33,14 @@ import static java.time.Duration.ofSeconds;
  * @see <a href="https://grpc.io/blog/deadlines/">gRPC and Deadlines</a>
  */
 public class DeadlineServer {
-
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 // Set default timeout for completion of RPC calls made to this server
                 .defaultTimeout(ofMinutes(2))
-                .listenAndAwait(new MyGreeterService())
+                .listenAndAwait((GreeterService) (ctx, request) ->
+                        // Force a 5 second delay in the response.
+                        ctx.executionContext().executor().timer(ofSeconds(5)).concat(
+                                succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())))
                 .awaitShutdown();
-    }
-
-    private static final class MyGreeterService implements Greeter.GreeterService {
-
-        @Override
-        public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            // Force a 5 second delay in the response.
-            return ctx.executionContext().executor().timer(ofSeconds(5))
-                    .concat(succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()));
-        }
     }
 }

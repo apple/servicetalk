@@ -56,7 +56,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -121,7 +121,7 @@ class BlockingStreamingToStreamingServiceTest {
         };
 
         List<Object> response = invokeService(syncService, reqRespFactory.post("/")
-                .payloadBody(from("Hello\n", "World\n"), textSerializerUtf8FixLen()));
+                .payloadBody(from("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertMetaData(OK, response);
         assertPayloadBody("", response, true);
         assertEmptyTrailers(response);
@@ -167,9 +167,9 @@ class BlockingStreamingToStreamingServiceTest {
     void echoServiceUsingPayloadWriterWithSerializerWithTrailers() throws Exception {
         echoService((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
-            try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializerUtf8FixLen())) {
+            try (HttpPayloadWriter<String> pw = response.sendMetaData(appSerializerUtf8FixLen())) {
                 AtomicInteger totalLength = new AtomicInteger();
-                request.payloadBody(textSerializerUtf8FixLen()).forEach(chunk -> {
+                request.payloadBody(appSerializerUtf8FixLen()).forEach(chunk -> {
                     try {
                         totalLength.addAndGet(chunk.length());
                         pw.write(chunk);
@@ -201,7 +201,7 @@ class BlockingStreamingToStreamingServiceTest {
 
     private void echoService(BlockingStreamingHttpService syncService) throws Exception {
         List<Object> response = invokeService(syncService, reqRespFactory.post("/")
-                .payloadBody(from("Hello\n", "World\n"), textSerializerUtf8FixLen()));
+                .payloadBody(from("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertMetaData(OK, response);
         assertHeader(TRAILER, X_TOTAL_LENGTH, response);
         assertPayloadBody(HELLO_WORLD, response, true);

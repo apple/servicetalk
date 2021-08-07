@@ -41,7 +41,6 @@ import io.grpc.examples.routeguide.Feature;
 import io.grpc.examples.routeguide.Point;
 import io.grpc.examples.routeguide.Rectangle;
 import io.grpc.examples.routeguide.RouteGuide.RouteGuideService;
-import io.grpc.examples.routeguide.RouteGuide.ServiceFactory;
 import io.grpc.examples.routeguide.RouteNote;
 import io.grpc.examples.routeguide.RouteSummary;
 
@@ -59,14 +58,13 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.function.Function.identity;
 
-public class RouteGuideServer {
-
+public final class RouteGuideServer {
     public static void main(String[] args) throws Exception {
         FeaturesFinder featuresFinder = args.length > 0 ?
                 fromJson(RouteGuideServer.class.getResource(args[0])) :
                 randomFeatures();
         GrpcServers.forPort(8080)
-                .listenAndAwait(new ServiceFactory(new DefaultRouteGuideService(featuresFinder)))
+                .listenAndAwait(new DefaultRouteGuideService(featuresFinder))
                 .awaitShutdown();
     }
 

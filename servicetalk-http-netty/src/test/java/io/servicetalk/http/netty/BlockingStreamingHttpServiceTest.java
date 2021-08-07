@@ -54,7 +54,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -138,12 +138,12 @@ class BlockingStreamingHttpServiceTest {
         StringBuilder receivedPayloadBody = new StringBuilder();
 
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
-            request.payloadBody(textSerializerUtf8FixLen()).forEach(receivedPayloadBody::append);
+            request.payloadBody(appSerializerUtf8FixLen()).forEach(receivedPayloadBody::append);
             response.sendMetaData().close();
         });
 
         BlockingStreamingHttpResponse response = client.request(client.post("/")
-                .payloadBody(asList("Hello\n", "World\n"), textSerializerUtf8FixLen()));
+                .payloadBody(asList("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertResponse(response);
         assertThat(response.toResponse().toFuture().get().payloadBody(), is(EMPTY_BUFFER));
         assertThat(receivedPayloadBody.toString(), is(HELLO_WORLD));
@@ -200,7 +200,7 @@ class BlockingStreamingHttpServiceTest {
     void respondWithPayloadBodyAndTrailersUsingPayloadWriterWithSerializer() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
-            try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializerUtf8FixLen())) {
+            try (HttpPayloadWriter<String> pw = response.sendMetaData(appSerializerUtf8FixLen())) {
                 pw.write("Hello\n");
                 pw.write("World\n");
                 pw.setTrailer(X_TOTAL_LENGTH, String.valueOf(HELLO_WORLD.length()));
@@ -235,12 +235,12 @@ class BlockingStreamingHttpServiceTest {
                 assertThat(trailers, notNullValue());
                 assertThat(trailers.get(X_TOTAL_LENGTH).toString(), is(HELLO_WORLD_LENGTH));
             } catch (Throwable cause) {
-                HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializerUtf8FixLen());
+                HttpPayloadWriter<String> payloadWriter = response.sendMetaData(appSerializerUtf8FixLen());
                 payloadWriter.write(cause.toString());
                 payloadWriter.close();
                 return;
             }
-            response.sendMetaData(textSerializerUtf8FixLen()).close();
+            response.sendMetaData(appSerializerUtf8FixLen()).close();
         });
         BufferAllocator alloc = client.executionContext().bufferAllocator();
         BlockingStreamingHttpRequest req = client.get("/");
@@ -304,7 +304,7 @@ class BlockingStreamingHttpServiceTest {
 
         BlockingStreamingHttpResponse response = client.request(req);
         assertThat(response.status(), is(OK));
-        assertThat(stream(response.payloadBody(textSerializerUtf8FixLen()).spliterator(), false)
+        assertThat(stream(response.payloadBody(appSerializerUtf8FixLen()).spliterator(), false)
                 .collect(Collectors.toList()), emptyIterable());
     }
 
@@ -319,7 +319,7 @@ class BlockingStreamingHttpServiceTest {
         final StringBuilder sb = new StringBuilder();
         final HttpHeaders trailers;
         if (useDeserializer) {
-            HttpMessageBodyIterator<String> msgBody = response.messageBody(textSerializerUtf8FixLen()).iterator();
+            HttpMessageBodyIterator<String> msgBody = response.messageBody(appSerializerUtf8FixLen()).iterator();
             while (msgBody.hasNext()) {
                 sb.append(msgBody.next());
             }
@@ -358,8 +358,8 @@ class BlockingStreamingHttpServiceTest {
     @Test
     void echoServerUsingPayloadWriterWithSerializer() throws Exception {
         echoServer((ctx, request, response) -> {
-            try (PayloadWriter<String> pw = response.sendMetaData(textSerializerUtf8FixLen())) {
-                request.payloadBody(textSerializerUtf8FixLen()).forEach(chunk -> {
+            try (PayloadWriter<String> pw = response.sendMetaData(appSerializerUtf8FixLen())) {
+                request.payloadBody(appSerializerUtf8FixLen()).forEach(chunk -> {
                     try {
                         pw.write(chunk);
                     } catch (IOException e) {
@@ -391,7 +391,7 @@ class BlockingStreamingHttpServiceTest {
         BlockingStreamingHttpClient client = context(handler);
 
         BlockingStreamingHttpResponse response = client.request(client.post("/")
-                .payloadBody(asList("Hello\n", "World\n"), textSerializerUtf8FixLen()));
+                .payloadBody(asList("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertResponse(response, HELLO_WORLD, true);
     }
 
@@ -456,7 +456,7 @@ class BlockingStreamingHttpServiceTest {
         assertResponse(response);
         if (useDeserializer) {
             StringBuilder sb = new StringBuilder();
-            for (String s : response.payloadBody(textSerializerUtf8FixLen())) {
+            for (String s : response.payloadBody(appSerializerUtf8FixLen())) {
                 sb.append(s);
             }
             assertThat(sb.toString(), is(expectedPayloadBody));

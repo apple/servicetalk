@@ -27,8 +27,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static java.util.Arrays.asList;
 
 /**
- * Extends the async "Hello World" sample to add support for compression of
- * request and response payload bodies.
+ * Extends the async "Hello World" sample to add support for compression of request and response payload bodies.
  */
 public final class CompressionFilterExampleServer {
     public static void main(String... args) throws Exception {

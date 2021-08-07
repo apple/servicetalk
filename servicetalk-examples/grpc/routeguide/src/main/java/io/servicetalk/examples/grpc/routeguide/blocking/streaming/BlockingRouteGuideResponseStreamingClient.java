@@ -25,15 +25,13 @@ import io.grpc.examples.routeguide.RouteGuide.BlockingRouteGuideClient;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
 public final class BlockingRouteGuideResponseStreamingClient {
-
     public static void main(String[] args) throws Exception {
         try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new ClientFactory())) {
             BlockingIterable<Feature> features = client.listFeatures(
                     Rectangle.newBuilder()
                             .setHi(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                            .setLo(Point.newBuilder().setLatitude(789000).setLongitude(-789000).build())
-                            .build());
+                            .setLo(Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()).build());
             for (Feature feature : features) {
                 System.out.println(feature);
             }

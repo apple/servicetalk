@@ -41,7 +41,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
@@ -87,11 +87,11 @@ public final class AsyncContextHttpFilterVerifier {
         final BlockingStreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
                 .buildBlockingStreaming();
         final BlockingStreamingHttpRequest request = client.post("/test")
-                .payloadBody(payload, textSerializerUtf8FixLen());
+                .payloadBody(payload, appSerializerUtf8FixLen());
 
         final BlockingStreamingHttpResponse resp = client.request(request);
         assertThat(resp.status(), is(OK));
-        Iterator<String> itr = resp.payloadBody(textSerializerUtf8FixLen()).iterator();
+        Iterator<String> itr = resp.payloadBody(appSerializerUtf8FixLen()).iterator();
         assertThat(itr.hasNext(), is(true));
         assertThat(itr.next(), is(payload.get(0)));
         assertThat(itr.hasNext(), is(false));
@@ -101,7 +101,7 @@ public final class AsyncContextHttpFilterVerifier {
     private static StreamingHttpService asyncContextRequestHandler(final BlockingQueue<Throwable> errorQueue) {
         return (ctx, request, respFactory) -> {
             AsyncContext.put(K1, V1);
-            return request.payloadBody(textSerializerUtf8FixLen())
+            return request.payloadBody(appSerializerUtf8FixLen())
                     .collect(StringBuilder::new, (collector, it) -> {
                         collector.append(it);
                         return collector;
@@ -116,7 +116,7 @@ public final class AsyncContextHttpFilterVerifier {
                     assertAsyncContext(K2, V2, errorQueue);
                     assertAsyncContext(K3, V3, errorQueue);
                     return body;
-                }), textSerializerUtf8FixLen()).transformPayloadBody(publisher ->
+                }), appSerializerUtf8FixLen()).transformPayloadBody(publisher ->
                             publisher.beforeSubscriber(() -> new PublisherSource.Subscriber<Buffer>() {
                         @Override
                         public void onSubscribe(final PublisherSource.Subscription subscription) {
