@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.safeShouldOffload;
@@ -60,19 +59,19 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
     };
 
     private final Publisher<T> original;
-    private final Supplier<? extends BooleanSupplier> shouldOffloadSupplier;
+    private final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
-                                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier,
+                                    final BooleanSupplier shouldOffload,
                                     final Executor executor) {
         this.original = original;
-        this.shouldOffloadSupplier = shouldOffloadSupplier;
+        this.shouldOffload = shouldOffload;
         this.executor = executor;
     }
 
-    final BooleanSupplier shouldOffloadSupplier() {
-        return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
+    final BooleanSupplier shouldOffload() {
+        return shouldOffload;
     }
 
     final Executor executor() {
@@ -130,10 +129,16 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
         private boolean shouldOffload() {
             if (!hasOffloaded) {
-                if (!safeShouldOffload(shouldOffload)) {
-                    return false;
+                try {
+                    if (!shouldOffload.getAsBoolean()) {
+                        return false;
+                    }
+                    hasOffloaded = true;
+                } catch (Throwable throwable) {
+                    LOGGER.warn("Offloading hint BooleanSupplier {} threw", shouldOffload, throwable);
+                    // propagate the failure so that subscription is cancelled.
+                    throw throwable;
                 }
-                hasOffloaded = true;
             }
             return true;
         }

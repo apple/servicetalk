@@ -2866,16 +2866,16 @@ public abstract class Publisher<T> {
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor, Supplier)}, current operator always enforces offloading to the passed
-     * {@link Executor}.
+     * Note: unlike {@link #publishOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor, Supplier)
+     * @see #publishOn(Executor, BooleanSupplier)
      */
     public final Publisher<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnPublishers.publishOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -2889,15 +2889,13 @@ public abstract class Publisher<T> {
      * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload {@link Supplier} that will be triggered on each
-     * {@link PublisherSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
-     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
-     * signal ordering.
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
      * @see #publishOn(Executor)
      */
-    public final Publisher<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+    public final Publisher<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
@@ -2911,16 +2909,16 @@ public abstract class Publisher<T> {
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor, Supplier)}, current operator always enforces offloading to the passed
-     * {@link Executor}.
+     * Note: unlike {@link #subscribeOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @see #subscribeOn(Executor, Supplier)
+     * @see #subscribeOn(Executor, BooleanSupplier)
      */
     public final Publisher<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -2937,15 +2935,13 @@ public abstract class Publisher<T> {
      * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload {@link Supplier} that will be triggered on each
-     * {@link PublisherSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
-     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
-     * signal ordering.
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      * @see #subscribeOn(Executor)
      */
-    public final Publisher<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+    public final Publisher<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 
