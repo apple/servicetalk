@@ -1383,16 +1383,16 @@ public abstract class Completable {
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor, Supplier)}, current operator always enforces offloading to the passed
-     * {@link Executor}.
+     * Note: unlike {@link #publishOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
-     * @see #publishOn(Executor, Supplier)
+     * @see #publishOn(Executor, BooleanSupplier)
      */
     public final Completable publishOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnCompletables.publishOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1406,15 +1406,13 @@ public abstract class Completable {
      * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload {@link Supplier} that will be triggered on each
-     * {@link CompletableSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
-     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
-     * signal ordering.
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
      * @see #publishOn(Executor)
      */
-    public final Completable publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+    public final Completable publishOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnCompletables.publishOn(this, shouldOffload, executor);
     }
 
@@ -1428,16 +1426,16 @@ public abstract class Completable {
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor, Supplier)}, current operator always enforces offloading to the passed
-     * {@link Executor}.
+     * Note: unlike {@link #subscribeOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed {@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
-     * @see #subscribeOn(Executor, Supplier)
+     * @see #subscribeOn(Executor, BooleanSupplier)
      */
     public final Completable subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1454,15 +1452,13 @@ public abstract class Completable {
      * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload {@link Supplier} that will be triggered on each
-     * {@link CompletableSource#subscribe(Subscriber) subscribe}. Its result provides a hint whether offloading to the
-     * executor can be omitted or not. Offloading may still occur even if {@code false} is returned in order to preserve
-     * signal ordering.
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
      * @return A new {@link Completable} that may use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      * @see #subscribeOn(Executor)
      */
-    public final Completable subscribeOn(Executor executor, Supplier<BooleanSupplier> shouldOffload) {
+    public final Completable subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, shouldOffload, executor);
     }
 

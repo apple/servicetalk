@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
@@ -55,19 +54,19 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
     };
 
     private final Single<T> original;
-    private final Supplier<? extends BooleanSupplier> shouldOffloadSupplier;
+    private final BooleanSupplier shouldOffload;
     private final Executor executor;
 
     TaskBasedAsyncSingleOperator(final Single<T> original,
-                                 final Supplier<? extends BooleanSupplier> shouldOffloadSupplier,
+                                 final BooleanSupplier shouldOffload,
                                  final Executor executor) {
         this.original = original;
-        this.shouldOffloadSupplier = shouldOffloadSupplier;
+        this.shouldOffload = shouldOffload;
         this.executor = executor;
     }
 
-    final BooleanSupplier shouldOffloadSupplier() {
-        return requireNonNull(shouldOffloadSupplier.get(), "shouldOffload");
+    final BooleanSupplier shouldOffload() {
+        return shouldOffload;
     }
 
     final Executor executor() {

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -41,13 +40,13 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     static <T> Publisher<T> publishOn(final Publisher<T> original,
-                                      final Supplier<? extends BooleanSupplier> shouldOffload,
+                                      final BooleanSupplier shouldOffload,
                                       final Executor executor) {
         return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
     static <T> Publisher<T> subscribeOn(final Publisher<T> original,
-                                        final Supplier<? extends BooleanSupplier> shouldOffload,
+                                        final BooleanSupplier shouldOffload,
                                         final Executor executor) {
         return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
@@ -62,15 +61,15 @@ final class PublishAndSubscribeOnPublishers {
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         PublishOn(final Publisher<T> original,
-                  final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
-            super(original, shouldOffloadSupplier, executor);
+                  final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                BooleanSupplier shouldOffload = shouldOffload();
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriber<>(subscriber, shouldOffload, executor());
 
@@ -97,15 +96,15 @@ final class PublishAndSubscribeOnPublishers {
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         SubscribeOn(final Publisher<T> original,
-                    final Supplier<? extends BooleanSupplier> shouldOffloadSupplier, final Executor executor) {
-            super(original, shouldOffloadSupplier, executor);
+                    final BooleanSupplier shouldOffload, final Executor executor) {
+            super(original, shouldOffload, executor);
         }
 
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             try {
-                BooleanSupplier shouldOffload = shouldOffloadSupplier();
+                BooleanSupplier shouldOffload = shouldOffload();
                 final Subscriber<? super T> upstreamSubscriber =
                         new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
 
