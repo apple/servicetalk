@@ -42,7 +42,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -570,10 +569,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
         config.inferSniHostname(shouldInfer);
         return this;
-    }
-
-    void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
-        influencerChainBuilder.add(multiAddressHttpClientFilterFactory);
     }
 
     HttpExecutionStrategyInfluencer buildStrategyInfluencerForClient(HttpExecutionStrategy strategy) {

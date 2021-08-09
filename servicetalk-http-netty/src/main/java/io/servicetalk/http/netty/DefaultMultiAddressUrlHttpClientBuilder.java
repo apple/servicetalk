@@ -30,7 +30,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
-import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -80,8 +79,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
-    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
-    @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
@@ -98,7 +95,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, singleAddressInitializer);
+                    unresolvedAddressToHostFunction, singleAddressInitializer);
 
             HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
@@ -210,19 +207,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
-        private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
-        @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
         private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
-                @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
             this.builderTemplate = builderTemplate;
-            this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.singleAddressInitializer = singleAddressInitializer;
         }
@@ -235,10 +228,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             if (hostHeaderTransformer != null) {
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
-            }
-
-            if (clientFilterFactory != null) {
-                buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
 
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {

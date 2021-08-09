@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
-
 /**
  * A factory for {@link StreamingHttpClientFilter}.
  */
@@ -30,15 +28,4 @@ public interface StreamingHttpClientFilterFactory {
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
     StreamingHttpClientFilter create(FilterableStreamingHttpClient client);
-
-    /**
-     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a
-     * {@link StreamingHttpClientFilterFactory}.
-     *
-     * @param <U> the type of address before resolution (unresolved address).
-     * @return a {@link MultiAddressHttpClientFilterFactory} function
-     */
-    default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
-        return toMultiAddressClientFactory(this);
-    }
 }

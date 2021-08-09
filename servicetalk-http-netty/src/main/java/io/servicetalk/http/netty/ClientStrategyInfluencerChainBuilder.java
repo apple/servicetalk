@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -43,13 +42,6 @@ final class ClientStrategyInfluencerChainBuilder {
         connFactoryChain = from.connFactoryChain.copy();
         connFilterChain = from.connFilterChain.copy();
         clientChain = from.clientChain.copy();
-    }
-
-    void add(MultiAddressHttpClientFilterFactory<?> multiAddressHttpClientFilter) {
-        if (!clientChain.appendIfInfluencer(multiAddressHttpClientFilter)) {
-            // If the filter is not influencing strategy, then the default is to offload all.
-            clientChain.append(defaultStreamingInfluencer());
-        }
     }
 
     void add(StreamingHttpClientFilterFactory clientFilter) {
