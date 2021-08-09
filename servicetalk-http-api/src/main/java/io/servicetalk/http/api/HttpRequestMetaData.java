@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.nio.charset.Charset;
@@ -418,6 +419,25 @@ public interface HttpRequestMetaData extends HttpMetaData {
      */
     @Nullable
     HostAndPort effectiveHostAndPort();
+
+    /**
+     * Get the {@link BufferEncoder} to use for this request. The value can be used by filters
+     * (such as {@link ContentEncodingHttpRequesterFilter}) to apply {@link HttpHeaderNames#CONTENT_ENCODING} to the
+     * request.
+     *
+     * @return the {@link BufferEncoder} to use for this request.
+     */
+    @Nullable
+    BufferEncoder contentEncoding();
+
+    /**
+     * Set the {@link BufferEncoder} to use for this request. The value can be used by filters
+     * (such as {@link ContentEncodingHttpRequesterFilter}) to apply {@link HttpHeaderNames#CONTENT_ENCODING} to the
+     * request.
+     * @param encoder {@link BufferEncoder} to use for this request.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData contentEncoding(@Nullable BufferEncoder encoder);
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);

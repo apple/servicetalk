@@ -46,8 +46,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+@Deprecated
 class DefaultSerializerSerializationTest {
-
     private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() { };
     private IntUnaryOperator sizeEstimator;
     private List<Buffer> createdBuffers;

@@ -15,17 +15,17 @@
  */
 package io.servicetalk.examples.http.timeout;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
-import io.servicetalk.transport.api.HostAndPort;
 
-import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.concurrent.api.Single.collectUnorderedDelayError;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async 'Hello World!' example to demonstrate use of timeout filters and timeout operators. If a single
@@ -36,42 +36,36 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
  * operator.
  */
 public final class TimeoutClient {
-
     public static void main(String[] args) throws Exception {
-        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress("localhost", 8080)
-                        // Filter enforces that requests made with this client must fully complete
-                        // within 10 seconds or will be cancelled.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter(Duration.ofSeconds(10), true));
-
-        try (HttpClient client = builder.build()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
-
+        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+                // Filter enforces that requests made with this client must fully complete
+                // within 10 seconds or will be cancelled.
+                .appendClientFilter(new TimeoutHttpRequesterFilter(ofSeconds(10), true))
+                .build()) {
             // first request, with default timeout from HttpClient (this will succeed)
-            client.request(client.get("/sayHello"))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .afterOnError(System.err::println)
-                    .subscribe(resp -> {
+            Single<HttpResponse> respSingle1 = client.request(client.get("/defaultTimeout"))
+                    .whenOnError(System.err::println)
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
             // second request, with custom timeout that is lower than the client default (this will timeout)
-            client.request(client.get("/sayHello"))
+            Single<HttpResponse> respSingle2 = client.request(client.get("/3secondTimeout"))
                     // This request and response must complete within 3 seconds or the request will be cancelled.
-                    .timeout(Duration.ofSeconds(3))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .afterOnError(System.err::println)
-                    .subscribe(resp -> {
+                    .timeout(ofSeconds(3))
+                    .whenOnError(System.err::println)
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
-            // block until requests are complete and afterFinally() has been called
-            responseProcessedLatch.await();
+            // Issue the requests in parallel.
+            collectUnorderedDelayError(respSingle1, respSingle2)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

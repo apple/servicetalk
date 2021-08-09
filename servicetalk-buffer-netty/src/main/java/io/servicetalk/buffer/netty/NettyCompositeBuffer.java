@@ -21,6 +21,7 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.netty.buffer.CompositeByteBuf;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 final class NettyCompositeBuffer extends NettyBuffer<CompositeByteBuf> implements CompositeBuffer {
 
@@ -361,6 +362,12 @@ final class NettyCompositeBuffer extends NettyBuffer<CompositeByteBuf> implement
     @Override
     public CompositeBuffer writeUtf8(CharSequence seq, int ensureWritable) {
         super.writeUtf8(seq, ensureWritable);
+        return this;
+    }
+
+    @Override
+    public CompositeBuffer writeCharSequence(CharSequence seq, Charset charset) {
+        super.writeCharSequence(seq, charset);
         return this;
     }
 }

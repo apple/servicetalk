@@ -56,7 +56,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -67,9 +67,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PartitionedHttpClientTest {
-
-
-
     private static final PartitionAttributes.Key<String> SRV_NAME = PartitionAttributes.Key.newKey();
     private static final PartitionAttributes.Key<Boolean> SRV_LEADER = PartitionAttributes.Key.newKey();
     private static final String SRV_1 = "srv1";
@@ -264,7 +261,7 @@ class PartitionedHttpClientTest {
                         }
                         ServerContext dSrv = userId == 1 ? srv1 : srv2;
                         InetSocketAddress socketAddress = (InetSocketAddress) dSrv.listenAddress();
-                        return responseFactory.ok().payloadBody(socketAddress.getPort() + "", textSerializer());
+                        return responseFactory.ok().payloadBody(socketAddress.getPort() + "", textSerializerUtf8());
                     }
                     return responseFactory.notFound();
                 })) {

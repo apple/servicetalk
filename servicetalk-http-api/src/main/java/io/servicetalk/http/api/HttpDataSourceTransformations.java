@@ -54,18 +54,32 @@ final class HttpDataSourceTransformations {
         // no instances
     }
 
-    static final class BridgeFlowControlAndDiscardOperator implements PublisherOperator<Buffer, Buffer> {
-        private static final AtomicIntegerFieldUpdater<BridgeFlowControlAndDiscardOperator> appliedUpdater =
-                newUpdater(BridgeFlowControlAndDiscardOperator.class, "applied");
+    static final class ObjectBridgeFlowControlAndDiscardOperator extends
+                                                                 AbstractBridgeFlowControlAndDiscardOperator<Object> {
+        ObjectBridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
+            super(discardedPublisher);
+        }
+    }
+
+    static final class BridgeFlowControlAndDiscardOperator extends AbstractBridgeFlowControlAndDiscardOperator<Buffer> {
+        BridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
+            super(discardedPublisher);
+        }
+    }
+
+    private abstract static class AbstractBridgeFlowControlAndDiscardOperator<T> implements PublisherOperator<T, T> {
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<AbstractBridgeFlowControlAndDiscardOperator> appliedUpdater =
+                newUpdater(AbstractBridgeFlowControlAndDiscardOperator.class, "applied");
         private volatile int applied;
         private final Publisher<?> discardedPublisher;
 
-        BridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
+        AbstractBridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
             this.discardedPublisher = requireNonNull(discardedPublisher);
         }
 
         @Override
-        public Subscriber<? super Buffer> apply(final Subscriber<? super Buffer> subscriber) {
+        public final Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
             // We only need to subscribe to and drain contents from original Publisher a single time.
             return appliedUpdater.compareAndSet(this, 0, 1) ?
                     new BridgeFlowControlAndDiscardSubscriber<>(subscriber, discardedPublisher) : subscriber;

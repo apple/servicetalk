@@ -17,9 +17,6 @@ package io.servicetalk.examples.http.service.composition.backends;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -55,12 +52,6 @@ public final class BackendsStarter {
             // Shared IoExecutor for the application.
             IoExecutor ioExecutor = resources.prepend(createIoExecutor());
 
-            // Use Jackson for serialization and deserialization.
-            // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
-            // HTTP focused serialization APIs.
-            HttpSerializationProvider httpSerializer = HttpSerializationProviders
-                    .jsonSerializer(new JacksonSerializationProvider());
-
             // This is a single Completable used to await closing of all backends started by this class. It is used to
             // provide a way to not let main() exit.
             Completable allServicesOnClose = completed();
@@ -68,22 +59,19 @@ public final class BackendsStarter {
             BackendStarter starter = new BackendStarter(ioExecutor, resources);
             final ServerContext recommendationService =
                     starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.port(), RECOMMENDATION_SERVICE_NAME,
-                            newRecommendationsService(httpSerializer));
+                            newRecommendationsService());
             allServicesOnClose = allServicesOnClose.merge(recommendationService.onClose());
 
             final ServerContext metadataService =
-                    starter.start(METADATA_BACKEND_ADDRESS.port(), METADATA_SERVICE_NAME,
-                            newMetadataService(httpSerializer));
+                    starter.start(METADATA_BACKEND_ADDRESS.port(), METADATA_SERVICE_NAME, newMetadataService());
             allServicesOnClose = allServicesOnClose.merge(metadataService.onClose());
 
             final ServerContext userService =
-                    starter.start(USER_BACKEND_ADDRESS.port(), USER_SERVICE_NAME,
-                            newUserService(httpSerializer));
+                    starter.start(USER_BACKEND_ADDRESS.port(), USER_SERVICE_NAME, newUserService());
             allServicesOnClose = allServicesOnClose.merge(userService.onClose());
 
             final ServerContext ratingService =
-                    starter.start(RATINGS_BACKEND_ADDRESS.port(), RATING_SERVICE_NAME,
-                            newRatingService(httpSerializer));
+                    starter.start(RATINGS_BACKEND_ADDRESS.port(), RATING_SERVICE_NAME, newRatingService());
             allServicesOnClose = allServicesOnClose.merge(ratingService.onClose());
 
             // Await termination of all backends started by this class.

@@ -15,68 +15,50 @@
  */
 package io.servicetalk.examples.grpc.compression;
 
-import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.Identity;
-import io.servicetalk.encoding.netty.ContentCodings;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
+import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.netty.GrpcClients;
 
-import io.grpc.examples.compression.Greeter;
 import io.grpc.examples.compression.Greeter.ClientFactory;
 import io.grpc.examples.compression.Greeter.GreeterClient;
+import io.grpc.examples.compression.HelloReply;
 import io.grpc.examples.compression.HelloRequest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import static io.servicetalk.encoding.api.Identity.identityEncoder;
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.deflateDefault;
 
 /**
  * Extends the async "Hello World" example to include support for compression of the server response.
  */
 public final class CompressionExampleClient {
-
-    /**
-     * Encodings supported in preferred order.
-     */
-    private static final List<ContentCodec> PREFERRED_ENCODINGS =
-            Collections.unmodifiableList(Arrays.asList(
-                    // For the purposes of this example we disable GZip compression and use the
-                    // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
-                    // handled correctly.
-                    // ContentCodings.gzipDefault(),
-                    ContentCodings.deflateDefault(),
-                    Identity.identity()
-            ));
-
-    /**
-     * Metadata that, when provided to a sayHello, will cause the request to be compressed.
-     */
-    private static final Greeter.SayHelloMetadata COMPRESS_REQUEST = new Greeter.SayHelloMetadata(ContentCodings.deflateDefault());
-
     public static void main(String... args) throws Exception {
         try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory()
-                // Requests will include 'Message-Accept-Encoding' HTTP header to inform the server which encodings we support.
-                .supportedMessageCodings(PREFERRED_ENCODINGS))) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
-
+                .bufferDecoderGroup(new BufferDecoderGroupBuilder()
+                        // For the purposes of this example we disable GZip compression and use the
+                        // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
+                        // handled correctly.
+                        // .add(NettyBufferEncoders.gzipDefault(), true)
+                        .add(deflateDefault(), true)
+                        .add(identityEncoder(), false).build()))) {
             // This request is sent with the request being uncompressed. The response may
             // be compressed because the ClientFactory will include the encodings we
             // support as a request header.
-            client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
+            Single<HelloReply> respSingle1 = client.sayHello(HelloRequest.newBuilder().setName("NoMeta").build())
+                    .whenOnSuccess(System.out::println);
 
             // This request uses a different overload of the "sayHello" method that allows
-            // providing request metadata and we use it to request compression of the
-            // request.
-            client.sayHello(COMPRESS_REQUEST, HelloRequest.newBuilder().setName("Foo").build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
+            // providing request metadata and we use it to request compression of the request.
+            Single<HelloReply> respSingle2 = client.sayHello(new DefaultGrpcClientMetadata(deflateDefault()),
+                    HelloRequest.newBuilder().setName("WithMeta").build())
+                    .whenOnSuccess(System.out::println);
 
-            responseProcessedLatch.await();
+            // Issue the requests sequentially with concat.
+            respSingle1.concat(respSingle2)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

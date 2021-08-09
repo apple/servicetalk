@@ -30,14 +30,24 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
 
     /**
      * Gets and deserializes the payload body.
+     * @deprecated Use {@link #payloadBody(HttpDeserializer2)}.
+     * @param deserializer The function that deserializes the underlying {@link Object}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
+     */
+    @Deprecated
+    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
+    }
+
+    /**
+     * Gets and deserializes the payload body.
      *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(headers(), payloadBody());
-    }
+    <T> T payloadBody(HttpDeserializer2<T> deserializer);
 
     /**
      * Returns an {@link HttpResponse} with its underlying payload set to {@code payloadBody}.
@@ -49,13 +59,24 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
 
     /**
      * Returns an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
+     * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
+     * @param pojo The object to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return {@code this}
+     */
+    @Deprecated
+    <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
+
+    /**
+     * Returns an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
      *
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
      * @return {@code this}
      */
-    <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
+    <T> HttpResponse payloadBody(T pojo, HttpSerializer2<T> serializer);
 
     /**
      * Translates this {@link HttpResponse} to a {@link StreamingHttpResponse}.

@@ -18,35 +18,26 @@ package io.servicetalk.examples.grpc.routeguide.async.streaming;
 import io.servicetalk.grpc.netty.GrpcClients;
 
 import io.grpc.examples.routeguide.Point;
-import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
+import io.grpc.examples.routeguide.RouteGuide.RouteGuideClient;
 import io.grpc.examples.routeguide.RouteNote;
-
-import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
 public final class RouteGuideStreamingClient {
-
     public static void main(String[] args) throws Exception {
-        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .build(new ClientFactory())) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+        try (RouteGuideClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
             client.routeChat(from(RouteNote.newBuilder()
-                    .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                    .setMessage("First note.")
-                    .build(),
+                        .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
+                        .setMessage("First note.").build(),
                     RouteNote.newBuilder()
-                    .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                    .setMessage("Querying notes.")
-                    .build()))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .forEach(System.out::println);
-
-            responseProcessedLatch.await();
+                        .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
+                        .setMessage("Querying notes.").build()))
+                    .whenOnNext(System.out::println)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

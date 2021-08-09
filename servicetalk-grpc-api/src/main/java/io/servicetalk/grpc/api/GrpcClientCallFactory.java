@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.http.api.StreamingHttpClient;
 
 import java.time.Duration;
@@ -32,7 +33,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
 
     /**
      * Creates a new {@link ClientCall}.
-     *
+     * @deprecated Use {@link #newCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -40,13 +41,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link ClientCall}.
      */
-    <Req, Resp> ClientCall<Req, Resp>
-    newCall(GrpcSerializationProvider serializationProvider,
-            Class<Req> requestClass, Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> ClientCall<Req, Resp> newCall(GrpcSerializationProvider serializationProvider,
+                                              Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link ClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link ClientCall}.
+     */
+    <Req, Resp> ClientCall<Req, Resp> newCall(MethodDescriptor<Req, Resp> methodDescriptor,
+                                              BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link StreamingClientCall}.
-     *
+     * @deprecated Use {@link #newStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -54,13 +66,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link StreamingClientCall}.
      */
-    <Req, Resp> StreamingClientCall<Req, Resp>
-    newStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                     Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> StreamingClientCall<Req, Resp> newStreamingCall(GrpcSerializationProvider serializationProvider,
+                                                                Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link StreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link StreamingClientCall}.
+     */
+    <Req, Resp> StreamingClientCall<Req, Resp> newStreamingCall(MethodDescriptor<Req, Resp> methodDescriptor,
+                                                                BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link RequestStreamingClientCall}.
-     *
+     * @deprecated Use {@link #newRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -68,13 +91,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link RequestStreamingClientCall}.
      */
-    <Req, Resp> RequestStreamingClientCall<Req, Resp>
-    newRequestStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                            Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> RequestStreamingClientCall<Req, Resp> newRequestStreamingCall(
+            GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link RequestStreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link RequestStreamingClientCall}.
+     */
+    <Req, Resp> RequestStreamingClientCall<Req, Resp> newRequestStreamingCall(
+            MethodDescriptor<Req, Resp> methodDescriptor, BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link ResponseStreamingClientCall}.
-     *
+     * @deprecated Use {@link #newResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -82,13 +116,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link ResponseStreamingClientCall}.
      */
-    <Req, Resp> ResponseStreamingClientCall<Req, Resp>
-    newResponseStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                             Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> ResponseStreamingClientCall<Req, Resp> newResponseStreamingCall(
+            GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link ResponseStreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link ResponseStreamingClientCall}.
+     */
+    <Req, Resp> ResponseStreamingClientCall<Req, Resp> newResponseStreamingCall(
+            MethodDescriptor<Req, Resp> methodDescriptor, BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link BlockingClientCall}.
-     *
+     * @deprecated use {@link #newBlockingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -96,13 +141,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link BlockingClientCall}.
      */
-    <Req, Resp> BlockingClientCall<Req, Resp>
-    newBlockingCall(GrpcSerializationProvider serializationProvider,
-                    Class<Req> requestClass, Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> BlockingClientCall<Req, Resp> newBlockingCall(GrpcSerializationProvider serializationProvider,
+                                                              Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link BlockingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link BlockingClientCall}.
+     */
+    <Req, Resp> BlockingClientCall<Req, Resp> newBlockingCall(MethodDescriptor<Req, Resp> methodDescriptor,
+                                                              BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link BlockingStreamingClientCall}.
-     *
+     * @deprecated Use {@link #newBlockingStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -110,13 +166,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link BlockingStreamingClientCall}.
      */
-    <Req, Resp> BlockingStreamingClientCall<Req, Resp>
-    newBlockingStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                             Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> BlockingStreamingClientCall<Req, Resp> newBlockingStreamingCall(
+            GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link BlockingStreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link BlockingStreamingClientCall}.
+     */
+    <Req, Resp> BlockingStreamingClientCall<Req, Resp> newBlockingStreamingCall(
+            MethodDescriptor<Req, Resp> methodDescriptor, BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link BlockingRequestStreamingClientCall}.
-     *
+     * @deprecated Use {@link #newBlockingRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -124,13 +191,24 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link BlockingRequestStreamingClientCall}.
      */
-    <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
-    newBlockingRequestStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                                    Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp> newBlockingRequestStreamingCall(
+            GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link BlockingRequestStreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link BlockingRequestStreamingClientCall}.
+     */
+    <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp> newBlockingRequestStreamingCall(
+            MethodDescriptor<Req, Resp> methodDescriptor, BufferDecoderGroup decompressors);
 
     /**
      * Creates a new {@link BlockingResponseStreamingClientCall}.
-     *
+     * @deprecated Use {@link #newBlockingResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)}.
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
@@ -138,9 +216,20 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Resp> Type of response.
      * @return {@link BlockingResponseStreamingClientCall}.
      */
-    <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
-    newBlockingResponseStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                                     Class<Resp> responseClass);
+    @Deprecated
+    <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp> newBlockingResponseStreamingCall(
+            GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+
+    /**
+     * Create a new {@link BlockingResponseStreamingClientCall}.
+     * @param methodDescriptor describes the method characteristics and how to do serialization of individual objects.
+     * @param decompressors describes the decompression that is supported for this call.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     * @return {@link BlockingResponseStreamingClientCall}.
+     */
+    <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp> newBlockingResponseStreamingCall(
+            MethodDescriptor<Req, Resp> methodDescriptor, BufferDecoderGroup decompressors);
 
     /**
      * Get the {@link GrpcExecutionContext} used during construction of this object.

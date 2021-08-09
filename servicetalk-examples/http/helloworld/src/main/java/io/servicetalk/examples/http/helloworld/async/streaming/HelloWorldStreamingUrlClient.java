@@ -18,25 +18,19 @@ package io.servicetalk.examples.http.helloworld.async.streaming;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 
-import java.util.concurrent.CountDownLatch;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 
 public final class HelloWorldStreamingUrlClient {
-
     public static void main(String[] args) throws Exception {
         try (StreamingHttpClient client = HttpClients.forMultiAddressUrl().buildStreaming()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.request(client.get("http://localhost:8080/sayHello"))
                     .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.payloadBody(textDeserializer()))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .forEach(System.out::println);
-
-            responseProcessedLatch.await();
+                    .flatMapPublisher(resp -> resp.payloadBody(appSerializerUtf8FixLen()))
+                    .whenOnNext(System.out::println)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .ignoreElements().toFuture().get();
         }
     }
 }

@@ -46,7 +46,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -63,8 +63,6 @@ class ServerRespondsOnClosingTest {
     private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
             DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
     private static final String RESPONSE_PAYLOAD_BODY = "Hello World";
-
-
 
     private final EmbeddedDuplexChannel channel;
     private final NettyHttpServerConnection serverConnection;
@@ -226,7 +224,7 @@ class ServerRespondsOnClosingTest {
             HttpRequest request = exchange.request;
             HttpResponse response = RESPONSE_FACTORY.ok()
                     .setHeader("Request-Path", request.path())
-                    .payloadBody(RESPONSE_PAYLOAD_BODY, textSerializer());
+                    .payloadBody(RESPONSE_PAYLOAD_BODY, textSerializerUtf8());
             if (request.hasQueryParameter("serverShouldClose")) {
                 response.setHeader(CONNECTION, CLOSE);
             }

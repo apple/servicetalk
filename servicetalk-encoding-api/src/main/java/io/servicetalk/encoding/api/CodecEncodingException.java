@@ -15,12 +15,16 @@
  */
 package io.servicetalk.encoding.api;
 
+import io.servicetalk.serializer.api.SerializationException;
+
 import static java.util.Objects.requireNonNull;
 
 /**
  * Exception thrown when something goes wrong during encoding.
+ * @deprecated Use {@link BufferEncodingException}.
  */
-public final class CodecEncodingException extends RuntimeException {
+@Deprecated
+public final class CodecEncodingException extends SerializationException {
 
     private static final long serialVersionUID = -3565785637300291924L;
 

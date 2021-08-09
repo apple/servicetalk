@@ -15,60 +15,32 @@
  */
 package io.servicetalk.examples.http.compression;
 
-import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.Identity;
-import io.servicetalk.encoding.netty.ContentCodings;
-import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
+import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
+import io.servicetalk.http.api.ContentEncodingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.encoding.api.Identity.identityEncoder;
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.deflateDefault;
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.util.Arrays.asList;
 
 /**
- * Extends the async "Hello World" sample to add support for compression of
- * request and response payload bodies.
+ * Extends the async "Hello World" sample to add support for compression of request and response payload bodies.
  */
 public final class CompressionFilterExampleServer {
-
-    /**
-     * Supported encodings for the request. Requests using unsupported encodings will receive an HTTP 415
-     * "Unsupported Media Type" response.
-     */
-    private static final List<ContentCodec> SUPPORTED_REQ_ENCODINGS =
-            Collections.unmodifiableList(Arrays.asList(
-                    ContentCodings.gzipDefault(),
-                    ContentCodings.deflateDefault(),
-                    Identity.identity()
-            ));
-
-    /**
-     * Supported encodings for the response in preferred order. These will be matched against the list of encodings
-      * provided by the client to choose a mutually agreeable encoding.
-     */
-    private static final List<ContentCodec> SUPPORTED_RESP_ENCODINGS =
-            Collections.unmodifiableList(Arrays.asList(
-                    // For the purposes of this example we disable GZip for the response compression and use the client's second
-                    // choice (deflate) to demonstrate that negotiation of compression algorithm is handled correctly.
-                    /* ContentCodings.gzipDefault(), */
-                    ContentCodings.deflateDefault(),
-                    Identity.identity()
-            ));
-
     public static void main(String... args) throws Exception {
         HttpServers.forPort(8080)
-                // Adds a content coding service filter that includes the encodings supported for requests and the
-                // preferred encodings for responses. Responses will automatically be compressed if the request includes
-                // a mutually agreeable compression encoding that the client indicates they will accept and that the
-                // server supports.
-                .appendServiceFilter(new ContentCodingHttpServiceFilter(SUPPORTED_REQ_ENCODINGS, SUPPORTED_RESP_ENCODINGS))
+                .appendServiceFilter(new ContentEncodingHttpServiceFilter(
+                        asList(gzipDefault(), deflateDefault(), identityEncoder()),
+                        new BufferDecoderGroupBuilder()
+                                .add(gzipDefault(), true)
+                                .add(deflateDefault(), true)
+                                .add(identityEncoder(), false).build()))
                 .listenAndAwait((ctx, request, responseFactory) -> {
-                        String who = request.payloadBody(textDeserializer());
-                        return succeeded(responseFactory.ok().payloadBody("Hello " + who +  "!", textSerializer()));
+                        String who = request.payloadBody(textSerializerUtf8());
+                        return succeeded(responseFactory.ok().payloadBody("Hello " + who +  "!", textSerializerUtf8()));
                 })
                 .awaitShutdown();
     }

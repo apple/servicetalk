@@ -21,21 +21,31 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.BufferDecoderGroup;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.grpc.api.GrpcRouter.RouteProviders;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
+import io.servicetalk.grpc.api.GrpcUtils.DefaultMethodDescriptor;
 import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcUtils.compressors;
+import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
+import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
+import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getAndValidateRouteExecutionStrategyAnnotationIfPresent;
 import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
@@ -46,7 +56,6 @@ import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
  * @param <Service> Type for service that these routes represent.
  */
 public abstract class GrpcRoutes<Service extends GrpcService> {
-
     private static final GrpcExecutionStrategy NULL = new DefaultGrpcExecutionStrategy(
             HttpExecutionStrategies.noOffloadsStrategy());
 
@@ -193,7 +202,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link Route} to this factory.
-     *
+     * @deprecated Use {@link #addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -204,18 +213,43 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addRoute(
             final String path, final Class<?> serviceClass, final String methodName, final Route<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
-        routeBuilder.addRoute(path, executionStrategy(path, method, serviceClass), route,
-                requestClass, responseClass, serializationProvider);
+        addRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link Route} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to each response.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors, Route<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                methodDescriptor.requestDescriptor().parameterClass());
+        routeBuilder.addRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link Route} to this factory.
+     * @deprecated Use {@link #addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link Route} to add.
@@ -225,17 +259,39 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addRoute(
             final String path, final GrpcExecutionStrategy executionStrategy, final Route<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addRoute(path, executionStrategy, route, requestClass, responseClass,
-                serializationProvider);
+        addRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link Route} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to each response.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors, Route<Req, Resp> route) {
+        routeBuilder.addRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link StreamingRoute} to this factory.
-     *
+     * @deprecated Use {@link #addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -246,18 +302,44 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, Publisher.class);
-        routeBuilder.addStreamingRoute(path, executionStrategy(path, method, serviceClass), route,
-                requestClass, responseClass, serializationProvider);
+        addStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link StreamingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors, StreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                Publisher.class);
+        routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link StreamingRoute} to this factory.
+     * @deprecated Use {@link #addStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * StreamingRoute)}
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link StreamingRoute} to add.
@@ -267,17 +349,40 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
-                serializationProvider);
+        addStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link StreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors, StreamingRoute<Req, Resp> route) {
+        routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link RequestStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -288,18 +393,46 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addRequestStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, Publisher.class);
-        routeBuilder.addRequestStreamingRoute(path, executionStrategy(path, method, serviceClass),
-                route, requestClass, responseClass, serializationProvider);
+        addRequestStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link RequestStreamingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addRequestStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            RequestStreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                Publisher.class);
+        routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link RequestStreamingRoute} to this factory.
+     * @deprecated Use
+     * {@link #addRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * RequestStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link RequestStreamingRoute} to add.
@@ -309,17 +442,41 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addRequestStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addRequestStreamingRoute(path, executionStrategy, route, requestClass,
-                responseClass, serializationProvider);
+        addRequestStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link RequestStreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addRequestStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            RequestStreamingRoute<Req, Resp> route) {
+        routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link ResponseStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -330,18 +487,46 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addResponseStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
-        routeBuilder.addResponseStreamingRoute(path, executionStrategy(path, method, serviceClass),
-                route, requestClass, responseClass, serializationProvider);
+        addResponseStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link ResponseStreamingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addResponseStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            ResponseStreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                methodDescriptor.requestDescriptor().parameterClass());
+        routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link ResponseStreamingRoute} to this factory.
+     * @deprecated Use
+     * {@link #addResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * ResponseStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link ResponseStreamingRoute} to add.
@@ -351,17 +536,40 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addResponseStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addResponseStreamingRoute(path, executionStrategy, route, requestClass,
-                responseClass, serializationProvider);
+        addResponseStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link ResponseStreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addResponseStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            ResponseStreamingRoute<Req, Resp> route) {
+        routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link BlockingRoute} to this factory.
-     *
+     * @deprecated Use {@link #addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -372,18 +580,45 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
-        routeBuilder.addBlockingRoute(path, executionStrategy(path, method, serviceClass), route,
-                requestClass, responseClass, serializationProvider);
+        addBlockingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link BlockingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                methodDescriptor.requestDescriptor().parameterClass());
+        routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link BlockingRoute} to this factory.
+     * @deprecated Use {@link #addBlockingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingRoute} to add.
@@ -393,17 +628,41 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy, final BlockingRoute<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingRoute(path, executionStrategy, route, requestClass, responseClass,
-                serializationProvider);
+        addBlockingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link BlockingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingRoute<Req, Resp> route) {
+        routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link BlockingStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -414,19 +673,46 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, BlockingIterable.class,
-                GrpcPayloadWriter.class);
-        routeBuilder.addBlockingStreamingRoute(path, executionStrategy(path, method, serviceClass),
-                route, requestClass, responseClass, serializationProvider);
+        addBlockingStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link BlockingStreamingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingStreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                BlockingIterable.class, GrpcPayloadWriter.class);
+        routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link BlockingStreamingRoute} to this factory.
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingStreamingRoute} to add.
@@ -436,17 +722,41 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingStreamingRoute(path, executionStrategy, route, requestClass,
-                responseClass, serializationProvider);
+        addBlockingStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link BlockingStreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingStreamingRoute<Req, Resp> route) {
+        routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
     }
 
     /**
      * Adds a {@link BlockingRequestStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -457,19 +767,46 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class,
+        addBlockingRequestStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link BlockingRequestStreamingRoute} to this factory.
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingRequestStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingRequestStreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
                 BlockingIterable.class);
-        routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy(path, method, serviceClass),
-                route, requestClass, responseClass, serializationProvider);
+        routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
     }
 
     /**
      * Adds a {@link BlockingRequestStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addBlockingRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingRequestStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingRequestStreamingRoute} to add.
@@ -479,17 +816,43 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy, route, requestClass,
-                responseClass, serializationProvider);
+        addBlockingRequestStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link BlockingRequestStreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingRequestStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingRequestStreamingRoute<Req, Resp> route) {
+        routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                route);
     }
 
     /**
      * Adds a {@link BlockingResponseStreamingRoute} to this factory.
-     *
+     * @deprecated Use
+     * {@link #addBlockingResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingResponseStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -500,19 +863,46 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass,
-                GrpcPayloadWriter.class);
-        routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy(path, method, serviceClass),
-                route, requestClass, responseClass, serializationProvider);
+        addBlockingResponseStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
     }
 
     /**
      * Adds a {@link BlockingResponseStreamingRoute} to this factory.
-     *
+     * @param serviceClass {@link Class} of the gRPC service which can be used to extract annotations to override
+     * offloading behavior (e.g. {@link NoOffloadsRouteExecutionStrategy}, {@link RouteExecutionStrategy}).
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingResponseStreamingRoute(
+            Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingResponseStreamingRoute<Req, Resp> route) {
+        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
+                methodDescriptor.requestDescriptor().parameterClass(), GrpcPayloadWriter.class);
+        routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors,
+                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+    }
+
+    /**
+     * Adds a {@link BlockingResponseStreamingRoute} to this factory.
+     * @deprecated Use
+     * {@link #addBlockingResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingResponseStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingResponseStreamingRoute} to add.
@@ -522,12 +912,36 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @Deprecated
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy, route, requestClass,
-                responseClass, serializationProvider);
+        addBlockingResponseStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()),
+                compressors(serializationProvider.supportedMessageCodings()), route);
+    }
+
+    /**
+     * Adds a {@link BlockingResponseStreamingRoute} to this factory.
+     * @param executionStrategy The execution strategy to use for this route.
+     * @param methodDescriptor Describes the method routing and serialization.
+     * @param decompressors Indicates the supported decompression applied to each request.
+     * @param compressors Indicates the supported compression can be applied to responses.
+     * @param route The interface to invoke when data is received for this route.
+     * @param <Req> Type of request.
+     * @param <Resp> Type of response.
+     */
+    protected final <Req, Resp> void addBlockingResponseStreamingRoute(
+            final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
+            BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
+            BlockingResponseStreamingRoute<Req, Resp> route) {
+        routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                route);
     }
 
     /**

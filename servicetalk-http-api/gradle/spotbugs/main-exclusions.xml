@@ -40,7 +40,9 @@
 
   <!-- False positive. Maybe https://github.com/spotbugs/spotbugs/issues/616 -->
   <Match>
-    <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$1"/>
+    <Or>
+      <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$TrailersMapper"/>
+    </Or>
     <Method name="mapOnNext"/>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>

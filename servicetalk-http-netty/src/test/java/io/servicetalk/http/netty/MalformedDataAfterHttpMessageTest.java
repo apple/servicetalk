@@ -48,8 +48,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
@@ -93,7 +92,7 @@ class MalformedDataAfterHttpMessageTest {
             HttpResponse response = connection.request(connection.get("/"));
             assertThat(response.status(), is(OK));
             assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
-            assertThat(response.payloadBody(textDeserializer()), equalTo(CONTENT));
+            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
 
             // Verify that the next request fails and connection gets closed:
             assertThrows(DecoderException.class, () -> connection.request(connection.get("/")));
@@ -120,7 +119,7 @@ class MalformedDataAfterHttpMessageTest {
                                                            .payloadBody(malformedBody));
             assertThat(response.status(), is(OK));
             assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
-            assertThat(response.payloadBody(textDeserializer()), equalTo(CONTENT));
+            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
 
             // Server should close the connection:
             connectionClosedLatch.await();
@@ -158,8 +157,8 @@ class MalformedDataAfterHttpMessageTest {
             .bufferAllocator(SERVER_CTX.bufferAllocator())
             .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
             .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                                        responseFactory.ok()
-                                            .payloadBody(request.payloadBody(textDeserializer()), textSerializer()));
+                                        responseFactory.ok().payloadBody(request.payloadBody(textSerializerUtf8()),
+                                                textSerializerUtf8()));
     }
 
     private static BlockingHttpClient stClient(SocketAddress serverAddress) {

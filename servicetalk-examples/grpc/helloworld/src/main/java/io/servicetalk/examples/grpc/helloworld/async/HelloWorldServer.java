@@ -15,36 +15,25 @@
  */
 package io.servicetalk.examples.grpc.helloworld.async;
 
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
 import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
 /**
  * Implementation of the
- * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
+ * <a href="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
  * using async ServiceTalk APIS.
- * <p/>
+ * <p>
  * Start this server first and then run the {@link HelloWorldClient}.
  */
 public class HelloWorldServer {
-
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
-                .listenAndAwait(new MyGreeterService())
+                .listenAndAwait((GreeterService) (ctx, request) ->
+                        succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()))
                 .awaitShutdown();
-    }
-
-    private static final class MyGreeterService implements GreeterService {
-
-        @Override
-        public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        }
     }
 }

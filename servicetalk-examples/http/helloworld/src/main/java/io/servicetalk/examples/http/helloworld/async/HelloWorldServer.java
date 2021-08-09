@@ -18,15 +18,14 @@ package io.servicetalk.examples.http.helloworld.async;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 public final class HelloWorldServer {
-
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 .listenAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok()
-                                .payloadBody("Hello World!", textSerializer())))
+                                .payloadBody("Hello World!", textSerializerUtf8())))
                 .awaitShutdown();
     }
 }

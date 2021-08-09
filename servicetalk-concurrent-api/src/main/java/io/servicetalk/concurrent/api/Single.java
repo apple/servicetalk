@@ -1355,28 +1355,34 @@ public abstract class Single<T> {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed {@link Executor}.
      *
      * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
-     * {@link Subscriber}.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * @see #publishOn(Executor, BooleanSupplier)
      */
     public final Single<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnSingles.publishOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke {@link Subscriber} methods.
+     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
-     * even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
-     * {@link Subscriber}.
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * @see #publishOn(Executor)
      */
-    public final Single<T> publishOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+    public final Single<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
@@ -1389,13 +1395,17 @@ public abstract class Single<T> {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
+     * passed{@link Executor}.
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(Executor, BooleanSupplier)
      */
     public final Single<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, () -> Boolean.TRUE::booleanValue, executor);
+        return PublishAndSubscribeOnSingles.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
@@ -1407,14 +1417,18 @@ public abstract class Single<T> {
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}.
+     * <p>
+     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * depending on the result of the {@link BooleanSupplier} hint.
      *
      * @param executor {@link Executor} to use.
-     * @param shouldOffload provides a hint whether offloading to executor can be omitted. Offloading may still occur
-     * even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
+     * still occur even if {@code false} is returned in order to preserve signal ordering.
+     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(Executor)
      */
-    public final Single<T> subscribeOn(Executor executor, Supplier<? extends BooleanSupplier> shouldOffload) {
+    public final Single<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 

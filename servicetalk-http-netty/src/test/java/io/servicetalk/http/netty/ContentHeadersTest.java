@@ -68,7 +68,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
@@ -261,9 +262,9 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
         return describe(input -> {
             input.headers().set(CONTENT_LENGTH, Integer.toString(EXISTING_CONTENT_LENGTH));
             if (input instanceof HttpRequest) {
-                return ((HttpRequest) input).payloadBody(EXISTING_CONTENT, textSerializer());
+                return ((HttpRequest) input).payloadBody(EXISTING_CONTENT, textSerializerUtf8());
             } else if (input instanceof HttpResponse) {
-                return ((HttpResponse) input).payloadBody(EXISTING_CONTENT, textSerializer());
+                return ((HttpResponse) input).payloadBody(EXISTING_CONTENT, textSerializerUtf8());
             } else {
                 fail("Unexpected metadata type: " + input.getClass());
                 throw new IllegalStateException();
@@ -312,23 +313,23 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
     private static HttpRequest newAggregatedRequest(final HttpRequestMethod requestMethod) {
         return awaitSingleIndefinitelyNonNull(newRequest(requestMethod, "/", HTTP_1_1,
                 headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest())
-                .payloadBody(PAYLOAD, textSerializer());
+                .payloadBody(PAYLOAD, textSerializerUtf8());
     }
 
     private static StreamingHttpRequest newStreamingRequest(final HttpRequestMethod requestMethod) {
         return newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
-                DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), textSerializer());
+                DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
     }
 
     private static HttpResponse newAggregatedResponse(final HttpResponseStatus status) {
         return awaitSingleIndefinitelyNonNull(newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
-                DEFAULT_ALLOCATOR, headersFactory).toResponse()).payloadBody(PAYLOAD, textSerializer());
+                DEFAULT_ALLOCATOR, headersFactory).toResponse()).payloadBody(PAYLOAD, textSerializerUtf8());
     }
 
     private static StreamingHttpResponse newStreamingResponse(final HttpResponseStatus status) {
         return newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
                 DEFAULT_ALLOCATOR, headersFactory)
-                .payloadBody(from(PAYLOAD), textSerializer());
+                .payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
     }
 
     private static <T> UnaryOperator<T> describe(UnaryOperator<T> operator, String description) {
@@ -435,7 +436,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 if (failure != null) {
                     return succeeded(rf.internalServerError().payloadBody(
                             from(failure),
-                            textSerializer()));
+                            appSerializerUtf8FixLen()));
                 }
                 return succeeded(rf.noContent());
             });

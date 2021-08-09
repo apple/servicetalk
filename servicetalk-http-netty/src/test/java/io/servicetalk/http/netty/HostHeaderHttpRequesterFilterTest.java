@@ -32,8 +32,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -119,7 +118,7 @@ class HostHeaderHttpRequesterFilterTest {
                     final CharSequence host = request.headers().get(HOST);
                     return responseFactory.ok()
                             .version(httpVersionConfig.version())
-                            .payloadBody(host != null ? host.toString() : "null", textSerializer());
+                            .payloadBody(host != null ? host.toString() : "null", textSerializerUtf8());
                 });
     }
 
@@ -191,7 +190,7 @@ class HostHeaderHttpRequesterFilterTest {
         assertThat(response.status(), equalTo(OK));
         assertThat(response.version(), equalTo(httpVersionConfig.version()));
         // "Host" header is not required for HTTP/1.0. Therefore, we may expect "null" here.
-        assertThat(response.payloadBody(textDeserializer()), equalTo(
+        assertThat(response.payloadBody(textSerializerUtf8()), equalTo(
                 httpVersionConfig == HttpVersionConfig.HTTP_1_0 && hostHeader == null ? "null" : expectedValue));
     }
 }

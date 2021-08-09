@@ -45,6 +45,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.Objects.requireNonNull;
 
+@Deprecated
 final class NettyChannelContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyChannelContentCodec.class);

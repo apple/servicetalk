@@ -25,19 +25,20 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
-import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 
 /**
  * A {@link StreamingHttpClientFilter} that adds encoding / decoding functionality for requests and responses
  * respectively, as these are specified by the spec
  * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
- *
  * <p>
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
  * other filters that expect to manipulate the original payload.
+ * @deprecated Use {@link ContentEncodingHttpRequesterFilter}.
  */
+@Deprecated
 public final class ContentCodingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
                    HttpExecutionStrategyInfluencer {
@@ -133,7 +134,7 @@ public final class ContentCodingHttpRequesterFilter
                                                         final BufferAllocator allocator) {
         ContentCodec coding = request.encoding();
         if (coding != null && !identity().equals(coding)) {
-            setContentEncoding(request.headers(), coding.name());
+            addContentEncoding(request.headers(), coding.name());
             request.transformPayloadBody(pub -> coding.encode(pub, allocator));
         }
     }

@@ -24,8 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +43,7 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
     @Override
     void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody(ctx.toString(), textSerializer()),
+                        responseFactory.ok().payloadBody(ctx.toString(), textSerializerUtf8()),
                 strategy -> strategy)).adaptor());
     }
 
@@ -54,7 +53,7 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
         setUp(httpProtocol);
         StreamingHttpResponse response = makeRequest(streamingHttpConnection().get("/"));
         assertResponse(response, protocol.version, OK);
-        String serverContext = response.toResponse().toFuture().get().payloadBody(textDeserializer());
+        String serverContext = response.toResponse().toFuture().get().payloadBody(textSerializerUtf8());
 
         assertThat("Client's ConnectionContext does not contain netty channel id",
                 streamingHttpConnection().connectionContext().toString(), containsString("[id: "));

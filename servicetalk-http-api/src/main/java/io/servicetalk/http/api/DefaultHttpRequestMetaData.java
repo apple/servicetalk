@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -56,6 +57,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private String pathDecoded;
     @Nullable
     private String queryDecoded;
+    @Nullable
+    private BufferEncoder encoder;
 
     DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
                                final HttpProtocolVersion version, final HttpHeaders headers) {
@@ -70,9 +73,22 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpMetaData encoding(final ContentCodec encoding) {
         super.encoding(encoding);
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public BufferEncoder contentEncoding() {
+        return encoder;
+    }
+
+    @Override
+    public HttpRequestMetaData contentEncoding(@Nullable final BufferEncoder encoder) {
+        this.encoder = encoder;
         return this;
     }
 

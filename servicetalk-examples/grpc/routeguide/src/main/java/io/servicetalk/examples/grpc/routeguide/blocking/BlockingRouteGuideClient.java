@@ -23,7 +23,6 @@ import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
 public final class BlockingRouteGuideClient {
-
     public static void main(String[] args) throws Exception {
         try (RouteGuide.BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new ClientFactory())) {

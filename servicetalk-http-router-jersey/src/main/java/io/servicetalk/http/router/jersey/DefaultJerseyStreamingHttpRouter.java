@@ -224,8 +224,8 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         } catch (IllegalArgumentException cause) {
             Buffer message = serviceCtx.executionContext().bufferAllocator().fromAscii(cause.getMessage());
             StreamingHttpResponse response = factory.badRequest().payloadBody(from(message));
-            response.headers().add(CONTENT_LENGTH, Integer.toString(message.readableBytes()));
-            response.headers().add(CONTENT_TYPE, TEXT_PLAIN);
+            response.headers().set(CONTENT_LENGTH, Integer.toString(message.readableBytes()));
+            response.headers().set(CONTENT_TYPE, TEXT_PLAIN);
             subscriber.onSuccess(response);
             return;
         }

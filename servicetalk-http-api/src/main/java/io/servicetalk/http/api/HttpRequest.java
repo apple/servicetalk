@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
@@ -34,14 +35,24 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
 
     /**
      * Gets and deserializes the payload body.
+     * @deprecated Use {@link #payloadBody(HttpDeserializer2)}.
+     * @param deserializer The function that deserializes the underlying {@link Object}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
+     */
+    @Deprecated
+    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
+    }
+
+    /**
+     * Gets and deserializes the payload body.
      *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(headers(), payloadBody());
-    }
+    <T> T payloadBody(HttpDeserializer2<T> deserializer);
 
     /**
      * Returns an {@link HttpRequest} with its underlying payload set to {@code payloadBody}.
@@ -53,13 +64,24 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
 
     /**
      * Returns an {@link HttpRequest} with its underlying payload set to the results of serialization of {@code pojo}.
-     *
+     * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
      * @return {@code this}
      */
+    @Deprecated
     <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
+
+    /**
+     * Returns an {@link HttpRequest} with its underlying payload set to the results of serialization of {@code pojo}.
+     *
+     * @param pojo The object to serialize.
+     * @param serializer The {@link HttpSerializer2} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return {@code this}
+     */
+    <T> HttpRequest payloadBody(T pojo, HttpSerializer2<T> serializer);
 
     /**
      * Translates this {@link HttpRequest} to a {@link StreamingHttpRequest}.
@@ -111,8 +133,12 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     @Override
     HttpRequest version(HttpProtocolVersion version);
 
+    @Deprecated
     @Override
     HttpRequest encoding(ContentCodec encoding);
+
+    @Override
+    HttpRequest contentEncoding(@Nullable BufferEncoder encoder);
 
     @Override
     HttpRequest method(HttpRequestMethod method);

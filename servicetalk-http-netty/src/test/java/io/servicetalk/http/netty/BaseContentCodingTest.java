@@ -35,6 +35,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+@Deprecated
 public abstract class BaseContentCodingTest {
 
     private static final int PAYLOAD_SIZE = 1024;

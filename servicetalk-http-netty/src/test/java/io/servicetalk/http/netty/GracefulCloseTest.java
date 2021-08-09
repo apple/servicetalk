@@ -32,7 +32,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,7 +52,7 @@ class GracefulCloseTest {
     @SuppressWarnings("unchecked")
     private void setUp(final TrailerAddType trailerAddType) throws Exception {
         context = HttpServers.forAddress(localAddress(0)).listenStreamingAndAwait((ctx, request, responseFactory) -> {
-            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), textSerializer());
+            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), appSerializerUtf8FixLen());
             switch (trailerAddType) {
                 case Regular:
                     resp.transform(new StaticTrailersTransformer());
@@ -81,7 +81,7 @@ class GracefulCloseTest {
         setUp(trailerAddType);
         ReservedStreamingHttpConnection conn = client.reserveConnection(client.get("/")).toFuture().get();
         StreamingHttpResponse resp = conn.request(client.get("/")
-                .payloadBody(from("Hello"), textSerializer())).toFuture().get();
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen())).toFuture().get();
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));
         // Drain response.
         resp.payloadBody().toFuture().get();
@@ -93,7 +93,7 @@ class GracefulCloseTest {
     void useClient(TrailerAddType trailerAddType) throws Exception {
         setUp(trailerAddType);
         StreamingHttpResponse resp = client.request(client.get("/")
-                .payloadBody(from("Hello"), textSerializer())).toFuture().get();
+                .payloadBody(from("Hello"), appSerializerUtf8FixLen())).toFuture().get();
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));
         // Drain response.
         resp.payloadBody().toFuture().get();

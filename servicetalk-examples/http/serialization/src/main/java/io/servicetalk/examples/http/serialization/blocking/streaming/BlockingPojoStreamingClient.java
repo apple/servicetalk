@@ -16,30 +16,28 @@
 package io.servicetalk.examples.http.serialization.blocking.streaming;
 
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.REQ_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.RESP_STREAMING_SERIALIZER;
 import static java.util.Arrays.asList;
 
 public final class BlockingPojoStreamingClient {
-
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (BlockingStreamingHttpClient client =
                      HttpClients.forSingleAddress("localhost", 8080).buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.post("/pojos")
                     .payloadBody(asList(
-                            new CreatePojoRequest("value1"), new CreatePojoRequest("value2"), new CreatePojoRequest("value3")),
-                            serializer.serializerFor(CreatePojoRequest.class)));
+                            new CreatePojoRequest("value1"),
+                            new CreatePojoRequest("value2"),
+                            new CreatePojoRequest("value3")),
+                            REQ_STREAMING_SERIALIZER));
             System.out.println(response);
-            try (BlockingIterator<PojoResponse> payload =
-                         response.payloadBody(serializer.deserializerFor(PojoResponse.class)).iterator()) {
+            try (BlockingIterator<PojoResponse> payload = response.payloadBody(RESP_STREAMING_SERIALIZER).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

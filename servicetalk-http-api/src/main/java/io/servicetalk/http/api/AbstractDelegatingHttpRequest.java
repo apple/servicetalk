@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -89,9 +90,15 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
         return original.headers();
     }
 
+    @Deprecated
     @Override
     public ContentCodec encoding() {
         return original.encoding();
+    }
+
+    @Override
+    public BufferEncoder contentEncoding() {
+        return original.contentEncoding();
     }
 
     @Override

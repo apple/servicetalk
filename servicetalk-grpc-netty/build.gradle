@@ -45,6 +45,7 @@ dependencies {
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation project(":servicetalk-data-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
   testImplementation project(":servicetalk-router-utils-internal")
   testImplementation project(":servicetalk-test-resources")

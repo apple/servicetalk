@@ -50,6 +50,8 @@ service Fareweller {
 // The request message containing the user's name.
 message UserRequest {
     string name = 1;
+
+    optional int32 value = 2;
 }
 
 // The response message containing the greetings

@@ -38,12 +38,18 @@ final class Words {
     static final String routes = "routes";
     static final String rpc = "rpc";
     static final String initSerializationProvider = "initSerializationProvider";
+    static final String addService = "addService";
+    static final String registerRoutes = "registerRoutes";
     static final String service = "service";
     static final String strategy = "strategy";
     static final String requestEncoding = "requestEncoding";
     static final String timeout = "timeout";
     static final String supportedMessageCodings = "supportedMessageCodings";
+    static final String isSupportedMessageCodingsEmpty = "isSupportedMessageCodingsEmpty";
+    static final String bufferDecoderGroup = "bufferDecoderGroup";
+    static final String bufferEncoders = "bufferEncoders";
     static final String strategyFactory = strategy + "Factory";
+    static final String methodDescriptor = "methodDescriptor";
     static final String Service = "Service";
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
@@ -54,13 +60,16 @@ final class Words {
     static final String Filter = "Filter";
     static final String Rpc = "Rpc";
     static final String To = "To";
+    static final String PROTO_CONTENT_TYPE = "+proto";
     static final String INSTANCE = "INSTANCE";
+    static final String PROTOBUF = "PROTOBUF";
     static final String RPC_PATH = "PATH";
     static final String COMMENT_PRE_TAG = "<pre>";
     static final String COMMENT_POST_TAG = "</pre>";
     static final String JAVADOC_PARAM = "@param ";
     static final String JAVADOC_RETURN = "@return ";
     static final String JAVADOC_THROWS = "@throws ";
+    static final String JAVADOC_DEPRECATED = "@deprecated";
 
     private Words() {
         // no instance
