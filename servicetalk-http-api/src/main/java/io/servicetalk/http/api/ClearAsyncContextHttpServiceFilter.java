@@ -23,6 +23,14 @@ import io.servicetalk.concurrent.api.Single;
  */
 final class ClearAsyncContextHttpServiceFilter implements
                                                StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+
+    static final ClearAsyncContextHttpServiceFilter CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER =
+            new ClearAsyncContextHttpServiceFilter();
+
+    private ClearAsyncContextHttpServiceFilter() {
+        // singleton
+    }
+
     @Override
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {

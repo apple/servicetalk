@@ -29,12 +29,10 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -57,22 +55,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InsufficientlySizedExecutorHttpTest {
+    @Nullable
     private Executor executor;
     @Nullable
     private StreamingHttpClient client;
     @Nullable
     private ServerContext server;
 
-    @SuppressWarnings("unused")
-    private static Stream<Arguments> executors() {
-        return Stream.of(
-            Arguments.of(0),
-            Arguments.of(1)
-        );
-    }
-
     @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
-    @MethodSource("executors")
+    @ValueSource(ints = {0, 1})
     void insufficientClientCapacityStreaming(final int capacity) throws Exception {
         initWhenClientUnderProvisioned(capacity);
         assertNotNull(client);
@@ -92,7 +83,7 @@ class InsufficientlySizedExecutorHttpTest {
     }
 
     @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
-    @MethodSource("executors")
+    @ValueSource(ints = {0, 1})
     void insufficientServerCapacityStreaming(final int capacity) throws Exception {
         initWhenServerUnderProvisioned(capacity, false);
         insufficientServerCapacityStreaming0(capacity);
@@ -100,7 +91,7 @@ class InsufficientlySizedExecutorHttpTest {
 
     @Disabled("https://github.com/apple/servicetalk/issues/336")
     @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
-    @MethodSource("executors")
+    @ValueSource(ints = {0, 1})
     void insufficientServerCapacityStreamingWithConnectionAcceptor(final int capacity)
             throws Exception {
         initWhenServerUnderProvisioned(capacity, true);
@@ -138,6 +129,7 @@ class InsufficientlySizedExecutorHttpTest {
     }
 
     private HttpExecutionStrategy newStrategy() {
+        assertNotNull(executor);
         final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
         return strategyBuilder.build();
     }
@@ -151,7 +143,9 @@ class InsufficientlySizedExecutorHttpTest {
         if (server != null) {
             closeable.append(server);
         }
-        closeable.append(executor);
+        if (null != executor) {
+            closeable.append(executor);
+        }
         closeable.close();
     }
 

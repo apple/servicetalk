@@ -33,15 +33,6 @@ public interface HttpExecutionStrategyInfluencer {
     HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy);
 
     /**
-     * Returns the execution strategy required by this influencer.
-     *
-     * @return the execution strategy required by this influencer.
-     */
-    default HttpExecutionStrategy requiredStrategy() {
-        return influenceStrategy(HttpExecutionStrategies.noOffloadsStrategy());
-    }
-
-    /**
      * Returns an {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.
      *
      * @return An {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.

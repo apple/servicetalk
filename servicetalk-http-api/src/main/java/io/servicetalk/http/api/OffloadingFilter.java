@@ -23,7 +23,7 @@ import static java.util.function.Function.identity;
 /**
  * An {@link StreamingHttpServiceFilterFactory} implementation which offloads filters using a provided strategy.
  */
-final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
+final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
     private final HttpExecutionStrategy strategy;
     private final StreamingHttpServiceFilterFactory offloaded;
@@ -71,5 +71,11 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
                         resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
             }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // no influence
+        return strategy;
     }
 }
