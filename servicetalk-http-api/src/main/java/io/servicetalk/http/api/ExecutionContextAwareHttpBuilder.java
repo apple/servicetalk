@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 
-public interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
+interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
 
     /**
      * Sets the {@link IoExecutor} for all connections created from this builder.

@@ -354,19 +354,4 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         this.maxRedirects = maxRedirects;
         return this;
     }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
-            final MultiAddressHttpClientFilterFactory<HostAndPort> function) {
-        clientFilterFactory = appendClientFilter(clientFilterFactory, function);
-        return this;
-    }
-
-    private MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter(
-            @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> current,
-            final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
-        requireNonNull(next);
-        builderTemplate.appendToStrategyInfluencer(next);
-        return current == null ? next : (group, client) -> current.create(group, next.create(group, client));
-    }
 }

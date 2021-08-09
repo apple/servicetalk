@@ -18,11 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 
-import java.util.function.Predicate;
-
-import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
-import static java.util.Objects.requireNonNull;
-
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
  * absolute-form URL address information from each {@link StreamingHttpRequest}.
@@ -35,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientBuildFinalizer,
-                                                                     ExecutionContextAwareHttpBuilder {
+                                                                     ExecutionContextAwareHttpBuilder<R> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.
@@ -83,69 +78,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * @return {@code this}
      */
     public abstract MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
-
-    /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
-     * builder for a given {@code UnresolvedAddress}.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
-     * returned to the user.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
-     * </pre>
-     *
-     * @deprecated Use
-     *   {@link #initializer(SingleAddressInitializer)} and
-     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
-     *   on the last argument of
-     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
-     * purpose of filtering.
-     * @return {@code this}
-     */
-    @Deprecated
-    public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(
-            MultiAddressHttpClientFilterFactory<U> factory);
-
-    /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
-     * builder for a given {@code UnresolvedAddress}, for every request that passes the provided {@link Predicate}.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
-     * returned to the user.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
-     * </pre>
-     *
-     * @deprecated Use
-     *   {@link #initializer(SingleAddressInitializer)} and
-     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
-     *   on the last argument of
-     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
-     * purpose of filtering.
-     * @return {@code this}
-     */
-    @Deprecated
-    public MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                  MultiAddressHttpClientFilterFactory<U> factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-        return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
-    }
 
     /**
      * Sets a maximum number of redirects to follow.
