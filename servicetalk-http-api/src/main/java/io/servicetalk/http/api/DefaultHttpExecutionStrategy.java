@@ -254,11 +254,6 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     // Visible for testing
-    boolean hasThreadAffinity() {
-        return false;
-    }
-
-    // Visible for testing
     boolean offloaded(byte flag) {
         return (offloads & flag) == flag;
     }

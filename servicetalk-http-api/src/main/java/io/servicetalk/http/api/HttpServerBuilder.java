@@ -39,8 +39,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -215,20 +215,13 @@ public abstract class HttpServerBuilder {
      *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
-     * @param <FF> Super-type of the filter factory which must implement both {@link StreamingHttpServiceFilterFactory}
-     * and {@link HttpExecutionStrategyInfluencer} though non-offloading filters must not influence strategy.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      * @throws IllegalArgumentException if the provided filter requires offloading.
      */
-    public final <FF extends StreamingHttpServiceFilterFactory & HttpExecutionStrategyInfluencer> HttpServerBuilder
-                appendNonOffloadingServiceFilter(final FF factory) {
-        requireNonNull(factory);
-        HttpExecutionStrategy factoryStrategy = influenceStrategy(factory, OFFLOAD_NONE_STRATEGY);
-        if (!OFFLOAD_NONE_STRATEGY.equals(factoryStrategy)) {
-            throw new IllegalArgumentException("Non-offloading filter required offloading " + factoryStrategy);
-        }
-        noOffloadServiceFilters.add(factory);
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter",
+                HttpExecutionStrategies.defaultStrategy(), factory));
         return this;
     }
 
@@ -250,25 +243,17 @@ public abstract class HttpServerBuilder {
      *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
-     * @param <FF> Super-type of the filter factory which must implement both {@link StreamingHttpServiceFilterFactory}
-     * and {@link HttpExecutionStrategyInfluencer} though non-offloading filters must not influence strategy.
      * @param predicate the {@link Predicate} to test if the filter must be applied. This must not block.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      * @throws IllegalArgumentException if the provided filter or predicate requires offloading.
      */
-    public final <FF extends StreamingHttpServiceFilterFactory & HttpExecutionStrategyInfluencer> HttpServerBuilder
-                appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                 final StreamingHttpServiceFilterFactory factory) {
-        HttpExecutionStrategy predicateStrategy = influenceStrategy(predicate, OFFLOAD_NONE_STRATEGY);
-        if (!OFFLOAD_NONE_STRATEGY.equals(predicateStrategy)) {
-            throw new IllegalArgumentException("Non-offloading predicate required offloading " + predicateStrategy);
-        }
-        HttpExecutionStrategy factoryStrategy = influenceStrategy(factory, OFFLOAD_NONE_STRATEGY);
-        if (!OFFLOAD_NONE_STRATEGY.equals(factoryStrategy)) {
-            throw new IllegalArgumentException("Non-offloading filter required offloading " + factoryStrategy);
-        }
-        appendServiceFilter(service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                    final StreamingHttpServiceFilterFactory factory) {
+        checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
+        checkNonOffloading("Non-offloading filter", HttpExecutionStrategies.defaultStrategy(), factory);
+        noOffloadServiceFilters.add(
+                service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
         return this;
     }
 
@@ -530,7 +515,7 @@ public abstract class HttpServerBuilder {
                 strategy = null != strategy.executor() ?
                         HttpExecutionStrategies.customStrategyBuilder()
                                 .offloadNone().executor(strategy.executor()).build() :
-                        HttpExecutionStrategies.noOffloadsStrategy();
+                        noOffloadsStrategy();
             } else {
                 // All the filters can be appended.
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
@@ -579,5 +564,16 @@ public abstract class HttpServerBuilder {
         return anything instanceof HttpExecutionStrategyInfluencer ?
                 ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
                 strategy;
+    }
+
+    private static <T> T checkNonOffloading(String desc, HttpExecutionStrategy assumeStrategy, T obj) {
+        requireNonNull(obj);
+        HttpExecutionStrategy requires = obj instanceof HttpExecutionStrategyInfluencer ?
+                ((HttpExecutionStrategyInfluencer) obj).influenceStrategy(noOffloadsStrategy()) :
+                assumeStrategy;
+        if (requires.isMetadataReceiveOffloaded() || requires.isDataReceiveOffloaded() || requires.isSendOffloaded()) {
+            throw new IllegalArgumentException(desc + " required offloading : " + requires);
+        }
+        return obj;
     }
 }

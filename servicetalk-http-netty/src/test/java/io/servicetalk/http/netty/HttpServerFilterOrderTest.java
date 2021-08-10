@@ -101,10 +101,12 @@ class HttpServerFilterOrderTest {
 
     @Test
     void conditionalNonOffload() throws Exception {
+        StreamingHttpService filter0 = newMockService();
         StreamingHttpService filter1 = newMockService();
         StreamingHttpService filter2 = newMockService();
         StreamingHttpService filter3 = newMockService();
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(addFilter(filter0))
                 .appendNonOffloadingServiceFilter(req -> true, addFilter(filter1))
                 .appendNonOffloadingServiceFilter(req -> false, addFilter(filter2))
                 .appendNonOffloadingServiceFilter(req -> true, addFilter(filter3))
@@ -114,10 +116,11 @@ class HttpServerFilterOrderTest {
         HttpResponse resp = client.request(client.get("/"));
         assertThat("Unexpected response.", resp.status(), is(OK));
 
-        InOrder verifier = inOrder(filter1, filter2, filter3);
+        InOrder verifier = inOrder(filter1, filter2, filter3, filter0);
         verifier.verify(filter1).handle(any(), any(), any());
         verifier.verify(filter2, never()).handle(any(), any(), any());
         verifier.verify(filter3).handle(any(), any(), any());
+        verifier.verify(filter0).handle(any(), any(), any());
     }
 
     @Test
