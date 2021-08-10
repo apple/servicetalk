@@ -76,6 +76,8 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL_MILLIS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -403,8 +405,8 @@ abstract class RoundRobinLoadBalancerTest {
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
-        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory =
-                new UnhealthyHostConnectionFactory("address-1", timeAdvancementsTillHealthy, properConnection);
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
 
         final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
         lb = defaultLb(connectionFactory);
@@ -412,7 +414,7 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
 
-        for (int i = 0; i < RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
             try {
                 final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
                 assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
@@ -446,19 +448,19 @@ abstract class RoundRobinLoadBalancerTest {
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
-        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory =
-                new UnhealthyHostConnectionFactory("address-1", timeAdvancementsTillHealthy, properConnection);
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
         final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
-                        .healthCheckIntervalMillis(-1)
+                        .healthCheckFailedConnectionsThreshold(-1)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
-        for (int i = 0; i < RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
             assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
         }
@@ -483,15 +485,15 @@ abstract class RoundRobinLoadBalancerTest {
         serviceDiscoveryPublisher.onComplete();
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
-        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory =
-                new UnhealthyHostConnectionFactory("address-1", timeAdvancementsTillHealthy, properConnection);
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
         final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = defaultLb(connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
-        for (int i = 0; i < RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
             assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
         }
@@ -516,8 +518,8 @@ abstract class RoundRobinLoadBalancerTest {
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
-        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory =
-                new UnhealthyHostConnectionFactory("address-1", timeAdvancementsTillHealthy, properConnection);
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
         final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = defaultLb(connectionFactory);
@@ -594,10 +596,12 @@ abstract class RoundRobinLoadBalancerTest {
     protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
             final DelegatingConnectionFactory connectionFactory, final boolean eagerConnectionShutdown) {
-        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory,
-                eagerConnectionShutdown, new RoundRobinLoadBalancer.HealthCheckConfig(testExecutor,
-                RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_INTERVAL,
-                RoundRobinLoadBalancer.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
+        return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .eagerConnectionShutdown(eagerConnectionShutdown)
+                        .backgroundExecutor(testExecutor)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
     @SafeVarargs
