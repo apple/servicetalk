@@ -45,26 +45,6 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
                                                     @Nullable FS flushStrategy, ClientInvoker<FS> client);
 
     /**
-     * Invokes the passed {@link Function} and applies the necessary offloading of request and response for a server.
-     *
-     * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
-     * {@link Executor}.
-     * @param request {@link StreamingHttpRequest} for which the offloading is to be applied.
-     * @param service A {@link Function} that executes a {@link StreamingHttpRequest} and returns a flattened
-     * {@link Publisher} containing all data constituting an HTTP response.
-     * @param errorHandler In case there is an error before calling the passed {@code service}, this {@link BiFunction}
-     * will be called to generate an error response.
-     * @return A flattened {@link Publisher} containing all data constituting an HTTP response.
-     *
-     * @deprecated Will be removed as part of improved offloading strategy. If you need this API please file an issue
-     * explaining the use case.
-     */
-    @Deprecated
-    Publisher<Object> invokeService(Executor fallback, StreamingHttpRequest request,
-                                    Function<StreamingHttpRequest, Publisher<Object>> service,
-                                    BiFunction<Throwable, Executor, Publisher<Object>> errorHandler);
-
-    /**
      * Invokes a service represented by the passed {@link Function}.
      * <p>
      * This method does not apply the strategy on the object returned from the {@link Function}, if that object is an
