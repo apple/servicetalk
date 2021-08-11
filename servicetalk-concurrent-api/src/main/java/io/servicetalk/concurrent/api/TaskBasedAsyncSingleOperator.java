@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
@@ -61,8 +62,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
                                  final BooleanSupplier shouldOffload,
                                  final Executor executor) {
         this.original = original;
-        this.shouldOffload = shouldOffload;
-        this.executor = executor;
+        this.shouldOffload = Objects.requireNonNull(shouldOffload, "shouldOffload");
+        this.executor = Objects.requireNonNull(executor, "executor");
     }
 
     final BooleanSupplier shouldOffload() {

@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -42,6 +43,20 @@ final class PublishAndSubscribeOnCompletables {
                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
+    }
+
+    @FunctionalInterface
+    interface HandleSubscribe {
+        void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+    }
+
+    static void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber subscriber,
+                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        try {
+            handler.handleSubscribe(subscriber, contextMap, contextProvider);
+        } catch (Throwable throwable) {
+            safeOnError(subscriber, throwable);
+        }
     }
 
     static Completable publishOn(final Completable original,
@@ -71,17 +86,20 @@ final class PublishAndSubscribeOnCompletables {
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            final Subscriber upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
-                Subscriber upstreamSubscriber =
+                upstreamSubscriber =
                         new CompletableSubscriberOffloadedTerminals(subscriber, shouldOffload, executor());
 
                 // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
                 // the Subscriber.
-                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
             } catch (Throwable throwable) {
                 deliverErrorFromSource(subscriber, throwable);
+                return;
             }
+
+            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }
 
@@ -103,24 +121,28 @@ final class PublishAndSubscribeOnCompletables {
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            final Subscriber upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
-                Subscriber upstreamSubscriber =
+                upstreamSubscriber =
                         new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
 
                 // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
                 // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
-                } else {
-                    // continue on the current thread
-                    super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                    executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
+                            upstreamSubscriber, contextMap, contextProvider));
+                    return;
                 }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 deliverErrorFromSource(subscriber, throwable);
+                return;
             }
+
+            // non-offloaded
+            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }
 }
