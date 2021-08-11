@@ -25,26 +25,6 @@ final class StrategyInfluencerAwareConversions {
         // No instances.
     }
 
-    static <U> StreamingHttpClientFilterFactory toClientFactory(final U address,
-                                                                final MultiAddressHttpClientFilterFactory<U> original) {
-        requireNonNull(address);
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingClientFilterFactory() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-
-                @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-                    return original.create(address, client);
-                }
-            };
-        }
-        return client -> new StreamingHttpClientFilter(original.create(address, client));
-    }
-
     static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpServiceFilterFactory original) {
         requireNonNull(predicate);
