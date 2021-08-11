@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
+
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -62,7 +64,13 @@ public interface StreamingHttpClientFilterFactory {
      *
      * @param <U> the type of address before resolution (unresolved address).
      * @return a {@link MultiAddressHttpClientFilterFactory} function
+     * @deprecated Use
+     *   {@link MultiAddressHttpClientBuilder#initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)} and
+     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+     *   on the last argument of
+     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
      */
+    @Deprecated
     default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
         return toMultiAddressClientFactory(this);
     }

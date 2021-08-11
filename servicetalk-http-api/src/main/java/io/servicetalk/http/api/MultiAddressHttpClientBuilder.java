@@ -79,33 +79,12 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
-     * {@link SingleAddressHttpClientBuilder#ioExecutor(IoExecutor)} on the last argument of
-     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     */
-    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
-    /**
-     * {@inheritDoc}
-     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
-     * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} on the last argument of
-     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     */
-    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
-    /**
-     * {@inheritDoc}
-     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and
-     * {@link SingleAddressHttpClientBuilder#bufferAllocator(BufferAllocator)} on the last argument of
-     * {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     */
-    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
@@ -312,11 +291,16 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
-     *
+     * @deprecated Use
+     *   {@link #initializer(SingleAddressInitializer)} and
+     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+     *   on the last argument of
+     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
      */
+    @Deprecated
     public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(
             MultiAddressHttpClientFilterFactory<U> factory);
 
@@ -335,12 +319,17 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
      * </pre>
-     *
+     * @deprecated Use
+     *   {@link #initializer(SingleAddressInitializer)} and
+     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
+     *   on the last argument of
+     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
      */
+    @Deprecated
     public MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                   MultiAddressHttpClientFilterFactory<U> factory) {
         requireNonNull(predicate);
