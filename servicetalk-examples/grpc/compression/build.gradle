@@ -41,15 +41,21 @@ protobuf {
   }
   plugins {
     servicetalk_grpc {
-      //// Users are expected to use "artifact" instead of "path". we use "path"
-      //// only because we want to use the gradle project local version of the plugin
-      // artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all@jar"
+      //// REMOVE if outside of ServiceTalk gradle project - use "artifact" as demonstrated below
+      //// "path" is used only because we want to use the gradle project local version of the plugin.
       path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
-                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+          "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+      //// REMOVE if outside of ServiceTalk gradle project - use "artifact" as demonstrated below
+
+      // artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all@jar"
     }
   }
   generateProtoTasks {
     all().each { task ->
+      //// REMOVE if outside of ServiceTalk gradle project
+      task.dependsOn(":servicetalk-grpc-protoc:buildExecutable") // use gradle project local grpc-protoc dependency
+      //// REMOVE if outside of ServiceTalk gradle project
+
       task.plugins {
         servicetalk_grpc {
           // Need to tell protobuf-gradle-plugin to output in the correct directory if all generated
@@ -60,10 +66,4 @@ protobuf {
     }
   }
   generatedFilesBaseDir = "$buildDir/generated/sources/proto"
-}
-
-// The following setting must be omitted in users projects and is necessary here
-// only because we want to use the locally built version of the plugin
-afterEvaluate {
-  generateProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
 }
