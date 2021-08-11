@@ -60,9 +60,9 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
         // Auto read is required for h2
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
                 (channel, connectionObserver) -> H2ClientParentConnectionContext.initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(),
+                        executionContext,
                         config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0), roTcpClientConfig.flushStrategy(),
-                        roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
+                        roTcpClientConfig.idleTimeoutMs(),
                         new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver,
                         config.allowDropTrailersReadFromTransport()), observer);

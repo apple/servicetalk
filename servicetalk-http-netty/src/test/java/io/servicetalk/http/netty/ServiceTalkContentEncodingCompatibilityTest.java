@@ -15,12 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -49,8 +49,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -68,8 +67,8 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
         assumeTrue(isValid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
 
-        EventLoopGroup serverEventLoopGroup = createEventLoopGroup(2,
-                new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        EventLoopGroup serverEventLoopGroup = createIoExecutor(
+                2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
         Channel serverAcceptorChannel = null;
         try {
             ServerBootstrap sb = new ServerBootstrap();

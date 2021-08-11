@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -86,6 +87,10 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         return resp;
     }
 
+    private static boolean shouldOffload() {
+        return Thread.currentThread() instanceof IoThreadFactory.IoThread;
+    }
+
     @Override
     public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService service) {
         return new StreamingHttpService() {
@@ -99,6 +104,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 // ExecutionStrategy to understand if we need to offload more than we already offloaded:
                 final HttpExecutionStrategy diff = difference(fallback, ctx.executionContext().executionStrategy(),
                         DefaultHttpExecutionStrategy.this);
+
                 // The service should see this ExecutionStrategy inside the ExecutionContext:
                 final HttpServiceContext wrappedCtx =
                         new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
@@ -106,10 +112,11 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                     return service.handle(wrappedCtx, request, responseFactory);
                 } else {
                     if (diff.isDataReceiveOffloaded()) {
-                        request = request.transformMessageBody(p -> p.publishOn(e));
+                        request = request.transformMessageBody(p ->
+                                p.publishOn(e, DefaultHttpExecutionStrategy::shouldOffload));
                     }
                     final Single<StreamingHttpResponse> resp;
-                    if (diff.isMetadataReceiveOffloaded()) {
+                    if (diff.isMetadataReceiveOffloaded() && shouldOffload()) {
                         final StreamingHttpRequest r = request;
                         resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
                                 // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
@@ -121,7 +128,10 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                             // This is different as compared to invokeService() where we just offload once on the
                             // flattened (meta + data) stream. In this case, we need to preserve the service contract
                             // and hence have to offload both meta and data separately.
-                            resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
+                            resp.map(r -> r.transformMessageBody(
+                                    p -> p.subscribeOn(e, DefaultHttpExecutionStrategy::shouldOffload)))
+                                        .subscribeOn(e, DefaultHttpExecutionStrategy::shouldOffload) :
+                            resp;
                 }
             }
 

@@ -16,12 +16,11 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,6 +30,7 @@ import org.mockito.Mockito;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
@@ -48,9 +48,11 @@ import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOAD
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class DefaultHttpExecutionStrategyTest {
 
@@ -62,7 +64,8 @@ class DefaultHttpExecutionStrategyTest {
     @RegisterExtension
     final ExecutionContextExtension contextRule =
             new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-                    () -> NettyIoExecutors.createIoExecutor(new DefaultThreadFactory()), () -> executor);
+                    () -> createIoExecutor("st-ioexecutor"),
+                    () -> executor);
 
     private void setUp(final Params params) {
         this.offloadReceiveMeta = params.offloadReceiveMeta;
@@ -196,11 +199,22 @@ class DefaultHttpExecutionStrategyTest {
                 new TestHttpServiceContext(INSTANCE, respFactory,
                         // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
-                        new ExecutionContextToHttpExecutionContext(contextRule,
-                                noOffloadsStrategy()));
-        analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
-                .flatMapPublisher(StreamingHttpResponse::payloadBody)
-            .toFuture().get();
+                        new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
+        Runnable runHandle = () -> {
+            try {
+                analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
+                        .flatMapPublisher(StreamingHttpResponse::payloadBody)
+                    .toFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                fail("Unexepected exception", e);
+            }
+        };
+        if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {
+            NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
+            ioExecutor.asExecutor().submit(runHandle).toFuture().get();
+        } else {
+            runHandle.run();
+        }
         analyzer.verify();
     }
 

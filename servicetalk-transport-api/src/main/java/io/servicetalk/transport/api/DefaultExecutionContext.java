@@ -79,16 +79,10 @@ public final class DefaultExecutionContext implements ExecutionContext {
 
         final DefaultExecutionContext that = (DefaultExecutionContext) o;
 
-        if (!bufferAllocator.equals(that.bufferAllocator)) {
-            return false;
-        }
-        if (!ioExecutor.equals(that.ioExecutor)) {
-            return false;
-        }
-        if (!executor.equals(that.executor)) {
-            return false;
-        }
-        return executionStrategy.equals(that.executionStrategy);
+        return bufferAllocator.equals(that.bufferAllocator) &&
+                ioExecutor.equals(that.ioExecutor) &&
+                executor.equals(that.executor) &&
+                executionStrategy.equals(that.executionStrategy);
     }
 
     @Override

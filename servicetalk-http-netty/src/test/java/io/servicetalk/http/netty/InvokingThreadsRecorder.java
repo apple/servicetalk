@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -43,7 +42,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.instanceOf;
@@ -88,7 +86,7 @@ final class InvokingThreadsRecorder<T> {
     void init(BiFunction<IoExecutor, HttpServerBuilder, Single<ServerContext>> serverStarter,
               BiConsumer<IoExecutor, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientUpdater) {
         invokingThreads = new ConcurrentHashMap<>();
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY));
+        ioExecutor = createIoExecutor(IO_EXECUTOR_NAME_PREFIX);
         try {
             HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
             context = serverStarter.apply(ioExecutor, serverBuilder).toFuture().get();
@@ -150,13 +148,6 @@ final class InvokingThreadsRecorder<T> {
         assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForClientOffloading());
     }
 
-    void assertStrategyUsedForServer() {
-        assertThat("No user specified strategy found.", strategy, is(notNullValue()));
-        assertThat("Unknown user specified strategy.", strategy, instanceOf(InstrumentedStrategy.class));
-        InstrumentedStrategy instrumentedStrategy = (InstrumentedStrategy) strategy;
-        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForServerOffloading());
-    }
-
     StreamingHttpClient client() {
         assert client != null;
         return client;
@@ -197,10 +188,6 @@ final class InvokingThreadsRecorder<T> {
 
         boolean isUsedForClientOffloading() {
             return usedForClientOffloading;
-        }
-
-        boolean isUsedForServerOffloading() {
-            return usedForServerOffloading;
         }
 
         @Override

@@ -28,14 +28,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 
-import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -54,7 +53,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     public ExecutionContextRule(final Supplier<BufferAllocator> allocatorSupplier,
                                 final Supplier<IoExecutor> ioExecutorSupplier,
                                 final Supplier<Executor> executorSupplier) {
-        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_ALL_STRATEGY);
+        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_FROM_IO_STRATEGY);
     }
 
     public ExecutionContextRule(final Supplier<BufferAllocator> allocatorSupplier,
@@ -71,8 +70,10 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return immediate(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    public static ExecutionContextRule immediate(ThreadFactory ioThreadFactory) {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory), Executors::immediate
+    public static ExecutionContextRule immediate(NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+                newIoExecutor(nettyIoThreadFactory),
+                Executors::immediate
         );
     }
 
@@ -80,8 +81,9 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return cached(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    public static ExecutionContextRule cached(ThreadFactory ioThreadFactory) {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
+    public static ExecutionContextRule cached(NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+                newIoExecutor(nettyIoThreadFactory),
                 Executors::newCachedThreadExecutor
         );
     }
@@ -96,8 +98,8 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return fixed(size, new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    public static ExecutionContextRule fixed(int size, ThreadFactory ioThreadFactory) {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
+    public static ExecutionContextRule fixed(int size, NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
                 () -> Executors.newFixedSizeExecutor(size)
         );
     }
@@ -106,8 +108,8 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return fixed(1);
     }
 
-    public static ExecutionContextRule single(ThreadFactory ioThreadFactory) {
-        return fixed(1, ioThreadFactory);
+    public static ExecutionContextRule single(NettyIoThreadFactory nettyIoThreadFactory) {
+        return fixed(1, nettyIoThreadFactory);
     }
 
     @Override
@@ -145,7 +147,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return ctx.executionStrategy();
     }
 
-    private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {
+    private static Supplier<IoExecutor> newIoExecutor(NettyIoThreadFactory threadFactory) {
         return () -> createIoExecutor(threadFactory);
     }
 }

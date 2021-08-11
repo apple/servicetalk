@@ -24,6 +24,10 @@ final class EventLoopGroupIoExecutor extends AbstractNettyIoExecutor<EventLoopGr
         super(eventLoopGroup, interruptOnCancel);
     }
 
+    EventLoopGroupIoExecutor(EventLoopGroup eventLoopGroup, boolean interruptOnCancel, boolean isIoThreadSupported) {
+        super(eventLoopGroup, interruptOnCancel, isIoThreadSupported);
+    }
+
     @Override
     public boolean isCurrentThreadEventLoop() {
         return false; // We are in the group not a specific eventloop.
@@ -36,6 +40,6 @@ final class EventLoopGroupIoExecutor extends AbstractNettyIoExecutor<EventLoopGr
 
     @Override
     public EventLoopAwareNettyIoExecutor next() {
-        return new EventLoopIoExecutor(eventLoop.next(), interruptOnCancel);
+        return new EventLoopIoExecutor(eventLoop.next(), interruptOnCancel, isIoThreadSupported);
     }
 }

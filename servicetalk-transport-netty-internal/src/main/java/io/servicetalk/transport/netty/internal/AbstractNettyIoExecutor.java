@@ -30,12 +30,18 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
 
+    protected final boolean isIoThreadSupported;
     protected final T eventLoop;
     protected final boolean interruptOnCancel;
 
     AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel) {
+        this(eventLoop, interruptOnCancel, false);
+    }
+
+    AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel, boolean isIoThreadSupported) {
         this.eventLoop = eventLoop;
         this.interruptOnCancel = interruptOnCancel;
+        this.isIoThreadSupported = isIoThreadSupported;
     }
 
     @Override
@@ -61,6 +67,11 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
     @Override
     public boolean isFileDescriptorSocketAddressSupported() {
         return NativeTransportUtils.isFileDescriptorSocketAddressSupported(eventLoop);
+    }
+
+    @Override
+    public final boolean isIoThreadSupported() {
+        return isIoThreadSupported;
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
@@ -108,7 +107,6 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.ScenarioMode.S;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Arrays.asList;
 import static java.util.Objects.hash;
 import static java.util.stream.Collectors.toSet;
@@ -618,11 +616,11 @@ class RequestResponseCloseHandlerTest {
         @RegisterExtension
         public final ExecutionContextExtension clientCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor(
-                        new DefaultThreadFactory("client-thread", true, NORM_PRIORITY)), Executors::immediate);
+                        new NettyIoThreadFactory("client-thread")), Executors::immediate);
         @RegisterExtension
         public final ExecutionContextExtension serverCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor(
-                        new DefaultThreadFactory("server-thread", true, NORM_PRIORITY)), Executors::immediate);
+                        new NettyIoThreadFactory("server-thread")), Executors::immediate);
 
         private SocketChannel cChannel;
         private volatile SocketChannel sChannel;

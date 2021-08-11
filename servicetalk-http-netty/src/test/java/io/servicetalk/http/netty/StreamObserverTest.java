@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -34,6 +33,7 @@ import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -57,8 +57,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -101,7 +100,8 @@ class StreamObserverTest {
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
         when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
 
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(
+                2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
         serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Http2StreamChannel>() {
             @Override
             protected void initChannel(final Http2StreamChannel ch) {

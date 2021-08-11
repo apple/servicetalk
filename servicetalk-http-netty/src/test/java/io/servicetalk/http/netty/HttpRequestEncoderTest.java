@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -87,7 +86,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedR
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -110,11 +108,11 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     @RegisterExtension
     static final ExecutionContextExtension SEC =
             new ExecutionContextExtension(() -> allocator,
-                    () -> createIoExecutor(new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
+                    () -> createIoExecutor("server-io"),
                     Executors::immediate);
     @RegisterExtension
     static final ExecutionContextExtension CEC = new ExecutionContextExtension(() -> allocator,
-            () -> createIoExecutor(new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
+            () -> createIoExecutor("client-io"),
             Executors::newCachedThreadExecutor);
 
     @Override

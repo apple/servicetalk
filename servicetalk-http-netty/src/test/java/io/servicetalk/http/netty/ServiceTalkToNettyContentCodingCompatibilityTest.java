@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -47,8 +47,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -62,7 +61,8 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
 
     @Override
     void start() {
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(
+                2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);

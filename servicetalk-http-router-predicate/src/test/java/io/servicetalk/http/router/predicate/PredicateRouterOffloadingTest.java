@@ -65,7 +65,6 @@ import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -79,8 +78,8 @@ class PredicateRouterOffloadingTest {
 
     @RegisterExtension
     final ExecutionContextExtension executionContextRule = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)),
-            () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)));
+            () -> createIoExecutor(IO_EXECUTOR_NAME_PREFIX),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX)));
     @Nullable
     private ServerContext context;
     @Nullable
