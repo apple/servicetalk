@@ -93,6 +93,10 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
+      if (task.isTest) {
+        task.dependsOn(buildExecutable)
+      }
+
       task.plugins {
         servicetalk_grpc {
           // Need to tell protobuf-gradle-plugin to output in the correct directory if all generated
