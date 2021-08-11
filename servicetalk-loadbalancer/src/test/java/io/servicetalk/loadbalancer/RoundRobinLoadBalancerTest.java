@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
@@ -71,13 +72,13 @@ import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL_MILLIS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -148,8 +149,8 @@ abstract class RoundRobinLoadBalancerTest {
 
     @Before
     public void initialize() {
-        lb = defaultLb();
         testExecutor = executor.executor();
+        lb = defaultLb();
         connectionsCreated.clear();
         connectionRealizers.clear();
     }
@@ -537,12 +538,13 @@ abstract class RoundRobinLoadBalancerTest {
         // From test main thread, wait until the host becomes UNHEALTHY, which is apparent from NoHostAvailableException
         // being thrown from selection AFTER a health check was scheduled by any thread.
         try {
-            awaitIndefinitely(lb.selectConnection(any()).retry((i, t) ->
+            awaitIndefinitely(lb.selectConnection(any()).retryWhen(retryWithConstantBackoffFullJitter((t) ->
                     // DeliberateException comes from connection opening, check for that first
                     // Next, NoAvailableHostException is thrown when the host is unhealthy,
                     // but we still wait until the health check is scheduled and only then stop retrying.
-                    t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0
-            ));
+                    t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0,
+            // try to prevent stack overflow
+            Duration.ofMillis(30), io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor(1))));
         } catch (Exception e) {
             assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
         }
