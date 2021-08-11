@@ -36,8 +36,8 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.internal.util.collections.Iterables.firstOf;
 
+@Deprecated
 class ProtobufSerializationProviderTest {
-
     private final ProtobufSerializationProvider provider = new ProtobufSerializationProvider();
 
     private final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();

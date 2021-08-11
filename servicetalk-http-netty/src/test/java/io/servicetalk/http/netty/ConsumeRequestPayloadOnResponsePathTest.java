@@ -44,7 +44,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -152,7 +153,7 @@ class ConsumeRequestPayloadOnResponsePathTest {
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     final StreamingHttpResponse response = responseFactory.ok()
                             .addHeader(TRAILER, X_TOTAL_LENGTH)
-                            .payloadBody(from("Response\n", "Payload\n", "Body\n"), textSerializer())
+                            .payloadBody(from("Response\n", "Payload\n", "Body\n"), appSerializerUtf8FixLen())
                             .transform(new TrailersTransformer<AtomicInteger, Buffer>() {
                                 @Override
                                 public AtomicInteger newState() {
@@ -185,7 +186,7 @@ class ConsumeRequestPayloadOnResponsePathTest {
             HttpResponse response;
             try (BlockingHttpClient client = HttpClients.forSingleAddress(AddressUtils.serverHostAndPort(serverContext))
                     .buildBlocking()) {
-                response = client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializer()));
+                response = client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializerUtf8()));
                 serverLatch.await();
             }
 

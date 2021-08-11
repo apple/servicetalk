@@ -29,8 +29,6 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
-import java.util.concurrent.CountDownLatch;
-
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.CUSTOM_HEADER;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -38,7 +36,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Async `Hello World` example that demonstrates how redirects can be handled automatically by a
@@ -114,20 +112,17 @@ public final class RedirectWithStateUrlClient {
                     }
                 })
                 .build()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.request(client.post("http://localhost:8080/sayHello")
                     .addHeader(CUSTOM_HEADER, "value")
                     .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content")))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(resp -> {
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
-                    });
-
-            responseProcessedLatch.await();
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
+                    })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

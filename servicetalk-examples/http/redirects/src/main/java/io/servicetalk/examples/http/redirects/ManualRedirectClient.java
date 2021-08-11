@@ -21,15 +21,13 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
-import java.util.concurrent.CountDownLatch;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.CUSTOM_HEADER;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.NON_SECURE_SERVER_PORT;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.SECURE_SERVER_PORT;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Async "Hello World" example that demonstrates how redirects can be handled manually when single-address clients are
@@ -41,7 +39,6 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
  * </ol>
  */
 public final class ManualRedirectClient {
-
     public static void main(String... args) throws Exception {
         try (HttpClient secureClient = HttpClients.forSingleAddress("localhost", SECURE_SERVER_PORT)
                 // The custom SSL configuration here is necessary only because this example uses self-signed
@@ -50,11 +47,6 @@ public final class ManualRedirectClient {
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build()).build()) {
 
             try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT).build()) {
-                // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-                // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-                // demonstration purposes.
-                CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-
                 // Redirect of a GET request with a custom header:
                 HttpRequest originalGet = client.get("http://localhost:8080/sayHello")
                         .addHeader(CUSTOM_HEADER, "value");
@@ -70,17 +62,17 @@ public final class ManualRedirectClient {
                             // Decided not to follow redirect, return the original response or an error:
                             return succeeded(response);
                         })
-                        .afterFinally(responseProcessedLatch::countDown)
-                        .subscribe(resp -> {
+                        .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textDeserializer()));
+                            System.out.println(resp.payloadBody(textSerializerUtf8()));
                             System.out.println();
-                        });
-
-                responseProcessedLatch.await();
+                        })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                        .toFuture().get();
 
                 // Redirect of a POST request with a payload body:
-                responseProcessedLatch = new CountDownLatch(1);
                 HttpRequest originalPost = client.post("http://localhost:8080/sayHello")
                         .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content"));
                 client.request(originalPost)
@@ -95,13 +87,14 @@ public final class ManualRedirectClient {
                             // Decided not to follow redirect, return the original response or an error:
                             return succeeded(response);
                         })
-                        .afterFinally(responseProcessedLatch::countDown)
-                        .subscribe(resp -> {
+                        .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textDeserializer()));
-                        });
-
-                responseProcessedLatch.await();
+                            System.out.println(resp.payloadBody(textSerializerUtf8()));
+                        })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                        .toFuture().get();
             }
         }
     }

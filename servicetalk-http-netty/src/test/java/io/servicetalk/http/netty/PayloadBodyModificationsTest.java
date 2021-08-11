@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
@@ -43,13 +43,6 @@ class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
         HttpClient client = streamingHttpClient().asClient();
         HttpRequest request = client.post(SVC_ECHO)
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii(CONTENT));
-        assertResponse(makeRequest(request.toStreamingRequest()), request.version(), OK, CONTENT);
-    }
-
-    @Test
-    void aggregatedSetPayloadBodyWithSerializer() throws Exception {
-        HttpRequest request = streamingHttpClient().asClient().post(SVC_ECHO)
-                .payloadBody(CONTENT, textSerializer());
         assertResponse(makeRequest(request.toStreamingRequest()), request.version(), OK, CONTENT);
     }
 
@@ -91,8 +84,8 @@ class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     @Test
     void streamingSetPayloadBodyWithSerializer() throws Exception {
         StreamingHttpRequest request = streamingHttpClient().post(SVC_ECHO)
-                .payloadBody(from(CONTENT), textSerializer());
-        assertResponse(makeRequest(request), request.version(), OK, CONTENT);
+                .payloadBody(from(CONTENT), appSerializerUtf8FixLen());
+        assertSerializedResponse(makeRequest(request), request.version(), OK, CONTENT);
     }
 
     @Test

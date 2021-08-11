@@ -21,22 +21,16 @@ import io.grpc.examples.routeguide.Point;
 import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
-import java.util.concurrent.CountDownLatch;
-
 public final class RouteGuideClient {
-
     public static void main(String[] args) throws Exception {
         try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
                 .build(new ClientFactory())) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.getFeature(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
-
-            responseProcessedLatch.await();
+                    .whenOnSuccess(System.out::println)
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

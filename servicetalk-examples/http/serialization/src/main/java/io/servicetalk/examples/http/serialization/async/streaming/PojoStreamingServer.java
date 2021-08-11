@@ -15,24 +15,20 @@
  */
 package io.servicetalk.examples.http.serialization.async.streaming;
 
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.REQ_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.RESP_STREAMING_SERIALIZER;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoStreamingServer {
-
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
@@ -43,9 +39,9 @@ public final class PojoStreamingServer {
                     }
                     AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
                     return succeeded(responseFactory.created()
-                            .payloadBody(request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class))
+                            .payloadBody(request.payloadBody(REQ_STREAMING_SERIALIZER)
                                     .map(req -> new PojoResponse(newId.getAndIncrement(), req.getValue())),
-                                    serializer.serializerFor(PojoResponse.class)));
+                                    RESP_STREAMING_SERIALIZER));
                 })
                 .awaitShutdown();
     }

@@ -22,8 +22,10 @@ import io.servicetalk.encoding.api.Identity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
@@ -33,7 +35,6 @@ import static java.util.Objects.requireNonNull;
  * Header utilities to support encoding.
  */
 public final class HeaderUtils {
-
     private static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
 
     private HeaderUtils() {
@@ -48,16 +49,16 @@ public final class HeaderUtils {
      * If no accepted encodings are present in the request then the result is always {@code null}
      * In all other cases, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * otherwise {@code null} is returned.
-     *
+     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      * @param acceptEncodingHeaderValue The accept encoding header value.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
      * null if none found or matched to {@link Identity#identity()}
      */
+    @Deprecated
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(@Nullable final CharSequence acceptEncodingHeaderValue,
                                                          final List<ContentCodec> serverSupportedEncodings) {
-
         // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
                 (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(identity()))) {
@@ -70,18 +71,90 @@ public final class HeaderUtils {
     }
 
     /**
+     * Get an encoder from {@code supportedEncoders} that is acceptable as referenced by
+     * {@code acceptEncodingHeaderValue}.
+     * @param acceptEncodingHeaderValue The accept encoding header value.
+     * @param supportedEncoders The supported encoders.
+     * @param messageEncodingFunc Accessor to get the encoder form an element of {@code supportedEncoders}.
+     * @param <T> The type containing the encoder.
+     * @return an encoder from {@code supportedEncoders} that is acceptable as referenced by
+     * {@code acceptEncodingHeaderValue}.
+     */
+    @Nullable
+    public static <T> T negotiateAcceptedEncodingRaw(
+            @Nullable final CharSequence acceptEncodingHeaderValue,
+            final List<T> supportedEncoders,
+            final Function<T, CharSequence> messageEncodingFunc) {
+        // Fast path, server has no encodings configured or has only identity configured as encoding
+        if (acceptEncodingHeaderValue == null || supportedEncoders.isEmpty()) {
+            return null;
+        }
+
+        int i = 0;
+        do {
+            // Find the next comma separated value.
+            int j = CharSequences.indexOf(acceptEncodingHeaderValue, ',', i);
+            if (j < 0) {
+                j = acceptEncodingHeaderValue.length();
+            }
+
+            if (i >= j) {
+                return null;
+            }
+
+            // Trim spaces from end.
+            int jNonTrimmed = j;
+            while (acceptEncodingHeaderValue.charAt(j - 1) == ' ') {
+                if (--j == i) {
+                    return null;
+                }
+            }
+
+            // Trim spaces from beginning.
+            char firstChar;
+            while ((firstChar = acceptEncodingHeaderValue.charAt(i)) == ' ') {
+                if (++i == j) {
+                    return null;
+                }
+            }
+            // Match special case '*' wild card, ignore qvalue prioritization for now.
+            if (firstChar == '*') {
+                return supportedEncoders.get(0);
+            }
+
+            // If the accepted encoding is supported, use it.
+            int x = 0;
+            do {
+                T supportedEncoding = supportedEncoders.get(x);
+                CharSequence serverSupported = messageEncodingFunc.apply(supportedEncoding);
+                // Use serverSupported.length() as we ignore qvalue prioritization for now.
+                // All content-coding values are case-insensitive [1].
+                // [1] https://datatracker.ietf.org/doc/html/rfc7231#section-3.1.2.1.
+                if (regionMatches(acceptEncodingHeaderValue, true, i, serverSupported, 0, serverSupported.length())) {
+                    return supportedEncoding;
+                }
+            } while (++x < supportedEncoders.size());
+
+            i = jNonTrimmed + 1;
+        } while (i < acceptEncodingHeaderValue.length());
+
+        return null;
+    }
+
+    /**
      * Establish a commonly accepted encoding between server and client, according to the supported-encodings
      * on the server side and the incoming header on the request.
      * <p>
      * If no supported encodings are passed then the result is always {@code null}
      * Otherwise, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * or {@code null} is returned.
-     *
+     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      * @param clientSupportedEncodings The client supported codings as found in the HTTP header.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
      * null if none found or matched to {@link Identity#identity()}
      */
+    @Deprecated
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
                                                          final List<ContentCodec> serverSupportedEncodings) {
@@ -100,6 +173,7 @@ public final class HeaderUtils {
         return null;
     }
 
+    @Deprecated
     private static List<ContentCodec> parseAcceptEncoding(@Nullable final CharSequence acceptEncodingHeaderValue,
                                                           final List<ContentCodec> allowedEncodings) {
 
@@ -124,11 +198,12 @@ public final class HeaderUtils {
      * if {@code name} is {@code null} or empty it results in {@code null} .
      * If {@code name} is {@code 'identity'} this will always result in
      * {@link Identity#identity()} regardless of its presence in the {@code allowedList}.
-     *
+     * @deprecated Use {@link #encodingForRaw(List, Function, CharSequence)}.
      * @param allowedList the source list to find a matching codec from.
      * @param name the codec name used for the equality predicate.
      * @return a codec from the allowed-list that name matches the {@code name}.
      */
+    @Deprecated
     @Nullable
     public static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
                                            @Nullable final CharSequence name) {
@@ -152,7 +227,30 @@ public final class HeaderUtils {
         return null;
     }
 
+    /**
+     * Get the first encoding that matches {@code name} from {@code supportedEncoders}.
+     * @param supportedEncoders The {@link List} of supported encoders.
+     * @param messageEncodingFunc A means to access the supported encoding name from an element in
+     * {@code supportedEncoders}.
+     * @param name The encoding name.
+     * @param <T> The type containing the encoder.
+     * @return the first encoding that matches {@code name} from {@code supportedEncoders}.
+     */
+    @Nullable
+    public static <T> T encodingForRaw(final List<T> supportedEncoders,
+                                       final Function<T, CharSequence> messageEncodingFunc,
+                                       final CharSequence name) {
+        for (T allowed : supportedEncoders) {
+            // Encoding values can potentially included compression configurations, we only match on the type
+            if (startsWith(name, messageEncodingFunc.apply(allowed))) {
+                return allowed;
+            }
+        }
+
+        return null;
+    }
+
     private static boolean startsWith(final CharSequence string, final CharSequence prefix) {
-        return CharSequences.regionMatches(string, true, 0, prefix, 0, prefix.length());
+        return regionMatches(string, true, 0, prefix, 0, prefix.length());
     }
 }

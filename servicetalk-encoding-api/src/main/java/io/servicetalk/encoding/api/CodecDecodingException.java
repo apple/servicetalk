@@ -15,10 +15,14 @@
  */
 package io.servicetalk.encoding.api;
 
+import io.servicetalk.serializer.api.SerializationException;
+
 /**
  * Exception thrown when something goes wrong during decoding.
+ * @deprecated Use {@link BufferEncodingException}.
  */
-public final class CodecDecodingException extends RuntimeException {
+@Deprecated
+public final class CodecDecodingException extends SerializationException {
 
     private static final long serialVersionUID = 5569510372715687762L;
 

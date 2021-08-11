@@ -20,6 +20,10 @@ import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import javax.annotation.Nullable;
 import javax.ws.rs.ext.ContextResolver;
 
+/**
+ * @deprecated Use {@link JacksonSerializerFactoryContextResolver}.
+ */
+@Deprecated
 final class JacksonSerializationProviderContextResolver implements ContextResolver<JacksonSerializationProvider> {
     private final JacksonSerializationProvider jacksonSerializationProvider;
 

@@ -16,9 +16,12 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
+import io.servicetalk.serializer.utils.FixedLengthStreamingSerializer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,18 +39,15 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static java.nio.charset.Charset.defaultCharset;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -78,6 +78,8 @@ class StreamingHttpPayloadHolderTest {
         Trailers
     }
 
+    private static final StreamingSerializerDeserializer<String> UTF8_DESERIALIZER =
+            new FixedLengthStreamingSerializer<>(stringSerializer(UTF_8), String::length);
     private HttpHeaders headers;
     private HttpHeadersFactory headersFactory;
 
@@ -85,7 +87,6 @@ class StreamingHttpPayloadHolderTest {
     private TestPublisher<Object> payloadSource;
     private final TestPublisher<Object> updatedPayloadSource = new TestPublisher<>();
     private final TestPublisherSubscriber<Buffer> bufferPayloadSubscriber = new TestPublisherSubscriber<>();
-    private final TestPublisherSubscriber<String> stringPayloadSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Object> payloadAndTrailersSubscriber = new TestPublisherSubscriber<>();
     private final TransformFunctions transformFunctions = new TransformFunctions();
     private final TransformFunctions secondTransformFunctions = new TransformFunctions();
@@ -126,8 +127,8 @@ class StreamingHttpPayloadHolderTest {
                 assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
             case SetWithSerializer:
-                payloadHolder.payloadBody(updatedPayloadSource.map(b -> ((Buffer) b).toString(defaultCharset())),
-                                          textSerializer());
+                payloadHolder.payloadBody(updatedPayloadSource.map(b -> ((Buffer) b).toString(UTF_8)),
+                                          appSerializerUtf8FixLen());
                 assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
                 assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
@@ -172,7 +173,7 @@ class StreamingHttpPayloadHolderTest {
 
     @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
     @MethodSource("data")
-    void getPayload(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
+    void getPayload(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) throws Exception {
         setUp(sourceType, updateMode, doubleTransform);
         Publisher<Buffer> payload = payloadHolder.payloadBody();
         toSource(payload).subscribe(bufferPayloadSubscriber);
@@ -182,18 +183,7 @@ class StreamingHttpPayloadHolderTest {
 
     @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
     @MethodSource("data")
-    void getPayloadWithSerializer(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
-        setUp(sourceType, updateMode, doubleTransform);
-        when(headers.get(CONTENT_TYPE)).thenReturn(TEXT_PLAIN_UTF_8);
-        Publisher<String> payload = textDeserializer().deserialize(headers, payloadHolder.payloadBody());
-        toSource(payload).subscribe(stringPayloadSubscriber);
-        simulateAndVerifyPayloadRead(stringPayloadSubscriber);
-        simulateAndVerifyPayloadComplete(stringPayloadSubscriber);
-    }
-
-    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
-    @MethodSource("data")
-    void getMessageBody(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
+    void getMessageBody(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) throws Exception {
         setUp(sourceType, updateMode, doubleTransform);
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
@@ -205,7 +195,7 @@ class StreamingHttpPayloadHolderTest {
     @MethodSource("data")
     void sourceEmitsTrailersUnconditionally(SourceType sourceType,
                                             UpdateMode updateMode,
-                                            boolean doubleTransform) {
+                                            boolean doubleTransform) throws Exception {
         setUp(sourceType, updateMode, doubleTransform);
         checkSkipTest(() -> {
             assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
@@ -299,16 +289,30 @@ class StreamingHttpPayloadHolderTest {
         }
     }
 
-    private void simulateAndVerifyPayloadRead(final TestPublisherSubscriber<?> subscriber) {
+    private void simulateAndVerifyPayloadRead(final TestPublisherSubscriber<?> subscriber) throws Exception {
         if (!canControlPayload()) {
             return;
         }
+        final BufferAllocator alloc = payloadHolder.allocator();
         Buffer buf = DEFAULT_ALLOCATOR.fromAscii("foo");
         subscriber.awaitSubscription().request(1);
         getPayloadSource().onNext(buf);
-        assertThat("Unexpected payload", subscriber.takeOnNext(1),
-                contains((subscriber == bufferPayloadSubscriber || subscriber == payloadAndTrailersSubscriber) ?
-                        buf : "foo"));
+        Object rawActual = subscriber.takeOnNext(1).get(0);
+
+        String actual;
+        if (updateMode == UpdateMode.SetWithSerializer || updateMode == UpdateMode.TransformWithSerializer) {
+            actual = UTF8_DESERIALIZER.deserialize(Publisher.from((Buffer) rawActual), alloc)
+                    .firstOrError().toFuture().get();
+            if (doubleTransform) {
+                actual = UTF8_DESERIALIZER.deserialize(Publisher.from(alloc.fromUtf8(actual)), alloc)
+                        .firstOrError().toFuture().get();
+            }
+        } else if (subscriber == bufferPayloadSubscriber || subscriber == payloadAndTrailersSubscriber) {
+            actual = ((Buffer) rawActual).toString(UTF_8);
+        } else {
+            actual = rawActual.toString();
+        }
+        assertThat("Unexpected payload", actual, is("foo"));
     }
 
     private void simulateAndVerifyTrailerReadIfApplicable() {
@@ -436,7 +440,7 @@ class StreamingHttpPayloadHolderTest {
             when(transformer.apply(any())).thenAnswer(invocation -> invocation.getArgument(0));
             when(stringTransformer.apply(any())).thenAnswer(invocation ->
                     ((Publisher<Buffer>) invocation.getArgument(0))
-                            .map(buffer -> buffer.toString(defaultCharset())));
+                            .map(buffer -> buffer.toString(UTF_8)));
             when(trailerTransformer.accept(any(), any())).thenAnswer(invocation -> invocation.getArgument(1));
         }
 
@@ -461,7 +465,7 @@ class StreamingHttpPayloadHolderTest {
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(false));
                     break;
                 case TransformWithSerializer:
-                    payloadHolder.transformPayloadBody(stringTransformer, textSerializer());
+                    payloadHolder.transformPayloadBody(stringTransformer, appSerializerUtf8FixLen());
                     assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
                     assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                     break;

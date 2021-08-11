@@ -19,33 +19,45 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.BufferDecoder;
+import io.servicetalk.encoding.api.BufferDecoderGroup;
+import io.servicetalk.encoding.api.BufferEncoder;
+import io.servicetalk.grpc.api.GrpcUtils.DefaultMethodDescriptor;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequestFactory;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
+import static io.servicetalk.encoding.api.Identity.identityEncoder;
+import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
+import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
+import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
-import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
+import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncodingRaw;
+import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
-import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
-
+    private static final String UNKNOWN_PATH = "";
+    private static final Map<BufferEncoder, GrpcSerializer<?>> serializerMap = new ConcurrentHashMap<>(2);
+    private static final Map<BufferEncoder, GrpcStreamingSerializer<?>> streamingSerializerMap =
+            new ConcurrentHashMap<>(2);
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
     @Nullable
@@ -58,134 +70,253 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         this.defaultTimeout = defaultTimeout;
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> ClientCall<Req, Resp>
-    newCall(final GrpcSerializationProvider serializationProvider,
+    public <Req, Resp> ClientCall<Req, Resp> newCall(final GrpcSerializationProvider serializationProvider,
             final Class<Req> requestClass, final Class<Resp> responseClass) {
-        requireNonNull(serializationProvider);
-        requireNonNull(requestClass);
-        requireNonNull(responseClass);
+        return newCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> ClientCall<Req, Resp> newCall(final MethodDescriptor<Req, Resp> methodDescriptor,
+                                                     final BufferDecoderGroup decompressors) {
         final HttpClient client = streamingHttpClient.asClient();
-        final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
+        GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
+        GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
+        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
+        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
+        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
+                .serializerDescriptor().contentType());
+        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
+                .serializerDescriptor().contentType());
         return (metadata, request) -> {
             Duration timeout = timeoutForRequest(metadata.timeout());
-            final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, supportedCodings, timeout, requestClass);
+            GrpcSerializer<Req> serializer = serializer(methodDescriptor, serializerIdentity,
+                    metadata.requestCompressor());
+            String mdPath = methodDescriptor.httpPath();
+            HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
+            httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? client.request(httpRequest) : client.request(strategy, httpRequest))
-                    .map(response -> validateResponseAndGetPayload(response, serializationProvider.deserializerFor(
-                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)))
+                    .map(response -> validateResponseAndGetPayload(response, responseContentType,
+                            client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
+                                    deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding)))
                     .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> StreamingClientCall<Req, Resp>
-    newStreamingCall(final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
-                     final Class<Resp> responseClass) {
-        requireNonNull(serializationProvider);
-        requireNonNull(requestClass);
-        requireNonNull(responseClass);
-        final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
+    public <Req, Resp> StreamingClientCall<Req, Resp> newStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> StreamingClientCall<Req, Resp> newStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
+        GrpcStreamingSerializer<Req> serializerIdentity = streamingSerializer(methodDescriptor);
+        GrpcStreamingDeserializer<Resp> deserializerIdentity = streamingDeserializer(methodDescriptor);
+        List<GrpcStreamingDeserializer<Resp>> deserializers = streamingDeserializers(methodDescriptor,
+                decompressors.decoders());
+        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
+        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
+                .serializerDescriptor().contentType());
+        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
+                .serializerDescriptor().contentType());
         return (metadata, request) -> {
-            final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
             Duration timeout = timeoutForRequest(metadata.timeout());
-            initRequest(httpRequest, supportedCodings, timeout);
-            httpRequest.payloadBody(request.map(GrpcUtils::uncheckedCast),
-                    serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
+            GrpcStreamingSerializer<Req> serializer = streamingSerializer(methodDescriptor, serializerIdentity,
+                    metadata.requestCompressor());
+            String mdPath = methodDescriptor.httpPath();
+            StreamingHttpRequest httpRequest = streamingHttpClient.post(UNKNOWN_PATH.equals(mdPath) ?
+                    metadata.path() : mdPath);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
+            httpRequest.payloadBody(serializer.serialize(request,
+                    streamingHttpClient.executionContext().bufferAllocator()));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? streamingHttpClient.request(httpRequest) :
                     streamingHttpClient.request(strategy, httpRequest))
-                    .flatMapPublisher(response -> validateResponseAndGetPayload(response,
-                            serializationProvider.deserializerFor(
-                                    readGrpcMessageEncoding(response, supportedCodings), responseClass)))
+                    .flatMapPublisher(response -> validateResponseAndGetPayload(response, responseContentType,
+                            streamingHttpClient.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
+                                    response.headers(), deserializerIdentity, deserializers,
+                                    GrpcStreamingDeserializer::messageEncoding)))
                     .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> RequestStreamingClientCall<Req, Resp>
-    newRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
-                            final Class<Req> requestClass, final Class<Resp> responseClass) {
+    public <Req, Resp> RequestStreamingClientCall<Req, Resp> newRequestStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newRequestStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> RequestStreamingClientCall<Req, Resp> newRequestStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
         final StreamingClientCall<Req, Resp> streamingClientCall =
-                newStreamingCall(serializationProvider, requestClass, responseClass);
+                newStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> streamingClientCall.request(metadata, request).firstOrError();
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> ResponseStreamingClientCall<Req, Resp>
-    newResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
-                             final Class<Req> requestClass, final Class<Resp> responseClass) {
+    public <Req, Resp> ResponseStreamingClientCall<Req, Resp> newResponseStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newResponseStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> ResponseStreamingClientCall<Req, Resp> newResponseStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
         final StreamingClientCall<Req, Resp> streamingClientCall =
-                newStreamingCall(serializationProvider, requestClass, responseClass);
+                newStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> streamingClientCall.request(metadata, Publisher.from(request));
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> BlockingClientCall<Req, Resp>
-    newBlockingCall(final GrpcSerializationProvider serializationProvider,
-                    final Class<Req> requestClass, final Class<Resp> responseClass) {
-        requireNonNull(serializationProvider);
-        requireNonNull(requestClass);
-        requireNonNull(responseClass);
-        final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
+    public <Req, Resp> BlockingClientCall<Req, Resp> newBlockingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newBlockingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> BlockingClientCall<Req, Resp> newBlockingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
         final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
+        GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
+        GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
+        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
+        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
+        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
+                .serializerDescriptor().contentType());
+        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
+                .serializerDescriptor().contentType());
         return (metadata, request) -> {
             Duration timeout = timeoutForRequest(metadata.timeout());
-            final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, supportedCodings, timeout, requestClass);
-            @Nullable
-            final GrpcExecutionStrategy strategy = metadata.strategy();
+            GrpcSerializer<Req> serializer = serializer(methodDescriptor, serializerIdentity,
+                    metadata.requestCompressor());
+            String mdPath = methodDescriptor.httpPath();
+            HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
+            httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
             try {
+                @Nullable
+                final GrpcExecutionStrategy strategy = metadata.strategy();
                 final HttpResponse response = strategy == null ? client.request(httpRequest) :
                         client.request(strategy, httpRequest);
-                return validateResponseAndGetPayload(response,
-                        serializationProvider.deserializerFor(
-                                readGrpcMessageEncoding(response, supportedCodings), responseClass));
-            } catch (Exception all) {
-                throw toGrpcException(all);
+                return validateResponseAndGetPayload(response, responseContentType,
+                        client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
+                                deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding));
+            } catch (Throwable cause) {
+                throw toGrpcException(cause);
             }
         };
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> BlockingStreamingClientCall<Req, Resp>
-    newBlockingStreamingCall(final GrpcSerializationProvider serializationProvider,
-                             final Class<Req> requestClass, final Class<Resp> responseClass) {
-        requireNonNull(serializationProvider);
-        requireNonNull(requestClass);
-        requireNonNull(responseClass);
+    public <Req, Resp> BlockingStreamingClientCall<Req, Resp> newBlockingStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newBlockingStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> BlockingStreamingClientCall<Req, Resp> newBlockingStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
+        GrpcStreamingSerializer<Req> serializerIdentity = streamingSerializer(methodDescriptor);
+        GrpcStreamingDeserializer<Resp> deserializerIdentity = streamingDeserializer(methodDescriptor);
+        List<GrpcStreamingDeserializer<Resp>> deserializers = streamingDeserializers(methodDescriptor,
+                decompressors.decoders());
+        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
+        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
+                .serializerDescriptor().contentType());
+        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
+                .serializerDescriptor().contentType());
         final BlockingStreamingHttpClient client = streamingHttpClient.asBlockingStreamingClient();
-        final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
-            final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
             Duration timeout = timeoutForRequest(metadata.timeout());
-            initRequest(httpRequest, supportedCodings, timeout);
-            httpRequest.payloadBody(request, serializationProvider
-                    .serializerFor(metadata.requestEncoding(), requestClass));
-            @Nullable
-            final GrpcExecutionStrategy strategy = metadata.strategy();
+            GrpcStreamingSerializer<Req> serializer = streamingSerializer(methodDescriptor, serializerIdentity,
+                    metadata.requestCompressor());
+            String mdPath = methodDescriptor.httpPath();
+            BlockingStreamingHttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ?
+                    metadata.path() : mdPath);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
+            httpRequest.payloadBody(serializer.serialize(request,
+                    streamingHttpClient.executionContext().bufferAllocator()));
             try {
+                @Nullable
+                final GrpcExecutionStrategy strategy = metadata.strategy();
                 final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
                         client.request(strategy, httpRequest);
-                return validateResponseAndGetPayload(response.toStreamingResponse(),
-                        serializationProvider.deserializerFor(
-                                readGrpcMessageEncoding(response, supportedCodings), responseClass))
-                        .onErrorMap(GrpcUtils::toGrpcException).toIterable();
-            } catch (Exception all) {
-                throw toGrpcException(all);
+                return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
+                        client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
+                                response.headers(), deserializerIdentity, deserializers,
+                                GrpcStreamingDeserializer::messageEncoding)).toIterable();
+            } catch (Throwable cause) {
+                throw toGrpcException(cause);
             }
         };
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
-    newBlockingRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
-                                    final Class<Req> requestClass, final Class<Resp> responseClass) {
+    public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp> newBlockingRequestStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newBlockingRequestStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp> newBlockingRequestStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
-                newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
+                newBlockingStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
                 final Resp firstItem = iterator.next();
@@ -199,12 +330,24 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         };
     }
 
+    @Deprecated
     @Override
-    public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
-    newBlockingResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
-                                     final Class<Req> requestClass, final Class<Resp> responseClass) {
+    public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp> newBlockingResponseStreamingCall(
+            final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
+            final Class<Resp> responseClass) {
+        return newBlockingResponseStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
+                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
+                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
+                decompressors(serializationProvider.supportedMessageCodings()));
+    }
+
+    @Override
+    public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp> newBlockingResponseStreamingCall(
+            final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
-                newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
+                newBlockingStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> streamingClientCall.request(metadata, singletonBlockingIterable(request));
     }
 
@@ -228,17 +371,6 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return streamingHttpClient.onClose();
     }
 
-    private <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
-                                                   final HttpRequestFactory requestFactory,
-                                                   final GrpcSerializationProvider serializationProvider,
-                                                   final List<ContentCodec> supportedCodings,
-                                                   final Duration timeout, final Class<Req> requestClass) {
-        final HttpRequest httpRequest = requestFactory.post(metadata.path());
-        initRequest(httpRequest, supportedCodings, timeout);
-        return httpRequest.payloadBody(uncheckedCast(rawReq),
-                serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
-    }
-
     /**
      * Determines the timeout for a new request using three potential sources; the deadline in the async context, the
      * request timeout, and the client default. The timeout will be the lesser of the context and request timeouts or if
@@ -259,5 +391,60 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 : metaDataTimeout;
 
         return null != timeout ? timeout : defaultTimeout;
+    }
+
+    private static <Resp> List<GrpcStreamingDeserializer<Resp>> streamingDeserializers(
+            MethodDescriptor<?, Resp> methodDescriptor, List<BufferDecoder> decompressors) {
+        return GrpcUtils.streamingDeserializers(
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors);
+    }
+
+    private static <Req> GrpcStreamingSerializer<Req> streamingSerializer(
+            MethodDescriptor<Req, ?> methodDescriptor) {
+        return new GrpcStreamingSerializer<>(
+                methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
+    }
+
+    private static <Resp> GrpcStreamingDeserializer<Resp> streamingDeserializer(
+            MethodDescriptor<?, Resp> methodDescriptor) {
+        return new GrpcStreamingDeserializer<>(
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
+    }
+
+    private static <Resp> List<GrpcDeserializer<Resp>> deserializers(
+            MethodDescriptor<?, Resp> methodDescriptor, List<BufferDecoder> decompressors) {
+        return GrpcUtils.deserializers(
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors);
+    }
+
+    private static <Req> GrpcSerializer<Req> serializer(MethodDescriptor<Req, ?> methodDescriptor) {
+        return new GrpcSerializer<>(methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <Req> GrpcSerializer<Req> serializer(
+            MethodDescriptor<Req, ?> methodDescriptor, GrpcSerializer<Req> serializerIdentity,
+            @Nullable BufferEncoder compressor) {
+        return compressor == null || compressor == identityEncoder() ? serializerIdentity :
+                (GrpcSerializer<Req>) serializerMap.computeIfAbsent(compressor, key -> new GrpcSerializer<>(
+                        methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                        methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), key));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <Req> GrpcStreamingSerializer<Req> streamingSerializer(
+            MethodDescriptor<Req, ?> methodDescriptor, GrpcStreamingSerializer<Req> serializerIdentity,
+            @Nullable BufferEncoder compressor) {
+        return compressor == null || compressor == identityEncoder() ? serializerIdentity :
+                (GrpcStreamingSerializer<Req>) streamingSerializerMap.computeIfAbsent(compressor, key ->
+                        new GrpcStreamingSerializer<>(
+                                methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), key));
+    }
+
+    private static <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
+        return new GrpcDeserializer<>(methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
     }
 }

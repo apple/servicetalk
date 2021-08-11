@@ -15,36 +15,26 @@
  */
 package io.servicetalk.examples.http.serialization.async;
 
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
-import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpClients;
 
-import java.util.concurrent.CountDownLatch;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.REQ_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.RESP_SERIALIZER;
 
 public final class PojoClient {
-
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-
             client.request(client.post("/pojos")
-                    .payloadBody(new CreatePojoRequest("value"), serializer.serializerFor(CreatePojoRequest.class)))
-                    .afterFinally(responseProcessedLatch::countDown)
-                    .subscribe(resp -> {
+                    .payloadBody(new CreatePojoRequest("value"), REQ_SERIALIZER))
+                    .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(serializer.deserializerFor(PojoResponse.class)));
-                    });
-
-            responseProcessedLatch.await();
+                        System.out.println(resp.payloadBody(RESP_SERIALIZER));
+                    })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
         }
     }
 }

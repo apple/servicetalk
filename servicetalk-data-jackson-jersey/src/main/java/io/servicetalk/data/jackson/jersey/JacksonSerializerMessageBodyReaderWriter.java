@@ -19,12 +19,13 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.data.jackson.JacksonSerializerFactory;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.PublisherSource;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
-import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.SerializationException;
-import io.servicetalk.serialization.api.Serializer;
+import io.servicetalk.serializer.api.Deserializer;
+import io.servicetalk.serializer.api.SerializationException;
+import io.servicetalk.serializer.api.Serializer;
+import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -68,9 +69,6 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 @Consumes(WILDCARD)
 @Produces(WILDCARD)
 final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReader<Object>, MessageBodyWriter<Object> {
-    private static final JacksonSerializationProvider DEFAULT_JACKSON_SERIALIZATION_PROVIDER =
-            new JacksonSerializationProvider();
-
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.
     @Context
@@ -95,86 +93,81 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     public Object readFrom(final Class<Object> type, final Type genericType, final Annotation[] annotations,
                            final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
-
-        final Serializer serializer = getSerializer(mediaType);
+        final JacksonSerializerFactory serializerFactory = getJacksonSerializerFactory(mediaType);
         final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
         final BufferAllocator allocator = executionContext.bufferAllocator();
         final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> deserialize(p, serializer, getSourceClass(genericType), contentLength, a),
-                    (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a), serializer,
-                            getSourceClass(genericType), contentLength, a)));
+                    (p, a) -> deserialize(p, serializerFactory.serializerDeserializer(getSourceClass(genericType)),
+                            contentLength, a),
+                    (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a),
+                            serializerFactory.serializerDeserializer(getSourceClass(genericType)), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> serializer.deserialize(p, getSourceClass(genericType)),
-                    (is, a) -> new PublisherSource<>(serializer.deserialize(toBufferPublisher(is, a),
-                            getSourceClass(genericType))));
+                    (p, a) -> serializerFactory.streamingSerializerDeserializer(
+                            getSourceClass(genericType)).deserialize(p, a),
+                    (is, a) -> new PublisherSource<>(serializerFactory.streamingSerializerDeserializer(
+                            getSourceClass(genericType)).deserialize(toBufferPublisher(is, a), a)));
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserializeObject(p, serializer, type, contentLength, a),
-                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializer, type, contentLength, a));
+                (p, a) -> deserializeObject(p, serializerFactory.serializerDeserializer(type), contentLength, a),
+                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializerFactory.serializerDeserializer(type),
+                        contentLength, a));
     }
 
     @Override
     public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
                                final MediaType mediaType) {
-
         return !isSse(requestCtxProvider.get()) && isSupportedMediaType(mediaType);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void writeTo(final Object o, final Class<?> type, final Type genericType, final Annotation[] annotations,
                         final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) throws WebApplicationException {
-
+        final BufferAllocator allocator = ctxRefProvider.get().get().executionContext().bufferAllocator();
         final Publisher<Buffer> bufferPublisher;
         if (o instanceof Single) {
-            bufferPublisher = getResponseBufferPublisher(((Single) o).toPublisher(), genericType, mediaType);
+            final Class<?> clazz = genericType instanceof Class ? (Class) genericType : getSourceClass(genericType);
+            Serializer serializer = getJacksonSerializerFactory(mediaType).serializerDeserializer(clazz);
+            bufferPublisher = ((Single) o).map(t -> serializer.serialize(t, allocator)).toPublisher();
         } else if (o instanceof Publisher) {
-            bufferPublisher = getResponseBufferPublisher((Publisher) o, genericType, mediaType);
+            final Class<?> clazz = genericType instanceof Class ? (Class) genericType : getSourceClass(genericType);
+            StreamingSerializer serializer = getJacksonSerializerFactory(mediaType)
+                    .streamingSerializerDeserializer(clazz);
+            bufferPublisher = serializer.serialize((Publisher) o, allocator);
         } else {
-            bufferPublisher = getResponseBufferPublisher(Publisher.from(o), o.getClass(), mediaType);
+            Serializer serializer = getJacksonSerializerFactory(mediaType).serializerDeserializer(o.getClass());
+            bufferPublisher = Publisher.from(serializer.serialize(o, allocator));
         }
 
         setResponseBufferPublisher(bufferPublisher, requestCtxProvider.get());
     }
 
-    @SuppressWarnings("unchecked")
-    private Publisher<Buffer> getResponseBufferPublisher(final Publisher publisher, final Type type,
-                                                         final MediaType mediaType) {
-        final BufferAllocator allocator = ctxRefProvider.get().get().executionContext().bufferAllocator();
-        return getSerializer(mediaType).serialize(publisher, allocator,
-                type instanceof Class ? (Class) type : getSourceClass(type));
-    }
+    private JacksonSerializerFactory getJacksonSerializerFactory(final MediaType mediaType) {
+        final ContextResolver<JacksonSerializerFactory> contextResolver =
+                providers.getContextResolver(JacksonSerializerFactory.class, mediaType);
 
-    private Serializer getSerializer(final MediaType mediaType) {
-        return new DefaultSerializer(getJacksonSerializationProvider(mediaType));
-    }
-
-    private JacksonSerializationProvider getJacksonSerializationProvider(final MediaType mediaType) {
-        final ContextResolver<JacksonSerializationProvider> contextResolver =
-                providers.getContextResolver(JacksonSerializationProvider.class, mediaType);
-
-        return contextResolver != null ? contextResolver.getContext(JacksonSerializationProvider.class) :
-                DEFAULT_JACKSON_SERIALIZATION_PROVIDER;
+        return contextResolver != null ? contextResolver.getContext(JacksonSerializerFactory.class) :
+                JacksonSerializerFactory.JACKSON;
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
         return fromInputStream(is).map(a::wrap);
     }
 
-    private static <T> Single<T> deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                             final Class<T> type, final int contentLength,
-                                             final BufferAllocator allocator) {
-
+    private static <T> Single<T> deserialize(
+            final Publisher<Buffer> bufferPublisher, final Deserializer<T> deserializer, final int contentLength,
+            final BufferAllocator allocator) {
         return bufferPublisher
                 .collect(() -> newBufferForRequestContent(contentLength, allocator), Buffer::writeBytes)
                 .map(buf -> {
                     try {
-                        return ser.deserializeAggregatedSingle(buf, type);
+                        return deserializer.deserialize(buf, allocator);
                     } catch (final NoSuchElementException e) {
                         throw new BadRequestException("No deserializable JSON content", e);
                     } catch (final SerializationException e) {
@@ -192,10 +185,9 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     }
 
     // visible for testing
-    static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                   final Class<T> type, final int contentLength,
-                                   final BufferAllocator allocator) {
-        return awaitResult(deserialize(bufferPublisher, ser, type, contentLength, allocator).toFuture());
+    static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Deserializer<T> deserializer,
+                                   final int contentLength, final BufferAllocator allocator) {
+        return awaitResult(deserialize(bufferPublisher, deserializer, contentLength, allocator).toFuture());
     }
 
     private static boolean isSse(ContainerRequestContext requestCtx) {

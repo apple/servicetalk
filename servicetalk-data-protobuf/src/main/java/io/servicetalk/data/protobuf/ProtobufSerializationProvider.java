@@ -46,7 +46,9 @@ import static java.util.Collections.singletonList;
  * Note: This implementation assumes byte streams represent a single message. This implementation currently uses
  * {@code writeTo/parseFrom} and not {@code writeDelimitedTo/parseDelimitedFrom} to serialize/deserialize messages.
  * It cannot be used to process a stream of delimited messages on a single Buffer.
+ * @deprecated Use {@link ProtobufSerializerFactory}.
  */
+@Deprecated
 public final class ProtobufSerializationProvider implements SerializationProvider {
 
     private final ConcurrentMap<Class, Parser> parsers;

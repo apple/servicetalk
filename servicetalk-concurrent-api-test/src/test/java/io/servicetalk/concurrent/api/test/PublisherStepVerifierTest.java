@@ -633,6 +633,7 @@ class PublisherStepVerifierTest {
                 .verify();
     }
 
+    @Test
     void thenRunThrows() {
         assertThrows(DeliberateException.class, () -> StepVerifiers.create(from("foo"))
                 .then(() -> {

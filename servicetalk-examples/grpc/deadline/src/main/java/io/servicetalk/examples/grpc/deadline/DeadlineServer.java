@@ -15,18 +15,14 @@
  */
 package io.servicetalk.examples.grpc.deadline;
 
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.deadline.Greeter;
+import io.grpc.examples.deadline.Greeter.GreeterService;
 import io.grpc.examples.deadline.HelloReply;
-import io.grpc.examples.deadline.HelloRequest;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 
 /**
  * Extends the async "Hello World!" example to demonstrate use of
@@ -37,31 +33,14 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
  * @see <a href="https://grpc.io/blog/deadlines/">gRPC and Deadlines</a>
  */
 public class DeadlineServer {
-
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 // Set default timeout for completion of RPC calls made to this server
-                .defaultTimeout(Duration.ofMinutes(2))
-                .listenAndAwait(new MyGreeterService())
+                .defaultTimeout(ofMinutes(2))
+                .listenAndAwait((GreeterService) (ctx, request) ->
+                        // Force a 5 second delay in the response.
+                        ctx.executionContext().executor().timer(ofSeconds(5)).concat(
+                                succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())))
                 .awaitShutdown();
-    }
-
-    private static final class MyGreeterService implements Greeter.GreeterService {
-
-        @Override
-        public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-
-             // Force a 5 second delay in the response.
-            return Single.defer(() -> {
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException woken) {
-                    Thread.interrupted();
-                }
-
-                return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())
-                        .subscribeShareContext();
-            });
-        }
     }
 }

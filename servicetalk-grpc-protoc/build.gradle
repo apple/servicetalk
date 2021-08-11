@@ -27,6 +27,10 @@ apply plugin: "com.google.protobuf"
 
 dependencies {
   implementation project(":servicetalk-annotations")
+
+  // runtimeOnly is enough for this module in isolation, but we want transitive modules to include at compile time too.
+  api project(":servicetalk-data-protobuf")
+
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "com.google.protobuf:protobuf-java:$protobufVersion"
   implementation "com.squareup:javapoet:$javaPoetVersion"
@@ -89,6 +93,10 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
+      if (task.isTest) {
+        task.dependsOn(buildExecutable)
+      }
+
       task.plugins {
         servicetalk_grpc {
           // Need to tell protobuf-gradle-plugin to output in the correct directory if all generated

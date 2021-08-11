@@ -15,10 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.serializer.api.SerializationException;
+
 /**
  * Exception thrown when a payload was encoded with an unsupported encoder.
  */
-final class UnsupportedContentEncodingException extends RuntimeException {
+final class UnsupportedContentEncodingException extends SerializationException {
 
     private static final long serialVersionUID = 5645078707423180235L;
 

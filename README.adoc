@@ -1,6 +1,8 @@
 = ServiceTalk
 
 image:https://img.shields.io/maven-central/v/io.servicetalk/servicetalk-annotations?color=blue[Maven Central]
+image:https://github.com/apple/servicetalk/actions/workflows/ci-snapshot.yml/badge.svg[Snapshot Publisher]
+image:https://img.shields.io/nexus/s/io.servicetalk/servicetalk-annotations?color=blue&server=https%3A%2F%2Foss.sonatype.org[Sonatype Snapshot]
 
 ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
 HTTP/2.x, etc...) and supports multiple programming paradigms.

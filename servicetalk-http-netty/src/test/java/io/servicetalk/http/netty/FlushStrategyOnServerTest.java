@@ -55,7 +55,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
@@ -97,7 +97,7 @@ class FlushStrategyOnServerTest {
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok();
             if (request.headers().get(USE_EMPTY_RESP_BODY) == null) {
-                resp.payloadBody(from("Hello", "World"), textSerializer());
+                resp.payloadBody(from("Hello", "World"), appSerializerUtf8FixLen());
             }
             if (request.headers().get(USE_AGGREGATED_RESP) != null) {
                 return resp.toResponse().map(HttpResponse::toStreamingResponse);

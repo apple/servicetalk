@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -27,6 +26,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.TrailersTransformer;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -43,13 +44,12 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.lang.String.valueOf;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -147,7 +147,8 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     @MethodSource("data")
     void contentLengthAddedManually(HttpProtocol protocol, String content) throws Exception {
         setUp(protocol, content);
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length())), r -> r, true, false, false);
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length()))), r -> r, true,
+                false, false);
     }
 
     @ParameterizedTest(name = "protocol={0}")
@@ -201,7 +202,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                                                            String content) throws Exception {
         setUp(protocol, content);
         test(r -> r.toRequest().toFuture().get()
-                        .setHeader(CONTENT_LENGTH, valueOf(content.length()))
+                        .setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
                 // HTTP/2 may have content-length and trailers at the same time
@@ -213,7 +214,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     void trailersAndContentLengthAddedForStreamingRequest(HttpProtocol protocol,
                                                           String content) throws Exception {
         setUp(protocol, content);
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length()))
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
                             @Override
@@ -259,7 +260,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                                                                            String content) throws Exception {
         setUp(protocol, content);
         test(r -> r.toRequest().toFuture().get()
-                        .setHeader(CONTENT_LENGTH, valueOf(content.length()))
+                        .setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
@@ -272,7 +273,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     void trailersContentLengthAndTransferEncodingAddedForStreamingRequest(HttpProtocol protocol,
                                                                           String content) throws Exception {
         setUp(protocol, content);
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length()))
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
@@ -318,25 +319,78 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
         StreamingHttpRequest preRequest = streamingHttpConnection().post("/");
         if (!content.isEmpty()) {
-            preRequest.payloadBody(from(content), textSerializer());
+            preRequest.payloadBody(from(content), appSerializerUtf8FixLen());
         }
         StreamingHttpRequest request = requestTransformer.transform(preRequest);
-        HttpResponse response = responseTransformer.transform(makeRequest(request)).toResponse().toFuture().get();
+        StreamingHttpResponse response = responseTransformer.transform(makeRequest(request));
         assertResponse(response, protocol.version, OK);
-        assertThat(response.payloadBody().toString(US_ASCII), equalTo(content));
-
         HttpHeaders headers = response.headers();
         assertThat("Unexpected content-length on the response", mergeValues(headers.values(CONTENT_LENGTH)),
-                contentEqualTo(hasContentLength ? valueOf(content.length()) : ""));
+                contentEqualTo(hasContentLength ? valueOf(addFixedLengthFramingOverhead(content.length())) : ""));
         assertThat("Unexpected transfer-encoding on the response", mergeValues(headers.values(TRANSFER_ENCODING)),
                 contentEqualTo(chunked ? CHUNKED : ""));
 
         assertThat("Unexpected content-length on the request", headers.get(CLIENT_CONTENT_LENGTH),
-                hasContentLength ? contentEqualTo(valueOf(content.length())) : nullValue());
+                hasContentLength ? contentEqualTo(valueOf(addFixedLengthFramingOverhead(content.length()))) :
+                        nullValue());
         assertThat("Unexpected transfer-encoding on the request", headers.get(CLIENT_TRANSFER_ENCODING),
                 chunked ? contentEqualTo(CHUNKED) : nullValue());
-        assertThat("Unexpected trailers on the request", response.trailers().get(TRAILER_NAME),
-                hasTrailers ? contentEqualTo(TRAILER_VALUE) : nullValue());
+
+        if (content.isEmpty()) {
+            response.transform(new TrailersTransformer<Object, Buffer>() {
+                @Nullable
+                @Override
+                public Integer newState() {
+                    return null;
+                }
+
+                @Override
+                public Buffer accept(@Nullable final Object o, final Buffer buffer) {
+                    assertThat(buffer.readableBytes(), equalTo(0));
+                    return buffer;
+                }
+
+                @Override
+                public HttpHeaders payloadComplete(@Nullable final Object o, final HttpHeaders trailers) {
+                    assertThat("Unexpected trailers on the request", trailers.get(TRAILER_NAME),
+                            hasTrailers ? contentEqualTo(TRAILER_VALUE) : nullValue());
+                    return trailers;
+                }
+
+                @Override
+                public HttpHeaders catchPayloadFailure(@Nullable final Object o, final Throwable cause,
+                                                       final HttpHeaders trailers) throws Throwable {
+                    throw cause;
+                }
+            }).messageBody().ignoreElements().toFuture().get();
+        } else {
+            response.transform(new TrailersTransformer<StringBuilder, String>() {
+                @Override
+                public StringBuilder newState() {
+                    return new StringBuilder();
+                }
+
+                @Override
+                public String accept(final StringBuilder o, final String s) {
+                    o.append(s);
+                    return s;
+                }
+
+                @Override
+                public HttpHeaders payloadComplete(final StringBuilder o, final HttpHeaders trailers) {
+                    assertThat(o.toString(), equalTo(content));
+                    assertThat("Unexpected trailers on the request", trailers.get(TRAILER_NAME),
+                            hasTrailers ? contentEqualTo(TRAILER_VALUE) : nullValue());
+                    return trailers;
+                }
+
+                @Override
+                public HttpHeaders catchPayloadFailure(@Nullable final StringBuilder o, final Throwable cause,
+                                                       final HttpHeaders trailers) throws Throwable {
+                    throw cause;
+                }
+            }, appSerializerUtf8FixLen()).messageBody().ignoreElements().toFuture().get();
+        }
     }
 
     private static CharSequence mergeValues(Iterable<? extends CharSequence> values) {
@@ -348,6 +402,10 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
             sb.append(value);
         }
         return sb;
+    }
+
+    static int addFixedLengthFramingOverhead(int length) {
+        return length == 0 ? 0 : length + Integer.BYTES;
     }
 
     private interface Transformer<T extends HttpMetaData> {

@@ -25,7 +25,6 @@ import io.grpc.examples.routeguide.RouteSummary;
 import static java.util.Arrays.asList;
 
 public final class BlockingRouteGuideRequestStreamingClient {
-
     public static void main(String[] args) throws Exception {
         try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new ClientFactory())) {

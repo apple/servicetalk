@@ -23,7 +23,10 @@ import java.util.List;
 
 /**
  * A provider for <a href="https://www.grpc.io">gRPC</a> serialization/deserialization.
+ * @deprecated Serialization is now specified via {@link MethodDescriptor}. Compression is configured per route.
+ * gRPC framing is internalized in the gRPC implementation.
  */
+@Deprecated
 public interface GrpcSerializationProvider {
 
     /**

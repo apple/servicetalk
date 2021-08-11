@@ -45,6 +45,7 @@ dependencies {
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation project(":servicetalk-data-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
   testImplementation project(":servicetalk-router-utils-internal")
   testImplementation project(":servicetalk-test-resources")
@@ -75,14 +76,17 @@ protobuf {
       artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
     }
     servicetalk_grpc {
-      //// Users are expected to use "artifact" instead of "path". we use "path"
-      //// only because we want to use the gradle project local version of the plugin
+      // use gradle project local grpc-protoc dependency
       path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
                   "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
     }
   }
   generateProtoTasks {
     all().each { task ->
+      if (task.isTest) {
+        task.dependsOn(":servicetalk-grpc-protoc:buildExecutable") // use gradle project local grpc-protoc dependency
+      }
+
       task.plugins {
         grpc {}
         servicetalk_grpc {
@@ -92,10 +96,4 @@ protobuf {
     }
   }
   generatedFilesBaseDir = "$buildDir/generated/sources/proto"
-}
-
-//// The following setting must be omitted in users projects and is necessary here
-//// only because we want to use the gradle project local version of the plugin
-afterEvaluate {
-  generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
 }

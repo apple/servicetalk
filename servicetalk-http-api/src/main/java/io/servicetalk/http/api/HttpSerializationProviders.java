@@ -19,6 +19,8 @@ import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.SerializationProvider;
 import io.servicetalk.serialization.api.Serializer;
+import io.servicetalk.serializer.api.SerializerDeserializer;
+import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +40,9 @@ import static io.servicetalk.http.api.HttpStringSerializer.UTF8_STRING_SERIALIZE
 
 /**
  * A factory to create {@link HttpSerializationProvider}s.
+ * @deprecated Use {@link HttpSerializers}.
  */
+@Deprecated
 public final class HttpSerializationProviders {
 
     private HttpSerializationProviders() {
@@ -48,11 +52,12 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpSerializer} that can serialize a key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} {@code Charset} to urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer()}.
      * @return {@link HttpSerializer} that could serialize key-value {@link Map}.
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    @Deprecated
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer() {
         return FormUrlEncodedHttpSerializer.UTF8;
     }
@@ -60,12 +65,13 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpSerializer} that can serialize key-values {@link Map}s with the specified {@link Charset}
      * to to urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer(Charset)}.
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    @Deprecated
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(Charset charset) {
         final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
                 charset.name());
@@ -75,7 +81,7 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpSerializer} that can serialize a key-values {@link Map}s with the specified {@link Charset}
      * to urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer(Charset)}.
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
@@ -83,6 +89,7 @@ public final class HttpSerializationProviders {
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    @Deprecated
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(
             Charset charset, Consumer<HttpHeaders> addContentType) {
         return new FormUrlEncodedHttpSerializer(charset, addContentType);
@@ -91,11 +98,12 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer()}.
      * @return {@link HttpDeserializer} that could deserialize a key-values {@link Map}.
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    @Deprecated
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer() {
         return FormUrlEncodedHttpDeserializer.UTF8;
     }
@@ -103,13 +111,14 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer(Charset)}.
      * @param charset {@link Charset} for the key-value {@link Map} that will be deserialized.
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    @Deprecated
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(Charset charset) {
         return formUrlEncodedDeserializer(charset,
                 headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, charset));
@@ -118,7 +127,7 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
-     *
+     * @deprecated Use {@link HttpSerializers#formUrlEncodedSerializer(Charset)}.
      * @param charset {@link Charset} for the key-value {@link Map} that will be deserialized.
      * @param checkContentType Checks the {@link HttpHeaders} to see if a compatible encoding is found.
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
@@ -126,6 +135,7 @@ public final class HttpSerializationProviders {
      * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded
     specification</a>
      */
+    @Deprecated
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(
             Charset charset, Predicate<HttpHeaders> checkContentType) {
         return new FormUrlEncodedHttpDeserializer(charset, checkContentType);
@@ -134,31 +144,52 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with {@link StandardCharsets#UTF_8}
      * {@code Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @return {@link HttpSerializer} that could serialize {@link String}.
      */
+    @Deprecated
     public static HttpSerializer<String> textSerializer() {
         return UTF8_STRING_SERIALIZER;
     }
 
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with the specified {@link Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
+    @Deprecated
     public static HttpSerializer<String> textSerializer(Charset charset) {
         return textSerializer(charset, headers -> hasContentType(headers, TEXT_PLAIN, charset));
     }
 
     /**
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with the specified {@link Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>{@link HttpSerializers#stringStreamingSerializer(Charset, Consumer)}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
+    @Deprecated
     public static HttpSerializer<String> textSerializer(Charset charset, Consumer<HttpHeaders> addContentType) {
         return new HttpStringSerializer(charset, addContentType);
     }
@@ -166,31 +197,61 @@ public final class HttpSerializationProviders {
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with {@link StandardCharsets#UTF_8}
      * {@code Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializerUtf8()} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
+    @Deprecated
     public static HttpDeserializer<String> textDeserializer() {
         return UTF_8_STRING_DESERIALIZER;
     }
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with the specified {@link Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
+    @Deprecated
     public static HttpDeserializer<String> textDeserializer(Charset charset) {
         return textDeserializer(charset, headers -> hasContentType(headers, TEXT_PLAIN, charset));
     }
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize {@link String}s with the specified {@link Charset}.
-     *
+     * @deprecated Use {@link HttpSerializers#textSerializer(Charset)} for aggregated. For streaming, use one of the
+     * following:
+     * <ul>
+     *     <li>{@link HttpSerializers#appSerializerUtf8FixLen()}</li>
+     *     <li>{@link HttpSerializers#appSerializerAsciiVarLen()}</li>
+     *     <li>Aggregate the payload (e.g. {@link StreamingHttpRequest#toRequest()}) and use
+     *     {@link HttpSerializers#textSerializer(Charset)} if your payload is text</li>
+     *     <li>{@link HttpSerializers#streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)}
+     *     targeted at your {@link HttpHeaderNames#CONTENT_TYPE}</li>
+     * </ul>
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
+    @Deprecated
     public static HttpDeserializer<String> textDeserializer(Charset charset, Predicate<HttpHeaders> checkContentType) {
         return new HttpStringDeserializer(charset, checkContentType);
     }
@@ -202,10 +263,12 @@ public final class HttpSerializationProviders {
      * For deserialization, it expects a {@link HttpHeaderNames#CONTENT_TYPE} header with value
      * {@link HttpHeaderValues#APPLICATION_JSON}. If the expected header is not present, then deserialization will fail
      * with {@link SerializationException}.
-     *
+     * @deprecated Use {@link HttpSerializers#jsonSerializer(SerializerDeserializer)} or
+     * {@link HttpSerializers#jsonStreamingSerializer(StreamingSerializerDeserializer)}.
      * @param serializer {@link Serializer} that has the capability of serializing/deserializing to/from JSON.
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from JSON.
      */
+    @Deprecated
     public static HttpSerializationProvider jsonSerializer(Serializer serializer) {
         return serializationProvider(serializer, headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
                 headers -> hasContentType(headers, APPLICATION_JSON, null));
@@ -218,11 +281,13 @@ public final class HttpSerializationProviders {
      * For deserialization, it expects a {@link HttpHeaderNames#CONTENT_TYPE} header with value
      * {@link HttpHeaderValues#APPLICATION_JSON}. If the expected header is not present, then deserialization will fail
      * with {@link SerializationException}.
-     *
+     * @deprecated Use {@link HttpSerializers#jsonSerializer(SerializerDeserializer)} or
+     * {@link HttpSerializers#jsonStreamingSerializer(StreamingSerializerDeserializer)}.
      * @param serializationProvider {@link SerializationProvider} that has the capability of serializing/deserializing
      * to/from JSON.
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from JSON.
      */
+    @Deprecated
     public static HttpSerializationProvider jsonSerializer(SerializationProvider serializationProvider) {
         return jsonSerializer(new DefaultSerializer(serializationProvider));
     }
@@ -236,7 +301,8 @@ public final class HttpSerializationProviders {
      * For deserialization, it would validate headers as specified by the passed
      * {@link Predicate checkContentType predicate}. If the validation fails, then deserialization will fail with
      * {@link SerializationException}.
-     *
+     * @deprecated Use {@link HttpSerializers}, {@link HttpSerializer2}, {@link HttpDeserializer2},
+     * {@link HttpStreamingSerializer}, and {@link HttpStreamingDeserializer}.
      * @param serializer {@link Serializer} that has the capability of serializing/deserializing to/from a desired
      * content-type.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
@@ -246,6 +312,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from a desired
      * content-type.
      */
+    @Deprecated
     public static HttpSerializationProvider serializationProvider(Serializer serializer,
                                                                   Consumer<HttpHeaders> addContentType,
                                                                   Predicate<HttpHeaders> checkContentType) {
@@ -261,7 +328,8 @@ public final class HttpSerializationProviders {
      * For deserialization, it would validate headers as specified by the passed
      * {@link Predicate checkContentType predicate}. If the validation fails, then deserialization will fail with
      * {@link SerializationException}.
-     *
+     * @deprecated Use {@link HttpSerializers}, {@link HttpSerializer2}, {@link HttpDeserializer2},
+     * {@link HttpStreamingSerializer}, and {@link HttpStreamingDeserializer}.
      * @param serializationProvider {@link SerializationProvider} that has the capability of serializing/deserializing
      * to/from a desired content-type.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
@@ -272,6 +340,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from a desired
      * content-type.
      */
+    @Deprecated
     public static HttpSerializationProvider serializationProvider(SerializationProvider serializationProvider,
                                                                   Consumer<HttpHeaders> addContentType,
                                                                   Predicate<HttpHeaders> checkContentType) {

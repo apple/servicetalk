@@ -21,6 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 
+@Deprecated
 class ServiceTalkEmptyContentCodingTest extends ServiceTalkContentCodingTest {
 
     @Override

@@ -49,9 +49,12 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * A builder for building a {@link GrpcSerializationProvider} that can serialize and deserialize
  * pre-registered <a href="https://developers.google.com/protocol-buffers/">protocol buffer</a> objects.
+ * @deprecated The gRPC framing is now built into grpc-netty. This class is no longer necessary and will be removed in
+ * a future release.
  * {@link #registerMessageType(Class, Parser)} is used to add one or more {@link MessageLite} message types. Resulting
  * {@link GrpcSerializationProvider} from {@link #build()} will only serialize and deserialize those message types.
  */
+@Deprecated
 public final class ProtoBufSerializationProviderBuilder {
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence APPLICATION_GRPC_PROTO = newAsciiString("application/grpc+proto");

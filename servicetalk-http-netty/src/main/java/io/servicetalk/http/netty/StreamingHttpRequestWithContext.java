@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.HttpCookiePair;
@@ -28,6 +29,8 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpSetCookie;
+import io.servicetalk.http.api.HttpStreamingDeserializer;
+import io.servicetalk.http.api.HttpStreamingSerializer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OwnedRunnable;
@@ -70,6 +73,7 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
         return delegate.headers();
     }
 
+    @Deprecated
     @Nullable
     @Override
     public ContentCodec encoding() {
@@ -198,13 +202,25 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
         return delegate.effectiveHostAndPort();
     }
 
+    @Nullable
+    @Override
+    public BufferEncoder contentEncoding() {
+        return delegate.contentEncoding();
+    }
+
     @Override
     public Publisher<Buffer> payloadBody() {
         return delegate.payloadBody();
     }
 
+    @Deprecated
     @Override
     public <T> Publisher<T> payloadBody(final HttpDeserializer<T> deserializer) {
+        return delegate.payloadBody(deserializer);
+    }
+
+    @Override
+    public <T> Publisher<T> payloadBody(final HttpStreamingDeserializer<T> deserializer) {
         return delegate.payloadBody(deserializer);
     }
 
@@ -219,12 +235,21 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
         return this;
     }
 
+    @Deprecated
     @Override
     public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
         delegate.payloadBody(payloadBody, serializer);
         return this;
     }
 
+    @Override
+    public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody,
+                                                final HttpStreamingSerializer<T> serializer) {
+        delegate.payloadBody(payloadBody, serializer);
+        return this;
+    }
+
+    @Deprecated
     @Override
     public <T> StreamingHttpRequest transformPayloadBody(final Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                          final HttpSerializer<T> serializer) {
@@ -233,9 +258,25 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     }
 
     @Override
+    public <T> StreamingHttpRequest transformPayloadBody(final Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                         final HttpStreamingSerializer<T> serializer) {
+        delegate.transformPayloadBody(transformer, serializer);
+        return this;
+    }
+
+    @Deprecated
+    @Override
     public <T, R> StreamingHttpRequest transformPayloadBody(final Function<Publisher<T>, Publisher<R>> transformer,
                                                             final HttpDeserializer<T> deserializer,
                                                             final HttpSerializer<R> serializer) {
+        delegate.transformPayloadBody(transformer, deserializer, serializer);
+        return this;
+    }
+
+    @Override
+    public <T, R> StreamingHttpRequest transformPayloadBody(final Function<Publisher<T>, Publisher<R>> transformer,
+                                                            final HttpStreamingDeserializer<T> deserializer,
+                                                            final HttpStreamingSerializer<R> serializer) {
         delegate.transformPayloadBody(transformer, deserializer, serializer);
         return this;
     }
@@ -255,6 +296,13 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     @Override
     public <T> StreamingHttpRequest transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         delegate.transform(trailersTransformer);
+        return this;
+    }
+
+    @Override
+    public <T, S> StreamingHttpRequest transform(final TrailersTransformer<T, S> trailersTransformer,
+                                                 final HttpStreamingDeserializer<S> deserializer) {
+        delegate.transform(trailersTransformer, deserializer);
         return this;
     }
 
@@ -346,9 +394,16 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
         return this;
     }
 
+    @Deprecated
     @Override
     public StreamingHttpRequest encoding(final ContentCodec encoding) {
         delegate.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        delegate.contentEncoding(encoder);
         return this;
     }
 

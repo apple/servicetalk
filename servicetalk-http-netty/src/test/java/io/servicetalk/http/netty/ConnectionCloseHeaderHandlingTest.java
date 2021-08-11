@@ -24,6 +24,7 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.oio.api.internal.PayloadWriterUtils;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -39,6 +40,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -66,7 +69,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.netty.ContentLengthAndTrailersTest.addFixedLengthFramingOverhead;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -86,6 +90,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ConnectionCloseHeaderHandlingTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionCloseHeaderHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
     private static final String SERVER_SHOULD_CLOSE = "serverShouldClose";
 
@@ -154,7 +159,8 @@ final class ConnectionCloseHeaderHandlingTest {
                         requestReceived.countDown();
                         boolean noResponseContent = request.hasQueryParameter("noResponseContent", "true");
                         String content = noResponseContent ? "" : "server_content";
-                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO : valueOf(content.length()));
+                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO :
+                                valueOf(addFixedLengthFramingOverhead(content.length())));
 
                         // Add the "connection: close" header only when requested:
                         if (request.hasQueryParameter(SERVER_SHOULD_CLOSE)) {
@@ -162,20 +168,24 @@ final class ConnectionCloseHeaderHandlingTest {
                         }
 
                         sendResponse.await();
-                        try (HttpPayloadWriter<String> writer = response.sendMetaData(textSerializer())) {
+                        try (HttpPayloadWriter<String> writer = response.sendMetaData(appSerializerUtf8FixLen())) {
                             // Subscribe to the request payload body before response writer closes
                             BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                             // Consume request payload body asynchronously:
-                            ctx.executionContext().executor().execute(() -> {
+                            Future<Void> writeFuture = ctx.executionContext().executor().submit(() -> {
                                 while (iterator.hasNext()) {
                                     Buffer chunk = iterator.next();
                                     assert chunk != null;
                                     requestPayloadSize.addAndGet(chunk.readableBytes());
                                 }
-                                requestPayloadReceived.countDown();
-                            });
+                            }).beforeOnError(cause -> {
+                                LOGGER.error("failure while writing response", cause);
+                                PayloadWriterUtils.safeClose(writer, cause);
+                            })
+                            .afterFinally(requestPayloadReceived::countDown)
+                            .toFuture();
                             if (awaitRequestPayload) {
-                                requestPayloadReceived.await();
+                                writeFuture.get();
                             }
                             if (!noResponseContent) {
                                 // Defer payload body to see how client-side processes "Connection: close" header
@@ -295,7 +305,7 @@ final class ConnectionCloseHeaderHandlingTest {
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
-                }).concat(from(content)), textSerializer());
+                }).concat(from(content)), appSerializerUtf8FixLen());
             }
             if (requestInitiatesClosure) {
                 request.addHeader(CONNECTION, CLOSE);
@@ -382,7 +392,7 @@ final class ConnectionCloseHeaderHandlingTest {
             String content = "request_content";
             connection.request(connection.get("/second")
                     .addHeader(CONTENT_LENGTH, valueOf(content.length()))
-                    .payloadBody(from(content).concat(never()), textSerializer()))
+                    .payloadBody(from(content).concat(never()), appSerializerUtf8FixLen()))
                     .whenOnError(secondRequestError::set)
                     .whenFinally(secondResponseReceived::countDown)
                     .subscribe(second -> { });

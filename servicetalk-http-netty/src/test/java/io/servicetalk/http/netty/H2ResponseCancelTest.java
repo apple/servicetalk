@@ -50,7 +50,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
@@ -145,7 +145,7 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause(), instanceOf(H2StreamResetException.class));
 
         // Mak sure we can use the same connection for future requests:
-        assertResponse(makeRequest(newRequest(connection, "ok")), HTTP_2_0, OK, "ok");
+        assertSerializedResponse(makeRequest(newRequest(connection, "ok")), HTTP_2_0, OK, "ok");
         assertThat("Connection closed unexpectedly", connectionClosed.get(), is(false));
     }
 
@@ -176,14 +176,14 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
         assertThat("Unexpected responses", responses, is(empty()));
         firstResponseLatch.countDown();
 
-        assertResponse(responses.take(), HTTP_2_0, OK, "first");
+        assertSerializedResponse(responses.take(), HTTP_2_0, OK, "first");
         // Make sure we can use the same connection for future requests:
-        assertResponse(makeRequest(newRequest(requester, "third")), HTTP_2_0, OK, "third");
+        assertSerializedResponse(makeRequest(newRequest(requester, "third")), HTTP_2_0, OK, "third");
     }
 
     private static StreamingHttpRequest newRequest(StreamingHttpRequestFactory requestFactory, String param) {
         return requestFactory.post(SVC_ECHO)
                 .addQueryParameter(PARAM, param)
-                .payloadBody(from(param), textSerializer());
+                .payloadBody(from(param), appSerializerUtf8FixLen());
     }
 }

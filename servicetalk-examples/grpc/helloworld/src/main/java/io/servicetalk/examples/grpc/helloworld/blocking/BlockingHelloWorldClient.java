@@ -23,11 +23,10 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 
 public final class BlockingHelloWorldClient {
-
     public static void main(String[] args) throws Exception {
         try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new ClientFactory())) {
-            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Foo").build());
+            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
             System.out.println(reply);
         }
     }

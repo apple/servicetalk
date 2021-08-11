@@ -71,7 +71,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
                 EnumSet.of(IN_OFFLOADED_SUBSCRIBE,
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_OFFLOADED_ON_SUBSCRIBE)),
         SUBSCRIBE_ON_CONDITIONAL_NEVER(0, "none",
-                (s, e) -> s.subscribeOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (s, e) -> s.subscribeOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 EnumSet.of(IN_ORIGINAL_SUBSCRIBE, IN_OFFLOADED_SUBSCRIBE,
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_OFFLOADED_ON_SUBSCRIBE,
                         IN_ORIGINAL_ON_COMPLETE, IN_OFFLOADED_ON_COMPLETE),
@@ -93,7 +93,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_ORIGINAL_ON_COMPLETE),
                 EnumSet.of(IN_OFFLOADED_ON_SUBSCRIBE, IN_OFFLOADED_ON_COMPLETE)),
         PUBLISH_ON_CONDITIONAL_NEVER(0, "none",
-                (s, e) -> s.publishOn(e, () -> Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
+                (s, e) -> s.publishOn(e, Boolean.FALSE::booleanValue), TerminalOperation.COMPLETE,
                 EnumSet.of(IN_ORIGINAL_SUBSCRIBE, IN_OFFLOADED_SUBSCRIBE,
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_OFFLOADED_ON_SUBSCRIBE,
                         IN_ORIGINAL_ON_COMPLETE, IN_OFFLOADED_ON_COMPLETE),
@@ -101,7 +101,7 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
         PUBLISH_ON_CONDITIONAL_SECOND(1, "onComplete",
                 (s, e) -> Single.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return s.publishOn(e, () -> () -> countdown.decrementAndGet() < 0).subscribeShareContext();
+                    return s.publishOn(e, () -> countdown.decrementAndGet() < 0).subscribeShareContext();
                 }), TerminalOperation.COMPLETE,
                 EnumSet.of(IN_ORIGINAL_SUBSCRIBE, IN_OFFLOADED_SUBSCRIBE,
                         IN_ORIGINAL_ON_SUBSCRIBE, IN_OFFLOADED_ON_SUBSCRIBE,

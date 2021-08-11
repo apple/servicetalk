@@ -29,6 +29,7 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.oio.api.internal.PayloadWriterUtils;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -49,6 +50,8 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -71,7 +74,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.netty.ContentLengthAndTrailersTest.addFixedLengthFramingOverhead;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
@@ -98,7 +102,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GracefulConnectionClosureHandlingTest {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
     @RegisterExtension
@@ -181,14 +185,14 @@ class GracefulConnectionClosureHandlingTest {
 
         serverContext = serverBuilder.listenBlockingStreamingAndAwait((ctx, request, response) -> {
             serverReceivedRequest.countDown();
-            response.addHeader(CONTENT_LENGTH, valueOf(RESPONSE_CONTENT.length()));
+            response.addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(RESPONSE_CONTENT.length())));
 
             serverSendResponse.await();
-            try (HttpPayloadWriter<String> writer = response.sendMetaData(textSerializer())) {
+            try (HttpPayloadWriter<String> writer = response.sendMetaData(appSerializerUtf8FixLen())) {
                 // Subscribe to the request payload body before response writer closes
                 BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                 // Consume request payload body asynchronously:
-                ctx.executionContext().executor().execute(() -> {
+                ctx.executionContext().executor().submit(() -> {
                     int receivedSize = 0;
                     while (iterator.hasNext()) {
                         Buffer chunk = iterator.next();
@@ -196,7 +200,11 @@ class GracefulConnectionClosureHandlingTest {
                         receivedSize += chunk.readableBytes();
                     }
                     serverReceivedRequestPayload.add(receivedSize);
-                });
+                }).beforeOnError(cause -> {
+                    LOGGER.error("failure while writing response", cause);
+                    serverReceivedRequestPayload.add(-1);
+                    PayloadWriterUtils.safeClose(writer, cause);
+                }).toFuture();
                 serverSendResponsePayload.await();
                 writer.write(RESPONSE_CONTENT);
             }
@@ -474,22 +482,21 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private StreamingHttpRequest newRequest(String path) {
-        return connection.asConnection().post(path)
-                .addHeader(CONTENT_LENGTH, valueOf(REQUEST_CONTENT.length()))
-                .payloadBody(REQUEST_CONTENT, textSerializer())
-                .toStreamingRequest();
+        return connection.post(path)
+                .addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(REQUEST_CONTENT.length())))
+                .payloadBody(from(REQUEST_CONTENT), appSerializerUtf8FixLen());
     }
 
     private StreamingHttpRequest newRequest(String path, CountDownLatch payloadBodyLatch) {
         return connection.post(path)
-                .addHeader(CONTENT_LENGTH, valueOf(REQUEST_CONTENT.length()))
+                .addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(REQUEST_CONTENT.length())))
                 .payloadBody(connection.connectionContext().executionContext().executor().submit(() -> {
                     try {
                         payloadBodyLatch.await();
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
-                }).concat(from(REQUEST_CONTENT)), textSerializer());
+                }).concat(from(REQUEST_CONTENT)), appSerializerUtf8FixLen());
     }
 
     private static void assertResponse(StreamingHttpResponse response) {

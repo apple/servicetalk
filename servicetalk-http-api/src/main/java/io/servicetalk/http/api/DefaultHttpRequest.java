@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
@@ -46,9 +47,16 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpRequest encoding(final ContentCodec encoding) {
         original.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public HttpRequest contentEncoding(@Nullable final BufferEncoder encoder) {
+        original.contentEncoding(encoder);
         return this;
     }
 
@@ -195,6 +203,11 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
+    public <T> T payloadBody(final HttpDeserializer2<T> deserializer) {
+        return deserializer.deserialize(headers(), original.payloadHolder().allocator(), payloadBody);
+    }
+
+    @Override
     public HttpRequest payloadBody(final Buffer payloadBody) {
         this.payloadBody = requireNonNull(payloadBody);
         original.payloadBody(from(payloadBody));
@@ -203,6 +216,13 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public <T> HttpRequest payloadBody(final T pojo, final HttpSerializer<T> serializer) {
+        this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
+        original.payloadBody(from(payloadBody));
+        return this;
+    }
+
+    @Override
+    public <T> HttpRequest payloadBody(final T pojo, final HttpSerializer2<T> serializer) {
         this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
         original.payloadBody(from(payloadBody));
         return this;
@@ -251,7 +271,8 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
-                original.payloadHolder().allocator(), payload, payloadInfo, original.payloadHolder().headersFactory());
+                contentEncoding(), original.payloadHolder().allocator(), payload, payloadInfo,
+                original.payloadHolder().headersFactory());
     }
 
     @Override
