@@ -15,17 +15,41 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.ExecutionContext;
+
+@FunctionalInterface
 interface HttpClientBuildFinalizer {
+
+    /**
+     * Builds a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link StreamingHttpClient}
+     */
     StreamingHttpClient buildStreaming();
 
+    /**
+     * Builds a new {@link HttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link HttpClient}
+     */
     default HttpClient build() {
         return buildStreaming().asClient();
     }
 
+    /**
+     * Creates a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return {@link BlockingStreamingHttpClient}
+     */
     default BlockingStreamingHttpClient buildBlockingStreaming() {
         return buildStreaming().asBlockingStreamingClient();
     }
 
+    /**
+     * Creates a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return {@link BlockingHttpClient}
+     */
     default BlockingHttpClient buildBlocking() {
         return buildStreaming().asBlockingClient();
     }

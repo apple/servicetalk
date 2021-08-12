@@ -29,7 +29,7 @@ import io.servicetalk.transport.api.IoExecutor;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientBuildFinalizer,
+public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuildFinalizer,
                                                                      ExecutionContextAwareHttpBuilder<R> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
@@ -37,7 +37,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * @param <R> The resolved address type.
      */
     @FunctionalInterface
-    public interface SingleAddressInitializer<U, R> {
+    interface SingleAddressInitializer<U, R> {
         /**
          * Configures the passed {@link SingleAddressHttpClientBuilder} for the given {@code scheme} and
          * {@code address}.
@@ -63,13 +63,13 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
     }
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
@@ -77,7 +77,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * {@link StreamingHttpClient}s.
      * @return {@code this}
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
+    MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 
     /**
      * Sets a maximum number of redirects to follow.
@@ -85,5 +85,5 @@ public abstract class MultiAddressHttpClientBuilder<U, R> implements HttpClientB
      * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
+    MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
 }

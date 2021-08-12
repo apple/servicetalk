@@ -116,7 +116,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -139,7 +139,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -176,7 +176,10 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder
+     *         .appendConnectionFactoryFilter(filter1)
+     *         .appendConnectionFactoryFilter(filter2)
+     *         .appendConnectionFactoryFilter(filter3)
      * </pre>
      * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
@@ -197,7 +200,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -219,7 +222,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>

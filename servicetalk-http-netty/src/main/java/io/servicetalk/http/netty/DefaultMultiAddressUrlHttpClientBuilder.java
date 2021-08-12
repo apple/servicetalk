@@ -67,7 +67,7 @@ import static java.util.Objects.requireNonNull;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
-        extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+        implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
