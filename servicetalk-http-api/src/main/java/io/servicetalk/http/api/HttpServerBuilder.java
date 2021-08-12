@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.logging.api.LogLevel;
@@ -208,11 +209,14 @@ public abstract class HttpServerBuilder {
      * The order of execution of these filters are in order of append, before the filters added with
      * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}. If 3 filters are added as follows:
      * <pre>
-     *     builder.appendServiceFilter(filter1).appendNonOffloadingServiceFilter(filter2).appendServiceFilter(filter3)
+     *     builder
+     *         .appendServiceFilter(filter1)
+     *         .appendNonOffloadingServiceFilter(filter2)
+     *         .appendServiceFilter(filter3)
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
+     *     filter2 ⇒ [offloading] ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
@@ -220,8 +224,7 @@ public abstract class HttpServerBuilder {
      * @throws IllegalArgumentException if the provided filter requires offloading.
      */
     public final HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter",
-                HttpExecutionStrategies.defaultStrategy(), factory));
+        noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter", defaultStrategy(), factory));
         return this;
     }
 
@@ -236,11 +239,14 @@ public abstract class HttpServerBuilder {
      * The order of execution of these filters are in order of append, before the filters added with
      * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}. If 3 filters are added as follows:
      * <pre>
-     *     builder.appendServiceFilter(filter1).appendNonOffloadingServiceFilter(filter2).appendServiceFilter(filter3)
+     *     builder
+     *         .appendServiceFilter(filter1)
+     *         .appendNonOffloadingServiceFilter(filter2)
+     *         .appendServiceFilter(filter3)
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter2 ⇒ filter1 ⇒ filter3 ⇒ service
+     *     filter2 ⇒ [offloading] ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied. This must not block.
@@ -251,7 +257,7 @@ public abstract class HttpServerBuilder {
     public final HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                     final StreamingHttpServiceFilterFactory factory) {
         checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
-        checkNonOffloading("Non-offloading filter", HttpExecutionStrategies.defaultStrategy(), factory);
+        checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(
                 service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
         return this;
@@ -266,7 +272,7 @@ public abstract class HttpServerBuilder {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendServiceFilter(filter1).appendServiceFilter(filter2).appendServiceFilter(filter3)
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
@@ -291,7 +297,7 @@ public abstract class HttpServerBuilder {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendServiceFilter(filter1).appendServiceFilter(filter2).appendServiceFilter(filter3)
      * </pre>
      * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
@@ -512,9 +518,9 @@ public abstract class HttpServerBuilder {
                 // We are going to have to offload, even if just to the raw service
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters,
                         Stream.of(new OffloadingFilter(strategy, buildFactory(serviceFilters))));
-                strategy = null != strategy.executor() ?
-                        HttpExecutionStrategies.customStrategyBuilder()
-                                .offloadNone().executor(strategy.executor()).build() :
+                final Executor executor = strategy.executor();
+                strategy = null != executor ?
+                        HttpExecutionStrategies.customStrategyBuilder().offloadNone().executor(executor).build() :
                         noOffloadsStrategy();
             } else {
                 // All the filters can be appended.
