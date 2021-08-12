@@ -42,6 +42,7 @@ import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.applyInfluence;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -206,7 +207,7 @@ public abstract class HttpServerBuilder {
      * Note this method will be used to decorate the {@link StreamingHttpService} passed to
      * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
      * <p>
-     * The order of execution of these filters are in order of append, before the filters added with
+     * The order of execution of these filters is in order of append, before the filters added with
      * {@link #appendServiceFilter(StreamingHttpServiceFilterFactory)}. If 3 filters are added as follows:
      * <pre>
      *     builder
@@ -219,11 +220,13 @@ public abstract class HttpServerBuilder {
      *     filter2 ⇒ [offloading] ⇒ filter1 ⇒ filter3 ⇒ service
      * </pre>
      *
-     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append. This factory (or the filter) must not require
+     * offloading.
      * @return {@code this}
      * @throws IllegalArgumentException if the provided filter requires offloading.
      */
     public final HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        // We are "strict" for filters and insist that they must not require offloading.
         noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter", defaultStrategy(), factory));
         return this;
     }
@@ -256,10 +259,11 @@ public abstract class HttpServerBuilder {
      */
     public final HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                     final StreamingHttpServiceFilterFactory factory) {
+        // We are "generous" and assume that a predicate which is not an influencer does not require offloading.
         checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
+        // We are "strict" for filters and insist that they must not require offloading.
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
-        noOffloadServiceFilters.add(
-                service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
+        noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
     }
 
@@ -534,7 +538,7 @@ public abstract class HttpServerBuilder {
 
     private HttpExecutionStrategyInfluencer strategyInfluencer(Object service) {
         HttpExecutionStrategyInfluencer influencer =
-                buildInfluencer(serviceFilters, strategy -> influenceStrategy(service, strategy));
+                buildInfluencer(serviceFilters, strategy -> applyInfluence(service, strategy));
         HttpExecutionStrategy useStrategy = influencer.influenceStrategy(strategy);
 
         return s -> s.merge(useStrategy);
@@ -564,12 +568,6 @@ public abstract class HttpServerBuilder {
                 .reduce(defaultInfluence,
                         (prev, influencer) -> strategy -> influencer.influenceStrategy(prev.influenceStrategy(strategy))
                 );
-    }
-
-    private static HttpExecutionStrategy influenceStrategy(Object anything, HttpExecutionStrategy strategy) {
-        return anything instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
-                strategy;
     }
 
     private static <T> T checkNonOffloading(String desc, HttpExecutionStrategy assumeStrategy, T obj) {

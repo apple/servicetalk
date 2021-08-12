@@ -43,10 +43,9 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest req,
                                                 final StreamingHttpResponseFactory resFactory) {
-        if (predicate.test(req)) {
-            return predicatedFilter.handle(ctx, req, resFactory);
-        }
-        return delegate().handle(ctx, req, resFactory);
+        return predicate.test(req) ?
+                predicatedFilter.handle(ctx, req, resFactory) :
+                delegate().handle(ctx, req, resFactory);
     }
 
     @Override

@@ -20,8 +20,12 @@ import java.util.function.Predicate;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
 
+/**
+ * Factory for {@link ConditionalHttpClientFilter} and {@link ConditionalHttpConnectionFilter}.
+ */
 public final class ConditionalFilterFactory
-        implements StreamingHttpConnectionFilterFactory, StreamingHttpClientFilterFactory {
+        implements StreamingHttpConnectionFilterFactory, StreamingHttpClientFilterFactory,
+                   HttpExecutionStrategyInfluencer {
     private final Predicate<StreamingHttpRequest> predicate;
     private final FilterFactory predicateFactory;
 
@@ -46,6 +50,12 @@ public final class ConditionalFilterFactory
         StreamingHttpConnectionFilterFactory connectionFactory = appendConnectionFilterFactory(this, append);
         return new FilterFactory() {
             @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(append,
+                        ConditionalFilterFactory.this.influenceStrategy(strategy));
+            }
+
+            @Override
             public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
                 return clientFactory.create(client);
             }
@@ -57,11 +67,23 @@ public final class ConditionalFilterFactory
         };
     }
 
-    public interface FilterFactory extends StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return HttpExecutionStrategyInfluencer.applyInfluence(predicateFactory,
+                HttpExecutionStrategyInfluencer.applyInfluence(predicate, strategy));
+    }
+
+    public interface FilterFactory extends StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
+        HttpExecutionStrategyInfluencer {
 
         static <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory> FilterFactory from(
                 FF original) {
             return new FilterFactory() {
+                @Override
+                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                    return HttpExecutionStrategyInfluencer.applyInfluence(original, strategy);
+                }
+
                 @Override
                 public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
                     return original.create(client);

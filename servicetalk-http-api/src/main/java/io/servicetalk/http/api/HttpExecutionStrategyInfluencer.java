@@ -40,4 +40,18 @@ public interface HttpExecutionStrategyInfluencer {
     static HttpExecutionStrategyInfluencer defaultStreamingInfluencer() {
         return DEFAULT_STREAMING_STRATEGY_INFLUENCER;
     }
+
+    /**
+     * Utility for applying influence to a strategy. If the provided reference is an influencer then the strategy will
+     * be influenced by the reference, otherwise the strategy will be returned uninfluenced.
+     *
+     * @param anything a potential influencer
+     * @param strategy the strategy to be influenced
+     * @return the potentially influenced strategy.
+     */
+    static HttpExecutionStrategy applyInfluence(Object anything, HttpExecutionStrategy strategy) {
+        return anything instanceof HttpExecutionStrategyInfluencer ?
+                ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
+                strategy;
+    }
 }

@@ -25,43 +25,37 @@ final class StrategyInfluencerAwareConversions {
         // No instances.
     }
 
+    @Deprecated
     static <U> StreamingHttpClientFilterFactory toClientFactory(final U address,
                                                                 final MultiAddressHttpClientFilterFactory<U> original) {
         requireNonNull(address);
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingClientFilterFactory() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
+        return new StrategyInfluencingStreamingClientFilterFactory() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(original, strategy);
+            }
 
-                @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-                    return original.create(address, client);
-                }
-            };
-        }
-        return client -> new StreamingHttpClientFilter(original.create(address, client));
+            @Override
+            public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                return original.create(address, client);
+            }
+        };
     }
 
+    @Deprecated
     static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressClientFactory(
             final StreamingHttpClientFilterFactory original) {
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
+        return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(original, strategy);
+            }
 
-                @Override
-                public StreamingHttpClientFilter create(final U address, final FilterableStreamingHttpClient client) {
-                    return new StreamingHttpClientFilter(original.create(client));
-                }
-            };
-        }
-        return (address, client) -> new StreamingHttpClientFilter(original.create(client));
+            @Override
+            public StreamingHttpClientFilter create(final U address, final FilterableStreamingHttpClient client) {
+                return new StreamingHttpClientFilter(original.create(client));
+            }
+        };
     }
 
     static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
@@ -69,21 +63,18 @@ final class StrategyInfluencerAwareConversions {
         requireNonNull(predicate);
         requireNonNull(original);
 
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingServiceFilterFactory() {
-                @Override
-                public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-                    return new ConditionalHttpServiceFilter(predicate, original.create(service), service);
-                }
+        return new StrategyInfluencingStreamingServiceFilterFactory() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(predicate,
+                        HttpExecutionStrategyInfluencer.applyInfluence(original, strategy));
+            }
 
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-            };
-        }
-        return service -> new ConditionalHttpServiceFilter(predicate, original.create(service), service);
+            @Override
+            public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+                return new ConditionalHttpServiceFilter(predicate, original.create(service), service);
+            }
+        };
     }
 
     static StreamingHttpConnectionFilterFactory toConditionalConnectionFilterFactory(
@@ -91,21 +82,18 @@ final class StrategyInfluencerAwareConversions {
         requireNonNull(predicate);
         requireNonNull(original);
 
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingConnectionFilterFactory() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
+        return new StrategyInfluencingStreamingConnectionFilterFactory() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(predicate,
+                        HttpExecutionStrategyInfluencer.applyInfluence(original, strategy));
+            }
 
-                @Override
-                public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
-                    return new ConditionalHttpConnectionFilter(predicate, original.create(connection), connection);
-                }
-            };
-        }
-        return connection -> new ConditionalHttpConnectionFilter(predicate, original.create(connection), connection);
+            @Override
+            public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
+                return new ConditionalHttpConnectionFilter(predicate, original.create(connection), connection);
+            }
+        };
     }
 
     static StreamingHttpClientFilterFactory toConditionalClientFilterFactory(
@@ -113,46 +101,40 @@ final class StrategyInfluencerAwareConversions {
         requireNonNull(predicate);
         requireNonNull(original);
 
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingClientFilterFactory() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
+        return new StrategyInfluencingStreamingClientFilterFactory() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(predicate,
+                        HttpExecutionStrategyInfluencer.applyInfluence(original, strategy));
+            }
 
-                @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-                    return new ConditionalHttpClientFilter(predicate, original.create(client), client);
-                }
-            };
-        }
-        return client -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
+            @Override
+            public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                return new ConditionalHttpClientFilter(predicate, original.create(client), client);
+            }
+        };
     }
 
+    @Deprecated
     static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressConditionalFilterFactory(
             final Predicate<StreamingHttpRequest> predicate,
             final MultiAddressHttpClientFilterFactory<U> original) {
         requireNonNull(predicate);
         requireNonNull(original);
 
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
+        return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return HttpExecutionStrategyInfluencer.applyInfluence(predicate,
+                        HttpExecutionStrategyInfluencer.applyInfluence(original, strategy));
+            }
 
-                @Override
-                public StreamingHttpClientFilter create(final U address,
-                                                        final FilterableStreamingHttpClient client) {
-                    return new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
-                }
-           };
-        }
-        return (address, client) ->
-                new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
+            @Override
+            public StreamingHttpClientFilter create(final U address,
+                                                    final FilterableStreamingHttpClient client) {
+                return new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
+            }
+        };
     }
 
     interface StrategyInfluencingStreamingServiceFilterFactory
@@ -167,6 +149,7 @@ final class StrategyInfluencerAwareConversions {
             extends StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
     }
 
+    @Deprecated
     interface StrategyInfluencingMultiAddressHttpClientFilterFactory<U>
             extends MultiAddressHttpClientFilterFactory<U>, HttpExecutionStrategyInfluencer {
     }
