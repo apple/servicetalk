@@ -41,12 +41,12 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     @FunctionalInterface
-    interface HandleSubscribe<T> {
+    private interface HandleSubscribe<T> {
         void handleSubscribe(Subscriber<? super T> subscriber,
                              AsyncContextMap contextMap, AsyncContextProvider contextProvider);
     }
 
-    static <T> void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber<? super T> subscriber,
+    private static <T> void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         try {
             handler.handleSubscribe(subscriber, contextMap, contextProvider);
@@ -125,11 +125,12 @@ final class PublishAndSubscribeOnPublishers {
             final Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
+
+                // The Executor preserves AsyncContext, so we don't have to re-wrap the Subscriber for async context
+                // preservation, only offloading.
                 upstreamSubscriber =
                         new OffloadedSubscriptionSubscriber<>(subscriber, shouldOffload, executor());
 
-                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
-                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
@@ -143,6 +144,7 @@ final class PublishAndSubscribeOnPublishers {
                 return;
             }
 
+            // continue non-offloaded subscribe()
             safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }

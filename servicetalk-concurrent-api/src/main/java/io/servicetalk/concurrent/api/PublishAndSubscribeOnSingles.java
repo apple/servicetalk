@@ -42,12 +42,12 @@ final class PublishAndSubscribeOnSingles {
     }
 
     @FunctionalInterface
-    interface HandleSubscribe<T> {
+    private interface HandleSubscribe<T> {
         void handleSubscribe(SingleSource.Subscriber<? super T> subscriber,
                              AsyncContextMap contextMap, AsyncContextProvider contextProvider);
     }
 
-    static <T> void safeHandleSubscribe(final HandleSubscribe handler,
+    private static <T> void safeHandleSubscribe(final HandleSubscribe handler,
                                         final SingleSource.Subscriber<? super T> subscriber,
                                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         try {
@@ -122,11 +122,12 @@ final class PublishAndSubscribeOnSingles {
             Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
+
+                // The Executor preserves AsyncContext, so we don't have to re-wrap the Subscriber for async context
+                // preservation, only offloading.
                 upstreamSubscriber =
                         new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
 
-                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
-                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
@@ -140,6 +141,7 @@ final class PublishAndSubscribeOnSingles {
                 return;
             }
 
+            // continue non-offloaded subscribe()
             safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }

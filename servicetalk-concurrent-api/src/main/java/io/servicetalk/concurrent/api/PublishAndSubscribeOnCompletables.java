@@ -46,11 +46,11 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     @FunctionalInterface
-    interface HandleSubscribe {
+    private interface HandleSubscribe {
         void handleSubscribe(Subscriber subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider);
     }
 
-    static void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber subscriber,
+    private static void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         try {
             handler.handleSubscribe(subscriber, contextMap, contextProvider);
@@ -124,11 +124,12 @@ final class PublishAndSubscribeOnCompletables {
             final Subscriber upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
+
+                // The Executor preserves AsyncContext, so we don't have to re-wrap the Subscriber for async context
+                // preservation, only offloading.
                 upstreamSubscriber =
                         new CompletableSubscriberOffloadedCancellable(subscriber, shouldOffload, executor());
 
-                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
-                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
@@ -141,7 +142,7 @@ final class PublishAndSubscribeOnCompletables {
                 return;
             }
 
-            // non-offloaded
+            // continue non-offloaded subscribe()
             safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }
