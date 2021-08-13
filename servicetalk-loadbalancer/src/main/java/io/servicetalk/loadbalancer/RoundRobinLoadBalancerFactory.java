@@ -61,7 +61,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
     static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
-    static final int DEFAULT_HEALTH_CHECK_INTERVAL_MILLIS = 1000; // 1 second
+    static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
     private final boolean eagerConnectionShutdown;
@@ -121,10 +121,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         /**
-         * This {@link LoadBalancer} monitors hosts to which connection establishment has failed
+         * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
          * using health checks that run in the background. The health check tries to establish a new connection
          * and if it succeeds, the host is returned to the load balancing pool. As long as the connection
          * establishment fails, the host is not considered for opening new connections for processed requests.
+         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable this mechanism and always
+         * consider all hosts for establishing new connections.
          *
          * @param backgroundExecutor {@link Executor} on which to schedule health checking.
          * @return {@code this}.
@@ -137,14 +139,16 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
         /**
          * Configure an interval for health checking a host that failed to open connections.
+         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
+         * and always consider all hosts for establishing new connections.
          * @param interval interval at which a background health check will be scheduled.
          * @return {@code this}.
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval) {
-            this.healthCheckInterval = requireNonNull(interval);
-            if (interval.isNegative()) {
+            if (requireNonNull(interval).isNegative()) {
                 throw new IllegalArgumentException("Health check interval can't be negative");
             }
+            this.healthCheckInterval = interval;
             return this;
         }
 
@@ -173,18 +177,11 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             if (this.healthCheckFailedConnectionsThreshold < 0) {
                 return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, null);
             }
-            assert !healthCheckInterval.isNegative();
-
-            if (this.backgroundExecutor == null && this.healthCheckInterval.isZero()
-                    && this.healthCheckFailedConnectionsThreshold == 0) {
-                return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown,
-                        SharedHealthCheckConfig.getInstance());
-            }
 
             Executor backgroundExecutor = this.backgroundExecutor == null ?
                     SharedExecutor.getInstance() : this.backgroundExecutor;
             Duration healthCheckInterval = this.healthCheckInterval.isZero() ?
-                    Duration.ofMillis(DEFAULT_HEALTH_CHECK_INTERVAL_MILLIS) : this.healthCheckInterval;
+                    DEFAULT_HEALTH_CHECK_INTERVAL : this.healthCheckInterval;
             int healthCheckFailedConnectionsThreshold = this.healthCheckFailedConnectionsThreshold == 0 ?
                     DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD : this.healthCheckFailedConnectionsThreshold;
 
@@ -195,23 +192,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
     }
 
-    private static final class SharedExecutor {
+    static final class SharedExecutor {
         private static final String BACKGROUND_PROCESSING_EXECUTOR_NAME = "round-robin-load-balancer-executor";
         private static final Executor INSTANCE = Executors.newFixedSizeExecutor(1,
                 new DefaultThreadFactory(BACKGROUND_PROCESSING_EXECUTOR_NAME));
 
         static Executor getInstance() {
-            return INSTANCE;
-        }
-    }
-
-    static final class SharedHealthCheckConfig {
-        private static final RoundRobinLoadBalancer.HealthCheckConfig INSTANCE =
-                new RoundRobinLoadBalancer.HealthCheckConfig(SharedExecutor.getInstance(),
-                        Duration.ofMillis(DEFAULT_HEALTH_CHECK_INTERVAL_MILLIS),
-                        DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD);
-
-        static RoundRobinLoadBalancer.HealthCheckConfig getInstance() {
             return INSTANCE;
         }
     }
