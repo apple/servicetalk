@@ -46,7 +46,7 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
 abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
-        implements ExecutionContextAwareHttpBuilder<R>, HttpClientBuildFinalizer {
+        implements ExecutionContextAwareHttpBuilder, HttpClientBuildFinalizer {
 
     /**
      * Adds a {@link SocketOption} for all connections created by this builder.

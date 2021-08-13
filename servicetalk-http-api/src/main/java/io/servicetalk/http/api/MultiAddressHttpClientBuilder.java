@@ -30,7 +30,7 @@ import io.servicetalk.transport.api.IoExecutor;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuildFinalizer,
-                                                                     ExecutionContextAwareHttpBuilder<R> {
+                                                                     ExecutionContextAwareHttpBuilder {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.

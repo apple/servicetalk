@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 
-interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
+interface ExecutionContextAwareHttpBuilder {
 
     /**
      * Sets the {@link IoExecutor} for all connections created from this builder.
@@ -26,7 +26,7 @@ interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    ExecutionContextAwareHttpBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
+    ExecutionContextAwareHttpBuilder ioExecutor(IoExecutor ioExecutor);
 
     /**
      * Sets the {@link BufferAllocator} for all connections created from this builder.
@@ -34,7 +34,7 @@ interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    ExecutionContextAwareHttpBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
+    ExecutionContextAwareHttpBuilder bufferAllocator(BufferAllocator allocator);
 
     /**
      * Sets the {@link HttpExecutionStrategy} for all connections created from this builder.
@@ -42,5 +42,5 @@ interface ExecutionContextAwareHttpBuilder<ResolvedAddress> {
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
      */
-    ExecutionContextAwareHttpBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy);
+    ExecutionContextAwareHttpBuilder executionStrategy(HttpExecutionStrategy strategy);
 }
