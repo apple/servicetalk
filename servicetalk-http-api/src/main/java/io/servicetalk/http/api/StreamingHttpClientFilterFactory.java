@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
-
-import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
-
 /**
  * A factory for {@link StreamingHttpClientFilter}.
  */
@@ -32,21 +28,4 @@ public interface StreamingHttpClientFilterFactory {
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
     StreamingHttpClientFilter create(FilterableStreamingHttpClient client);
-
-    /**
-     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a
-     * {@link StreamingHttpClientFilterFactory}.
-     *
-     * @param <U> the type of address before resolution (unresolved address).
-     * @return a {@link MultiAddressHttpClientFilterFactory} function
-     * @deprecated Use
-     *   {@link MultiAddressHttpClientBuilder#initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)} and
-     *   {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
-     *   on the last argument of
-     *   {@link SingleAddressInitializer#initialize(String, Object, SingleAddressHttpClientBuilder)}.
-     */
-    @Deprecated
-    default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
-        return toMultiAddressClientFactory(this);
-    }
 }

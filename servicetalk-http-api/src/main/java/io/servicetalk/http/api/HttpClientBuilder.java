@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,18 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -43,7 +45,117 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <R> the type of address after resolution (resolved address)
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
-abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> extends BaseHttpBuilder<R> {
+abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
+        implements ExecutionContextAwareHttpBuilder, HttpClientBuildFinalizer {
+
+    /**
+     * Adds a {@link SocketOption} for all connections created by this builder.
+     *
+     * @param option the option to apply.
+     * @param value the value.
+     * @param <T> the type of the value.
+     * @return {@code this}.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
+     */
+    public abstract <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
+
+    /**
+     * Enables wire-logging for connections created by this builder.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @param logLevel The level to log at.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     * @return {@code this}.
+     */
+    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
+                                                         LogLevel logLevel,
+                                                         BooleanSupplier logUserData);
+
+    /**
+     * Configurations of various HTTP protocol versions.
+     * <p>
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for
+     * <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> in case the connections use TLS.
+     *
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
+     * @return {@code this}.
+     */
+    public abstract HttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     *
+     * @return {@code this}
+     * @see SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)
+     */
+    public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
+
+    /**
+     * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed
+     * to be dropped. This hint maybe ignored if the transport can otherwise infer that
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> should be preserved. For example, if the
+     * response headers contain <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a> then this hint
+     * maybe ignored.
+     * @param allowDrop {@code true} if response
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed to be dropped.
+     * @return {@code this}
+     */
+    public abstract HttpClientBuilder<U, R, SDE> allowDropResponseTrailers(boolean allowDrop);
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
+     * processing
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
+     * </pre>
+     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
+     * purpose of filtering.
+     * @return {@code this}
+     */
+    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
+     * processing
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
+     * purpose of filtering.
+     * @return {@code this}
+     */
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However this class is package private so the user will not be able to override this method.
+    public /* final */ HttpClientBuilder<U, R, SDE> appendConnectionFilter(
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
+        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+    }
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
@@ -53,27 +165,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
-
-    @Override
-    public abstract <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
-
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
-                                                                   LogLevel logLevel,
-                                                                   BooleanSupplier logUserData);
-
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
-
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
-
-    @Override
-    public HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                               StreamingHttpConnectionFilterFactory factory) {
-        super.appendConnectionFilter(predicate, factory);
-        return this;
-    }
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
@@ -85,7 +176,10 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder
+     *         .appendConnectionFactoryFilter(filter1)
+     *         .appendConnectionFactoryFilter(filter2)
+     *         .appendConnectionFactoryFilter(filter3)
      * </pre>
      * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
@@ -106,7 +200,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -128,7 +222,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -144,12 +238,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
                                                            StreamingHttpClientFilterFactory factory) {
         return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
     }
-
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
-
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> allowDropResponseTrailers(boolean allowDrop);
 
     /**
      * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
@@ -210,38 +298,4 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
-
-    /**
-     * Builds a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link StreamingHttpClient}
-     */
-    public abstract StreamingHttpClient buildStreaming();
-
-    /**
-     * Builds a new {@link HttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link HttpClient}
-     */
-    public final HttpClient build() {
-        return buildStreaming().asClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingStreamingHttpClient}
-     */
-    public final BlockingStreamingHttpClient buildBlockingStreaming() {
-        return buildStreaming().asBlockingStreamingClient();
-    }
-
-    /**
-     * Creates a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingHttpClient}
-     */
-    public final BlockingHttpClient buildBlocking() {
-        return buildStreaming().asBlockingClient();
-    }
 }
