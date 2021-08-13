@@ -285,9 +285,10 @@ public final class HttpClients {
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @param address the {@code UnresolvedAddress} to resolve using the provided {@code serviceDiscoverer}.
-     * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
-     * PartitionedHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value or
-     * {@link PartitionedHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion.
+     * Use {@link PartitionedHttpClientBuilder#initializer(PartitionedHttpClientBuilder.SingleAddressInitializer)}
+     * and {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param partitionAttributesBuilderFactory The factory {@link Function} used to build {@link PartitionAttributes}
      * from {@link HttpRequestMetaData}.
      * @param <U> the type of address before resolution (unresolved address)
