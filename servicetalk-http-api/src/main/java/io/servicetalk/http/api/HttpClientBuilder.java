@@ -195,8 +195,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
      * Appends the filter to the chain of filters used to decorate the {@link HttpClient} created by this
      * builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build()} before it is
-     * returned to the user.
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
