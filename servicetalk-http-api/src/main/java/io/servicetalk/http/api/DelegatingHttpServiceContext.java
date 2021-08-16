@@ -86,4 +86,9 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
     }
+
+    @Override
+    public void acceptConnections(final boolean accept) {
+        delegate.acceptConnections(accept);
+    }
 }
