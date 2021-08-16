@@ -72,7 +72,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
         return t;
     }
 
-    public static class NettyIoThread extends FastThreadLocalThread implements NettyIoThreadFactory.IoThread {
+    public static class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
         NettyIoThread(ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
         }
