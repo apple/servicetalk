@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
@@ -42,9 +43,26 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param threadFactory the {@link ThreadFactory} to use.
+     * @param <T> Type of the IO thread instances created by factory.
+     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use. If possible you should use
+     * an instance of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
+    public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
+            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
+        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
+     *
+     * @param threadFactory the {@link ThreadFactory} to use.
+     * @return The created {@link IoExecutor}
+     * @deprecated Future versions of ServiceTalk will require a
+     * {@link io.servicetalk.transport.api.IoThreadFactory} for creating {@link IoExecutor} threads, use
+     * {@link #createEventLoopGroup(int, io.servicetalk.transport.api.IoThreadFactory)} instead.
+     */
+    @Deprecated
     public static EventLoopAwareNettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
         return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
     }
@@ -52,10 +70,30 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor}.
      *
+     * @param <T> Type of the IO thread instances created by factory.
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link ThreadFactory} to use.
+     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use. If possible you should use
+     * an instance of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
+    public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
+            int ioThreads, io.servicetalk.transport.api.IoThreadFactory threadFactory) {
+        validateIoThreads(ioThreads);
+        return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param ioThreads number of threads.
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of
+     * {@link IoThreadFactory} as it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     * @deprecated Future versions of ServiceTalk will require a {@link io.servicetalk.transport.api.IoThreadFactory}
+     * for creating {@link IoExecutor} threads, use
+     * {@link #createIoExecutor(int, io.servicetalk.transport.api.IoThreadFactory)} instead.
+     */
+    @Deprecated
     public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
         validateIoThreads(ioThreads);
         return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
@@ -64,10 +102,30 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link EventLoopGroup}.
      *
+     * @param <T> Type of the IO thread instances created by factory.
+     * @param ioThreads number of threads
+     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use.
+     * @return The created {@link IoExecutor}
+     */
+    public static <T extends Thread & IoThread> EventLoopGroup createEventLoopGroup(int ioThreads,
+            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
+        validateIoThreads(ioThreads);
+        return isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
+                isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
+                        new NioEventLoopGroup(ioThreads, threadFactory);
+    }
+
+    /**
+     * Create a new {@link EventLoopGroup}.
+     *
      * @param ioThreads number of threads
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
+     * @deprecated Future versions of ServiceTalk will require a
+     * {@link io.servicetalk.transport.api.IoThreadFactory} for creating {@link IoExecutor} threads, use
+     * {@link #createEventLoopGroup(int, io.servicetalk.transport.api.IoThreadFactory)} instead.
      */
+    @Deprecated
     public static EventLoopGroup createEventLoopGroup(int ioThreads, ThreadFactory threadFactory) {
         validateIoThreads(ioThreads);
         return isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :

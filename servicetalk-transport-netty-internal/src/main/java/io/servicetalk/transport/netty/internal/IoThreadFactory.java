@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncContextMapHolder;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -28,9 +27,13 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default {@link ThreadFactory} to create IO {@link Thread}s.
+ * Default {@link IoThreadFactory} to create IO {@link IoThread}s.
+ *
+ * @deprecated The name of this class will change in future versions of ServiceTalk to {@code NettyIoThreadFactory}.
  */
-public final class IoThreadFactory implements ThreadFactory {
+@Deprecated
+public final class IoThreadFactory implements
+                                   io.servicetalk.transport.api.IoThreadFactory<IoThreadFactory.NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
@@ -61,8 +64,8 @@ public final class IoThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(Runnable r) {
-        Thread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
+    public NettyIoThread newThread(Runnable r) {
+        NettyIoThread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
         if (t.isDaemon() != daemon) {
             t.setDaemon(daemon);
         }
@@ -72,7 +75,13 @@ public final class IoThreadFactory implements ThreadFactory {
         return t;
     }
 
-    private static final class AsyncContextHolderNettyThread extends FastThreadLocalThread
+    public static class NettyIoThread extends FastThreadLocalThread implements IoThread {
+        NettyIoThread(ThreadGroup group, Runnable target, String name) {
+            super(group, target, name);
+        }
+    }
+
+    private static final class AsyncContextHolderNettyThread extends NettyIoThread
             implements AsyncContextMapHolder {
         @Nullable
         private AsyncContextMap asyncContextMap;

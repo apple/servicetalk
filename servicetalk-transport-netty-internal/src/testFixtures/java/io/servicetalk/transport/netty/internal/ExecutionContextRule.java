@@ -87,7 +87,8 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule cached(String ioThreadPrefix, String executorThreadPrefix) {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+                newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
                 () -> newCachedThreadExecutor(new DefaultThreadFactory(executorThreadPrefix)));
     }
 
