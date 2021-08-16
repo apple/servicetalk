@@ -25,6 +25,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -73,6 +74,7 @@ import java.util.stream.IntStream;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -420,7 +422,7 @@ abstract class RoundRobinLoadBalancerTest {
                 final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
                 assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
             } catch (Exception e) {
-                assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+                assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
             }
         }
 
@@ -463,7 +465,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
 
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
@@ -471,7 +473,7 @@ abstract class RoundRobinLoadBalancerTest {
         for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -496,7 +498,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), instanceOf(DELIBERATE_EXCEPTION.getClass()));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
 
         for (int i = 0; i < timeAdvancementsTillHealthy; ++i) {
@@ -528,42 +530,47 @@ abstract class RoundRobinLoadBalancerTest {
 
         // Imitate concurrency by running multiple threads attempting to establish connections.
         ExecutorService executor = Executors.newFixedThreadPool(3);
-        final Runnable runnable = () ->
-                assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-
-        for (int i = 0; i < 1000; i++) {
-            executor.submit(runnable);
-        }
-
-        // From test main thread, wait until the host becomes UNHEALTHY, which is apparent from NoHostAvailableException
-        // being thrown from selection AFTER a health check was scheduled by any thread.
         try {
-            awaitIndefinitely(lb.selectConnection(any()).retryWhen(retryWithConstantBackoffFullJitter((t) ->
-                    // DeliberateException comes from connection opening, check for that first
-                    // Next, NoAvailableHostException is thrown when the host is unhealthy,
-                    // but we still wait until the health check is scheduled and only then stop retrying.
-                    t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0,
-            // try to prevent stack overflow
-            Duration.ofMillis(30), io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor(1))));
-        } catch (Exception e) {
-            assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+            final Runnable runnable = () ->
+                    assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+
+            for (int i = 0; i < 1000; i++) {
+                executor.submit(runnable);
+            }
+
+            // From test main thread, wait until the host becomes UNHEALTHY, which is apparent from
+            // NoHostAvailableException being thrown from selection AFTER a health check was scheduled by any thread.
+            final Executor executorForRetries = io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor(1);
+            try {
+                awaitIndefinitely(lb.selectConnection(any()).retryWhen(retryWithConstantBackoffFullJitter((t) ->
+                                // DeliberateException comes from connection opening, check for that first
+                                // Next, NoAvailableHostException is thrown when the host is unhealthy,
+                                // but we still wait until the health check is scheduled and only then stop retrying.
+                                t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0,
+                        // try to prevent stack overflow
+                        Duration.ofMillis(30), executorForRetries)));
+            } catch (Exception e) {
+                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+            } finally {
+                executorForRetries.closeAsync().toFuture().get();
+            }
+
+            // At this point, either the above selection caused the host to be marked as UNHEALTHY,
+            // or any background thread. We also know that a health check is pending to be executed.
+            // Now we can validate if there is just one health check happening and confirm that by asserting the host
+            // is not selected. If our assumption doesn't hold, it means more than one health check was scheduled.
+            for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
+                unhealthyHostConnectionFactory.advanceTime(testExecutor);
+
+                // Assert still unhealthy
+                Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+            }
+        } finally {
+            // Shutdown the concurrent validation of unhealthiness.
+            executor.shutdownNow();
+            executor.awaitTermination(10, SECONDS);
         }
-
-        // At this point, either the above selection caused the host to be marked as UNHEALTHY,
-        // or any background thread. We also know that a health check is pending to be executed.
-        // Now we can validate if there is just one health check happening and confirm that by asserting the host
-        // is not selected. If our assumption doesn't hold, it means more than one health check was scheduled.
-        for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
-            unhealthyHostConnectionFactory.advanceTime(testExecutor);
-
-            // Assert still unhealthy
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
-        }
-
-        // Shutdown the concurrent validation of unhealthiness.
-        executor.shutdownNow();
-        executor.awaitTermination(10, SECONDS);
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
 
@@ -718,14 +725,16 @@ abstract class RoundRobinLoadBalancerTest {
 
             @Override
             public Single<TestLoadBalancedConnection> apply(final String s) {
-                if (s.equals(failingHost)) {
-                    requests.incrementAndGet();
-                    if (momentInTime.get() >= connections.size()) {
-                        return properConnection;
+                return defer(() -> {
+                    if (s.equals(failingHost)) {
+                        requests.incrementAndGet();
+                        if (momentInTime.get() >= connections.size()) {
+                            return properConnection;
+                        }
+                        return connections.get(momentInTime.get());
                     }
-                    return connections.get(momentInTime.get());
-                }
-                return properConnection;
+                    return properConnection;
+                });
             }
         };
 

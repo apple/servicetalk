@@ -727,16 +727,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             final ConnState connState = this.connState;
             return "Host{" +
                     "address=" + address +
-                    ", state=" + describeState(connState.state) +
+                    ", state=" + connState.state +
                     ", #connections=" + connState.connections.length +
                     '}';
-        }
-
-        private static String describeState(Object state) {
-            if (HealthCheck.class.equals(state.getClass())) {
-                return "unhealthy";
-            }
-            return state.toString();
         }
 
         private static final class ActiveState {
@@ -756,7 +749,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
             @Override
             public String toString() {
-                return "active{failedConnections=" + failedConnections + ')';
+                return "ACTIVE(failedConnections=" + failedConnections + ')';
             }
         }
 
@@ -790,7 +783,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
 
             public Completable reconnect() {
-                return defer(() -> connectionFactory.newConnection(host.address, null))
+                return connectionFactory.newConnection(host.address, null)
                         .onErrorMap(cause -> {
                             LOGGER.debug("Health check failed for address {}.", host.address, cause);
                             return RESCHEDULE_SIGNAL;
@@ -802,10 +795,15 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             } else {
                                 LOGGER.debug("Health check finished for address {}. Host rejected connection.",
                                         host.address);
-                                return newCnx.closeAsync().concat(completed());
+                                return newCnx.closeAsync();
                             }
                             return completed();
                         });
+            }
+
+            @Override
+            public String toString() {
+                return "UNHEALTHY";
             }
         }
 
