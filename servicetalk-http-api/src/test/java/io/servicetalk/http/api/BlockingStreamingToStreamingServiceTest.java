@@ -43,6 +43,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -59,6 +61,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -443,14 +446,40 @@ class BlockingStreamingToStreamingServiceTest {
                                        StreamingHttpRequest request) throws Exception {
         ServiceAdapterHolder holder = toStreamingHttpService(syncService, strategy -> strategy);
 
-        Collection<Object> responseCollection = holder.serviceInvocationStrategy()
-                .invokeService(executorExtension.executor(), request,
+        Collection<Object> responseCollection =
+                invokeService(holder.serviceInvocationStrategy(), executorExtension.executor(), request,
                         req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
                                 .flatMapPublisher(response -> Publisher.<Object>from(response)
                                         .concat(response.messageBody())), (t, e) -> failed(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);
+    }
+
+    private static Publisher<Object> invokeService(
+            HttpExecutionStrategy strategy,
+            final Executor fallback, StreamingHttpRequest request,
+            final Function<StreamingHttpRequest, Publisher<Object>> service,
+            final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
+        final Executor se = strategy.executor();
+        final Executor e = null == se ? fallback : se;
+        if (strategy.isDataReceiveOffloaded()) {
+            request = request.transformMessageBody(payload -> payload.publishOn(e));
+        }
+        Publisher<Object> resp;
+        if (strategy.isMetadataReceiveOffloaded()) {
+            final StreamingHttpRequest r = request;
+            resp = e.submit(() -> service.apply(r).subscribeShareContext())
+                    .onErrorReturn(cause -> errorHandler.apply(cause, e))
+                    // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
+                    .flatMapPublisher(identity());
+        } else {
+            resp = service.apply(request);
+        }
+        if (strategy.isSendOffloaded()) {
+            resp = resp.subscribeOn(e);
+        }
+        return resp;
     }
 
     private static void assertMetaData(HttpResponseStatus expectedStatus, HttpResponseMetaData metaData) {

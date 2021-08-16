@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -38,6 +39,22 @@ final class PublishAndSubscribeOnSingles {
                                                  AsyncContextMap contextMap,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
+    }
+
+    @FunctionalInterface
+    private interface HandleSubscribe<T> {
+        void handleSubscribe(SingleSource.Subscriber<? super T> subscriber,
+                             AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+    }
+
+    private static <T> void safeHandleSubscribe(final HandleSubscribe handler,
+                                        final SingleSource.Subscriber<? super T> subscriber,
+                                        final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        try {
+            handler.handleSubscribe(subscriber, contextMap, contextProvider);
+        } catch (Throwable throwable) {
+            safeOnError(subscriber, throwable);
+        }
     }
 
     static <T> Single<T> publishOn(final Single<T> original,
@@ -67,17 +84,20 @@ final class PublishAndSubscribeOnSingles {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
-                Subscriber<? super T> upstreamSubscriber =
+                upstreamSubscriber =
                         new SingleSubscriberOffloadedTerminals<>(subscriber, shouldOffload, executor());
 
                 // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
                 // the Subscriber.
-                super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
             } catch (Throwable throwable) {
                 deliverErrorFromSource(subscriber, throwable);
+                return;
             }
+
+            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }
 
@@ -99,25 +119,30 @@ final class PublishAndSubscribeOnSingles {
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
-                Subscriber<? super T> upstreamSubscriber =
+
+                // The Executor preserves AsyncContext, so we don't have to re-wrap the Subscriber for async context
+                // preservation, only offloading.
+                upstreamSubscriber =
                         new SingleSubscriberOffloadedCancellable<>(subscriber, shouldOffload, executor());
 
-                // Note that the Executor is wrapped by default to preserve AsyncContext, so we don't have to re-wrap
-                // the Subscriber.
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider));
-                } else {
-                    // continue on the current thread
-                    super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+                    executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
+                            upstreamSubscriber, contextMap, contextProvider));
+                    return;
                 }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 // note that the subscriber error is not offloaded.
                 deliverErrorFromSource(subscriber, throwable);
+                return;
             }
+
+            // continue non-offloaded subscribe()
+            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
         }
     }
 }

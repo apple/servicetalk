@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,45 +23,6 @@ final class StrategyInfluencerAwareConversions {
 
     private StrategyInfluencerAwareConversions() {
         // No instances.
-    }
-
-    static <U> StreamingHttpClientFilterFactory toClientFactory(final U address,
-                                                                final MultiAddressHttpClientFilterFactory<U> original) {
-        requireNonNull(address);
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingClientFilterFactory() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-
-                @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-                    return original.create(address, client);
-                }
-            };
-        }
-        return client -> new StreamingHttpClientFilter(original.create(address, client));
-    }
-
-    static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressClientFactory(
-            final StreamingHttpClientFilterFactory original) {
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-
-                @Override
-                public StreamingHttpClientFilter create(final U address, final FilterableStreamingHttpClient client) {
-                    return new StreamingHttpClientFilter(original.create(client));
-                }
-            };
-        }
-        return (address, client) -> new StreamingHttpClientFilter(original.create(client));
     }
 
     static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
@@ -130,31 +91,6 @@ final class StrategyInfluencerAwareConversions {
         return client -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
     }
 
-    static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressConditionalFilterFactory(
-            final Predicate<StreamingHttpRequest> predicate,
-            final MultiAddressHttpClientFilterFactory<U> original) {
-        requireNonNull(predicate);
-        requireNonNull(original);
-
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingMultiAddressHttpClientFilterFactory<U>() {
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-
-                @Override
-                public StreamingHttpClientFilter create(final U address,
-                                                        final FilterableStreamingHttpClient client) {
-                    return new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
-                }
-           };
-        }
-        return (address, client) ->
-                new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
-    }
-
     interface StrategyInfluencingStreamingServiceFilterFactory
             extends StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
     }
@@ -165,9 +101,5 @@ final class StrategyInfluencerAwareConversions {
 
     interface StrategyInfluencingStreamingClientFilterFactory
             extends StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
-    }
-
-    interface StrategyInfluencingMultiAddressHttpClientFilterFactory<U>
-            extends MultiAddressHttpClientFilterFactory<U>, HttpExecutionStrategyInfluencer {
     }
 }

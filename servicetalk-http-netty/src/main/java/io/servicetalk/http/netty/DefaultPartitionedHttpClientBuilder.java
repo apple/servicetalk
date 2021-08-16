@@ -16,9 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ClientGroup;
-import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.internal.DefaultPartitionedClientGroup;
 import io.servicetalk.client.api.internal.DefaultPartitionedClientGroup.PartitionedClientFactory;
@@ -36,11 +34,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
@@ -48,18 +43,13 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
-import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
-import java.net.SocketOption;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -72,7 +62,7 @@ import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.de
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
-class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
+class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
 
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
@@ -97,11 +87,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
+        final HttpExecutionContext executionContext = buildContext.builder.build().executionContext();
         ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
-                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
+                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(
+                        serviceDiscoverer,
                         serviceDiscovererRetryStrategy == null ?
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
-                                        buildContext.executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
+                                        executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
                                         SD_RETRY_STRATEGY_JITTER).build() :
                                 serviceDiscovererRetryStrategy);
 
@@ -123,11 +115,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
                         clientFactory, partitionAttributesBuilderFactory,
                         defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                buildContext.executionContext.bufferAllocator()),
-                        buildContext.executionContext, partitionMapFactory);
-        return new FilterableClientToClient(partitionedClient, buildContext.executionContext.executionStrategy(),
+                                executionContext.bufferAllocator()),
+                        executionContext, partitionMapFactory);
+        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy(),
                 buildContext.builder.buildStrategyInfluencerForClient(
-                        buildContext.executionContext.executionStrategy()));
+                        executionContext.executionStrategy()));
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -271,58 +263,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public <T> PartitionedHttpClientBuilder<U, R> socketOption(final SocketOption<T> option, final T value) {
-        builderTemplate.socketOption(option, value);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
-                                                                final BooleanSupplier logUserData) {
-        builderTemplate.enableWireLogging(loggerName, logLevel, logUserData);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols) {
-        builderTemplate.protocols(protocols);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(
-            final StreamingHttpConnectionFilterFactory factory) {
-        builderTemplate.appendConnectionFilter(factory);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        builderTemplate.appendConnectionFactoryFilter(factory);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        builderTemplate.disableHostHeaderFallback();
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
-        builderTemplate.allowDropResponseTrailers(allowDrop);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> autoRetryStrategy(
-            final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-        builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);
-        return this;
-    }
-
-    @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
@@ -337,25 +277,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(
-            final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        builderTemplate.unresolvedAddressToHost(unresolvedAddressToHostFunction);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> appendClientFilter(final StreamingHttpClientFilterFactory function) {
-        builderTemplate.appendClientFilter(function);
-        return this;
-    }
-
-    @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(final int serviceDiscoveryMaxQueueSize) {
         this.serviceDiscoveryMaxQueueSize = serviceDiscoveryMaxQueueSize;
         return this;
@@ -364,14 +285,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public PartitionedHttpClientBuilder<U, R> partitionMapFactory(final PartitionMapFactory partitionMapFactory) {
         this.partitionMapFactory = partitionMapFactory;
-        return this;
-    }
-
-    @Deprecated
-    @Override
-    public PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
-            final PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction) {
-        this.clientFilterFunction = this.clientFilterFunction.append(clientFilterFunction);
         return this;
     }
 

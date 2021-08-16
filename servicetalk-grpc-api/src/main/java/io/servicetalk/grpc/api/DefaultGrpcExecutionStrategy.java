@@ -20,11 +20,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -44,13 +42,6 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
                                                            @Nullable final FS flushStrategy,
                                                            final ClientInvoker<FS> client) {
         return delegate.invokeClient(fallback, flattenedRequest, flushStrategy, client);
-    }
-
-    @Override
-    public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
-                                           final Function<StreamingHttpRequest, Publisher<Object>> service,
-                                           final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        return delegate.invokeService(fallback, request, service, errorHandler);
     }
 
     @Override

@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -66,8 +67,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                                     final BooleanSupplier shouldOffload,
                                     final Executor executor) {
         this.original = original;
-        this.shouldOffload = shouldOffload;
-        this.executor = executor;
+        this.shouldOffload = Objects.requireNonNull(shouldOffload, "shouldOffload");
+        this.executor = Objects.requireNonNull(executor, "executor");
     }
 
     final BooleanSupplier shouldOffload() {

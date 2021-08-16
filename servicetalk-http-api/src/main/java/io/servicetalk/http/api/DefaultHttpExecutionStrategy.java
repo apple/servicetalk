@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -35,7 +34,7 @@ import static java.util.function.Function.identity;
 /**
  * Default implementation for {@link HttpExecutionStrategy}.
  */
-class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
+final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     static final byte OFFLOAD_RECEIVE_META = 1;
     static final byte OFFLOAD_RECEIVE_DATA = 2;
@@ -44,14 +43,12 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     private final Executor executor;
     private final byte offloads;
     private final MergeStrategy mergeStrategy;
-    private final boolean threadAffinity;
 
     DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads,
                                  final MergeStrategy mergeStrategy) {
         this.mergeStrategy = mergeStrategy;
         this.executor = executor;
         this.offloads = offloads;
-        this.threadAffinity = false;
     }
 
     DefaultHttpExecutionStrategy(byte offloadOverride, HttpExecutionStrategy original) {
@@ -63,7 +60,6 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         } else {
             mergeStrategy = Merge;
         }
-        this.threadAffinity = false;
     }
 
     @Nullable
@@ -91,31 +87,6 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public Publisher<Object> invokeService(
-            final Executor fallback, StreamingHttpRequest request,
-            final Function<StreamingHttpRequest, Publisher<Object>> service,
-            final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        final Executor e = executor(fallback);
-        if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            request = request.transformMessageBody(payload -> payload.publishOn(e));
-        }
-        Publisher<Object> resp;
-        if (offloaded(OFFLOAD_RECEIVE_META)) {
-            final StreamingHttpRequest r = request;
-            resp = e.submit(() -> service.apply(r).subscribeShareContext())
-                    .onErrorReturn(cause -> errorHandler.apply(cause, e))
-                    // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
-                    .flatMapPublisher(identity());
-        } else {
-            resp = service.apply(request);
-        }
-        if (offloaded(OFFLOAD_SEND)) {
-            resp = resp.subscribeOn(e);
-        }
-        return resp;
-    }
-
-    @Override
     public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService service) {
         return new StreamingHttpService() {
             private final Executor e = executor(fallback);
@@ -125,7 +96,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 // We compute the difference between the ExecutionStrategy from the current ExecutionContext and this
-                // ExecutionStrategy to understand if we need to offload more then we already offloaded:
+                // ExecutionStrategy to understand if we need to offload more than we already offloaded:
                 final HttpExecutionStrategy diff = difference(fallback, ctx.executionContext().executionStrategy(),
                         DefaultHttpExecutionStrategy.this);
                 // The service should see this ExecutionStrategy inside the ExecutionContext:
@@ -231,19 +202,13 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         }
 
         final byte otherOffloads;
-        final boolean otherThreadAffinity;
         final MergeStrategy otherMergeStrategy;
         otherOffloads = generateOffloadsFlag(other);
-        otherThreadAffinity = extractThreadAffinity(otherExecutor);
         otherMergeStrategy = Merge; // always default to merge
 
-        return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity &&
+        return (otherOffloads == offloads && executor == otherExecutor &&
                 otherMergeStrategy == mergeStrategy) ? this :
                 new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads), otherMergeStrategy);
-    }
-
-    private static boolean extractThreadAffinity(@Nullable final Executor otherExecutor) {
-        return false;
     }
 
     private static byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
@@ -285,13 +250,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private Executor executor(final Executor fallback) {
         requireNonNull(fallback);
-        assert !threadAffinity : "Thread affinity not supported";
         return executor == null ? fallback : executor;
-    }
-
-    // Visible for testing
-    boolean hasThreadAffinity() {
-        return threadAffinity;
     }
 
     // Visible for testing
@@ -304,22 +263,15 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof DefaultHttpExecutionStrategy)) {
             return false;
         }
 
         final DefaultHttpExecutionStrategy that = (DefaultHttpExecutionStrategy) o;
 
-        if (offloads != that.offloads) {
-            return false;
-        }
-        if (threadAffinity != that.threadAffinity) {
-            return false;
-        }
-        if (!Objects.equals(executor, that.executor)) {
-            return false;
-        }
-        return mergeStrategy == that.mergeStrategy;
+        return offloads == that.offloads &&
+                Objects.equals(executor, that.executor) &&
+                mergeStrategy == that.mergeStrategy;
     }
 
     @Override
@@ -327,17 +279,15 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         int result = executor != null ? executor.hashCode() : 0;
         result = 31 * result + offloads;
         result = 31 * result + mergeStrategy.hashCode();
-        result = 31 * result + (threadAffinity ? 1 : 0);
         return result;
     }
 
     @Override
     public String toString() {
-        return "DefaultHttpExecutionStrategy{" +
+        return getClass().getSimpleName() + "{" +
                 "executor=" + executor +
                 ", offloads=" + offloads +
                 ", mergeStrategy=" + mergeStrategy +
-                ", threadAffinity=" + threadAffinity +
                 '}';
     }
 }

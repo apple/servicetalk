@@ -16,11 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ClientGroup;
-import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -29,36 +25,26 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
-import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
-import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
-import java.net.SocketOption;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -81,7 +67,7 @@ import static java.util.Objects.requireNonNull;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
-        extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+        implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
@@ -92,8 +78,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
-    @Nullable
-    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
@@ -111,21 +95,22 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, singleAddressInitializer);
+                    unresolvedAddressToHostFunction, singleAddressInitializer);
 
+            HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             FilterableStreamingHttpClient urlClient = closeables.prepend(
-                    new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
+                    new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
                             defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                    buildContext.executionContext.bufferAllocator())));
+                                    executionContext.bufferAllocator())));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = maxRedirects <= 0 ? urlClient :
                     new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient);
 
-            return new FilterableClientToClient(urlClient, buildContext.executionContext.executionStrategy(),
+            return new FilterableClientToClient(urlClient, executionContext.executionStrategy(),
                     buildContext.builder.buildStrategyInfluencerForClient(
-                            buildContext.executionContext.executionStrategy()));
+                            executionContext.executionStrategy()));
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -222,19 +207,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
-        private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
-        @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
         private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
-                @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
             this.builderTemplate = builderTemplate;
-            this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.singleAddressInitializer = singleAddressInitializer;
         }
@@ -247,10 +228,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             if (hostHeaderTransformer != null) {
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
-            }
-
-            if (clientFilterFactory != null) {
-                buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
 
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
@@ -348,22 +325,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public <T> MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> socketOption(
-            final SocketOption<T> option, final T value) {
-        builderTemplate.socketOption(option, value);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(
-            final String loggerName, final LogLevel logLevel, final BooleanSupplier logUserData) {
-        builderTemplate.enableWireLogging(loggerName, logLevel, logUserData);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> protocols(HttpProtocolConfig... protocols) {
-        builderTemplate.protocols(protocols);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
+            final HttpExecutionStrategy strategy) {
+        builderTemplate.executionStrategy(strategy);
         return this;
     }
 
@@ -375,100 +339,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFilter(
-            final StreamingHttpConnectionFilterFactory factory) {
-        builderTemplate.appendConnectionFilter(factory);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
-        builderTemplate.appendConnectionFactoryFilter(factory);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
-            final StreamingHttpClientFilterFactory function) {
-        clientFilterFactory = appendClientFilter(clientFilterFactory, function.asMultiAddressClientFilter());
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> disableHostHeaderFallback() {
-        builderTemplate.disableHostHeaderFallback();
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> allowDropResponseTrailers(
-            final boolean allowDrop) {
-        builderTemplate.allowDropResponseTrailers(allowDrop);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> autoRetryStrategy(
-            final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-        builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);
-        return this;
-    }
-
-    @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxRedirects(final int maxRedirects) {
         this.maxRedirects = maxRedirects;
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> unresolvedAddressToHost(
-            Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction) {
-        this.unresolvedAddressToHostFunction = requireNonNull(unresolvedAddressToHostFunction);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
-            final MultiAddressHttpClientFilterFactory<HostAndPort> function) {
-        clientFilterFactory = appendClientFilter(clientFilterFactory, function);
-        return this;
-    }
-
-    private MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter(
-            @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> current,
-            final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
-        requireNonNull(next);
-        builderTemplate.appendToStrategyInfluencer(next);
-        return current == null ? next : (group, client) -> current.create(group, next.create(group, client));
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> serviceDiscoverer(
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd) {
-        builderTemplate.serviceDiscoverer(sd);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> retryServiceDiscoveryErrors(
-            final ServiceDiscoveryRetryStrategy<InetSocketAddress,
-                    ServiceDiscovererEvent<InetSocketAddress>> retryStrategy) {
-        builderTemplate.retryServiceDiscoveryErrors(retryStrategy);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final HttpLoadBalancerFactory<InetSocketAddress> loadBalancerFactory) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
-            final HttpExecutionStrategy strategy) {
-        builderTemplate.executionStrategy(strategy);
         return this;
     }
 }

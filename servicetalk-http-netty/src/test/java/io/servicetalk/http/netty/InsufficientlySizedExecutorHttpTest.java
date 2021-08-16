@@ -29,20 +29,15 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -60,30 +55,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InsufficientlySizedExecutorHttpTest {
+    @Nullable
     private Executor executor;
     @Nullable
     private StreamingHttpClient client;
     @Nullable
     private ServerContext server;
 
-    @SuppressWarnings("unused")
-    private static Stream<Arguments> executors() {
-        return Stream.of(
-            // Arguments.of(0, true),
-            Arguments.of(0, false),
-            // Arguments.of(1, true),
-            Arguments.of(1, false)
-        );
-    }
-
-    @ParameterizedTest(name = "{displayName} {index} - capacity: {0} thread based: {1}")
-    @MethodSource("executors")
-    void insufficientClientCapacityStreaming(final int capacity, final boolean threadBased) throws Exception {
-        initWhenClientUnderProvisioned(capacity, threadBased);
-        assertNotNull(client);
+    @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
+    @ValueSource(ints = {0, 1})
+    void insufficientClientCapacityStreaming(final int capacity) throws Exception {
+        initWhenClientUnderProvisioned(capacity);
         assertNotNull(client);
 
-        if (threadBased ? capacity <= 1 : capacity == 0) {
+        if (capacity == 0) {
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> client.request(client.get("/")).toFuture().get());
             assertThat(e.getCause(), anyOf(instanceOf(RejectedExecutionException.class),
@@ -97,55 +82,43 @@ class InsufficientlySizedExecutorHttpTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} {index} - capacity: {0} thread based: {1}")
-    @MethodSource("executors")
-    void insufficientServerCapacityStreaming(final int capacity, final boolean threadBased) throws Exception {
-        initWhenServerUnderProvisioned(capacity, threadBased, false);
-        insufficientServerCapacityStreaming0(capacity, threadBased);
+    @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
+    @ValueSource(ints = {0, 1})
+    void insufficientServerCapacityStreaming(final int capacity) throws Exception {
+        initWhenServerUnderProvisioned(capacity, false);
+        insufficientServerCapacityStreaming0(capacity);
     }
 
     @Disabled("https://github.com/apple/servicetalk/issues/336")
-    @ParameterizedTest(name = "{displayName} {index} - capacity: {0} thread based: {1}")
-    @MethodSource("executors")
-    void insufficientServerCapacityStreamingWithConnectionAcceptor(final int capacity,
-                                                                   final boolean threadBased)
+    @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
+    @ValueSource(ints = {0, 1})
+    void insufficientServerCapacityStreamingWithConnectionAcceptor(final int capacity)
             throws Exception {
-        initWhenServerUnderProvisioned(capacity, threadBased, true);
-        insufficientServerCapacityStreaming0(capacity, threadBased);
+        initWhenServerUnderProvisioned(capacity, true);
+        insufficientServerCapacityStreaming0(capacity);
     }
 
-    private void insufficientServerCapacityStreaming0(final int capacity, final boolean threadBased) throws Exception {
+    private void insufficientServerCapacityStreaming0(final int capacity) throws Exception {
         assertNotNull(client);
-        // For task based, we use a queue for the executor
-        final HttpResponseStatus expectedResponseStatus = !threadBased && capacity > 0 ? OK : SERVICE_UNAVAILABLE;
-        if (capacity == 0) {
-            // If there are no threads, we can not start processing.
-            // If there is a single thread, it is used by the connection to listen for close events.
-            ExecutionException e = assertThrows(ExecutionException.class,
-                    () -> client.request(client.get("/")).toFuture().get());
-            assertThat(e.getCause(), anyOf(instanceOf(ClosedChannelException.class),
-                                           instanceOf(IOException.class)));
-        } else {
-            StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
-            assertThat("Unexpected response code.", response.status(), is(expectedResponseStatus));
-        }
+        final HttpResponseStatus expectedResponseStatus = capacity > 0 ? OK : SERVICE_UNAVAILABLE;
+        StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
+        assertThat("Unexpected response code.", response.status(), is(expectedResponseStatus));
     }
 
-    private void initWhenClientUnderProvisioned(final int capacity, final boolean threadBased) throws Exception {
-        executor = getExecutorForCapacity(capacity, !threadBased);
+    private void initWhenClientUnderProvisioned(final int capacity) throws Exception {
+        executor = getExecutorForCapacity(capacity);
         server = forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server))
-                .executionStrategy(newStrategy(threadBased))
+                .executionStrategy(newStrategy())
                 .buildStreaming();
     }
 
     private void initWhenServerUnderProvisioned(final int capacity,
-                                                final boolean threadBased,
                                                 boolean addConnectionAcceptor)
         throws Exception {
-        executor = getExecutorForCapacity(capacity, !threadBased);
-        final HttpExecutionStrategy strategy = newStrategy(threadBased);
+        executor = getExecutorForCapacity(capacity);
+        final HttpExecutionStrategy strategy = newStrategy();
         HttpServerBuilder serverBuilder = forAddress(localAddress(0));
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
@@ -155,10 +128,10 @@ class InsufficientlySizedExecutorHttpTest {
         client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
     }
 
-    private HttpExecutionStrategy newStrategy(final boolean threadBased) {
+    private HttpExecutionStrategy newStrategy() {
+        assertNotNull(executor);
         final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
-        return threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
-                strategyBuilder.build();
+        return strategyBuilder.build();
     }
 
     @AfterEach
@@ -170,15 +143,18 @@ class InsufficientlySizedExecutorHttpTest {
         if (server != null) {
             closeable.append(server);
         }
-        closeable.append(executor);
+        if (null != executor) {
+            closeable.append(executor);
+        }
         closeable.close();
     }
 
     @Nonnull
-    private static Executor getExecutorForCapacity(final int capacity, final boolean useQueue) {
-        return capacity == 0 ? from(task -> {
-            throw new RejectedExecutionException();
-        }) : useQueue ? from(java.util.concurrent.Executors.newFixedThreadPool(capacity)) :
-                newFixedSizeExecutor(capacity);
+    private static Executor getExecutorForCapacity(final int capacity) {
+        return capacity == 0 ?
+                from(task -> {
+                    throw new RejectedExecutionException();
+                }) :
+                from(java.util.concurrent.Executors.newFixedThreadPool(capacity));
     }
 }

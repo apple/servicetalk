@@ -56,7 +56,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Character.isDigit;
@@ -267,7 +266,6 @@ class ServerEffectiveStrategyTest {
         @Nullable
         private InvokingThreadsRecorder<ServerOffloadPoint> invokingThreadsRecorder;
         private final boolean executorUsedForStrategy;
-        private boolean verifyStrategyUsed;
         private final boolean noOffloadsStrategy;
 
         Params(boolean executorUsedForStrategy, final boolean noOffloadsStrategy, boolean addFilter) {
@@ -330,37 +328,31 @@ class ServerEffectiveStrategyTest {
         }
 
         void initStateHolderUserStrategy() {
-            verifyStrategyUsed = false;
             newRecorder(defaultStrategy(executor));
         }
 
         void initStateHolderUserStrategyNoExecutor() {
-            verifyStrategyUsed = false;
             newRecorder(defaultStrategy());
         }
 
         void initStateHolderCustomUserStrategy() {
-            verifyStrategyUsed = !addFilter;
             newRecorder(customStrategyBuilder().offloadAll().executor(executor).build());
         }
 
         void initStateHolderUserStrategyNoOffloads() {
-            verifyStrategyUsed = !addFilter;
             newRecorder(customStrategyBuilder().offloadNone().executor(immediate()).build());
         }
 
         void initStateHolderUserStrategyNoOffloadsNoExecutor() {
-            verifyStrategyUsed = !addFilter;
             newRecorder(noOffloadsStrategy());
         }
 
         void initStateHolderCustomUserStrategyNoExecutor() {
-            verifyStrategyUsed = !addFilter;
             newRecorder(customStrategyBuilder().offloadAll().build());
         }
 
         private void newRecorder(final HttpExecutionStrategy strategy) {
-            invokingThreadsRecorder = verifyStrategyUsed ? userStrategy(strategy) : userStrategyNoVerify(strategy);
+            invokingThreadsRecorder = userStrategyNoVerify(strategy);
         }
 
         boolean isNoOffloadsStrategy() {
@@ -441,9 +433,6 @@ class ServerEffectiveStrategyTest {
 
         void verifyOffloads(final ServiceType serviceType) {
             assert invokingThreadsRecorder != null;
-            if (verifyStrategyUsed) {
-                invokingThreadsRecorder.assertStrategyUsedForServer();
-            }
             invokingThreadsRecorder.verifyOffloadCount();
             for (ServerOffloadPoint offloadPoint : offloadPoints.get(serviceType)) {
                 if (executorUsedForStrategy) {

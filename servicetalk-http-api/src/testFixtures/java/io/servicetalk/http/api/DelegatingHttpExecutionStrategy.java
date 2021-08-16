@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -46,13 +45,6 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
             final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
             final ClientInvoker<FS> client) {
         return delegate.invokeClient(fallback, flattenedRequest, flushStrategy, client);
-    }
-
-    @Override
-    public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
-                                           final Function<StreamingHttpRequest, Publisher<Object>> service,
-                                           final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        return delegate.invokeService(fallback, request, service, errorHandler);
     }
 
     @Override

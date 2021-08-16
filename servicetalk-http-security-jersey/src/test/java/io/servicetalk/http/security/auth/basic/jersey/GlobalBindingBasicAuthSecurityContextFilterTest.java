@@ -43,7 +43,7 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         };
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "withUserInfo={0}")
     @ValueSource(booleans = {true, false})
     void authenticated(final boolean withUserInfo) throws Exception {
         setUp(withUserInfo);
@@ -51,7 +51,7 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "withUserInfo={0}")
     @ValueSource(booleans = {true, false})
     void notAuthenticated(final boolean withUserInfo) throws Exception {
         setUp(withUserInfo);

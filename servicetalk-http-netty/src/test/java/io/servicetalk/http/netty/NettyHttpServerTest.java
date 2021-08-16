@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.DelegatingHttpServiceContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -629,8 +630,14 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
+                HttpServiceContext checkCtx = ctx instanceof DelegatingHttpServiceContext ?
+                    ((DelegatingHttpServiceContext) ctx).delegate() : ctx;
                 // Capture for future assertions on the transport errors
-                capturedServiceTransportErrorRef.set(((NettyConnectionContext) ctx).transportError());
+                NettyConnectionContext asNCC;
+                if (checkCtx instanceof NettyConnectionContext) {
+                    asNCC = (NettyConnectionContext) checkCtx;
+                    capturedServiceTransportErrorRef.set(asNCC.transportError());
+                }
                 return delegate().handle(ctx, request, responseFactory)
                     .afterOnSubscribe(c -> serviceHandleLatch.countDown());
             }
