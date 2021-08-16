@@ -2088,14 +2088,14 @@ public abstract class Publisher<T> {
      * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
      * returned {@link Publisher}.
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
      * size can be controlled with the {@code maxQueuePerGroup} argument.
      *
-     * <h2>Cancellation</h2>
+     * <p><strong>Cancellation</strong></p>
      *
      * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
      * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
@@ -2144,14 +2144,14 @@ public abstract class Publisher<T> {
      * that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the returned
      * {@link Publisher}.
      *
-     * <h2>Flow control</h2>
+     * <p><strong>Flow control</strong></p>
      * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
      * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
      * elements requested by one group may end up producing items for a different group, which has not yet requested
      * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
      * size can be controlled with the {@code maxQueuePerGroup} argument.
      *
-     * <h2>Cancellation</h2>
+     * <p><strong>Cancellation</strong></p>
      *
      * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
      * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}

@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary">signals</a> to and
  * from any asynchronous source.
  *
- * <h2>Caution</h2>
+ * <p><strong>Caution</strong>
  * A {@link SignalOffloader} instance <strong>MUST</strong> only be used for a single asynchronous execution chain at
  * any given time. Reusing it across different execution chains concurrently may result in deadlock.
  * Concurrent invocation of any {@link SignalOffloader} methods may result in deadlock.
@@ -38,7 +38,7 @@ public interface SignalOffloader {
     /**
      * Decorates the passed {@link Subscriber} such that all method calls to it will be offloaded.
      *
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -50,7 +50,7 @@ public interface SignalOffloader {
 
     /**
      * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to it will be offloaded.
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -63,7 +63,7 @@ public interface SignalOffloader {
 
     /**
      * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to it will be offloaded.
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -76,7 +76,7 @@ public interface SignalOffloader {
     /**
      * Decorates the passed {@link Subscriber} such that all method calls to its {@link Subscription} will be offloaded.
      * <em>None of the {@link Subscriber} methods will be offloaded.</em>
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -90,7 +90,7 @@ public interface SignalOffloader {
      * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to its {@link Cancellable} will
      * be offloaded.
      * <em>None of the {@link SingleSource.Subscriber} methods will be offloaded.</em>
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -105,7 +105,7 @@ public interface SignalOffloader {
      * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to its {@link Cancellable}
      * will be offloaded.
      * <em>None of the {@link CompletableSource.Subscriber} methods will be offloaded.</em>
-     * <h2>Caution</h2>LoadBalancerReadyHttpClientTest
+     * <p><strong>Caution</strong> LoadBalancerReadyHttpClientTest
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -118,11 +118,11 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
-     * <h2>Offloading Failures</h2>
+     * <p><strong>Offloading Failures</strong>
      * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
      * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
      * correctly terminated.
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -135,11 +135,11 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
-     * <h2>Offloading Failures</h2>
+     * <p><strong>Offloading Failures</strong>
      * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
      * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
      * correctly terminated.
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -153,11 +153,11 @@ public interface SignalOffloader {
     /**
      * Offloads the subscribe call for the passed {@link Subscriber}.
      *
-     * <h2>Offloading Failures</h2>
+     * <p><strong>Offloading Failures</strong>
      * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
      * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
      * correctly terminated.
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -170,7 +170,7 @@ public interface SignalOffloader {
     /**
      * Offloads the consumption of the passed {@code signal} by the passed {@link Consumer}.
      *
-     * <h2>Caution</h2>
+     * <p><strong>Caution</strong>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
