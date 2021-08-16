@@ -75,7 +75,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     }
 
     public static ExecutionContextExtension immediate() {
-        return immediate(new IoThreadFactory(IO_THREAD_PREFIX));
+        return immediate(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
     private static ExecutionContextExtension immediate(ThreadFactory ioThreadFactory) {
@@ -84,7 +84,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     }
 
     public static ExecutionContextExtension cached() {
-        return cached(new IoThreadFactory(IO_THREAD_PREFIX));
+        return cached(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextExtension cached(ThreadFactory ioThreadFactory) {
@@ -95,12 +95,12 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
 
     public static ExecutionContextExtension cached(String ioThreadPrefix, String executorThreadPrefix) {
         return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-                newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
+                newIoExecutor(new NettyIoThreadFactory(ioThreadPrefix)),
                 () -> newCachedThreadExecutor(new DefaultThreadFactory(executorThreadPrefix)));
     }
 
     private static ExecutionContextExtension fixed(int size) {
-        return fixed(size, new IoThreadFactory(IO_THREAD_PREFIX));
+        return fixed(size, new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
     private static ExecutionContextExtension fixed(int size, ThreadFactory ioThreadFactory) {

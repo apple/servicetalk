@@ -16,8 +16,9 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -35,10 +36,27 @@ public final class NettyIoExecutors {
      *
      * @param ioThreads number of threads.
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link IoThreadFactory} as it allows internal optimizations.
+     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     * @deprecated Future versions of ServiceTalk will require a {@link IoThreadFactory} for creating
+     * {@link IoExecutor} threads.
+     */
+    @Deprecated
+    public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
+     *
+     * @param <T> Type of the IO thread instances created by factory.
+     * @param ioThreads number of threads.
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
+     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
-    public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
+    public static <T extends Thread & IoThreadFactory.IoThread> IoExecutor createIoExecutor(int ioThreads,
+            IoThreadFactory<T> threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
     }
 
@@ -55,10 +73,26 @@ public final class NettyIoExecutors {
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
+     * @param <T> Type of the IO thread instances created by factory.
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link IoThreadFactory} as it allows internal optimizations.
+     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
+    public static <T extends Thread & IoThreadFactory.IoThread> IoExecutor createIoExecutor(
+            IoThreadFactory<T> threadFactory) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
+     *
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
+     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     * @deprecated Future versions of ServiceTalk will require a {@link IoThreadFactory} for creating
+     * {@link IoExecutor} threads.
+     */
+    @Deprecated
     public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
@@ -72,7 +106,7 @@ public final class NettyIoExecutors {
         return createIoExecutor(newIoThreadFactory());
     }
 
-    private static IoThreadFactory newIoThreadFactory() {
-        return new IoThreadFactory(NettyIoExecutor.class.getSimpleName());
+    private static NettyIoThreadFactory newIoThreadFactory() {
+        return new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName());
     }
 }

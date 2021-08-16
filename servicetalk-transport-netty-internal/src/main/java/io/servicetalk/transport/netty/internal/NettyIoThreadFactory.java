@@ -17,10 +17,10 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMapHolder;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -28,9 +28,9 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default {@link ThreadFactory} to create IO {@link Thread}s.
+ * Default {@link NettyIoThreadFactory} to create IO {@link IoThread}s.
  */
-public final class IoThreadFactory implements ThreadFactory {
+public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThreadFactory.NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
@@ -42,7 +42,7 @@ public final class IoThreadFactory implements ThreadFactory {
      * Create a new instance.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      */
-    public IoThreadFactory(String threadNamePrefix) {
+    public NettyIoThreadFactory(String threadNamePrefix) {
         this(threadNamePrefix, false);
     }
 
@@ -52,7 +52,7 @@ public final class IoThreadFactory implements ThreadFactory {
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      */
     @SuppressWarnings("PMD.AvoidThreadGroup")
-    public IoThreadFactory(String threadNamePrefix, boolean daemon) {
+    public NettyIoThreadFactory(String threadNamePrefix, boolean daemon) {
         this.namePrefix = requireNonNull(threadNamePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;
         this.threadGroup = System.getSecurityManager() == null ?
@@ -61,8 +61,8 @@ public final class IoThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(Runnable r) {
-        Thread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
+    public NettyIoThread newThread(Runnable r) {
+        NettyIoThread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
         if (t.isDaemon() != daemon) {
             t.setDaemon(daemon);
         }
@@ -72,7 +72,13 @@ public final class IoThreadFactory implements ThreadFactory {
         return t;
     }
 
-    private static final class AsyncContextHolderNettyThread extends FastThreadLocalThread
+    public static class NettyIoThread extends FastThreadLocalThread implements NettyIoThreadFactory.IoThread {
+        NettyIoThread(ThreadGroup group, Runnable target, String name) {
+            super(group, target, name);
+        }
+    }
+
+    private static final class AsyncContextHolderNettyThread extends NettyIoThread
             implements AsyncContextMapHolder {
         @Nullable
         private AsyncContextMap asyncContextMap;
