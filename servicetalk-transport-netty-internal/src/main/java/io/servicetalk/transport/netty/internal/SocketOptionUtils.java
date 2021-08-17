@@ -20,7 +20,6 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
-import io.netty.channel.epoll.EpollChannelOption;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -55,7 +54,7 @@ public final class SocketOptionUtils {
                 stThreshold -> new WriteBufferWaterMark(stThreshold >>> 1, stThreshold));
         putOpt(ChannelOption.TCP_FASTOPEN_CONNECT, ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT);
         putOpt(ChannelOption.SO_BACKLOG, ServiceTalkSocketOptions.SO_BACKLOG);
-        putOpt(EpollChannelOption.TCP_FASTOPEN, ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG);
+        putOpt(ChannelOption.TCP_FASTOPEN, ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG);
     }
 
     private SocketOptionUtils() {
