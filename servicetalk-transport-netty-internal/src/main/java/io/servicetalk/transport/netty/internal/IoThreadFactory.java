@@ -43,7 +43,7 @@ public final class IoThreadFactory implements ThreadFactory {
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      */
     public IoThreadFactory(String threadNamePrefix) {
-        this(threadNamePrefix, false);
+        this(threadNamePrefix, true);
     }
 
     /**
