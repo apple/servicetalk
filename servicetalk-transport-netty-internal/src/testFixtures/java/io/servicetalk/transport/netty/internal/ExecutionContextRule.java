@@ -68,7 +68,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule immediate() {
-        return immediate(new NettyIoThreadFactory(IO_THREAD_PREFIX));
+        return immediate(new IoThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule immediate(ThreadFactory ioThreadFactory) {
@@ -77,7 +77,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule cached() {
-        return cached(new NettyIoThreadFactory(IO_THREAD_PREFIX));
+        return cached(new IoThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule cached(ThreadFactory ioThreadFactory) {
@@ -88,12 +88,12 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
 
     public static ExecutionContextRule cached(String ioThreadPrefix, String executorThreadPrefix) {
         return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-                newIoExecutor(new NettyIoThreadFactory(ioThreadPrefix)),
+                newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
                 () -> newCachedThreadExecutor(new DefaultThreadFactory(executorThreadPrefix)));
     }
 
     public static ExecutionContextRule fixed(int size) {
-        return fixed(size, new NettyIoThreadFactory(IO_THREAD_PREFIX));
+        return fixed(size, new IoThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule fixed(int size, ThreadFactory ioThreadFactory) {

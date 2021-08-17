@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMapHolder;
-import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 
@@ -28,9 +27,13 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default {@link NettyIoThreadFactory} to create IO {@link IoThread}s.
+ * Default {@link IoThreadFactory} to create IO {@link IoThread}s.
+ *
+ * @deprecated The name of this class will change in future versions of ServiceTalk to {@code NettyIoThreadFactory}.
  */
-public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThreadFactory.NettyIoThread> {
+@Deprecated
+public final class IoThreadFactory implements
+                                   io.servicetalk.transport.api.IoThreadFactory<IoThreadFactory.NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
@@ -42,7 +45,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
      * Create a new instance.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      */
-    public NettyIoThreadFactory(String threadNamePrefix) {
+    public IoThreadFactory(String threadNamePrefix) {
         this(threadNamePrefix, false);
     }
 
@@ -52,7 +55,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      */
     @SuppressWarnings("PMD.AvoidThreadGroup")
-    public NettyIoThreadFactory(String threadNamePrefix, boolean daemon) {
+    public IoThreadFactory(String threadNamePrefix, boolean daemon) {
         this.namePrefix = requireNonNull(threadNamePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;
         this.threadGroup = System.getSecurityManager() == null ?
@@ -72,7 +75,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
         return t;
     }
 
-    public static class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
+    public static class NettyIoThread extends FastThreadLocalThread implements IoThread {
         NettyIoThread(ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
         }

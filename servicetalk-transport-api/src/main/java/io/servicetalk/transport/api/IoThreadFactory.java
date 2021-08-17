@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
+
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -22,7 +24,8 @@ import java.util.concurrent.ThreadFactory;
  *
  * @param <T> Type of threads created
  */
-public interface IoThreadFactory<T extends Thread & IoThreadFactory.IoThread> extends ThreadFactory {
+@FunctionalInterface
+public interface IoThreadFactory<T extends Thread & IoThread> extends ThreadFactory {
 
     /**
      * Marker interface for IO Threads. All threads created by a {@link IoThreadFactory} are expected to implement this

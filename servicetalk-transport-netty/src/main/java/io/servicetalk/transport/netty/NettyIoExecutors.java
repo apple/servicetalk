@@ -16,9 +16,9 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -35,11 +35,11 @@ public final class NettyIoExecutors {
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
-     * @deprecated Future versions of ServiceTalk will require a {@link IoThreadFactory} for creating
-     * {@link IoExecutor} threads.
+     * @deprecated Future versions of ServiceTalk will require a {@link io.servicetalk.transport.api.IoThreadFactory}
+     * for creating {@link IoExecutor} threads, use
+     * {@link #createIoExecutor(int, io.servicetalk.transport.api.IoThreadFactory)} instead.
      */
     @Deprecated
     public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
@@ -51,12 +51,11 @@ public final class NettyIoExecutors {
      *
      * @param <T> Type of the IO thread instances created by factory.
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static <T extends Thread & IoThreadFactory.IoThread> IoExecutor createIoExecutor(int ioThreads,
-            IoThreadFactory<T> threadFactory) {
+    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(int ioThreads,
+            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
     }
 
@@ -74,23 +73,22 @@ public final class NettyIoExecutors {
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @param <T> Type of the IO thread instances created by factory.
-     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static <T extends Thread & IoThreadFactory.IoThread> IoExecutor createIoExecutor(
-            IoThreadFactory<T> threadFactory) {
+    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(
+            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
 
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
-     * of {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
-     * @deprecated Future versions of ServiceTalk will require a {@link IoThreadFactory} for creating
-     * {@link IoExecutor} threads.
+     * @deprecated Future versions of ServiceTalk will require a {@link io.servicetalk.transport.api.IoThreadFactory}
+     * for creating {@link IoExecutor} threads, use
+     * {@link #createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)} instead.
      */
     @Deprecated
     public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
@@ -106,7 +104,7 @@ public final class NettyIoExecutors {
         return createIoExecutor(newIoThreadFactory());
     }
 
-    private static NettyIoThreadFactory newIoThreadFactory() {
-        return new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName());
+    private static IoThreadFactory newIoThreadFactory() {
+        return new IoThreadFactory(NettyIoExecutor.class.getSimpleName());
     }
 }

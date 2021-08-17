@@ -46,7 +46,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.jupiter.api.AfterAll;
@@ -144,8 +144,8 @@ abstract class AbstractNettyHttpServerTest {
 
     @BeforeAll
     static void createIoExecutors() {
-        clientIoExecutor = NettyIoExecutors.createIoExecutor(new NettyIoThreadFactory("client-io-executor"));
-        serverIoExecutor = NettyIoExecutors.createIoExecutor(new NettyIoThreadFactory("server-io-executor"));
+        clientIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io-executor"));
+        serverIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("server-io-executor"));
     }
 
     private void startServer() throws Exception {
