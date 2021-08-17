@@ -52,7 +52,8 @@ import static java.util.Objects.requireNonNull;
  * the host is not considered for opening new connections until the background check succeeds to create a connection.
  * Upon such event, the connection can immediately be reused and future attempts will again consider this host.
  * This behaviour can be disabled using a negative argument for
- * {@link Builder#healthCheckFailedConnectionsThreshold(int)}</li>
+ * {@link Builder#healthCheckFailedConnectionsThreshold(int)} and the failing host will take part in the regular
+ * round robin cycle for trying to establish a connection on the request path.</li>
  * </ul>
  *
  * @param <ResolvedAddress> The resolved address type.
@@ -126,10 +127,11 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * using health checks that run in the background. The health check tries to establish a new connection
          * and if it succeeds, the host is returned to the load balancing pool. As long as the connection
          * establishment fails, the host is not considered for opening new connections for processed requests.
+         * If an {@link Executor} is not provided using this method, a default shared instance is used
+         * for all {@link LoadBalancer LoadBalancers} created by this factory.
          * <p>
          * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable this mechanism and always
          * consider all hosts for establishing new connections.
-         * </p>
          *
          * @param backgroundExecutor {@link Executor} on which to schedule health checking.
          * @return {@code this}.
@@ -142,37 +144,42 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         /**
-         * Configure an interval for health checking a host that failed to open connections.
+         * Configure an interval for health checking a host that failed to open connections. If no interval is provided
+         * using this method, a default value will be used.
          * <p>
          * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
          * and always consider all hosts for establishing new connections.
-         * </p>
          * @param interval interval at which a background health check will be scheduled.
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval) {
-            if (requireNonNull(interval).isNegative()) {
-                throw new IllegalArgumentException("Health check interval can't be negative");
+            if (interval.isNegative() || interval.isZero()) {
+                throw new IllegalArgumentException("Health check interval should be greater than 0");
             }
             this.healthCheckInterval = interval;
             return this;
         }
 
         /**
-         * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer} fails
-         * to open a connection in more consecutive attempts than the specified value, the host will be marked as
-         * unhealthy and a connection establishment will take place in the background. Until finished, the host will
-         * not take part in load balancing selection.
+         * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
+         * consecutively fails to open connections in the amount greater or equal to the specified value,
+         * the host will be marked as unhealthy and connection establishment will take place in the background
+         * repeatedly until a connection is established. During that time, the host will not take part in
+         * load balancing selection.
+         * <p>
          * Use a negative value of the argument to disable health checking.
          * @param threshold number of consecutive connection failures to consider a host unhealthy and eligible for
          * background health checking. Use negative value to disable the health checking mechanism.
          * @return {@code this}.
          * @see #backgroundExecutor(Executor)
-         * @see #healthCheckFailedConnectionsThreshold(int)
+         * @see #healthCheckInterval(Duration)
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
                 int threshold) {
+            if (threshold == 0) {
+                throw new IllegalArgumentException("Health check failed connections threshold should not be 0");
+            }
             this.healthCheckFailedConnectionsThreshold = threshold;
             return this;
         }

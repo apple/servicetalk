@@ -153,7 +153,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * for sending requests, but new connections will not be requested, allowing the server to drive
      * the connection closure and shifting traffic to other addresses.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
-     * are unable to have a connection established. Providing {@code null} disables this mechanism.
+     * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
+     * continues being eligible for connecting on the request path).
+     * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
      */
     RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
