@@ -25,10 +25,13 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -44,6 +47,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
@@ -65,14 +69,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -90,6 +98,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -105,6 +114,9 @@ abstract class RoundRobinLoadBalancerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
+    @Rule
+    public final ExecutorRule<TestExecutor> executor = ExecutorRule.withTestExecutor();
+
     protected final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
             new TestSingleSubscriber<>();
     protected final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
@@ -116,6 +128,8 @@ abstract class RoundRobinLoadBalancerTest {
 
     protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> lb;
 
+    protected TestExecutor testExecutor;
+
     protected static <T> Predicate<T> any() {
       return __ -> true;
     }
@@ -124,13 +138,20 @@ abstract class RoundRobinLoadBalancerTest {
         return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 
-    protected abstract RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb();
+    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
+        return newTestLoadBalancer(eagerConnectionShutdown());
+    }
 
-    protected abstract RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
-            DelegatingConnectionFactory connectionFactory);
+    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
+            DelegatingConnectionFactory connectionFactory) {
+        return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, eagerConnectionShutdown());
+    }
+
+    protected abstract boolean eagerConnectionShutdown();
 
     @Before
     public void initialize() {
+        testExecutor = executor.executor();
         lb = defaultLb();
         connectionsCreated.clear();
         connectionRealizers.clear();
@@ -381,6 +402,182 @@ abstract class RoundRobinLoadBalancerTest {
         awaitIndefinitely(connection.onClose());
     }
 
+    @Test
+    public void unhealthyHostTakenOutOfPoolForSelection() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final int timeAdvancementsTillHealthy = 3;
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
+
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        lb = defaultLb(connectionFactory);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
+            try {
+                final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+                assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+            } catch (Exception e) {
+                assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+            }
+        }
+
+        for (int i = 0; i < 10; ++i) {
+            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+            assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+        }
+
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(1));
+
+        for (int i = 0; i < timeAdvancementsTillHealthy; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        }
+
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
+
+        for (int i = 0; i < 10; ++i) {
+            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+            assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+        }
+    }
+
+    @Test
+    public void disabledHealthCheckDoesntRun() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final int timeAdvancementsTillHealthy = 3;
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+
+        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckFailedConnectionsThreshold(-1)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        }
+
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
+
+        for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        }
+
+        unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
+
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+    }
+
+    @Test
+    public void hostUnhealthyIsHealthChecked() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final int timeAdvancementsTillHealthy = 3;
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+
+        lb = defaultLb(connectionFactory);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        }
+
+        for (int i = 0; i < timeAdvancementsTillHealthy; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        }
+
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+
+        // 5 failed attempts trigger health check, 2 health check attempts fail, 3rd health check attempt
+        // uses the proper connection, final selection reuses that connection. 8 total creation attempts.
+        int expectedConnectionAttempts = 8;
+        assertThat(unhealthyHostConnectionFactory.requests.get(), equalTo(expectedConnectionAttempts));
+    }
+
+    // Concurrency test, run multiple times (at least 1000).
+    @Test
+    public void hostUnhealthyDoesntRaceToRunHealthCheck() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final int timeAdvancementsTillHealthy = 3;
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", timeAdvancementsTillHealthy, properConnection);
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+
+        lb = defaultLb(connectionFactory);
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+
+        // Imitate concurrency by running multiple threads attempting to establish connections.
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        try {
+            final Runnable runnable = () ->
+                    assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+
+            for (int i = 0; i < 1000; i++) {
+                executor.submit(runnable);
+            }
+
+            // From test main thread, wait until the host becomes UNHEALTHY, which is apparent from
+            // NoHostAvailableException being thrown from selection AFTER a health check was scheduled by any thread.
+            final Executor executorForRetries = io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor(1);
+            try {
+                awaitIndefinitely(lb.selectConnection(any()).retryWhen(retryWithConstantBackoffFullJitter((t) ->
+                                // DeliberateException comes from connection opening, check for that first
+                                // Next, NoAvailableHostException is thrown when the host is unhealthy,
+                                // but we still wait until the health check is scheduled and only then stop retrying.
+                                t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0,
+                        // try to prevent stack overflow
+                        Duration.ofMillis(30), executorForRetries)));
+            } catch (Exception e) {
+                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+            } finally {
+                executorForRetries.closeAsync().toFuture().get();
+            }
+
+            // At this point, either the above selection caused the host to be marked as UNHEALTHY,
+            // or any background thread. We also know that a health check is pending to be executed.
+            // Now we can validate if there is just one health check happening and confirm that by asserting the host
+            // is not selected. If our assumption doesn't hold, it means more than one health check was scheduled.
+            for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
+                unhealthyHostConnectionFactory.advanceTime(testExecutor);
+
+                // Assert still unhealthy
+                Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+            }
+        } finally {
+            // Shutdown the concurrent validation of unhealthiness.
+            executor.shutdownNow();
+            executor.awaitTermination(10, SECONDS);
+        }
+
+        unhealthyHostConnectionFactory.advanceTime(testExecutor);
+
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+    }
+
     @SuppressWarnings("unchecked")
     protected void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
@@ -408,7 +605,12 @@ abstract class RoundRobinLoadBalancerTest {
     protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
             final DelegatingConnectionFactory connectionFactory, final boolean eagerConnectionShutdown) {
-        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory, eagerConnectionShutdown);
+        return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .eagerConnectionShutdown(eagerConnectionShutdown)
+                        .backgroundExecutor(testExecutor)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
     @SafeVarargs
@@ -508,6 +710,50 @@ abstract class RoundRobinLoadBalancerTest {
 
         boolean isClosed() {
             return closed.get();
+        }
+    }
+
+    protected static class UnhealthyHostConnectionFactory {
+        private final String failingHost;
+        private final AtomicInteger momentInTime = new AtomicInteger();
+        final AtomicInteger requests = new AtomicInteger();
+        final Single<TestLoadBalancedConnection> properConnection;
+        final List<Single<TestLoadBalancedConnection>> connections;
+
+        Function<String, Single<TestLoadBalancedConnection>> factory =
+                new Function<String, Single<TestLoadBalancedConnection>>() {
+
+            @Override
+            public Single<TestLoadBalancedConnection> apply(final String s) {
+                return defer(() -> {
+                    if (s.equals(failingHost)) {
+                        requests.incrementAndGet();
+                        if (momentInTime.get() >= connections.size()) {
+                            return properConnection;
+                        }
+                        return connections.get(momentInTime.get());
+                    }
+                    return properConnection;
+                });
+            }
+        };
+
+        UnhealthyHostConnectionFactory(final String failingHost, int timeAdvancementsTillHealthy,
+                                       Single<TestLoadBalancedConnection> properConnection) {
+            this.failingHost = failingHost;
+            this.connections = IntStream.range(0, timeAdvancementsTillHealthy)
+                    .<Single<TestLoadBalancedConnection>>mapToObj(__ -> failed(DELIBERATE_EXCEPTION))
+                    .collect(Collectors.toList());
+            this.properConnection = properConnection;
+        }
+
+        DelegatingConnectionFactory createFactory() {
+            return new DelegatingConnectionFactory(this.factory);
+        }
+
+        void advanceTime(TestExecutor executor) {
+            momentInTime.incrementAndGet();
+            executor.advanceTimeBy(1, SECONDS);
         }
     }
 }

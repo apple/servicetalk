@@ -309,13 +309,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Override
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
-        return newTestLoadBalancer(false);
-    }
-
-    @Override
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
-            RoundRobinLoadBalancerTest.DelegatingConnectionFactory connectionFactory) {
-        return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, false);
+    protected boolean eagerConnectionShutdown() {
+        return false;
     }
 }
