@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMapHolder;
+import io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 
@@ -33,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Deprecated
 public final class IoThreadFactory implements
-                                   io.servicetalk.transport.api.IoThreadFactory<IoThreadFactory.NettyIoThread> {
+                                   io.servicetalk.transport.api.IoThreadFactory<NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
@@ -75,7 +76,8 @@ public final class IoThreadFactory implements
         return t;
     }
 
-    public static class NettyIoThread extends FastThreadLocalThread implements IoThread {
+    public static class NettyIoThread extends FastThreadLocalThread
+            implements io.servicetalk.transport.api.IoThreadFactory.IoThread {
         NettyIoThread(ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
         }
