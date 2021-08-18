@@ -62,7 +62,7 @@ public final class GlobalExecutionContext {
 
         static {
             final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(
-                    new IoThreadFactory(GlobalIoExecutor.NAME_PREFIX, true)));
+                    new NettyIoThreadFactory(GlobalIoExecutor.NAME_PREFIX, true)));
             final Executor executor = new GlobalExecutor(newCachedThreadExecutor(
                     new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX, true, NORM_PRIORITY)));
             INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_ALL_STRATEGY);

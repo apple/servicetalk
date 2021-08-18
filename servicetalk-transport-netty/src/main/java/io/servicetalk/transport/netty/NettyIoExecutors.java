@@ -16,8 +16,8 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.IoThreadFactory.IoThread;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.util.concurrent.ThreadFactory;
@@ -37,9 +37,7 @@ public final class NettyIoExecutors {
      * @param ioThreads number of threads.
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
-     * @deprecated Future versions of ServiceTalk will require a {@link io.servicetalk.transport.api.IoThreadFactory}
-     * for creating {@link IoExecutor} threads, use
-     * {@link #createIoExecutor(int, io.servicetalk.transport.api.IoThreadFactory)} instead.
+     * @deprecated Use {@link #createIoExecutor(int, IoThreadFactory)}.
      */
     @Deprecated
     public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
@@ -51,11 +49,11 @@ public final class NettyIoExecutors {
      *
      * @param <T> Type of the IO thread instances created by factory.
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use.
+     * @param threadFactory the {@link IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
     public static <T extends Thread & IoThread> IoExecutor createIoExecutor(int ioThreads,
-            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
+            IoThreadFactory<T> threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
     }
 
@@ -66,18 +64,18 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads, newIoThreadFactory());
+        return createIoExecutor(ioThreads,
+            new io.servicetalk.transport.netty.internal.NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @param <T> Type of the IO thread instances created by factory.
-     * @param threadFactory the {@link io.servicetalk.transport.api.IoThreadFactory} to use.
+     * @param threadFactory the {@link IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(
-            io.servicetalk.transport.api.IoThreadFactory threadFactory) {
+    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(IoThreadFactory<T> threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
 
@@ -86,9 +84,7 @@ public final class NettyIoExecutors {
      *
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
-     * @deprecated Future versions of ServiceTalk will require a {@link io.servicetalk.transport.api.IoThreadFactory}
-     * for creating {@link IoExecutor} threads, use
-     * {@link #createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)} instead.
+     * @deprecated Use {@link #createIoExecutor(IoThreadFactory)}.
      */
     @Deprecated
     public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
@@ -101,10 +97,7 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(newIoThreadFactory());
-    }
-
-    private static IoThreadFactory newIoThreadFactory() {
-        return new IoThreadFactory(NettyIoExecutor.class.getSimpleName());
+        return createIoExecutor(
+            new io.servicetalk.transport.netty.internal.NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 }

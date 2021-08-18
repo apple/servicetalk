@@ -19,7 +19,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,7 +37,7 @@ class HttpUdsTest {
 
     @BeforeAll
     static void beforeClass() {
-        ioExecutor = createIoExecutor(new IoThreadFactory("io-executor"));
+        ioExecutor = createIoExecutor(new NettyIoThreadFactory("io-executor"));
     }
 
     @AfterAll
