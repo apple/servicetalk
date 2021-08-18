@@ -67,7 +67,7 @@ jobs:
           ./gradlew --parallel$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@931cea1ce1cb7199a2fc6fe128bd1c392e92c92d
+        uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
