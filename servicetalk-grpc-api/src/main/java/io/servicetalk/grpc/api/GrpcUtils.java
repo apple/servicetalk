@@ -349,7 +349,7 @@ final class GrpcUtils {
                                             final List<T> supportedEncoders,
                                             final Function<T, CharSequence> messageEncodingFunc) {
         final CharSequence encoding = headers.get(GRPC_MESSAGE_ENCODING_KEY);
-        if (encoding == null) {
+        if (encoding == null || contentEqualsIgnoreCase(Identity.identityEncoder().encodingName(), encoding)) {
             return identityEncoder;
         }
         final T result = encodingForRaw(supportedEncoders, messageEncodingFunc, encoding);
