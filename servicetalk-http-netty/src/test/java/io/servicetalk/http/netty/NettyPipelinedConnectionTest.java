@@ -259,7 +259,7 @@ class NettyPipelinedConnectionTest {
     }
 
     @Test
-    void readCancelErrorsPendingReadCancelsPendingWrite() {
+    void readCancelErrorsPendingReadCancelsPendingWrite() throws Exception {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -274,13 +274,13 @@ class NettyPipelinedConnectionTest {
         // should be terminated, cancelled, or not subscribed.
 
         assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
-        writePublisher1Subscription.awaitCancelledUninterruptibly();
+        writePublisher1Subscription.awaitCancelled();
         assertFalse(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
     }
 
     @Test
-    void channelCloseErrorsPendingReadCancelsPendingWrite() {
+    void channelCloseErrorsPendingReadCancelsPendingWrite() throws Exception {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -295,12 +295,12 @@ class NettyPipelinedConnectionTest {
 
         assertThat(readSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
-        writePublisher1Subscription.awaitCancelledUninterruptibly();
+        writePublisher1Subscription.awaitCancelled();
         assertFalse(writePublisher2.isSubscribed());
     }
 
     @Test
-    void readCancelClosesConnectionThenWriteDoesNotSubscribe() {
+    void readCancelClosesConnectionThenWriteDoesNotSubscribe() throws Exception {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -313,7 +313,7 @@ class NettyPipelinedConnectionTest {
         // readSubscriber was cancelled, so it may or may not terminate, but other sources that have not terminated
         // should be terminated, cancelled, or not subscribed.
 
-        writePublisher1Subscription.awaitCancelledUninterruptibly();
+        writePublisher1Subscription.awaitCancelled();
         assertFalse(channel.isOpen());
 
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
