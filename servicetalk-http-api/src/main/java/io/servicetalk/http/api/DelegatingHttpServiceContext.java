@@ -51,7 +51,7 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{delegate=" + delegate + "}";
+        return delegate.toString();
     }
 
     @Override

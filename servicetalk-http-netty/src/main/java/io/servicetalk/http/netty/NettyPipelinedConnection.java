@@ -187,7 +187,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + '(' + connection + ')';
+        return connection.toString();
     }
 
     @Override
