@@ -41,6 +41,11 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
+    public String toString() {
+        return delegate.toString();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return delegate.localAddress();
     }
