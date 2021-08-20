@@ -476,7 +476,7 @@ final class NettyHttpServer {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + '(' + connection + ')';
+            return connection.toString();
         }
     }
 

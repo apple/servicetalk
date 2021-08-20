@@ -146,7 +146,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     public final String toString() {
-        return getClass().getSimpleName() + '(' + channel() + ')';
+        return channel().toString();
     }
 
     @Override
