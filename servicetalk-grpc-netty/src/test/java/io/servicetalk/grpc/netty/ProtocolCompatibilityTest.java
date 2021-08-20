@@ -673,7 +673,7 @@ class ProtocolCompatibilityTest {
 
     private static void testRequestResponse(final CompatClient client, final TestServerContext server,
                                             final boolean streaming,
-                                            @Nullable final String compression) {
+                                            @Nullable final String compression) throws Exception {
         try {
             final BufferEncoder compressor = serviceTalkCompression(compression);
             final GrpcClientMetadata metadata = compressor == null ? DefaultGrpcClientMetadata.INSTANCE :
@@ -716,8 +716,6 @@ class ProtocolCompatibilityTest {
                 assertEquals(1000004, response4List.get(1).getSize());
                 assertEquals(1000005, response4List.get(2).getSize());
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
         } finally {
             closeAll(client, server);
         }
