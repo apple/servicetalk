@@ -75,7 +75,7 @@ public class IoThreadFactory implements io.servicetalk.transport.api.IoThreadFac
         return t;
     }
 
-    public static class NettyIoThread extends FastThreadLocalThread
+    public static final class NettyIoThread extends FastThreadLocalThread
             implements io.servicetalk.transport.api.IoThreadFactory.IoThread {
 
         @Nullable

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -64,8 +65,7 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads,
-            new io.servicetalk.transport.netty.internal.NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(ioThreads, new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 
     /**
@@ -97,7 +97,6 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(
-            new io.servicetalk.transport.netty.internal.NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 }

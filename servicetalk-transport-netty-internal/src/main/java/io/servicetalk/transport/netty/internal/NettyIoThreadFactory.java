@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.transport.netty.internal;
 /**
  * Default {@link io.servicetalk.transport.api.IoThreadFactory} to create IO {@link IoThread}s.
  */
-public final class NettyIoThreadFactory extends io.servicetalk.transport.netty.internal.IoThreadFactory {
+public final class NettyIoThreadFactory extends IoThreadFactory {
 
     /**
      * Create a new instance.
@@ -33,7 +33,6 @@ public final class NettyIoThreadFactory extends io.servicetalk.transport.netty.i
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      */
-    @SuppressWarnings("PMD.AvoidThreadGroup")
     public NettyIoThreadFactory(String threadNamePrefix, boolean daemon) {
         super(threadNamePrefix, daemon);
     }
