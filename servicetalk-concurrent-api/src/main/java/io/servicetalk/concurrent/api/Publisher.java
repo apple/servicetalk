@@ -1795,7 +1795,62 @@ public abstract class Publisher<T> {
             if (notification.cause() == null) {
                 return completed();
             }
+
             return retryWhen.apply(retryCount, notification.cause());
+        }, true);
+    }
+
+    /**
+     * Re-subscribes to this {@link Publisher} if an error is emitted and the {@link Completable} returned by the
+     * supplied {@link BiIntFunction} completes successfully. If the returned {@link Completable} emits an error, the
+     * returned {@link Publisher} terminates with that error.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     public List<T> execute() {
+     *         List<T> results = ...;
+     *         return execute(0, results);
+     *     }
+     *
+     *     private List<T> execute(int attempts, List<T> results) {
+     *         try {
+     *             Iterator<T> itr = resultOfThisPublisher();
+     *             while (itr.hasNext()) {
+     *                 T t = itr.next(); // Any iteration with the Iterator may throw
+     *                 results.add(t);
+     *             }
+     *             return results;
+     *         } catch (Throwable cause) {
+     *             try {
+     *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+     *                 execute(attempts + 1, results);
+     *             } catch (Throwable ignored) {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
+     * from this {@link Publisher} returns a {@link Completable}. If this {@link Completable} emits an error, that error
+     * is emitted from the returned {@link Publisher}, otherwise, original {@link Publisher} is re-subscribed when this
+     * {@link Completable} completes.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
+     * emitted and {@link Completable} returned by {@link BiIntFunction} completes successfully.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Publisher<T> retryWhen(TriLongIntFunction<Throwable, ? extends Completable> retryWhen) {
+        return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
+            if (notification.cause() == null) {
+                return completed();
+            }
+            long offsetDelay = 0;
+            if (notification.cause() instanceof DelayedRetry) {
+                offsetDelay = ((DelayedRetry) notification.cause()).delayMillis();
+            }
+            return retryWhen.apply(offsetDelay, retryCount, notification.cause());
         }, true);
     }
 

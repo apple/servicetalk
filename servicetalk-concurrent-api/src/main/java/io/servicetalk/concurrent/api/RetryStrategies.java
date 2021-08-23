@@ -28,8 +28,9 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * A set of strategies to use for retrying with {@link Publisher#retryWhen(BiIntFunction)},
- * {@link Single#retryWhen(BiIntFunction)}, and {@link Completable#retryWhen(BiIntFunction)} or in general.
+ * A set of strategies to use for retrying with {@link Publisher#retryWhen(TriLongIntFunction)},
+ * {@link Single#retryWhen(TriLongIntFunction)}, and {@link Completable#retryWhen(TriLongIntFunction)} that
+ * allow a dynamic constant back-off delay.
  */
 public final class RetryStrategies {
 
@@ -41,16 +42,17 @@ public final class RetryStrategies {
      * Creates a new retry function that adds the passed constant {@link Duration} as a delay between retries.
      * This additionally adds a "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter">here</a>.
+     *
      * @param maxRetries Maximum number of allowed retries, after which the returned {@link BiIntFunction} will return
      * a failed {@link Completable} with the passed {@link Throwable} as the cause
      * @param causeFilter A {@link Predicate} that selects whether a {@link Throwable} cause should be retried
      * @param delay Constant {@link Duration} of delay between retries
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates with
+     * error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoffFullJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithConstantBackoffFullJitter(
             final int maxRetries,
             final Predicate<Throwable> causeFilter,
             final Duration delay,
@@ -60,8 +62,9 @@ public final class RetryStrategies {
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
         checkFullJitter(delayNanos);
-        return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
+        return (offsetDelay, retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(offsetDelay, offsetDelay + delayNanos), NANOSECONDS) :
+                failed(cause);
     }
 
     /**
@@ -69,14 +72,15 @@ public final class RetryStrategies {
      * This additionally adds a "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter">here</a>.
      * a failed {@link Completable} with the passed {@link Throwable} as the cause
+     *
      * @param causeFilter A {@link Predicate} that selects whether a {@link Throwable} cause should be retried
      * @param delay Constant {@link Duration} of delay between retries
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates with
+     * error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoffFullJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithConstantBackoffFullJitter(
             final Predicate<Throwable> causeFilter,
             final Duration delay,
             final Executor timerExecutor) {
@@ -84,8 +88,9 @@ public final class RetryStrategies {
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
         checkFullJitter(delayNanos);
-        return (retryCount, cause) -> causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
+        return (offsetDelay, retryCount, cause) -> causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(offsetDelay, offsetDelay + delayNanos), NANOSECONDS) :
+                failed(cause);
     }
 
     /**
@@ -95,11 +100,11 @@ public final class RetryStrategies {
      * @param delay Constant {@link Duration} of delay between retries
      * @param jitter The jitter to apply to {@code delay} on each retry.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoffDeltaJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithConstantBackoffDeltaJitter(
             final Predicate<Throwable> causeFilter,
             final Duration delay,
             final Duration jitter,
@@ -111,8 +116,9 @@ public final class RetryStrategies {
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
-        return (retryCount, cause) -> causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS) : failed(cause);
+        return (offsetDelay, retryCount, cause) -> causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(offsetDelay + lowerBound, offsetDelay + upperBound),
+                        NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -124,11 +130,11 @@ public final class RetryStrategies {
      * @param delay Constant {@link Duration} of delay between retries
      * @param jitter The jitter to apply to {@code delay} on each retry.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoffDeltaJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithConstantBackoffDeltaJitter(
             final int maxRetries,
             final Predicate<Throwable> causeFilter,
             final Duration delay,
@@ -142,8 +148,9 @@ public final class RetryStrategies {
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
-        return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS) : failed(cause);
+        return (offsetDelay, retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(offsetDelay + lowerBound, offsetDelay + upperBound),
+                        NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -156,11 +163,11 @@ public final class RetryStrategies {
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
      * @param maxDelay The maximum amount of delay that will be introduced.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffFullJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithExponentialBackoffFullJitter(
             final Predicate<Throwable> causeFilter,
             final Duration initialDelay,
             final Duration maxDelay,
@@ -170,10 +177,10 @@ public final class RetryStrategies {
         final long initialDelayNanos = initialDelay.toNanos();
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
-        return (retryCount, cause) -> causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0,
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
-                failed(cause);
+        return (offsetDelay, retryCount, cause) -> causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(min(maxDelayNanos, offsetDelay),
+                                baseDelayNanos(offsetDelay, initialDelayNanos, maxDelayNanos, maxInitialShift,
+                                        retryCount)), NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -188,11 +195,11 @@ public final class RetryStrategies {
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
      * @param maxDelay The maximum amount of delay that will be introduced.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffFullJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithExponentialBackoffFullJitter(
             final int maxRetries,
             final Predicate<Throwable> causeFilter,
             final Duration initialDelay,
@@ -204,10 +211,10 @@ public final class RetryStrategies {
         final long initialDelayNanos = initialDelay.toNanos();
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
-        return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0,
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
-                failed(cause);
+        return (offsetDelay, retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
+                timerExecutor.timer(current().nextLong(offsetDelay != 0 ? min(offsetDelay, maxDelayNanos) : 0,
+                                baseDelayNanos(offsetDelay, initialDelayNanos, maxDelayNanos, maxInitialShift,
+                                        retryCount)), NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -219,11 +226,11 @@ public final class RetryStrategies {
      * @param jitter The jitter to apply to {@code delay} on each retry.
      * @param maxDelay The maximum amount of delay that will be introduced.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffDeltaJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithExponentialBackoffDeltaJitter(
             final Predicate<Throwable> causeFilter,
             final Duration initialDelay,
             final Duration jitter,
@@ -235,11 +242,12 @@ public final class RetryStrategies {
         final long jitterNanos = jitter.toNanos();
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
-        return (retryCount, cause) -> {
+        return (offsetDelay, retryCount, cause) -> {
             if (!causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
+            final long baseDelayNanos = baseDelayNanos(offsetDelay, initialDelayNanos, maxDelayNanos, maxInitialShift,
+                    retryCount);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
@@ -258,11 +266,11 @@ public final class RetryStrategies {
      * @param jitter The jitter to apply to {@code delay} on each retry.
      * @param maxDelay The maximum amount of delay that will be introduced.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
-     * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
-     * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
-     * if the source should not be retried for the passed {@link Throwable}
+     * @return A {@link TriLongIntFunction} to be used for retries which given a retry count and a {@link Throwable}
+     * returns a {@link Completable} that terminates successfully when the source has to be retried or terminates
+     * with error if the source should not be retried for the passed {@link Throwable}
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffDeltaJitter(
+    public static TriLongIntFunction<Throwable, Completable> retryWithExponentialBackoffDeltaJitter(
             final int maxRetries,
             final Predicate<Throwable> causeFilter,
             final Duration initialDelay,
@@ -276,21 +284,27 @@ public final class RetryStrategies {
         final long jitterNanos = jitter.toNanos();
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
-        return (retryCount, cause) -> {
+        return (offsetDelay, retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
+            final long baseDelayNanos = baseDelayNanos(0, initialDelayNanos, maxDelayNanos,
+                    maxInitialShift, retryCount);
             return timerExecutor.timer(
-                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
-                            min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
-                    NANOSECONDS);
+                    current().nextLong(min(offsetDelay + max(0, baseDelayNanos - jitterNanos), maxDelayNanos),
+                            min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos(offsetDelay, initialDelayNanos,
+                                    maxDelayNanos, maxInitialShift, retryCount), jitterNanos))), NANOSECONDS);
         };
     }
 
-    static long baseDelayNanos(final long initialDelayNanos, final long maxDelayNanos, final long maxInitialShift,
-                               final int count) {
-        return min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, count - 1));
+    static long baseDelayNanos(final long offsetDelayNanos, final long initialDelayNanos, final long maxDelayNanos,
+                               final long maxInitialShift, final int count) {
+        return min(maxDelayNanos, offsetDelayNanos + (initialDelayNanos << min(maxInitialShift, count - 1)));
+    }
+
+    static long baseDelayNanos(final long initialDelayNanos, final long maxDelayNanos,
+                               final long maxInitialShift, final int count) {
+        return min(maxDelayNanos, (initialDelayNanos << min(maxInitialShift, count - 1)));
     }
 
     static void checkMaxRetries(final int maxRetries) {

@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TriLongIntFunction;
 import io.servicetalk.transport.api.RetryableException;
 
 import java.time.Duration;
@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
  * @param <Filter> the type of retrying filter to build
  * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
  *
- * @see RetryStrategies
+ * @see io.servicetalk.concurrent.api.RetryStrategies
  */
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
@@ -318,9 +318,9 @@ public abstract class AbstractRetryingFilterBuilder<Builder
          * was provided at the build time
          * @return a new retry strategy {@link BiIntFunction}
          */
-        public BiIntFunction<Throwable, Completable> newStrategy(final Executor alternativeTimerExecutor) {
+        public TriLongIntFunction<Throwable, Completable> newStrategy(final Executor alternativeTimerExecutor) {
             if (initialDelay == null) {
-                return (count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
+                return (offsetDelay, count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
             } else {
                 final Executor effectiveExecutor = timerExecutor == null ?
                         requireNonNull(alternativeTimerExecutor) : timerExecutor;

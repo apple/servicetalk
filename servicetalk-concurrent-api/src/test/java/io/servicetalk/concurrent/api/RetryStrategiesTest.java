@@ -144,7 +144,7 @@ class RetryStrategiesTest extends RedoStrategiesTest {
                 ofSeconds(1), ofMillis(10), ofDays(10), timerExecutor));
     }
 
-    private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) {
+    private void testCauseFilter(TriLongIntFunction<Throwable, Completable> actualStrategy) {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
                 strategy.invokeAndListen(DELIBERATE_EXCEPTION);
@@ -152,12 +152,12 @@ class RetryStrategiesTest extends RedoStrategiesTest {
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
-    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Duration backoff)
+    private void testMaxRetries(TriLongIntFunction<Throwable, Completable> actualStrategy, Duration backoff)
             throws Exception {
         testMaxRetries(actualStrategy, () -> verifyDelayWithFullJitter(backoff.toNanos(), 1));
     }
 
-    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider)
+    private void testMaxRetries(TriLongIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider)
             throws Exception {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
@@ -177,7 +177,7 @@ class RetryStrategiesTest extends RedoStrategiesTest {
                                           final UnaryOperator<Duration> maxDelayFunc)
             throws Exception {
         Duration jitter = ofMillis(10);
-        final BiIntFunction<Throwable, Completable> strategyFunction = maxRetries < MAX_VALUE ?
+        final TriLongIntFunction<Throwable, Completable> strategyFunction = maxRetries < MAX_VALUE ?
                 retryWithExponentialBackoffDeltaJitter(maxRetries, cause -> true,
                         initialDelay, jitter, maxDelayFunc.apply(initialDelay), timerExecutor) :
                 retryWithExponentialBackoffDeltaJitter(cause -> true,
@@ -202,16 +202,16 @@ class RetryStrategiesTest extends RedoStrategiesTest {
     private static final class RetryStrategy {
 
         private int count;
-        private final BiIntFunction<Throwable, Completable> actual;
+        private final TriLongIntFunction<Throwable, Completable> actual;
 
-        RetryStrategy(BiIntFunction<Throwable, Completable> actual) {
+        RetryStrategy(TriLongIntFunction<Throwable, Completable> actual) {
             this.actual = actual;
         }
 
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber invokeAndListen(Throwable cause) {
             io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
                     new io.servicetalk.concurrent.test.internal.TestCompletableSubscriber();
-            toSource(actual.apply(++count, cause)).subscribe(subscriber);
+            toSource(actual.apply(0, ++count, cause)).subscribe(subscriber);
             return subscriber;
         }
     }

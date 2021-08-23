@@ -24,16 +24,16 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link Single} implementation as returned by {@link Single#retryWhen(BiIntFunction)}.
+ * A {@link Single} implementation as returned by {@link Single#retryWhen(TriLongIntFunction)}.
  *
  * @param <T> Type of result of this {@link Single}.
  */
 final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private final Single<T> original;
-    private final BiIntFunction<Throwable, ? extends Completable> shouldRetry;
+    private final TriLongIntFunction<Throwable, ? extends Completable> shouldRetry;
 
-    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, ? extends Completable> shouldRetry) {
+    RetryWhenSingle(Single<T> original, TriLongIntFunction<Throwable, ? extends Completable> shouldRetry) {
         this.original = original;
         this.shouldRetry = shouldRetry;
     }
@@ -84,7 +84,11 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void onError(Throwable t) {
             final Completable retryDecider;
             try {
-                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(retryCount + 1, t));
+                long offsetDelay = 0;
+                if (t instanceof DelayedRetry) {
+                    offsetDelay = ((DelayedRetry) t).delayMillis();
+                }
+                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(offsetDelay, retryCount + 1, t));
             } catch (Throwable cause) {
                 cause.addSuppressed(t);
                 target.onError(cause);

@@ -936,6 +936,46 @@ public abstract class Completable {
     }
 
     /**
+     * Re-subscribes to this {@link Completable} if an error is emitted and the {@link Completable} returned by the
+     * supplied {@link BiIntFunction} completes successfully. If the returned {@link Completable} emits an error, the
+     * returned {@link Completable} terminates with that error.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     public T execute() {
+     *         return execute(0);
+     *     }
+     *
+     *     private T execute(int attempts) {
+     *         try {
+     *             resultOfThisCompletable();
+     *         } catch (Throwable cause) {
+     *             try {
+     *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+     *                 execute(attempts + 1);
+     *             } catch (Throwable ignored) {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param retryWhen {@link TriLongIntFunction} that given the retry count and the most recent {@link Throwable}
+     * emitted from this {@link Completable} returns a {@link Completable}. If this {@link Completable} emits an
+     * error, that error is emitted from the returned {@link Completable}, otherwise, original {@link Completable} is
+     * re-subscribed when this {@link Completable} completes.
+     *
+     * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is
+     * emitted and {@link Completable} returned by {@link BiFunction} completes successfully.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Completable retryWhen(TriLongIntFunction<Throwable, ? extends Completable> retryWhen) {
+        return toSingle().retryWhen(retryWhen).ignoreElement();
+    }
+
+    /**
      * Re-subscribes to this {@link Completable} when it completes and the passed {@link IntPredicate} returns
      * {@code true}.
      * <p>

@@ -17,11 +17,11 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TriLongIntFunction;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -58,10 +58,10 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
-                                                  final BiIntFunction<Throwable, Completable> retryStrategy) {
-        return delegate.request(strategy, request).retryWhen((count, t) -> {
+                                                  final TriLongIntFunction<Throwable, Completable> retryStrategy) {
+        return delegate.request(strategy, request).retryWhen((offsetDelay, count, t) -> {
             if (settings.isRetryable(request, t)) {
-                return retryStrategy.apply(count, t);
+                return retryStrategy.apply(offsetDelay, count, t);
             }
             return failed(t);
         });
@@ -71,7 +71,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
 
-            private final BiIntFunction<Throwable, Completable> retryStrategy =
+            private final TriLongIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(client.executionContext().executor());
 
             @Override
@@ -87,7 +87,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
 
-            private final BiIntFunction<Throwable, Completable> retryStrategy =
+            private final TriLongIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(connection.executionContext().executor());
 
             @Override

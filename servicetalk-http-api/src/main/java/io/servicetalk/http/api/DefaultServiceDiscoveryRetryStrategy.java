@@ -207,7 +207,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
 
     private static BiIntFunction<Throwable, ? extends Completable> defaultRetryStrategy(
             final Executor executor, final Duration initialDelay, final Duration jitter) {
-        return retryWithConstantBackoffDeltaJitter(__ -> true, initialDelay, jitter, executor);
+        return (retryCount, error) -> retryWithConstantBackoffDeltaJitter(__ -> true, initialDelay, jitter, executor)
+                .apply(0, retryCount, error);
     }
 
     private static final class EventsCache<R, E extends ServiceDiscovererEvent<R>> {
