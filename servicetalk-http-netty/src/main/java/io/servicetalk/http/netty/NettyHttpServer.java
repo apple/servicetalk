@@ -563,13 +563,19 @@ final class NettyHttpServer {
                     return;
                 }
                 if (t.getCause() instanceof DecoderException) {
-                    LOGGER.warn("Can not decode HTTP message, no more requests will be received on this connection.",
-                            t);
+                    decoderException(t.getCause());
                     return;
                 }
+            } else if (t instanceof DecoderException) {
+                decoderException(t);
+                return;
             }
             LOGGER.debug("Unexpected error received while processing connection, {}",
                     "no more requests will be received on this connection.", t);
+        }
+
+        private static void decoderException(final Throwable t) {
+            LOGGER.warn("Can not decode HTTP message, no more requests will be received on this connection.", t);
         }
     }
 }
