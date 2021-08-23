@@ -47,7 +47,7 @@ class AbsoluteAddressHttpRequesterFilterTest {
     private FilterableStreamingHttpClient delegate;
     @Mock
     private StreamingHttpResponse response;
-    private final HttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
+    private final HttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false, false);
     private final StreamingHttpRequest request = StreamingHttpRequests.newRequest(HttpRequestMethod.GET, "",
             HttpProtocolVersion.HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory);
     private final ArgumentCaptor<StreamingHttpRequest> requestCapture =

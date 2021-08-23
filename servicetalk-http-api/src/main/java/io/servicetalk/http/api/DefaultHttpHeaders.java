@@ -45,6 +45,7 @@ import static java.util.Collections.emptyIterator;
 final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> implements HttpHeaders {
     private final boolean validateNames;
     private final boolean validateCookies;
+    private final boolean validateValues;
 
     /**
      * Create a new instance.
@@ -53,11 +54,14 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      *                      The next positive power of two will be used. An upper bound may be enforced.
      * @param validateNames {@code true} to validate header names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @param validateValues {@code true} to validate header values.
      */
-    DefaultHttpHeaders(final int arraySizeHint, final boolean validateNames, final boolean validateCookies) {
+    DefaultHttpHeaders(final int arraySizeHint, final boolean validateNames, final boolean validateCookies,
+                       final boolean validateValues) {
         super(arraySizeHint);
         this.validateNames = validateNames;
         this.validateCookies = validateCookies;
+        this.validateValues = validateValues;
     }
 
     @Override
@@ -560,13 +564,22 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    protected void validateKey(@Nullable final CharSequence name) {
+    protected CharSequence validateKey(@Nullable final CharSequence name) {
         if (name == null || name.length() == 0) {
-            throw new IllegalArgumentException("empty header names are not allowed");
+            throw new IllegalArgumentException("Empty header names are not allowed");
         }
         if (validateNames) {
             validateHeaderName(name);
         }
+        return name;
+    }
+
+    @Override
+    protected CharSequence validateValue(final CharSequence value) {
+        if (validateValues) {
+            validateHeaderValue(value);
+        }
+        return value;
     }
 
     /**
@@ -576,6 +589,15 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      */
     private static void validateHeaderName(final CharSequence name) {
         validateCookieTokenAndHeaderName(name);
+    }
+
+    /**
+     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> of a header-field.
+     *
+     * @param value The field-value to validate.
+     */
+    private static void validateHeaderValue(final CharSequence value) {
+        HeaderUtils.validateHeaderValue(value);
     }
 
     @Nullable
