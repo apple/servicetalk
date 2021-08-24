@@ -56,7 +56,9 @@ public class TestCancellable implements Cancellable {
     /**
      * Wait until {@link #cancel()} is called without being interrupted. This method catches an
      * {@link InterruptedException} and discards it silently.
+     * @deprecated Use {@link #awaitCancelled()} instead.
      */
+    @Deprecated
     public final void awaitCancelledUninterruptibly() {
         boolean interrupted = false;
         synchronized (waitingLock) {

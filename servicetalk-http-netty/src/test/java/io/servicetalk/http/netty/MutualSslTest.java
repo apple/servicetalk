@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static io.servicetalk.http.netty.TcpFastOpenTest.assumeTcpFastOpen;
 import static io.servicetalk.http.netty.TcpFastOpenTest.clientTcpFastOpenOptions;
 import static io.servicetalk.http.netty.TcpFastOpenTest.serverTcpFastOpenOptions;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -59,7 +60,7 @@ class MutualSslTest {
     private static final List<Map<SocketOption, Object>> CLIENT_OPTIONS =
             asList(emptyMap(), clientTcpFastOpenOptions());
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unused"})
     private static Collection<Arguments> params() {
         List<Arguments> params = new ArrayList<>();
         for (SslProvider serverSslProvider : SSL_PROVIDERS) {
@@ -79,9 +80,10 @@ class MutualSslTest {
     @MethodSource("params")
     void mutualSsl(SslProvider serverSslProvider,
                    SslProvider clientSslProvider,
-                   Map<SocketOption, Object> serverListenOptions,
-                   Map<SocketOption, Object> clientOptions)
-            throws Exception {
+                   @SuppressWarnings("rawtypes") Map<SocketOption, Object> serverListenOptions,
+                   @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions) throws Exception {
+        assumeTcpFastOpen(clientOptions);
+
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
@@ -103,7 +105,7 @@ class MutualSslTest {
         }
     }
 
-    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
             ServerContext serverContext, @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext));

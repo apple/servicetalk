@@ -124,6 +124,8 @@ abstract class AbstractNettyHttpServerTest {
     private StreamingHttpConnection httpConnection;
     private StreamingHttpService service;
     @Nullable
+    private StreamingHttpServiceFilterFactory nonOffloadingServiceFilterFactory;
+    @Nullable
     private StreamingHttpServiceFilterFactory serviceFilterFactory;
     @Nullable
     private ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter;
@@ -165,6 +167,9 @@ abstract class AbstractNettyHttpServerTest {
         if (sslEnabled) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
+        }
+        if (nonOffloadingServiceFilterFactory != null) {
+            serverBuilder.appendNonOffloadingServiceFilter(nonOffloadingServiceFilterFactory);
         }
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);
@@ -211,6 +216,10 @@ abstract class AbstractNettyHttpServerTest {
 
     void service(final StreamingHttpService service) {
         this.service = service;
+    }
+
+    void nonOffloadingServiceFilterFactory(StreamingHttpServiceFilterFactory nonOffloadingServiceFilterFactory) {
+        this.nonOffloadingServiceFilterFactory = nonOffloadingServiceFilterFactory;
     }
 
     void serviceFilterFactory(StreamingHttpServiceFilterFactory serviceFilterFactory) {

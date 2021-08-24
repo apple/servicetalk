@@ -115,5 +115,10 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
         public HttpProtocolVersion httpProtocol() {
             return httpProtocol;
         }
+
+        @Override
+        public String toString() {
+            return name() + "-over-" + httpProtocol();
+        }
     }
 }
