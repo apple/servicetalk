@@ -49,6 +49,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      *
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
+     * @see HttpExecutionStrategies
      */
     HttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
 

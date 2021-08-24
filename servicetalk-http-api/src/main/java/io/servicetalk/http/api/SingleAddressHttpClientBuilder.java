@@ -264,6 +264,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      *
      * @param autoRetryStrategyProvider {@link AutoRetryStrategyProvider} for the automatic retry strategy.
      * @return {@code this}
+     * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
      */
     public abstract SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
@@ -303,6 +304,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * Set the SSL/TLS configuration.
      * @param sslConfig The configuration to use.
      * @return {@code this}.
+     * @see io.servicetalk.transport.api.ClientSslConfigBuilder
      */
     public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 

@@ -83,6 +83,7 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param strategy {@link GrpcExecutionStrategy} to use.
      * @return {@code this}.
+     * @see GrpcExecutionStrategies
      */
     public abstract GrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy);
 
@@ -140,7 +141,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendConnectionFactoryFilter(filter1)
+     *            .appendConnectionFactoryFilter(filter2)
+     *            .appendConnectionFactoryFilter(filter3)
      * </pre>
      * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
@@ -162,7 +165,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -185,7 +188,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
      * </pre>
      * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -206,6 +209,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * Set the SSL/TLS configuration.
      * @param sslConfig The configuration to use.
      * @return {@code this}.
+     * @see io.servicetalk.transport.api.ClientSslConfigBuilder
      */
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
@@ -243,6 +247,7 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param autoRetryStrategyProvider {@link AutoRetryStrategyProvider} for the automatic retry strategy.
      * @return {@code this}
+     * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
      */
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
@@ -294,7 +299,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendHttpClientFilter(filter1).appendHttpClientFilter(filter2).appendHttpClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -316,7 +321,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.appendHttpClientFilter(filter1).appendHttpClientFilter(filter2).appendHttpClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -413,7 +418,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.doAppendHttpClientFilter(filter1).doAppendHttpClientFilter(filter2).doAppendHttpClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
@@ -430,7 +435,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     builder.doAppendHttpClientFilter(filter1).doAppendHttpClientFilter(filter2).doAppendHttpClientFilter(filter3)
      * </pre>
      * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
