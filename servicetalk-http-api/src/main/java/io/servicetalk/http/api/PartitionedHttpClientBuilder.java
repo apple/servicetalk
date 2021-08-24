@@ -34,14 +34,14 @@ import io.servicetalk.transport.api.IoExecutor;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinalizer, ExecutionContextAwareHttpBuilder {
+public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      */
     @FunctionalInterface
-    interface SingleAddressInitializer<U, R> {
+    public interface SingleAddressInitializer<U, R> {
         /**
          * Configures the passed {@link SingleAddressHttpClientBuilder} for a given set of {@link PartitionAttributes}.
          *
@@ -67,13 +67,13 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
     }
 
     @Override
-    PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    public abstract PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -84,7 +84,7 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
+    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
@@ -94,7 +94,7 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
-    PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+    public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy);
 
     /**
@@ -107,7 +107,7 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
      * queued for each partition.
      * @return {@code this}.
      */
-    PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
+    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
 
     /**
      * Sets {@link PartitionMapFactory} to use by all {@link StreamingHttpClient}s created by this builder.
@@ -115,7 +115,7 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
      * @param partitionMapFactory {@link PartitionMapFactory} to use.
      * @return {@code this}.
      */
-    PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
+    public abstract PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
@@ -123,5 +123,5 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuildFinal
      * {@link StreamingHttpClient}s.
      * @return {@code this}
      */
-    PartitionedHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
+    public abstract PartitionedHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 }
