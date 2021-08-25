@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -129,6 +130,8 @@ abstract class AbstractNettyHttpServerTest {
     private StreamingHttpServiceFilterFactory serviceFilterFactory;
     @Nullable
     private ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter;
+    @Nullable
+    private StreamingHttpClientFilterFactory clientFilterFactory;
     private HttpProtocolConfig protocol = h1Default();
     private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
     private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
@@ -191,6 +194,9 @@ abstract class AbstractNettyHttpServerTest {
             clientBuilder.appendConnectionFactoryFilter(
                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
         }
+        if (clientFilterFactory != null) {
+            clientBuilder.appendClientFilter(clientFilterFactory);
+        }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor))
                 .protocols(protocol)
@@ -229,6 +235,10 @@ abstract class AbstractNettyHttpServerTest {
     void connectionFactoryFilter(
             ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         this.connectionFactoryFilter = connectionFactoryFilter;
+    }
+
+    void clientFilterFactory(StreamingHttpClientFilterFactory clientFilterFactory) {
+        this.clientFilterFactory = clientFilterFactory;
     }
 
     @AfterEach
