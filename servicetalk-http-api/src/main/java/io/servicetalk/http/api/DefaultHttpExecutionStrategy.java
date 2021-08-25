@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
-import io.servicetalk.transport.api.IoThreadFactory;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -87,10 +86,6 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         return resp;
     }
 
-    private static boolean shouldOffload() {
-        return Thread.currentThread() instanceof IoThreadFactory.IoThread;
-    }
-
     @Override
     public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService service) {
         return new StreamingHttpService() {
@@ -113,10 +108,10 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 } else {
                     if (diff.isDataReceiveOffloaded()) {
                         request = request.transformMessageBody(p ->
-                                p.publishOn(e, DefaultHttpExecutionStrategy::shouldOffload));
+                                p.publishOn(e));
                     }
                     final Single<StreamingHttpResponse> resp;
-                    if (diff.isMetadataReceiveOffloaded() && shouldOffload()) {
+                    if (diff.isMetadataReceiveOffloaded()) {
                         final StreamingHttpRequest r = request;
                         resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
                                 // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
@@ -129,8 +124,8 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                             // flattened (meta + data) stream. In this case, we need to preserve the service contract
                             // and hence have to offload both meta and data separately.
                             resp.map(r -> r.transformMessageBody(
-                                    p -> p.subscribeOn(e, DefaultHttpExecutionStrategy::shouldOffload)))
-                                        .subscribeOn(e, DefaultHttpExecutionStrategy::shouldOffload) :
+                                    p -> p.subscribeOn(e)))
+                                        .subscribeOn(e) :
                             resp;
                 }
             }
