@@ -34,7 +34,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,10 +72,10 @@ class HttpOffloadingTest {
 
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-        ExecutionContextExtension.cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
 
     private StreamingHttpConnection httpConnection;
     private Queue<Throwable> errors;
