@@ -92,7 +92,8 @@ final class TcpClient {
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 (channel, connectionObserver) -> initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
+                        buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                         new TcpClientChannelInitializer(config, connectionObserver).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),

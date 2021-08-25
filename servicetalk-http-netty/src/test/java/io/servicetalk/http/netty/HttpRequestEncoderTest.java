@@ -404,7 +404,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                     TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
                             (channel, observer) -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
-                                    SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                                    SEC.executor(), SEC.ioExecutor(),
+                                    LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                                     defaultFlushStrategy(), null,
                                     new TcpServerChannelInitializer(sConfig, observer).andThen(
                                             channel2 -> {
@@ -421,7 +422,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                 CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
                                 closeHandlerRef.compareAndSet(null, closeHandler);
                                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
-                                        CEC.executor(), LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
+                                        CEC.executor(), CEC.ioExecutor(),
+                                        LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
                                         null, new TcpClientChannelInitializer(cConfig.tcpConfig(),
                                                 connectionObserver)
                                                 .andThen(new HttpClientChannelInitializer(

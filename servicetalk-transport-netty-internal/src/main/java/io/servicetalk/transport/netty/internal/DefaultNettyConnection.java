@@ -37,6 +37,7 @@ import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
@@ -235,6 +236,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param channel A newly created {@link Channel}.
      * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
      * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param ioExecutor The {@link IoExecutor} to use for the {@link DefaultNettyConnection}.
      * @param terminalPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
@@ -251,7 +253,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * ready to use.
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
-            Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
+            Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
+            Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient) {
@@ -263,8 +266,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 final DelayedCancellable delayedCancellable;
                 try {
                     delayedCancellable = new DelayedCancellable();
+                    boolean supportsIoThread = ioExecutor instanceof NettyIoExecutor &&
+                            ((NettyIoExecutor) ioExecutor).isIoThreadSupported();
                     DefaultExecutionContext executionContext = new DefaultExecutionContext(allocator,
-                            fromNettyEventLoop(channel.eventLoop()), executor, executionStrategy);
+                            fromNettyEventLoop(channel.eventLoop(), supportsIoThread), executor, executionStrategy);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel,
                             executionContext, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
                             protocol, null, null, NoopDataObserver.INSTANCE, isClient,
