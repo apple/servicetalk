@@ -141,6 +141,17 @@ public final class NettyIoExecutors {
         return new EventLoopGroupIoExecutor(eventLoopGroup, true);
     }
 
+    /**
+     * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     *
+     * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
+     * @param isIoThreadSupported if {@code true} then event loop threads are marked as {@link IoThreadFactory.IoThread}
+     * @return New {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     */
+    public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup, boolean isIoThreadSupported) {
+        return new EventLoopGroupIoExecutor(eventLoopGroup, true, isIoThreadSupported);
+    }
+
     private static void validateIoThreads(final int ioThreads) {
         if (ioThreads <= 0) {
             throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
