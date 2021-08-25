@@ -16,26 +16,24 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectTimeoutException;
-import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.withMax;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -43,9 +41,10 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static java.lang.Boolean.TRUE;
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,22 +56,29 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
     private static final int TCP_BACKLOG = IS_LINUX ? 0 : 1;
-    private static final int CONNECT_TIMEOUT_MILLIS = (int) ofSeconds(5).toMillis();
-    private static final int VERIFY_REQUEST_AWAIT_SECS = 5;
-    private static final int TRY_REQUEST_AWAIT_SECS = 1;
-
-    private final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
+    private static final int CONNECT_TIMEOUT_MILLIS = (int) ofSeconds(1).toMillis();
+    private static final int VERIFY_REQUEST_AWAIT_MILLIS = 500;
+    private static final int TRY_REQUEST_AWAIT_MILLIS = 500;
 
     @Override
     protected void configureServerBuilder(final HttpServerBuilder serverBuilder) {
-        serverBuilder.listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, TCP_BACKLOG);
+        serverBuilder.listenSocketOption(SO_BACKLOG, TCP_BACKLOG);
+    }
+
+    @Override
+    protected SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+        return super.newClientBuilder()
+                .appendConnectionFactoryFilter(withMax(5))
+                .autoRetryStrategy(DISABLE_AUTO_RETRIES)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue)
+                // It's important to use CONNECT_TIMEOUT here to verify that connections aren't establishing.
+                .socketOption(CONNECT_TIMEOUT, CONNECT_TIMEOUT_MILLIS);
     }
 
     @Test
     void testStopAcceptingAndResume() throws Exception {
         setUp(CACHED, CACHED);
-        final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ECHO);
+        final StreamingHttpRequest request = streamingHttpClient().newRequest(GET, SVC_ECHO);
 
         assertConnectionRequestSucceeds(request);
 
@@ -90,7 +96,8 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     @Test
     void testIdleTimeout() throws Exception {
         setUp(CACHED, CACHED);
-        final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ECHO);
+        final StreamingHttpRequest request = streamingHttpClient().newRequest(GET, SVC_ECHO);
+
         assertConnectionRequestSucceeds(request);
 
         serverContext().acceptConnections(false);
@@ -99,32 +106,25 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
         // Connection will establish but remain in the accept-queue
         // (i.e., NOT accepted by the server => occupying 1 backlog entry)
         assertConnectionRequestReceiveTimesOut(request);
-        final StreamingHttpClient httpClient2 = newClient();
+        final Single<StreamingHttpResponse> response =
+                streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request));
         // Since we control the backlog size, this connection won't establish (i.e., NO syn-ack)
         // timeout operator can be used to kill it or socket connection-timeout
         final ExecutionException executionException =
-                assertThrows(ExecutionException.class, () -> awaitIndefinitely(httpClient2.request(request)));
+                assertThrows(ExecutionException.class, () -> awaitIndefinitely(response));
         assertThat(executionException.getCause(), instanceOf(ConnectTimeoutException.class));
     }
 
     private void assertConnectionRequestReceiveTimesOut(final StreamingHttpRequest request) {
-        final StreamingHttpClient httpClient = newClient();
-        assertThrows(TimeoutException.class, () -> await(httpClient.request(request), TRY_REQUEST_AWAIT_SECS, SECONDS));
-    }
-
-    private StreamingHttpClient newClient() {
-        return newClientBuilder()
-                .appendConnectionFactoryFilter(withMax(1))
-                .autoRetryStrategy(DISABLE_AUTO_RETRIES)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue)
-                // It's important to use CONNECT_TIMEOUT here to verify that connections aren't establishing.
-                .socketOption(CONNECT_TIMEOUT, CONNECT_TIMEOUT_MILLIS)
-                .buildStreaming();
+        assertThrows(TimeoutException.class,
+                () -> await(streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request)),
+                TRY_REQUEST_AWAIT_MILLIS, MILLISECONDS));
     }
 
     private void assertConnectionRequestSucceeds(final StreamingHttpRequest request) throws Exception {
-        final StreamingHttpClient httpClient = newClientBuilder().buildStreaming();
-        final StreamingHttpResponse response = await(httpClient.request(request), VERIFY_REQUEST_AWAIT_SECS, SECONDS);
+        final StreamingHttpResponse response =
+                await(streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request)),
+                        VERIFY_REQUEST_AWAIT_MILLIS, MILLISECONDS);
         assert response != null;
         assertResponse(response, HTTP_1_1, OK, "");
     }

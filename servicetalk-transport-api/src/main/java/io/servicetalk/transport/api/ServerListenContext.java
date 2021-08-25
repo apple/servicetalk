@@ -20,19 +20,23 @@ package io.servicetalk.transport.api;
  */
 public interface ServerListenContext {
     /**
-     * Toggles the server's channel accepting connection ability.
+     * Toggles the server's ability to accept new connections.
      * <p>
-     * Passing a {@code false} value, will stop accepting connections on the server channel, without affecting any other
-     * interaction to currently open child channels (i.e., reads / writes).
+     * Passing a {@code false} value will signal the server to stop accepting new connections.
+     * It won't affect any other interactions to currently open connections (i.e., reads / writes).
      * <p>
-     * Depending on the transport, connections may still get ESTABLISHED, see.
-     * {@link ServiceTalkSocketOptions#SO_BACKLOG backlog} and (in case of Linux)
-     * <a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">SOMAXCONN</a>.
+     * Depending on the transport, connections may still get ESTABLISHED, see
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG backlog} or OS wide settings:
+     * <ul>
+     *     <li>Linux: <a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">SOMAXCONN</a></li>
+     *     <li>MacOS/BSD: <a href="https://docs.freebsd.org/en/books/handbook/config/#configtuning-kernel-limits">
+     *         kern.ipc.somaxconn / kern.ipc.soacceptqueue</a></li>
+     * </ul>
      * For instance, in case of TCP the 3-way handshake may finish, and the connection will await in the
      * accept queue to be accepted. If the accept queue is full, connection SYNs will await in the
-     * SYN backlog (i.e., in case of Linux <a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">
-     * tcp_max_syn_backlog</a>). These additional parameters may affect the behavior of new flows when the service
-     * is not accepting.
+     * SYN backlog (in the case of linux). This can be tuned:
+     * <a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">tcp_max_syn_backlog</a>
+     * These additional parameters may affect the behavior of new flows when the service is not accepting.
      * <p>
      * Depending on how long this stays in the {@code false} state, it may affect other timeouts (i.e., connect-timeout
      * or idleness) on the peer-side and/or the other flows to the peer (i.e., proxies).
