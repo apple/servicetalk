@@ -493,6 +493,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
+        addHostHeaderFallbackFilter = enable;
+        return this;
+    }
+
+    @Override
     public SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
         config.protocolConfigs().allowDropTrailersReadFromTransport(allowDrop);
         return this;

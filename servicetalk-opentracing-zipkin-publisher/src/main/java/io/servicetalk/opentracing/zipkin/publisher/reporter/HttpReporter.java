@@ -123,7 +123,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         SpanBytesEncoder spanEncoder = builder.codec.spanBytesEncoder();
         final BufferAllocator allocator = client.executionContext().bufferAllocator();
         final Publisher<Buffer> spans;
-        if (builder.disableBatching) {
+        if (!builder.batchingEnabled) {
             buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
             spans = fromSource(buffer).map(span -> allocator.wrap(spanEncoder.encode(span)));
         } else {
@@ -199,7 +199,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
     public static final class Builder {
         private Codec codec = Codec.JSON_V2;
         private final SingleAddressHttpClientBuilder<?, ?> clientBuilder;
-        private boolean disableBatching;
+        private boolean batchingEnabled = true;
         private int batchSizeHint = 16;
         private int maxConcurrentReports = 32;
         private Duration maxBatchDuration = ofSeconds(30);
@@ -246,11 +246,11 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
          * @param maxBatchDuration {@link Duration} of time to wait for {@code batchSizeHint} spans in a batch.
          * @return {@code this}.
          */
-        public Builder batchSpans(final int batchSizeHint, final Duration maxBatchDuration) {
+        public Builder spansBatchingEnabled(final int batchSizeHint, final Duration maxBatchDuration) {
             if (batchSizeHint <= 0) {
                 throw new IllegalArgumentException("batchSizeHint: " + batchSizeHint + " (expected > 0)");
             }
-            disableBatching = false;
+            batchingEnabled = true;
             this.batchSizeHint = batchSizeHint;
             this.maxBatchDuration = requireNonNull(maxBatchDuration);
             return this;
@@ -259,10 +259,22 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         /**
          * Disable batching of spans before sending them to the zipkin collector.
          *
+         * @deprecated Use {@link #spansBatchingEnabled(boolean)}.
          * @return {@code this}.
          */
+        @Deprecated
         public Builder disableSpanBatching() {
-            disableBatching = true;
+            this.batchingEnabled = false;
+            return this;
+        }
+
+        /**
+         * Configure batching of spans before sending them to the zipkin collector.
+         * @param enable When {@code false} batching will be disabled.
+         * @return {@code this}.
+         */
+        public Builder spansBatchingEnabled(boolean enable) {
+            this.batchingEnabled = enable;
             return this;
         }
 

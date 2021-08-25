@@ -92,10 +92,24 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * <p>
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
      *
+     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
      * @return {@code this}
-     * @see SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)
+     * @see #unresolvedAddressToHost(Function)
      */
+    @Deprecated
     public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    /**
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
+     *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed

@@ -193,7 +193,13 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
-        httpClientBuilder.disableHostHeaderFallback();
+        httpClientBuilder.hostHeaderFallback(false);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
+        httpClientBuilder.hostHeaderFallback(enable);
         return this;
     }
 
