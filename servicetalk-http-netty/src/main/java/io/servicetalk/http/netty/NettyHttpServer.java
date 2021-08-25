@@ -347,20 +347,27 @@ final class NettyHttpServer {
                 final HttpRequestMethod requestMethod = request.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
                 Publisher<Object> responsePublisher = strategy
-                        .invokeService(executionContext().executor(), request,
-                                req -> service.handle(this, req, streamingResponseFactory())
-                                        .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
-                                                        req.version(), keepAlive))
-                                        .flatMapPublisher(response -> {
-                                            keepAlive.addConnectionHeaderIfNecessary(response);
-
-                                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
-                                            if (flushStrategy != null) {
-                                                splittingFlushStrategy.updateFlushStrategy(
-                                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
-                                            }
-                                            return handleResponse(protocol(), requestMethod, response);
-                                        }),
+                        .invokeService(executionContext().executor(), request, req -> {
+                                    Single<StreamingHttpResponse> respSingle;
+                                    try {
+                                        respSingle = service.handle(this, req, streamingResponseFactory());
+                                    } catch (Throwable cause) {
+                                        respSingle = failed(cause);
+                                    }
+                                    return respSingle.onErrorReturn(cause -> newErrorResponse(cause,
+                                                    executionContext.executor(), req.version(), keepAlive))
+                                            .flatMapPublisher(response -> {
+                                                keepAlive.addConnectionHeaderIfNecessary(response);
+                                                final FlushStrategy flushStrategy =
+                                                        determineFlushStrategyForApi(response);
+                                                if (flushStrategy != null) {
+                                                    splittingFlushStrategy.updateFlushStrategy(
+                                                            (prev, isOriginal) -> isOriginal ? flushStrategy : prev,
+                                                            1);
+                                                }
+                                                return handleResponse(protocol(), requestMethod, response);
+                                            });
+                                },
                                 (cause, executor) -> {
                                     final StreamingHttpResponse errorResponse = newErrorResponse(cause, executor,
                                             request.version(), keepAlive);
@@ -369,7 +376,7 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
-                                    completed() : request.messageBody().ignoreElements()
+                            completed() : request.messageBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
