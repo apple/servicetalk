@@ -54,7 +54,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -104,7 +103,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
+    private Function<U, CharSequence> hostToCharSequenceFunction =
+            DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
     @Nullable
     private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
@@ -118,11 +118,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final U proxyAddress, Function<U, CharSequence> hostToCharSequenceFunction,
+            final U address, final U proxyAddress,
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this(address, serviceDiscoverer);
         this.proxyAddress = proxyAddress;
-        this.hostToCharSequenceFunction = requireNonNull(hostToCharSequenceFunction);
         config.connectAddress(hostToCharSequenceFunction.apply(address));
     }
 
@@ -184,9 +183,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress,
-                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()),
-                globalDnsServiceDiscoverer());
+        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress, globalDnsServiceDiscoverer());
     }
 
     static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
@@ -200,15 +197,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final HostAndPort u, final InetSocketAddress address, final HostAndPort proxyAddress) {
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress,
-                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()), sd);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
             final InetSocketAddress u, final InetSocketAddress address, final InetSocketAddress proxyAddress) {
         ServiceDiscoverer<InetSocketAddress, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, NetUtil::toSocketAddressString, sd);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -240,7 +236,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return proxyAddress != null ? proxyAddress : builder.address;
+            return proxyAddress != null ? proxyAddress :
+                    // the builder can be modified post-context creation, therefore proxy can be set
+                    (builder.proxyAddress != null ? builder.proxyAddress : builder.address);
         }
 
         HttpClientConfig httpConfig() {
@@ -419,6 +417,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
+        this.proxyAddress = requireNonNull(proxyAddress);
+        config.connectAddress(hostToCharSequenceFunction.apply(address));
+        return this;
+    }
+
+    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
@@ -575,7 +580,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
-    private CharSequence toAuthorityForm(final U address) {
+    private static <U> CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
         }

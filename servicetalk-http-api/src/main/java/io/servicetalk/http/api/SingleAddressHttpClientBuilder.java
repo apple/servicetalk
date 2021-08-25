@@ -52,6 +52,13 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
         implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
 
     /**
+     * Configure proxy to serve as an intermediary for requests.
+     * @param proxyAddress Unresolved address of the proxy.
+     * @return {@code this}.
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress);
+
+    /**
      * Adds a {@link SocketOption} for all connections created by this builder.
      *
      * @param option the option to apply.
