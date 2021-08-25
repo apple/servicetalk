@@ -59,6 +59,17 @@ public final class NettyIoExecutors {
     }
 
     /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param ioThreads number of threads.
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, String threadNamePrefix) {
+        return createIoExecutor(ioThreads, newIoThreadFactory(threadNamePrefix));
+    }
+
+    /**
      * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
      *
      * @param <T> Type of the IO thread instances created by factory.
@@ -124,7 +135,9 @@ public final class NettyIoExecutors {
      * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoop}.
      *
      * @param eventLoop {@link EventLoop} to use to create a new {@link NettyIoExecutor}.
-     * @param isIoThreadSupported if {@code true} then event loop threads are marked as {@link IoThreadFactory.IoThread}
+     * @param isIoThreadSupported if {@code true} then event loop threads are guaranteed to implement
+     * {@link IoThreadFactory.IoThread} contract. Note: passing an incorrect value here may result in unexpected
+     * behavior and incorrect offloading.
      * @return New {@link NettyIoExecutor} using the passed {@link EventLoop}.
      */
     public static NettyIoExecutor fromNettyEventLoop(EventLoop eventLoop, boolean isIoThreadSupported) {
@@ -145,7 +158,9 @@ public final class NettyIoExecutors {
      * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
      *
      * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
-     * @param isIoThreadSupported if {@code true} then event loop threads are marked as {@link IoThreadFactory.IoThread}
+     * @param isIoThreadSupported if {@code true} then event loop threads are guaranteed to implement
+     * {@link IoThreadFactory.IoThread} contract. Note: passing an incorrect value here may result in unexpected
+     * behavior and incorrect offloading.
      * @return New {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
      */
     public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup, boolean isIoThreadSupported) {

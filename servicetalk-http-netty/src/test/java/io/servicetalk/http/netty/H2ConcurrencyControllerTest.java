@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.StreamObserverTest.MulticastTransportEventsStreamingHttpConnectionFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -85,8 +84,7 @@ class H2ConcurrencyControllerTest {
 
     @BeforeEach
     void setUp() {
-        serverEventLoopGroup = createIoExecutor(
-                1, new NettyIoThreadFactory("server-io")).eventLoopGroup();
+        serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
         for (int i = 0; i < N_ITERATIONS; i++) {
             latches[i] = new CountDownLatch(1);
         }

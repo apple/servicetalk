@@ -57,7 +57,6 @@ import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -179,8 +178,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     private void setUp(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
-        serverEventLoopGroup = createIoExecutor(
-                2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
+        serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         this.h2PriorKnowledge = h2PriorKnowledge;
     }
 

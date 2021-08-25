@@ -20,7 +20,6 @@ import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -67,8 +66,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
         assumeTrue(isValid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
 
-        EventLoopGroup serverEventLoopGroup = createIoExecutor(
-                2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
+        EventLoopGroup serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         Channel serverAcceptorChannel = null;
         try {
             ServerBootstrap sb = new ServerBootstrap();

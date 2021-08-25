@@ -615,12 +615,10 @@ class RequestResponseCloseHandlerTest {
 
         @RegisterExtension
         public final ExecutionContextExtension clientCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-                () -> createIoExecutor(
-                        new NettyIoThreadFactory("client-thread")), Executors::immediate);
+                () -> createIoExecutor("client-thread"), Executors::immediate);
         @RegisterExtension
         public final ExecutionContextExtension serverCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-                () -> createIoExecutor(
-                        new NettyIoThreadFactory("server-thread")), Executors::immediate);
+                () -> createIoExecutor("server-thread"), Executors::immediate);
 
         private SocketChannel cChannel;
         private volatile SocketChannel sChannel;

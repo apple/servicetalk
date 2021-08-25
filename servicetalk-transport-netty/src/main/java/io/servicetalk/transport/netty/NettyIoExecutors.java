@@ -76,6 +76,17 @@ public final class NettyIoExecutors {
     }
 
     /**
+     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
+     *
+     * @param ioThreads number of threads.
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createIoExecutor(int ioThreads, String threadNamePrefix) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadNamePrefix);
+    }
+
+    /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @return The created {@link IoExecutor}
