@@ -246,7 +246,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
          * @param maxBatchDuration {@link Duration} of time to wait for {@code batchSizeHint} spans in a batch.
          * @return {@code this}.
          */
-        public Builder spansBatchingEnabled(final int batchSizeHint, final Duration maxBatchDuration) {
+        public Builder batchSpans(final int batchSizeHint, final Duration maxBatchDuration) {
             if (batchSizeHint <= 0) {
                 throw new IllegalArgumentException("batchSizeHint: " + batchSizeHint + " (expected > 0)");
             }

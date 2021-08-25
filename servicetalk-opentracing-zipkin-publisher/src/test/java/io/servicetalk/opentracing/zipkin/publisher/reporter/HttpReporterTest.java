@@ -102,7 +102,7 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void batching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(2, ofMillis(200)));
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(2, ofMillis(200)));
         reporter.report(newSpan("1"));
         reporter.report(newSpan("2"));
         List<Span> spans = verifyRequest(codec, receivedRequests.take(), true);
@@ -132,14 +132,14 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void non200ResponsesAreOkWithBatching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(1, ofMillis(200)));
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(1, ofMillis(200)));
         verifyNon200ResponsesAreOk(codec, reporter, true);
     }
 
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void reportFailuresAreRecoveredWithBatching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(1, ofMillis(200)));
+        HttpReporter reporter = initReporter(codec, builder -> builder.batchSpans(1, ofMillis(200)));
         verifySpanSendFailuresAreRecovered(codec, reporter, true);
     }
 
