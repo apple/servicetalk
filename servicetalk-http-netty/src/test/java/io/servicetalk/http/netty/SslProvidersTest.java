@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,7 +73,7 @@ class SslProvidersTest {
                 });
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .ioExecutor(NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io")))
+                .ioExecutor(NettyIoExecutors.createIoExecutor(new NettyIoThreadFactory("client-io")))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).provider(clientSslProvider).build())
                 .buildBlocking();
