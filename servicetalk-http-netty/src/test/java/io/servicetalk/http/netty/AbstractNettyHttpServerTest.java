@@ -163,6 +163,7 @@ abstract class AbstractNettyHttpServerTest {
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
+        configureServerBuilder(serverBuilder);
         if (sslEnabled) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
@@ -198,7 +199,10 @@ abstract class AbstractNettyHttpServerTest {
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
 
-    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+    protected void configureServerBuilder(final HttpServerBuilder serverBuilder) {
+    }
+
+    protected SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         return HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
     }
 

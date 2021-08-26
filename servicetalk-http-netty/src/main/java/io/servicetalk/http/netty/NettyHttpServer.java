@@ -207,6 +207,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public void acceptConnections(final boolean accept) {
+            delegate.acceptConnections(accept);
+        }
+
+        @Override
         public ExecutionContext executionContext() {
             return delegate.executionContext();
         }
@@ -479,6 +484,12 @@ final class NettyHttpServer {
         @Override
         public Channel nettyChannel() {
             return connection.nettyChannel();
+        }
+
+        @Override
+        public void acceptConnections(final boolean accept) {
+            assert connection.nettyChannel().parent() != null;
+            connection.nettyChannel().parent().config().setAutoRead(accept);
         }
 
         @Override

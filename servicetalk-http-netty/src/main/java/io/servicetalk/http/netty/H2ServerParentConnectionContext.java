@@ -71,6 +71,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     }
 
     @Override
+    public void acceptConnections(final boolean accept) {
+        channel().parent().config().setAutoRead(accept);
+    }
+
+    @Override
     public SocketAddress listenAddress() {
         return listenAddress;
     }

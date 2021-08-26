@@ -170,6 +170,11 @@ class NettyHttpServerConnectionDrainTest {
             }
 
             @Override
+            public void acceptConnections(final boolean accept) {
+                serverContext.acceptConnections(accept);
+            }
+
+            @Override
             public Completable onClose() {
                 return serverContext.onClose();
             }
