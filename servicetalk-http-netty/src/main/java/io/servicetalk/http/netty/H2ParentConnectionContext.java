@@ -15,24 +15,22 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
@@ -73,13 +71,15 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Nullable
     private SSLSession sslSession;
 
-    H2ParentConnectionContext(final Channel channel, final BufferAllocator allocator, final Executor executor,
+    H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                               final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
-                              final HttpExecutionStrategy executionStrategy,
                               final KeepAliveManager keepAliveManager) {
-        super(channel, executor);
-        this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
-                executor, executionStrategy);
+        super(channel, executionContext.executor());
+        boolean supportsIoThread = executionContext.ioExecutor() instanceof NettyIoExecutor &&
+                ((NettyIoExecutor) executionContext.ioExecutor()).isIoThreadSupported();
+        this.executionContext = new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
+                fromNettyEventLoop(channel.eventLoop(), supportsIoThread),
+                executionContext.executor(), executionContext.executionStrategy());
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.idleTimeoutMs = idleTimeoutMs;
         this.keepAliveManager = keepAliveManager;

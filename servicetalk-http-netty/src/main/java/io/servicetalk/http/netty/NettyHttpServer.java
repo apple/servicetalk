@@ -166,7 +166,8 @@ final class NettyHttpServer {
             return failed(newH1ConfigException());
         }
         return showPipeline(DefaultNettyConnection.initChannel(channel,
-                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
+                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
+                httpExecutionContext.ioExecutor(), LAST_CHUNK_PREDICATE,
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)

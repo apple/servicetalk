@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.CompletableSource.Processor;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
@@ -51,7 +50,6 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -68,11 +66,11 @@ class HttpServerOverrideOffloadingTest {
     private final ServerContext server;
 
     HttpServerOverrideOffloadingTest() throws Exception {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
-                NORM_PRIORITY));
+        ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
         executor = newCachedThreadExecutor();
-        service1 = new OffloadingTesterService(th -> !isInServerEventLoop(th));
-        service2 = new OffloadingTesterService(HttpServerOverrideOffloadingTest::isInServerEventLoop);
+        Predicate<Thread> isIOThread = HttpServerOverrideOffloadingTest::isInServerEventLoop;
+        service1 = new OffloadingTesterService(isIOThread.negate());
+        service2 = new OffloadingTesterService(isIOThread);
         server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(noOffloadsStrategy())

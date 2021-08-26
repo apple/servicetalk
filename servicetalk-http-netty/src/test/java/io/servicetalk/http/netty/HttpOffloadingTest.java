@@ -342,7 +342,7 @@ class HttpOffloadingTest {
             } catch (InterruptedException e) {
                 errors.add(e);
             }
-            Publisher responsePayload =
+            Publisher<Buffer> responsePayload =
                 from(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
                     .beforeRequest(n -> {
                         if (inEventLoop().test(currentThread())) {

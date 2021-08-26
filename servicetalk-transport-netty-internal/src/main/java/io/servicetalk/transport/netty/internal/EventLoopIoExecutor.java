@@ -24,6 +24,10 @@ final class EventLoopIoExecutor extends AbstractNettyIoExecutor<EventLoop> imple
         super(eventLoop, interruptOnCancel);
     }
 
+    EventLoopIoExecutor(EventLoop eventLoop, boolean interruptOnCancel, boolean isIoThreadSupported) {
+        super(eventLoop, interruptOnCancel, isIoThreadSupported);
+    }
+
     @Override
     public boolean isCurrentThreadEventLoop() {
         return eventLoop.inEventLoop();

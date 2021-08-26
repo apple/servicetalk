@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
@@ -70,16 +71,12 @@ import static org.hamcrest.Matchers.startsWith;
 
 class ExecutionStrategyTest {
 
-    private static final String BUILDER_EXEC_NAME_PREFIX = "builder-executor";
-    private static final String ROUTE_EXEC_NAME_PREFIX = "route-executor";
+    private static final String CONTEXT_EXEC_NAME_PREFIX = "context-executor";
     private static final String FILTER_EXEC_NAME_PREFIX = "filter-executor";
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> BUILDER_EXEC =
-            ExecutorExtension.withCachedExecutor(BUILDER_EXEC_NAME_PREFIX);
-
-    @RegisterExtension
-    static final ExecutorExtension<Executor> ROUTE_EXEC = ExecutorExtension.withCachedExecutor(ROUTE_EXEC_NAME_PREFIX);
+    static final ExecutorExtension<Executor> CONTEXT_EXEC =
+            ExecutorExtension.withCachedExecutor(CONTEXT_EXEC_NAME_PREFIX);
 
     @RegisterExtension
     static final ExecutorExtension<Executor> FILTER_EXEC =
@@ -97,7 +94,7 @@ class ExecutionStrategyTest {
         public GrpcExecutionStrategy get(final String id) {
             switch (id) {
                 case "route":
-                    return defaultStrategy(ROUTE_EXEC.executor());
+                    return defaultStrategy();
                 case "filter":
                     return defaultStrategy(FILTER_EXEC.executor());
                 default:
@@ -106,27 +103,27 @@ class ExecutionStrategyTest {
         }
     }
 
-    private enum BuilderExecutionStrategy {
+    private enum ContextExecutionStrategy {
         DEFAULT {
             @Override
-            void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
+            void configureContextExecutionStrategy(GrpcServerBuilder builder) {
                 // noop
             }
         },
         CUSTOM {
             @Override
-            void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(defaultStrategy(BUILDER_EXEC.executor()));
+            void configureContextExecutionStrategy(GrpcServerBuilder builder) {
+                builder.executionStrategy(defaultStrategy(CONTEXT_EXEC.executor()));
             }
         },
         NO_OFFLOADS {
             @Override
-            void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
+            void configureContextExecutionStrategy(GrpcServerBuilder builder) {
                 builder.executionStrategy(noOffloadsStrategy());
             }
         };
 
-        abstract void configureBuilderExecutionStrategy(GrpcServerBuilder builder);
+        abstract void configureContextExecutionStrategy(GrpcServerBuilder builder);
     }
 
     private enum RouteExecutionStrategy {
@@ -279,7 +276,7 @@ class ExecutionStrategyTest {
     }
 
     @Nullable
-    private BuilderExecutionStrategy builderStrategy;
+    private ContextExecutionStrategy contextStrategy;
     @Nullable
     private RouteExecutionStrategy routeStrategy;
     @Nullable
@@ -289,15 +286,15 @@ class ExecutionStrategyTest {
     @Nullable
     private BlockingTesterClient client;
 
-    private void setUp(BuilderExecutionStrategy builderStrategy,
+    private void setUp(ContextExecutionStrategy contextStrategy,
                        RouteExecutionStrategy routeStrategy,
                        RouteApi routeApi,
                        FilterConfiguration filterConfiguration) throws Exception {
-        this.builderStrategy = builderStrategy;
+        this.contextStrategy = contextStrategy;
         this.routeStrategy = routeStrategy;
         this.routeApi = routeApi;
         GrpcServerBuilder builder = GrpcServers.forAddress(localAddress(0));
-        builderStrategy.configureBuilderExecutionStrategy(builder);
+        contextStrategy.configureContextExecutionStrategy(builder);
         ServiceFactory serviceFactory = routeStrategy.getServiceFactory();
         filterConfiguration.appendServiceFilter(serviceFactory);
         serverContext = builder.listenAndAwait(serviceFactory);
@@ -308,7 +305,7 @@ class ExecutionStrategyTest {
 
     static Collection<Arguments> data() {
         List<Arguments> parameters = new ArrayList<>();
-        for (BuilderExecutionStrategy builderEs : BuilderExecutionStrategy.values()) {
+        for (ContextExecutionStrategy builderEs : ContextExecutionStrategy.values()) {
             for (RouteExecutionStrategy routeEs : RouteExecutionStrategy.values()) {
                 for (RouteApi routeApi : RouteApi.values()) {
                     for (FilterConfiguration filterConfiguration : FilterConfiguration.values()) {
@@ -323,14 +320,14 @@ class ExecutionStrategyTest {
     @AfterEach
     void tearDown() throws Exception {
         try {
-            client.close();
+            Objects.requireNonNull(client, "client").close();
         } finally {
-            serverContext.close();
+            Objects.requireNonNull(serverContext, "serverContext").close();
         }
     }
 
     private boolean isDeadlockConfig() {
-        if (builderStrategy == BuilderExecutionStrategy.NO_OFFLOADS) {
+        if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS) {
             switch (routeStrategy) {
                 case BLOCKING_CLASS_NO_OFFLOADS:
                 case BLOCKING_METHOD_NO_OFFLOADS:
@@ -346,24 +343,25 @@ class ExecutionStrategyTest {
         return false;
     }
 
-    @ParameterizedTest(name = "builder={0} route={1}, api={2}, filterConfiguration={3}")
+    @ParameterizedTest(name = "context={0} route={1}, api={2}, filterConfiguration={3}")
     @MethodSource("data")
-    void testRoute(BuilderExecutionStrategy builderStrategy,
+    void testRoute(ContextExecutionStrategy contextExecutionStrategy,
                    RouteExecutionStrategy routeStrategy,
                    RouteApi routeApi,
                    FilterConfiguration filterConfiguration) throws Exception {
-        setUp(builderStrategy, routeStrategy, routeApi, filterConfiguration);
+        setUp(contextExecutionStrategy, routeStrategy, routeApi, filterConfiguration);
         Assumptions.assumeFalse(isDeadlockConfig(), "BlockingStreaming + noOffloads = deadlock");
 
-        final ThreadInfo threadInfo = parse(routeApi.execute(client));
+        final ThreadInfo threadInfo = parse(routeApi.execute(Objects.requireNonNull(client, "client")));
         final ThreadInfo expected;
-        switch (builderStrategy) {
+        switch (contextExecutionStrategy) {
             case DEFAULT:
                 switch (routeStrategy) {
                     case ASYNC_DEFAULT:
                     case ASYNC_CLASS_NO_OFFLOADS:
                     case ASYNC_METHOD_NO_OFFLOADS:
                     case ASYNC_SERVICE_FACTORY_NO_OFFLOADS:
+                    case ASYNC_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
@@ -379,45 +377,17 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
-                    case ASYNC_CLASS_EXEC_ID:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        NULL, NULL, routeThreadName(), routeThreadName());
-                                break;
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        routeThreadName(), routeThreadName(), routeThreadName(), routeThreadName());
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_NO_OFFLOADS:
                     case BLOCKING_METHOD_NO_OFFLOADS:
                     case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
-                                        NULL, NULL, NULL, NULL);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case BLOCKING_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
                             case TEST_BI_DI_STREAM:
                             case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
+                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
                                         NULL, NULL, NULL, NULL);
                                 break;
                             default:
@@ -434,33 +404,18 @@ class ExecutionStrategyTest {
                     case ASYNC_CLASS_NO_OFFLOADS:
                     case ASYNC_METHOD_NO_OFFLOADS:
                     case ASYNC_SERVICE_FACTORY_NO_OFFLOADS:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(builderExecutorName(), builderThreadName(),
-                                        NULL, NULL, builderThreadName(), builderThreadName());
-                                break;
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(builderExecutorName(), builderThreadName(),
-                                        builderThreadName(), builderThreadName(),
-                                        builderThreadName(), builderThreadName());
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case ASYNC_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        NULL, NULL, routeThreadName(), routeThreadName());
+                                expected = new ThreadInfo(contextExecutorName(), contextThreadName(),
+                                        NULL, NULL, contextThreadName(), contextThreadName());
                                 break;
                             case TEST_BI_DI_STREAM:
                             case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        routeThreadName(), routeThreadName(), routeThreadName(), routeThreadName());
+                                expected = new ThreadInfo(contextExecutorName(), contextThreadName(),
+                                        contextThreadName(), contextThreadName(),
+                                        contextThreadName(), contextThreadName());
                                 break;
                             default:
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
@@ -470,25 +425,13 @@ class ExecutionStrategyTest {
                     case BLOCKING_CLASS_NO_OFFLOADS:
                     case BLOCKING_METHOD_NO_OFFLOADS:
                     case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(builderExecutorName(), builderThreadName(),
-                                        NULL, NULL, NULL, NULL);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case BLOCKING_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
                             case TEST_BI_DI_STREAM:
                             case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
+                                expected = new ThreadInfo(contextExecutorName(), contextThreadName(),
                                         NULL, NULL, NULL, NULL);
                                 break;
                             default:
@@ -502,6 +445,7 @@ class ExecutionStrategyTest {
             case NO_OFFLOADS:
                 switch (routeStrategy) {
                     case ASYNC_DEFAULT:
+                    case ASYNC_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
@@ -512,22 +456,6 @@ class ExecutionStrategyTest {
                             case TEST_REQUEST_STREAM:
                                 expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
                                         globalThreadName(), globalThreadName(), globalThreadName(), globalThreadName());
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
-                    case ASYNC_CLASS_EXEC_ID:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        NULL, NULL, routeThreadName(), routeThreadName());
-                                break;
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
-                                        routeThreadName(), routeThreadName(), routeThreadName(), routeThreadName());
                                 break;
                             default:
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
@@ -552,25 +480,13 @@ class ExecutionStrategyTest {
                         }
                         break;
                     case BLOCKING_DEFAULT:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
-                                        NULL, NULL, NULL, NULL);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case BLOCKING_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
                             case TEST_RESPONSE_STREAM:
                             case TEST_BI_DI_STREAM:
                             case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(routeExecutorName(), routeThreadName(),
+                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
                                         NULL, NULL, NULL, NULL);
                                 break;
                             default:
@@ -597,7 +513,7 @@ class ExecutionStrategyTest {
                 }
                 break;
             default:
-                throw new IllegalStateException("Unknown builder execution strategy: " + builderStrategy);
+                throw new IllegalStateException("Unknown context execution strategy: " + contextExecutionStrategy);
         }
         assertThat("Unexpected handleExecutorName.", threadInfo.handleExecutorName,
                 equalTo(expected.handleExecutorName));
@@ -617,24 +533,16 @@ class ExecutionStrategyTest {
         return globalExecutionContext().executor().toString();
     }
 
-    private static String builderExecutorName() {
-        return BUILDER_EXEC.executor().toString();
-    }
-
-    private static String routeExecutorName() {
-        return ROUTE_EXEC.executor().toString();
+    private static String contextExecutorName() {
+        return CONTEXT_EXEC.executor().toString();
     }
 
     private static String globalThreadName() {
         return "servicetalk-global-executor";
     }
 
-    private static String builderThreadName() {
-        return BUILDER_EXEC_NAME_PREFIX;
-    }
-
-    private static String routeThreadName() {
-        return ROUTE_EXEC_NAME_PREFIX;
+    private static String contextThreadName() {
+        return CONTEXT_EXEC_NAME_PREFIX;
     }
 
     private static String ioThreadName() {

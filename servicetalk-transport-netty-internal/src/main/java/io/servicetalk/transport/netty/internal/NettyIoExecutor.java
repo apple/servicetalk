@@ -17,9 +17,10 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 /**
- * {@link IoExecutor} for netty.
+ * {@link IoExecutor} for Netty.
  * <p><strong>Caution</strong></p>
  * Implementations of this interface assumes that they would not be used to run blocking code.
  * If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.
@@ -33,4 +34,11 @@ public interface NettyIoExecutor extends IoExecutor {
      * @return an {@link Executor} which will use an {@link IoExecutor} thread for execution.
      */
     Executor asExecutor();
+
+    /**
+     * Determine if threads used by this {@link IoExecutor} are marked with {@link IoThreadFactory.IoThread} interface.
+     *
+     * @return {@code true} if supported
+     */
+    boolean isIoThreadSupported();
 }

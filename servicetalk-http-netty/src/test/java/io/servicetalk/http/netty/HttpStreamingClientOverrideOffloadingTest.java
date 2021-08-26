@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -40,7 +39,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -48,8 +46,8 @@ import static org.hamcrest.Matchers.hasSize;
 class HttpStreamingClientOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-client-io-executor";
 
-    private IoExecutor ioExecutor;
-    private Executor executor;
+    private final IoExecutor ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
+    private final Executor executor = newCachedThreadExecutor();
     private Predicate<Thread> isInvalidThread;
     private HttpExecutionStrategy overridingStrategy;
     private ServerContext server;
@@ -57,9 +55,6 @@ class HttpStreamingClientOverrideOffloadingTest {
 
     private void setUp(final Params params)
             throws Exception {
-        this.ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
-                NORM_PRIORITY));
-        this.executor = newCachedThreadExecutor();
         this.isInvalidThread = params.isInvalidThread;
         this.overridingStrategy = params.overridingStrategy == null ?
                 defaultStrategy(executor) : params.overridingStrategy;
@@ -73,7 +68,6 @@ class HttpStreamingClientOverrideOffloadingTest {
     }
 
     enum Params {
-
         OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), noOffloadsStrategy(), null),
         DEFAULT_NO_OFFLOAD(HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null,
                 noOffloadsStrategy()),

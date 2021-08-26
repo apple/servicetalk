@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * ServiceTalk's shared {@link ExecutionContext} with reasonable defaults for APIs when a user doesn't provide one.
@@ -61,11 +60,10 @@ public final class GlobalExecutionContext {
         static final ExecutionContext INSTANCE;
 
         static {
-            final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(
-                    new NettyIoThreadFactory(GlobalIoExecutor.NAME_PREFIX, true)));
+            final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(GlobalIoExecutor.NAME_PREFIX));
             final Executor executor = new GlobalExecutor(newCachedThreadExecutor(
-                    new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX, true, NORM_PRIORITY)));
-            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_ALL_STRATEGY);
+                    new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX)));
+            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_FROM_IO_STRATEGY);
             LOGGER.debug("Initialized GlobalExecutionContext");
         }
 
@@ -111,6 +109,11 @@ public final class GlobalExecutionContext {
         @Override
         public boolean isFileDescriptorSocketAddressSupported() {
             return delegate.isFileDescriptorSocketAddressSupported();
+        }
+
+        @Override
+        public boolean isIoThreadSupported() {
+            return delegate.isIoThreadSupported();
         }
 
         @Override

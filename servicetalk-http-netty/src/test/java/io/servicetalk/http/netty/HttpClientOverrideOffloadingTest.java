@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -38,7 +37,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -54,8 +52,7 @@ class HttpClientOverrideOffloadingTest {
     private HttpClient client;
 
     void setUp(final Params params) throws Exception {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
-                NORM_PRIORITY));
+        ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
         executor = newCachedThreadExecutor();
         this.isInvalidThread = params.isInvalidThread;
         this.overridingStrategy = params.overridingStrategy == null ?

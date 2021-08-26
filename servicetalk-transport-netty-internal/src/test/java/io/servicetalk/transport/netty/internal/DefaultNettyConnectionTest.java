@@ -102,7 +102,7 @@ class DefaultNettyConnectionTest {
         demandEstimator = mock(WriteDemandEstimator.class);
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
-                buffer -> {
+                null, buffer -> {
                     if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
                         throw DELIBERATE_EXCEPTION;
                     }

@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -61,9 +60,8 @@ import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.http.netty.StreamObserverTest.safeSync;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.HostAndPort.of;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Integer.parseInt;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -86,7 +84,7 @@ class H2ConcurrencyControllerTest {
 
     @BeforeEach
     void setUp() {
-        serverEventLoopGroup = createEventLoopGroup(1, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
         for (int i = 0; i < N_ITERATIONS; i++) {
             latches[i] = new CountDownLatch(1);
         }

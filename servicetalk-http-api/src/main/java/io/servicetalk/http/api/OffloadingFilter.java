@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 
+import java.util.function.BooleanSupplier;
+
 import static java.util.function.Function.identity;
 
 /**
@@ -27,14 +29,18 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
 
     private final HttpExecutionStrategy strategy;
     private final StreamingHttpServiceFilterFactory offloaded;
+    private final BooleanSupplier shouldOffload;
 
     /**
      * @param strategy Execution strategy for the offloaded filters
      * @param offloaded Filters to be offloaded
+     * @param shouldOffload returns true if offloading is appropriate for the current execution context.
      */
-    OffloadingFilter(HttpExecutionStrategy strategy, StreamingHttpServiceFilterFactory offloaded) {
+    OffloadingFilter(HttpExecutionStrategy strategy, StreamingHttpServiceFilterFactory offloaded,
+                     BooleanSupplier shouldOffload) {
         this.strategy = strategy;
         this.offloaded = offloaded;
+        this.shouldOffload = shouldOffload;
     }
 
     @Override
@@ -53,10 +59,10 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
                         new ExecutionContextOverridingServiceContext(ctx, strategy, e);
 
                 if (strategy.isDataReceiveOffloaded()) {
-                    request = request.transformMessageBody(p -> p.publishOn(e));
+                    request = request.transformMessageBody(p -> p.publishOn(e, shouldOffload));
                 }
                 final Single<StreamingHttpResponse> resp;
-                if (strategy.isMetadataReceiveOffloaded()) {
+                if (strategy.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
                     final StreamingHttpRequest r = request;
                     resp = e.submit(() -> delegate().handle(wrappedCtx, r, responseFactory).subscribeShareContext())
                             // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
@@ -68,7 +74,9 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
                         // This is different from invokeService() where we just offload once on the  flattened
                         // (meta + data) stream. In this case, we need to preserve the service contract and hence
                         // have to offload both meta and data separately.
-                        resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
+                        resp.map(r -> r.transformMessageBody(
+                                p -> p.subscribeOn(e, shouldOffload))).subscribeOn(e, shouldOffload) :
+                        resp;
             }
         };
     }

@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
@@ -140,9 +139,8 @@ import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.String.valueOf;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
@@ -180,7 +178,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     private void setUp(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         this.h2PriorKnowledge = h2PriorKnowledge;
     }
 
