@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.inmemory.api;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.opentracing;
 
-import io.opentracing.propagation.Format;
-
-/**
- * A {@link Format} compatible with {@link InMemorySpanContext}.
- * @param <C> the carrier type.
- */
-public interface InMemorySpanContextFormat<C> extends Format<C>,
-                                                      InMemorySpanContextInjector<C>,
-                                                      InMemorySpanContextExtractor<C> {
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
