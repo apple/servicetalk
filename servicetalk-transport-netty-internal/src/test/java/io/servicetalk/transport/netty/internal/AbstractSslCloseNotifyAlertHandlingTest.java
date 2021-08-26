@@ -95,7 +95,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                 conn.closeAsync().toFuture().get();
             } finally {
                 channel.finishAndReleaseAll();
-                channel.close().syncUninterruptibly();
+                channel.close().sync();
             }
         }
     }

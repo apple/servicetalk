@@ -59,7 +59,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     private BlockingHttpClient client;
 
     @Override
-    void start() {
+    void start() throws Exception {
         serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
@@ -70,17 +70,17 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     @AfterEach
     void finish() throws Exception {
         if (serverAcceptorChannel != null) {
-            serverAcceptorChannel.close().syncUninterruptibly();
+            serverAcceptorChannel.close().sync();
         }
         if (serverEventLoopGroup != null) {
-            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
         }
         if (client != null) {
             client.close();
         }
     }
 
-    private Channel newNettyServer() {
+    private Channel newNettyServer() throws Exception {
         ServerBootstrap sb = new ServerBootstrap();
         sb.group(serverEventLoopGroup);
         sb.channel(serverChannel(serverEventLoopGroup, InetSocketAddress.class));
@@ -97,7 +97,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
                 p.addLast(EchoServerHandler.INSTANCE);
             }
         });
-        return sb.bind(localAddress(0)).syncUninterruptibly().channel();
+        return sb.bind(localAddress(0)).sync().channel();
     }
 
     @Override

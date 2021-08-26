@@ -518,7 +518,7 @@ class RequestResponseCloseHandlerTest {
     class RequestResponseUserEventTest {
 
         @Test
-        void clientOutboundDataEndEventEmitsUserEventAlways() {
+        void clientOutboundDataEndEventEmitsUserEventAlways() throws Exception {
             AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
@@ -532,12 +532,12 @@ class RequestResponseCloseHandlerTest {
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(true);
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(),
                     channel.newPromise()));
-            channel.close().syncUninterruptibly();
+            channel.close().sync();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
 
         @Test
-        void serverOutboundDataEndEventDoesntEmitUntilClosing() {
+        void serverOutboundDataEndEventDoesntEmitUntilClosing() throws Exception {
             AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
@@ -551,7 +551,7 @@ class RequestResponseCloseHandlerTest {
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
             channel.eventLoop().execute(() ->
                     ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
-            channel.close().syncUninterruptibly();
+            channel.close().sync();
             assertThat("OutboundDataEndEvent should not fire", ab.get(), is(false));
         }
 
@@ -584,12 +584,12 @@ class RequestResponseCloseHandlerTest {
             // Response #2
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx, ctx.newPromise()));
-            channel.close().syncUninterruptibly();
+            channel.close().sync();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
 
         @Test
-        void serverOutboundDataEndEventEmitsUserEventWhenClosing() {
+        void serverOutboundDataEndEventEmitsUserEventWhenClosing() throws Exception {
             AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
@@ -604,7 +604,7 @@ class RequestResponseCloseHandlerTest {
             channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
             channel.eventLoop().execute(() ->
                     ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
-            channel.close().syncUninterruptibly();
+            channel.close().sync();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
     }
@@ -634,21 +634,21 @@ class RequestResponseCloseHandlerTest {
 
         @BeforeEach
         @SuppressWarnings("unchecked")
-        public void setup() throws InterruptedException {
+        public void setup() throws Exception {
             ssChannel = startServer();
             cChannel = connectClient(ssChannel.localAddress());
             connectedLatch.await();
         }
 
         @AfterEach
-        public void dispose() {
-            cChannel.close().syncUninterruptibly();
-            sChannel.close().syncUninterruptibly();
-            ssChannel.close().syncUninterruptibly();
+        public void dispose() throws Exception {
+            cChannel.close().sync();
+            sChannel.close().sync();
+            ssChannel.close().sync();
         }
 
         // Based on TcpServerInitializer
-        private ServerSocketChannel startServer() {
+        private ServerSocketChannel startServer() throws Exception {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                     toEventLoopAwareNettyIoExecutor(serverCtx.ioExecutor());
             EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
@@ -683,11 +683,11 @@ class RequestResponseCloseHandlerTest {
             bs.childOption(AUTO_CLOSE, false);
 
             return (ServerSocketChannel) bs.bind(localAddress(0))
-                    .syncUninterruptibly().channel();
+                    .sync().channel();
         }
 
         // Based on TcpConnector
-        private SocketChannel connectClient(InetSocketAddress address) {
+        private SocketChannel connectClient(InetSocketAddress address) throws Exception {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                     toEventLoopAwareNettyIoExecutor(clientCtx.ioExecutor());
             EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
@@ -719,12 +719,12 @@ class RequestResponseCloseHandlerTest {
             bs.option(ALLOW_HALF_CLOSURE, true);
             bs.option(AUTO_CLOSE, false);
 
-            return (SocketChannel) bs.connect(address).syncUninterruptibly().channel();
+            return (SocketChannel) bs.connect(address).sync().channel();
         }
 
         @Test
-        void clientCloseEmitsNoShutdownEventsOnClient() {
-            cChannel.close().syncUninterruptibly();
+        void clientCloseEmitsNoShutdownEventsOnClient() throws Exception {
+            cChannel.close().sync();
             assertThat(clientOutputShutdownLatch.getCount(), equalTo(1L));
             assertThat(clientInputShutdownLatch.getCount(), equalTo(1L));
             assertThat(clientInputShutdownReadCompleteLatch.getCount(), equalTo(1L));
@@ -735,7 +735,7 @@ class RequestResponseCloseHandlerTest {
 
         @Test
         void clientCloseEmitsServerInputShutdownImmediatelyAndOutputAfterWriting() throws Exception {
-            cChannel.close().syncUninterruptibly();
+            cChannel.close().sync();
             serverInputShutdownReadCompleteLatch.await();
             serverInputShutdownLatch.await();
             assertThat(sChannel.isInputShutdown(), is(true));
@@ -749,7 +749,7 @@ class RequestResponseCloseHandlerTest {
 
         @Test
         void clientShutdownOutputEmitsClientOutputShutdownAndServerInputShutdown() throws Exception {
-            cChannel.shutdownOutput().syncUninterruptibly();
+            cChannel.shutdownOutput().sync();
             clientOutputShutdownLatch.await();
             serverInputShutdownReadCompleteLatch.await();
             serverInputShutdownLatch.await();
@@ -764,7 +764,7 @@ class RequestResponseCloseHandlerTest {
         @Test
         void serverShutdownInputEmitsServerInputShutdownReadCompleteOnly() throws Exception {
             assumeFalse(sChannel instanceof NioSocketChannel, "Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.");
-            sChannel.shutdownInput().syncUninterruptibly();
+            sChannel.shutdownInput().sync();
             serverInputShutdownReadCompleteLatch.await();
             assertThat(serverInputShutdownLatch.getCount(), is(1L));
             assertThat(sChannel.isInputShutdown(), is(true));
@@ -776,8 +776,8 @@ class RequestResponseCloseHandlerTest {
         }
 
         @Test
-        void serverCloseEmitsNoShutdownEventsOnServer() {
-            sChannel.close().syncUninterruptibly();
+        void serverCloseEmitsNoShutdownEventsOnServer() throws Exception {
+            sChannel.close().sync();
             assertThat(serverOutputShutdownLatch.getCount(), equalTo(1L));
             assertThat(serverInputShutdownLatch.getCount(), equalTo(1L));
             assertThat(serverInputShutdownReadCompleteLatch.getCount(), equalTo(1L));
@@ -788,7 +788,7 @@ class RequestResponseCloseHandlerTest {
 
         @Test
         void serverCloseEmitsClientInputShutdownImmediatelyAndOutputAfterWriting() throws Exception {
-            sChannel.close().syncUninterruptibly();
+            sChannel.close().sync();
             clientInputShutdownReadCompleteLatch.await();
             clientInputShutdownLatch.await();
             assertThat(cChannel.isInputShutdown(), is(true));
@@ -800,12 +800,12 @@ class RequestResponseCloseHandlerTest {
             assertThat(cChannel.isOpen(), is(true));
         }
 
-        private void writeUntilFailure(Channel channel) throws InterruptedException {
-            channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).syncUninterruptibly(); // triggers RST
+        private void writeUntilFailure(Channel channel) throws Exception {
+            channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).sync(); // triggers RST
             for (;;) {
                 try {
                     // observes error
-                    channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).syncUninterruptibly();
+                    channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).sync();
                 } catch (Exception ignored) {
                     break;
                 }

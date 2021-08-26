@@ -87,7 +87,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
                     p.addLast(EchoServerHandler.INSTANCE);
                 }
             });
-            serverAcceptorChannel = sb.bind(localAddress(0)).syncUninterruptibly().channel();
+            serverAcceptorChannel = sb.bind(localAddress(0)).sync().channel();
 
             try (BlockingHttpClient client = HttpClients.forSingleAddress(
                     HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
@@ -106,9 +106,9 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
             }
         } finally {
             if (serverAcceptorChannel != null) {
-                serverAcceptorChannel.close().syncUninterruptibly();
+                serverAcceptorChannel.close().sync();
             }
-            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
         }
     }
 

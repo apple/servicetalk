@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -83,7 +84,7 @@ class StreamObserverTest {
     private final HttpClient client;
     private final CountDownLatch requestReceived = new CountDownLatch(1);
 
-    StreamObserverTest() {
+    StreamObserverTest() throws Exception {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");
@@ -122,15 +123,17 @@ class StreamObserverTest {
     }
 
     @AfterEach
-    void teardown() {
-        safeSync(() -> serverAcceptorChannel.close().syncUninterruptibly());
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly());
+    void teardown() throws Exception {
+        safeSync(() -> serverAcceptorChannel.close().sync());
+        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
         safeClose(client);
     }
 
-    static void safeSync(Runnable runnable) {
+    static void safeSync(Callable<Object> callable) throws Exception {
         try {
-            runnable.run();
+            callable.call();
+        } catch (InterruptedException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }
