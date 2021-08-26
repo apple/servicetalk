@@ -41,7 +41,6 @@ import java.time.Duration;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static java.time.Duration.ofMillis;
 
 /**
  * A filter to enable retries for HTTP requests.
@@ -66,7 +65,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
         return delegate.request(strategy, request).retryWhen((count, t) -> {
             if (settings.isRetryable(request, t)) {
                 if (settings.evaluateDelayedRetries() && t instanceof DelayedRetry) {
-                   final Duration constant = ofMillis(((DelayedRetry) t).delayMillis());
+                   final Duration constant = ((DelayedRetry) t).delay();
                    return retryStrategy.apply(count, t).concat(executor.timer(constant));
                 }
 
@@ -124,12 +123,12 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
 
         /**
          * The retrying-filter will also evaluate the {@link DelayedRetry} marker interface
-         * of an exception and use the provided {@link DelayedRetry#delayMillis() constant-delay} in the retry period.
-         * In case a max-delay was set in this builder, the {@link DelayedRetry#delayMillis() constant-delay} overrides
+         * of an exception and use the provided {@link DelayedRetry#delay() constant-delay} in the retry period.
+         * In case a max-delay was set in this builder, the {@link DelayedRetry#delay() constant-delay} overrides
          * it and takes precedence.
          *
          * @param evaluate Evaluate the {@link Throwable errors} for the {@link DelayedRetry} marker interface, and
-         * if matched, then use the {@link DelayedRetry#delayMillis() constant-delay} additionally to the backoff
+         * if matched, then use the {@link DelayedRetry#delay() constant-delay} additionally to the backoff
          * strategy in use.
          * @return {@code this}.
          */
@@ -159,5 +158,26 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
             return defaultRetryForPredicate().or((meta, throwable) ->
                     throwable instanceof IOException && meta.method().properties().isIdempotent());
         }
+    }
+
+    /**
+     * An interface that enhances any {@link Exception} to provide a constant {@link Duration delay} to be applied when
+     * retrying through a {@link RetryingHttpRequesterFilter retrying-filter}.
+     * <p>
+     * Constant delay returned from {@link #delay()} will only be considered if the
+     * {@link RetryingHttpRequesterFilter.Builder#evaluateDelayedRetries(boolean)} is set to {@code true}.
+     */
+    public interface DelayedRetry {
+
+        /**
+         * A constant delay to apply in milliseconds.
+         * The total delay for the retry logic will be the sum of this value and the result of the
+         * {@link io.servicetalk.concurrent.api.RetryStrategies retry-strategy} in-use. Consider using 'full-jitter'
+         * flavours from the {@link io.servicetalk.concurrent.api.RetryStrategies retry-strategies} to avoid having
+         * another constant delay applied per-retry.
+         *
+         * @return The {@link Duration} to apply as constant delay when retrying.
+         */
+        Duration delay();
     }
 }
