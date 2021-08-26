@@ -543,7 +543,7 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
         //
         // Note: we do not support obs-fold.
         // Illegal chars are control chars (0-31) except HT (9), and DEL (127):
-        if (((value & CONTROL_CHARS_MASK) != 0 && value != HT) || value == DEL) {
+        if (((value & CONTROL_CHARS_MASK) == 0 && value != HT) || value == DEL) {
             throw new IllegalCharacterException(value,
                     "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
         }
