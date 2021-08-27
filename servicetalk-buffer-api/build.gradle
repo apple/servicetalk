@@ -26,6 +26,4 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

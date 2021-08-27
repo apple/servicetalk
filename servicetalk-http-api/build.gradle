@@ -60,6 +60,4 @@ dependencies {
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

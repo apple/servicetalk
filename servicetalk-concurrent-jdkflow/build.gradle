@@ -42,6 +42,4 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

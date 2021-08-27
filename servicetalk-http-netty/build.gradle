@@ -59,8 +59,6 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")

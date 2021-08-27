@@ -24,6 +24,4 @@ dependencies {
   api "org.hamcrest:hamcrest-library:$hamcrestVersion"
 
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -45,6 +45,4 @@ dependencies {
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
