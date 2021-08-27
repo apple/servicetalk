@@ -56,33 +56,11 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         CountDownLatch continueRequest = new CountDownLatch(1);
         StreamingHttpResponse response;
         try (InputStream payload = payload()) {
-            Future<StreamingHttpResponse> responseFuture = sendRequest(connection, continueRequest, payload);
-            response = responseFuture.get();    // response meta-data received before request completes
+            response = stallingSendRequest(connection, continueRequest, payload).get();
+            // response meta-data received before request completes
             assertResponse(response, HTTP_1_1, OK);
         }
         continueRequest.countDown();
-
-        ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture().get());
-        assertThat(e.getCause(), instanceOf(IOException.class));
-        assertThat(e.getCause().getMessage(), containsString("Stream closed"));
-    }
-
-    @Test
-    void defaultFullDuplexWithDelayOfCurrentThread() throws Exception {
-        setUp(CACHED, CACHED_SERVER);
-
-        StreamingHttpConnection connection = streamingHttpConnection();
-        CountDownLatch continueRequest = new CountDownLatch(1);
-        StreamingHttpResponse response;
-        try (InputStream payload = payload()) {
-            Future<StreamingHttpResponse> responseFuture = sendRequest(connection, continueRequest, payload);
-            // Delay completion of the request payload body:
-            Thread.sleep(100);
-            assertThat(responseFuture.isDone(), is(true));  // response meta-data received before request completes
-            continueRequest.countDown();
-            response = responseFuture.get();
-            assertResponse(response, HTTP_1_1, OK);
-        }
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture().get());
         assertThat(e.getCause(), instanceOf(IOException.class));
@@ -97,7 +75,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         StreamingHttpConnection connection = streamingHttpConnection();
         CountDownLatch continueRequest = new CountDownLatch(1);
         try (InputStream payload = payload()) {
-            Future<StreamingHttpResponse> responseFuture = sendRequest(connection, continueRequest, payload);
+            Future<StreamingHttpResponse> responseFuture = stallingSendRequest(connection, continueRequest, payload);
             // Delay completion of the request payload body:
             Thread.sleep(100);
             assertThat(responseFuture.isDone(), is(false)); // response meta-data completes only after request is sent
@@ -112,9 +90,9 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         return new BufferedInputStream(new ByteArrayInputStream(array));
     }
 
-    private static Future<StreamingHttpResponse> sendRequest(StreamingHttpConnection connection,
-                                                             CountDownLatch continueRequest,
-                                                             InputStream payload) {
+    private static Future<StreamingHttpResponse> stallingSendRequest(StreamingHttpConnection connection,
+                                                                     CountDownLatch continueRequest,
+                                                                     InputStream payload) {
         return connection.request(connection.post(SVC_ECHO).payloadBody(fromInputStream(payload, CHUNK_SIZE)
                 .map(chunk -> {
                     try {

@@ -38,8 +38,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
  * sent.
  * <p>
  * ServiceTalk transport is full-duplex, meaning that a {@link StreamingHttpRequester} or
- * {@link BlockingStreamingHttpRequester} can read the response before or while it still sends a request payload body.
- * In some scenarios and for backward compatibility with legacy HTTP clients, users may have expectations of a
+ * {@link BlockingStreamingHttpRequester} can read the response before or while it is still sending a request payload
+ * body. In some scenarios, and for backward compatibility with legacy HTTP clients, users may have expectations of a
  * sequential execution of the request and response. This filter helps to enforce that behavior.
  */
 public final class EnforceSequentialModeRequesterFilter implements StreamingHttpClientFilterFactory,
