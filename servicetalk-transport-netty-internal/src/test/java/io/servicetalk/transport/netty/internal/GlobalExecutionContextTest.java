@@ -23,7 +23,8 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class GlobalExecutionContextTest {
 
@@ -31,8 +32,10 @@ class GlobalExecutionContextTest {
     void testGetGlobalExecutionContext() throws InterruptedException {
         ExecutionContext gec = globalExecutionContext();
         CountDownLatch scheduleLatch = new CountDownLatch(2);
-        gec.executor().schedule(scheduleLatch::countDown, 1, SECONDS);
-        toNettyIoExecutor(gec.ioExecutor()).asExecutor().schedule(scheduleLatch::countDown, 1, SECONDS);
+        gec.executor().schedule(scheduleLatch::countDown, 5, MILLISECONDS);
+        NettyIoExecutor ioExecutor = toNettyIoExecutor(gec.ioExecutor());
+        assertThat("global ioExecutor does not support IoThread", ioExecutor.isIoThreadSupported());
+        ioExecutor.asExecutor().schedule(scheduleLatch::countDown, 5, MILLISECONDS);
         scheduleLatch.await();
     }
 }
