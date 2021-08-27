@@ -20,7 +20,7 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -34,21 +34,21 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
+class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
     @Test
-    public void hostDownDoesntCloseConnectionCloseLB() throws Exception {
+    void hostDownDoesntCloseConnectionCloseLB() throws Exception {
         hostDownDoesntCloseConnection(false);
     }
 
     @Test
-    public void hostDownDoesntCloseConnectionCloseLBGracefully() throws Exception {
+    void hostDownDoesntCloseConnectionCloseLBGracefully() throws Exception {
         hostDownDoesntCloseConnection(true);
     }
 
@@ -73,7 +73,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void closedConnectionRemovesExpiredHost() throws Exception {
+    void closedConnectionRemovesExpiredHost() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
 
@@ -93,7 +93,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
 
     // Concurrency test, worth running ~10K times to spot concurrency issues.
     @Test
-    public void closureOfLastConnectionDoesntRaceWithNewAvailableEvent() throws Exception {
+    void closureOfLastConnectionDoesntRaceWithNewAvailableEvent() throws Exception {
         Executor executor = Executors.newFixedSizeExecutor(1);
         try {
             sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -116,7 +116,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
 
     // Concurrency test, worth running >10K times to spot concurrency issues.
     @Test
-    public void expiringAHostDoesntRaceWithConnectionAdding() throws Exception {
+    void expiringAHostDoesntRaceWithConnectionAdding() throws Exception {
         Executor executor = Executors.newFixedSizeExecutor(1);
         try {
             sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -167,7 +167,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
 
     // Concurrency test, worth running >10K times to spot concurrency issues.
     @Test
-    public void expiringHostWhileConnectionsClose() throws Exception {
+    void expiringHostWhileConnectionsClose() throws Exception {
         Executor executor = Executors.newFixedSizeExecutor(1);
         try {
             sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -192,7 +192,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void closedConnectionDoesntRemoveActiveHost() throws Exception {
+    void closedConnectionDoesntRemoveActiveHost() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
 
@@ -206,7 +206,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void handleDiscoveryEventsForExpiredHostBecomingAvailable() throws Exception {
+    void handleDiscoveryEventsForExpiredHostBecomingAvailable() throws Exception {
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -233,7 +233,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void handleDiscoveryEventsForConnectedHosts() throws Exception {
+    void handleDiscoveryEventsForConnectedHosts() throws Exception {
         assertThat(lb.usedAddresses(), is(empty()));
 
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
@@ -276,7 +276,7 @@ public class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerT
     }
 
     @Test
-    public void handleDiscoveryEventsForNotConnectedHosts() {
+    void handleDiscoveryEventsForNotConnectedHosts() {
         assertThat(lb.usedAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
