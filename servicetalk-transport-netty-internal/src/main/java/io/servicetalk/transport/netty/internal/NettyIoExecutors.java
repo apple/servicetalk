@@ -94,7 +94,7 @@ public final class NettyIoExecutors {
     public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
             int ioThreads, IoThreadFactory<T> threadFactory) {
         validateIoThreads(ioThreads);
-        return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
+        return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true, true);
     }
 
     private static <T extends Thread & IoThread> EventLoopGroup createEventLoopGroup(int ioThreads,
