@@ -21,10 +21,6 @@
     </Console>
   </Appenders>
   <Loggers>
-    <!-- Enables wire logging and h2-frame logging messages -->
-    <Logger name="servicetalk-examples-wire-logger" level="TRACE"/>
-    <Logger name="servicetalk-examples-h2-frame-logger" level="TRACE"/>
-
     <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
     <Root level="${sys:servicetalk.logger.level:-INFO}">
       <AppenderRef ref="Console"/>
