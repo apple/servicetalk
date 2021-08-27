@@ -43,8 +43,8 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static java.lang.Boolean.TRUE;
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,8 +56,7 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
     private static final int TCP_BACKLOG = IS_LINUX ? 0 : 1;
-    private static final int CONNECT_TIMEOUT_MILLIS = (int) ofSeconds(1).toMillis();
-    private static final int VERIFY_REQUEST_AWAIT_MILLIS = 500;
+    private static final int CONNECT_TIMEOUT_MILLIS = (int) SECONDS.toMillis(2);
     private static final int TRY_REQUEST_AWAIT_MILLIS = 500;
 
     @Override
@@ -123,8 +122,8 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
 
     private void assertConnectionRequestSucceeds(final StreamingHttpRequest request) throws Exception {
         final StreamingHttpResponse response =
-                await(streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request)),
-                        VERIFY_REQUEST_AWAIT_MILLIS, MILLISECONDS);
+                awaitIndefinitely(streamingHttpClient().reserveConnection(request)
+                        .flatMap(conn -> conn.request(request)));
         assert response != null;
         assertResponse(response, HTTP_1_1, OK, "");
     }
