@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -35,17 +35,14 @@ import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -97,68 +94,62 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 abstract class RoundRobinLoadBalancerTest {
 
-    protected static final String[] EMPTY_ARRAY = new String[] {};
+    static final String[] EMPTY_ARRAY = new String[] {};
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    final ExecutorExtension<TestExecutor> executor = ExecutorExtension.withTestExecutor();
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    @Rule
-    public final ExecutorRule<TestExecutor> executor = ExecutorRule.withTestExecutor();
-
-    protected final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
+    private final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
             new TestSingleSubscriber<>();
-    protected final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
-    protected final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
+    private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
+    private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
-    protected final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
+    final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private DelegatingConnectionFactory connectionFactory =
             new DelegatingConnectionFactory(this::newRealizedConnectionSingle);
 
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> lb;
+    RoundRobinLoadBalancer<String, TestLoadBalancedConnection> lb;
 
-    protected TestExecutor testExecutor;
+    private TestExecutor testExecutor;
 
-    protected static <T> Predicate<T> any() {
+    static <T> Predicate<T> any() {
       return __ -> true;
     }
 
-    protected Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
+    Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
         return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
+    RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
         return newTestLoadBalancer(eagerConnectionShutdown());
     }
 
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
-            DelegatingConnectionFactory connectionFactory) {
+    RoundRobinLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
+        DelegatingConnectionFactory connectionFactory) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, eagerConnectionShutdown());
     }
 
     protected abstract boolean eagerConnectionShutdown();
 
-    @Before
-    public void initialize() {
+    @BeforeEach
+    void initialize() {
         testExecutor = executor.executor();
         lb = defaultLb();
         connectionsCreated.clear();
         connectionRealizers.clear();
     }
 
-    @After
-    public void closeLoadBalancer() throws Exception {
+    @AfterEach
+    void closeLoadBalancer() throws Exception {
         awaitIndefinitely(lb.closeAsync());
         awaitIndefinitely(lb.onClose());
 
@@ -176,7 +167,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void streamEventJustClose() throws InterruptedException {
+    void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
         lb.eventStream().afterOnComplete(completeLatch::countDown).firstOrElse(() -> {
@@ -189,7 +180,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void streamEventReadyAndCompleteOnClose() throws InterruptedException {
+    void streamEventReadyAndCompleteOnClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -227,14 +218,14 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void unknownAddressIsRemoved() {
+    void unknownAddressIsRemoved() {
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
     }
 
     @Test
-    public void noServiceDiscoveryEvent() {
+    void noServiceDiscoveryEvent() {
         toSource(lb.selectConnection(any())).subscribe(selectConnectionListener);
         assertThat(selectConnectionListener.awaitOnError(), instanceOf(NoAvailableHostException.class));
 
@@ -242,14 +233,14 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void selectStampedeUnsaturableConnection() throws Exception {
+    void selectStampedeUnsaturableConnection() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         testSelectStampede(any());
     }
 
     @Test
-    public void selectStampedeSaturableConnection() throws Exception {
+    void selectStampedeSaturableConnection() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         testSelectStampede(newSaturableConnectionFilter());
@@ -314,9 +305,8 @@ abstract class RoundRobinLoadBalancerTest {
         assertThat(connectionsCreated, hasSize(both(greaterThan(0)).and(lessThanOrEqualTo(100))));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    public void roundRobining() throws Exception {
+    void roundRobining() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
         final List<String> connections = awaitIndefinitely((lb.selectConnection(any())
@@ -336,7 +326,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void closedConnectionPruning() throws Exception {
+    void closedConnectionPruning() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any()));
@@ -354,40 +344,38 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void connectionFactoryErrorPropagation() throws Exception {
+    void connectionFactoryErrorPropagation() {
         serviceDiscoveryPublisher.onComplete();
 
-        thrown.expect(instanceOf(ExecutionException.class));
-        thrown.expectCause(instanceOf(DeliberateException.class));
         connectionFactory = new DelegatingConnectionFactory(__ -> failed(DELIBERATE_EXCEPTION));
         lb = defaultLb(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        awaitIndefinitely(lb.selectConnection(any()));
+
+        ExecutionException ex = assertThrows(ExecutionException.class,
+                                             () -> awaitIndefinitely(lb.selectConnection(any())));
+        assertThat(ex.getCause(), is(instanceOf(DeliberateException.class)));
     }
 
     @Test
-    public void earlyFailsAfterClose() throws Exception {
-        thrown.expect(instanceOf(ExecutionException.class));
-        thrown.expectCause(instanceOf(IllegalStateException.class));
-
+    void earlyFailsAfterClose() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         awaitIndefinitely(lb.closeAsync());
 
-        try {
-            awaitIndefinitely(lb.selectConnection(any()));
-        } finally {
-            assertThat(connectionsCreated, is(empty()));
-        }
+        ExecutionException ex = assertThrows(ExecutionException.class,
+                                             () -> awaitIndefinitely(lb.selectConnection(any())));
+        assertThat(ex.getCause(), is(instanceOf(IllegalStateException.class)));
+
+        assertThat(connectionsCreated, is(empty()));
     }
 
     @Test
-    public void closeClosesConnectionFactory() throws Exception {
+    void closeClosesConnectionFactory() throws Exception {
         awaitIndefinitely(lb.closeAsync());
-        assertTrue("ConnectionFactory not closed.", connectionFactory.isClosed());
+        assertTrue(connectionFactory.isClosed(), "ConnectionFactory not closed.");
     }
 
     @Test
-    public void newConnectionIsClosedWhenSelectorRejects() throws Exception {
+    void newConnectionIsClosedWhenSelectorRejects() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         try {
             awaitIndefinitely(lb.selectConnection(__ -> false));
@@ -403,7 +391,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void unhealthyHostTakenOutOfPoolForSelection() throws Exception {
+    void unhealthyHostTakenOutOfPoolForSelection() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
@@ -446,7 +434,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void disabledHealthCheckDoesntRun() throws Exception {
+    void disabledHealthCheckDoesntRun() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
@@ -484,7 +472,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void hostUnhealthyIsHealthChecked() throws Exception {
+    void hostUnhealthyIsHealthChecked() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
@@ -516,7 +504,7 @@ abstract class RoundRobinLoadBalancerTest {
 
     // Concurrency test, run multiple times (at least 1000).
     @Test
-    public void hostUnhealthyDoesntRaceToRunHealthCheck() throws Exception {
+    void hostUnhealthyDoesntRaceToRunHealthCheck() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
@@ -578,8 +566,7 @@ abstract class RoundRobinLoadBalancerTest {
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
     }
 
-    @SuppressWarnings("unchecked")
-    protected void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
+    void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
     }
 
@@ -589,22 +576,22 @@ abstract class RoundRobinLoadBalancerTest {
         serviceDiscoveryPublisher.onNext(events);
     }
 
-    protected static ServiceDiscovererEvent upEvent(final String address) {
+    static ServiceDiscovererEvent upEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, true);
     }
 
-    protected static ServiceDiscovererEvent downEvent(final String address) {
+    static ServiceDiscovererEvent downEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, false);
     }
 
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-            boolean eagerConnectionShutdown) {
+    RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+        boolean eagerConnectionShutdown) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory, eagerConnectionShutdown);
     }
 
-    protected RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-            final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
-            final DelegatingConnectionFactory connectionFactory, final boolean eagerConnectionShutdown) {
+    RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+        final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
+        final DelegatingConnectionFactory connectionFactory, final boolean eagerConnectionShutdown) {
         return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
                         .eagerConnectionShutdown(eagerConnectionShutdown)
@@ -614,8 +601,8 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @SafeVarargs
-    protected static <T> void assertConnectionCount(
-            Iterable<T> addresses, Map.Entry<String, Integer>... addressAndConnCount) {
+    static <T> void assertConnectionCount(
+        Iterable<T> addresses, Map.Entry<String, Integer>... addressAndConnCount) {
         @SuppressWarnings("unchecked")
         final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(addressAndConnCount)
                 .map(ac -> both(hasProperty("key", is(ac.getKey())))
@@ -627,11 +614,11 @@ abstract class RoundRobinLoadBalancerTest {
         assertThat(addresses, iterableMatcher);
     }
 
-    protected Map.Entry<String, Integer> connectionsCount(String addr, int count) {
+    Map.Entry<String, Integer> connectionsCount(String addr, int count) {
         return new AbstractMap.SimpleImmutableEntry<>(addr, count);
     }
 
-    protected <T> void assertAddresses(Iterable<T> addresses, String... address) {
+    <T> void assertAddresses(Iterable<T> addresses, String... address) {
         @SuppressWarnings("unchecked")
         final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(address)
                 .map(a -> hasProperty("key", is(a)))
@@ -679,11 +666,11 @@ abstract class RoundRobinLoadBalancerTest {
         };
     }
 
-    protected interface TestLoadBalancedConnection extends LoadBalancedConnection {
+    interface TestLoadBalancedConnection extends LoadBalancedConnection {
         String address();
     }
 
-    protected static class DelegatingConnectionFactory implements
+    static class DelegatingConnectionFactory implements
                                                        ConnectionFactory<String, TestLoadBalancedConnection> {
 
         private final Function<String, Single<TestLoadBalancedConnection>> connectionFactory;
@@ -713,14 +700,14 @@ abstract class RoundRobinLoadBalancerTest {
         }
     }
 
-    protected static class UnhealthyHostConnectionFactory {
+    static class UnhealthyHostConnectionFactory {
         private final String failingHost;
         private final AtomicInteger momentInTime = new AtomicInteger();
         final AtomicInteger requests = new AtomicInteger();
         final Single<TestLoadBalancedConnection> properConnection;
         final List<Single<TestLoadBalancedConnection>> connections;
 
-        Function<String, Single<TestLoadBalancedConnection>> factory =
+        final Function<String, Single<TestLoadBalancedConnection>> factory =
                 new Function<String, Single<TestLoadBalancedConnection>>() {
 
             @Override
