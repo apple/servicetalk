@@ -133,6 +133,7 @@ class StreamObserverTest {
         try {
             callable.call();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw e;
         } catch (Exception e) {
             e.printStackTrace();
