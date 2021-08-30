@@ -24,7 +24,6 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tag;
-import io.opentracing.tag.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     private long startTimestampMicros = -1;
     private boolean ignoreActiveSpan;
 
-    protected AbstractInMemorySpanBuilder(String operationName, int maxTagSize) {
+    AbstractInMemorySpanBuilder(String operationName, int maxTagSize) {
         this.operationName = requireNonNull(operationName);
         this.maxTagSize = maxTagSize;
     }
@@ -106,8 +105,7 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
         if (startTimestampMicros == -1) {
             startTimestampMicros = System.currentTimeMillis() * 1000;
         }
-        return createSpan((String) tags.get(Tags.SPAN_KIND.getKey()), operationName, references, tags, maxTagSize,
-                ignoreActiveSpan, startTimestampMicros);
+        return createSpan(operationName, references, tags, maxTagSize, ignoreActiveSpan, startTimestampMicros);
     }
 
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -140,7 +138,6 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     /**
      * Create a span with current builder settings.
      *
-     * @param kind Value of the {@code span.kind} tag if specified, could be null.
      * @param operationName the operation name.
      * @param references references for the span.
      * @param tags tags for the span.
@@ -149,7 +146,6 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
      * @param startTimestampMicros the span start time in micro seconds.
      * @return newly created span
      */
-    protected abstract InMemorySpan createSpan(@Nullable String kind, String operationName,
-                                               List<InMemoryReference> references, Map<String, Object> tags,
-                                               int maxTagSize, boolean ignoreActiveSpan, long startTimestampMicros);
+    abstract InMemorySpan createSpan(String operationName, List<InMemoryReference> references, Map<String, Object> tags,
+                                     int maxTagSize, boolean ignoreActiveSpan, long startTimestampMicros);
 }

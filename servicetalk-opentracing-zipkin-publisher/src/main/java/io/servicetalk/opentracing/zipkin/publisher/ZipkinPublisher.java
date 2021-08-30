@@ -156,19 +156,14 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      */
     @Override
     public void onSpanFinished(final InMemorySpan span, long durationMicros) {
-        final long begin = span.startEpochMicros();
-        final long end = begin + durationMicros;
-
         Span.Builder builder = Span.newBuilder()
                 .name(span.operationName())
                 .traceId(span.context().toTraceId())
                 .id(span.context().toSpanId())
                 .parentId(span.context().parentSpanId())
-                .timestamp(begin)
-                .addAnnotation(end, "end")
+                .timestamp(span.startEpochMicros())
                 .localEndpoint(endpoint)
                 .duration(durationMicros);
-        span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
         Iterable<? extends InMemorySpanLog> logs = span.logs();
         if (logs != null) {
             logs.forEach(log -> builder.addAnnotation(log.epochMicros(), log.eventName()));
@@ -183,8 +178,10 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
         } else if (Tags.SPAN_KIND_CONSUMER.equals(type)) {
             builder.kind(Span.Kind.CONSUMER);
         }
+        span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
 
         Span s = builder.build();
+        s.tags().remove(Tags.SPAN_KIND.getKey());
         try {
             reporter.report(s);
         } catch (Throwable t) {
