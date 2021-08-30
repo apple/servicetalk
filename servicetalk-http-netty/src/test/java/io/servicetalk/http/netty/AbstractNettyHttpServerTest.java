@@ -275,8 +275,7 @@ abstract class AbstractNettyHttpServerTest {
         this.serverTransportObserver = requireNonNull(server);
     }
 
-    StreamingHttpResponse makeRequest(final StreamingHttpRequest request)
-            throws Exception {
+    StreamingHttpResponse makeRequest(final StreamingHttpRequest request) throws Exception {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 

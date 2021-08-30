@@ -64,7 +64,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 class ContentLengthTest {
 
-    private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
+    private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false, false);
 
     @Test
     void shouldNotCalculateRequestContentLengthFromEmptyPublisher() throws Exception {

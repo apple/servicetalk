@@ -86,7 +86,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
-    private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
+    private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false, false);
     private static final String EXISTING_CONTENT = "Hello World!";
     private static final int EXISTING_CONTENT_LENGTH = EXISTING_CONTENT.length();
     private static final String PAYLOAD = "Hello";

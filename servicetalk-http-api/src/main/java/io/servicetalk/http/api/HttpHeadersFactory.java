@@ -48,9 +48,16 @@ public interface HttpHeadersFactory {
     }
 
     /**
-     * Determine if a cookies should be validated during parsing into {@link HttpSetCookie}s.
+     * Determine if cookies should be validated during parsing into {@link HttpSetCookie}s.
      *
      * @return {@code true} if a cookies should be validated during parsing into {@link HttpSetCookie}s.
      */
     boolean validateCookies();
+
+    /**
+     * Determine if header values should be validated during parsing into {@link HttpHeaders}s.
+     *
+     * @return {@code true} if header values should be validated during parsing into {@link HttpHeaders}s.
+     */
+    boolean validateValues();
 }

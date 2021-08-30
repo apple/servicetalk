@@ -179,6 +179,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                         " request");
             }
         }
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
+        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
+                headersFactory.validateValues());
     }
 }

@@ -23,6 +23,6 @@ public class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
 
     @Override
     protected HttpHeaders newHeaders(final int initialSizeHint) {
-        return new DefaultHttpHeaders(initialSizeHint, true, true);
+        return new DefaultHttpHeaders(initialSizeHint, true, true, true);
     }
 }

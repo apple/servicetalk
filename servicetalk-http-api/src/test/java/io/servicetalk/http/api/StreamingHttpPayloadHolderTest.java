@@ -100,7 +100,7 @@ class StreamingHttpPayloadHolderTest {
         this.updateMode = updateMode;
         this.doubleTransform = doubleTransform;
         headers = mock(HttpHeaders.class);
-        headersFactory = new DefaultHttpHeadersFactory(false, false);
+        headersFactory = new DefaultHttpHeadersFactory(false, false, false);
         if (sourceType == SourceType.Trailers) {
             when(headers.valuesIterator(TRANSFER_ENCODING)).then(__ -> singletonList(CHUNKED).iterator());
         } else {
