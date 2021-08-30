@@ -162,7 +162,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
         Buffer buffer = allocator.wrap(content);
 
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
-                new DefaultHttpHeadersFactory(false, false).newHeaders());
+                new DefaultHttpHeadersFactory(false, false, false).newHeaders());
         request.headers()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")

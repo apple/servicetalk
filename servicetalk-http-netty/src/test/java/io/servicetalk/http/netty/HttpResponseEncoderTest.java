@@ -94,7 +94,7 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
 
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK,
-                new DefaultHttpHeadersFactory(false, false).newHeaders());
+                new DefaultHttpHeadersFactory(false, false, false).newHeaders());
         response.headers()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + SERVER + "   ", "    unit-test   ")

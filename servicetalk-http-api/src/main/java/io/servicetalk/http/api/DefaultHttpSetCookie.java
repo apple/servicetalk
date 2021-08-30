@@ -44,7 +44,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
 
     /**
-     * An underlying size of 16 has been shown with the current {@link CharSequences#newAsciiString(String)} hash
+     * An underlying size of 16 has been shown with the current {@link CharSequences#newAsciiString(CharSequence)} hash
      * algorithm to have no collisions with the current set of supported cookie names.
      * If more cookie names are supported, or the hash algorithm changes this initial value should be re-evaluated.
      * <p>
@@ -52,7 +52,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      * if/else block we lean on {@link HttpHeaders} which provides an associative array that compares keys in a case
      * case-insensitive manner.
      */
-    private static final HttpHeaders AV_FIELD_NAMES = new DefaultHttpHeaders(16, false, false);
+    private static final HttpHeaders AV_FIELD_NAMES = new DefaultHttpHeaders(16, false, false, false);
 
     static {
         AV_FIELD_NAMES.add(newAsciiString("path"), new ParseStateCharSequence(ParseState.ParsingPath));
