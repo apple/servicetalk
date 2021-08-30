@@ -45,21 +45,21 @@ public abstract class AbstractOffloadingTest {
             AsyncContextMap.Key.newKey(ASYNC_CONTEXT_KEY);
 
     public enum CaptureSlot {
-        IN_APP,
-        IN_ORIGINAL_SUBSCRIBE,
-        IN_OFFLOADED_SUBSCRIBE,
-        IN_ORIGINAL_ON_COMPLETE,
-        IN_OFFLOADED_ON_COMPLETE,
-        IN_ORIGINAL_ON_SUBSCRIBE,
-        IN_OFFLOADED_ON_SUBSCRIBE,
-        IN_ORIGINAL_ON_ERROR,
-        IN_OFFLOADED_ON_ERROR,
-        IN_ORIGINAL_REQUEST,
-        IN_OFFLOADED_REQUEST,
-        IN_ORIGINAL_ON_NEXT,
-        IN_OFFLOADED_ON_NEXT,
-        IN_ORIGINAL_CANCEL,
-        IN_OFFLOADED_CANCEL
+        APP,
+        ORIGINAL_SUBSCRIBE,
+        OFFLOADED_SUBSCRIBE,
+        ORIGINAL_ON_SUBSCRIBE,
+        OFFLOADED_ON_SUBSCRIBE,
+        ORIGINAL_CANCEL,
+        OFFLOADED_CANCEL,
+        ORIGINAL_REQUEST,
+        OFFLOADED_REQUEST,
+        ORIGINAL_ON_NEXT,
+        OFFLOADED_ON_NEXT,
+        ORIGINAL_ON_COMPLETE,
+        OFFLOADED_ON_COMPLETE,
+        ORIGINAL_ON_ERROR,
+        OFFLOADED_ON_ERROR
     }
 
     protected enum TerminalOperation {
@@ -87,15 +87,18 @@ public abstract class AbstractOffloadingTest {
     public final ExecutorExtension<TestExecutor> testExecutor = ExecutorExtension.withTestExecutor();
 
     protected final CaptureReferences<CaptureSlot, String> capturedThreads;
+    protected final CaptureReferences<CaptureSlot, Throwable> capturedStacks;
     protected final CaptureReferences<CaptureSlot, AsyncContextMap> capturedContexts;
 
     protected AbstractOffloadingTest() {
         this.capturedThreads = new CaptureReferences(CaptureSlot.class, () -> Thread.currentThread().getName());
+        this.capturedStacks = new CaptureReferences(CaptureSlot.class, () -> new Throwable("Stack Dump"));
         this.capturedContexts = new CaptureReferences(CaptureSlot.class, AsyncContext::current);
     }
 
     protected void capture(CaptureSlot slot) {
         capturedThreads.capture(slot);
+        capturedStacks.capture(slot);
         capturedContexts.capture(slot);
     }
 }
