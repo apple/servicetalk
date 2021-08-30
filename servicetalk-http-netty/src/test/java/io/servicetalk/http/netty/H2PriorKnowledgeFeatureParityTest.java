@@ -197,12 +197,12 @@ class H2PriorKnowledgeFeatureParityTest {
     @AfterEach
     void teardown() throws Exception {
         if (serverAcceptorChannel != null) {
-            serverAcceptorChannel.close().syncUninterruptibly();
+            serverAcceptorChannel.close().sync();
         }
         if (h1ServerContext != null) {
             h1ServerContext.close();
         }
-        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
         Executor executor = clientExecutionStrategy.executor();
         if (executor != null) {
             executor.closeAsync().toFuture().get();
@@ -1326,7 +1326,7 @@ class H2PriorKnowledgeFeatureParityTest {
             serverChannelLatch.await();
             Channel serverParentChannel = serverParentChannelRef.get();
             serverParentChannel.writeAndFlush(new DefaultHttp2SettingsFrame(
-                    new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).syncUninterruptibly();
+                    new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).sync();
 
             Iterator<? extends ConsumableEvent<Integer>> maxItr = maxConcurrentPubQueue.take().toIterable().iterator();
             // Verify that the initial maxConcurrency value is the default number
@@ -1492,7 +1492,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     static Channel bindH2Server(EventLoopGroup serverEventLoopGroup, ChannelHandler childChannelHandler,
                                 Consumer<ChannelPipeline> parentChannelInitializer,
-                                UnaryOperator<Http2FrameCodecBuilder> configureH2Codec) {
+                                UnaryOperator<Http2FrameCodecBuilder> configureH2Codec) throws Exception {
         ServerBootstrap sb = new ServerBootstrap();
         sb.group(serverEventLoopGroup);
         sb.channel(serverChannel(serverEventLoopGroup, InetSocketAddress.class));
@@ -1504,7 +1504,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 parentChannelInitializer.accept(ch.pipeline());
             }
         });
-        return sb.bind(localAddress(0)).syncUninterruptibly().channel();
+        return sb.bind(localAddress(0)).sync().channel();
     }
 
     private InetSocketAddress bindHttpEchoServer() throws Exception {

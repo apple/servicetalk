@@ -95,7 +95,7 @@ class ServerRespondsOnClosingTest {
             serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
             channel.finishAndReleaseAll();
-            channel.close().syncUninterruptibly();
+            channel.close().sync();
         }
     }
 
@@ -245,9 +245,9 @@ class ServerRespondsOnClosingTest {
         assertThat("Unexpected response trailers object", trailers.readableBytes(), is(0));
     }
 
-    private void respondWithFIN() {
+    private void respondWithFIN() throws Exception {
         assertThat("Server did not shutdown output", channel.isOutputShutdown(), is(true));
-        channel.shutdownInput().syncUninterruptibly();    // simulate FIN from the client
+        channel.shutdownInput().sync();    // simulate FIN from the client
     }
 
     private void assertServerConnectionClosed() throws Exception {

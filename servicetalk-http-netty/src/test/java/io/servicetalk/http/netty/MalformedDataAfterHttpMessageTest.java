@@ -99,7 +99,7 @@ class MalformedDataAfterHttpMessageTest {
             assertThrows(DecoderException.class, () -> connection.request(connection.get("/")));
             connectionClosedLatch.await();
         } finally {
-            server.close().syncUninterruptibly();
+            server.close().sync();
         }
     }
 
@@ -127,7 +127,7 @@ class MalformedDataAfterHttpMessageTest {
         }
     }
 
-    private static ServerSocketChannel nettyServer(String response) {
+    private static ServerSocketChannel nettyServer(String response) throws Exception {
         EventLoopGroup eventLoopGroup = toEventLoopAwareNettyIoExecutor(SERVER_CTX.ioExecutor()).eventLoopGroup();
         ServerBootstrap bs = new ServerBootstrap();
         bs.group(eventLoopGroup);
@@ -148,7 +148,7 @@ class MalformedDataAfterHttpMessageTest {
                 });
             }
         });
-        return (ServerSocketChannel) bs.bind(localAddress(0)).syncUninterruptibly().channel();
+        return (ServerSocketChannel) bs.bind(localAddress(0)).sync().channel();
     }
 
     private static ServerContext stServer() throws Exception {

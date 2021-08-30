@@ -295,7 +295,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     private static void preparePendingData(final EmbeddedChannel channel) {
         try {
-            channel.close().syncUninterruptibly().get();
+            channel.close().sync().get();
             channel.checkException();
         } catch (InterruptedException | ExecutionException ex) {
             throwException(ex);

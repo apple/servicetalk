@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -47,8 +47,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -60,8 +59,8 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     private BlockingHttpClient client;
 
     @Override
-    void start() {
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+    void start() throws Exception {
+        serverEventLoopGroup = createIoExecutor(2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
@@ -71,17 +70,17 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     @AfterEach
     void finish() throws Exception {
         if (serverAcceptorChannel != null) {
-            serverAcceptorChannel.close().syncUninterruptibly();
+            serverAcceptorChannel.close().sync();
         }
         if (serverEventLoopGroup != null) {
-            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
         }
         if (client != null) {
             client.close();
         }
     }
 
-    private Channel newNettyServer() {
+    private Channel newNettyServer() throws Exception {
         ServerBootstrap sb = new ServerBootstrap();
         sb.group(serverEventLoopGroup);
         sb.channel(serverChannel(serverEventLoopGroup, InetSocketAddress.class));
@@ -98,7 +97,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
                 p.addLast(EchoServerHandler.INSTANCE);
             }
         });
-        return sb.bind(localAddress(0)).syncUninterruptibly().channel();
+        return sb.bind(localAddress(0)).sync().channel();
     }
 
     @Override
