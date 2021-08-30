@@ -83,7 +83,7 @@ class H2ConcurrencyControllerTest {
     private final CountDownLatch[] latches = new CountDownLatch[N_ITERATIONS];
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
         for (int i = 0; i < N_ITERATIONS; i++) {
             latches[i] = new CountDownLatch(1);
@@ -149,9 +149,9 @@ class H2ConcurrencyControllerTest {
     }
 
     @AfterEach
-    void tearDown() {
-        safeSync(() -> serverAcceptorChannel.close().syncUninterruptibly());
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly());
+    void tearDown() throws Exception {
+        safeSync(() -> serverAcceptorChannel.close().sync());
+        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
         safeClose(client);
     }
 

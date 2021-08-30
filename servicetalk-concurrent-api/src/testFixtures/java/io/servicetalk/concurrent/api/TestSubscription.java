@@ -103,9 +103,11 @@ public final class TestSubscription extends TestCancellable implements Subscript
     /**
      * Wait until the {@link Subscription#request(long)} amount exceeds {@code amount} without being interrupted. This
      * method catches an {@link InterruptedException} and discards it silently.
+     * @deprecated use {@link #awaitRequestN(long)} instead.
      *
      * @param amount the amount to wait for.
      */
+    @Deprecated
     public void awaitRequestNUninterruptibly(long amount) {
         boolean interrupted = false;
         synchronized (waitingLock) {

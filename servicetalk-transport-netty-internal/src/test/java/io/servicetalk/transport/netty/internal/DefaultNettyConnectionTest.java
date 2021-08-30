@@ -328,8 +328,8 @@ class DefaultNettyConnectionTest {
     }
 
     @Test
-    void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
-        channel.close().syncUninterruptibly();
+    void testNoErrorEnrichmentWithoutCloseHandlerOnError() throws Exception {
+        channel.close().sync();
         toSource(conn.write(publisher)).subscribe(writeListener);
 
         Throwable error = writeListener.awaitOnError();
