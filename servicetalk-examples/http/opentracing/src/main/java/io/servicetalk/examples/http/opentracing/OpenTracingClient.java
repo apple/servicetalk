@@ -26,7 +26,6 @@ import io.servicetalk.opentracing.zipkin.publisher.reporter.LoggingReporter;
 import io.opentracing.Tracer;
 
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
-import static io.servicetalk.opentracing.zipkin.publisher.reporter.LoggingReporter.*;
 
 /**
  * A client that does distributed tracing.
@@ -34,13 +33,16 @@ import static io.servicetalk.opentracing.zipkin.publisher.reporter.LoggingReport
 public final class OpenTracingClient {
     public static void main(String[] args) throws Exception {
         // Publishing to Zipkin is optional, but demonstrated for completeness.
-        try (ZipkinPublisher zipkinPublisher = new ZipkinPublisher.Builder("servicetalk-test-client", CONSOLE).build();
+        try (ZipkinPublisher zipkinPublisher = new ZipkinPublisher.Builder("servicetalk-test-client",
+                LoggingReporter.CONSOLE).build();
              Tracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).addListener(zipkinPublisher).build();
              BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                      .appendClientFilter(new TracingHttpRequesterFilter(tracer, "servicetalk-test-client"))
                      .buildBlocking()) {
-            HttpResponse response = client.request(client.get("/"));
+            HttpResponse response = client.request(client.get("/1"));
             System.out.println(response.toString((name, value) -> value));
+            HttpResponse response2 = client.request(client.get("/2"));
+            System.out.println(response2.toString((name, value) -> value));
         }
     }
 }

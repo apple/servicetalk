@@ -26,6 +26,8 @@ import io.opentracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 
 /**
@@ -36,12 +38,16 @@ public final class OpenTracingServer {
 
     public static void main(String[] args) throws Exception {
         // Publishing to Zipkin is optional, but demonstrated for completeness.
-        try (ZipkinPublisher zipkinPublisher = new ZipkinPublisher.Builder("servicetalk-test-server",
+        final InetSocketAddress bindAddress = new InetSocketAddress(8080);
+        final String serviceName = "servicetalk-test-server";
+        try (ZipkinPublisher zipkinPublisher = new ZipkinPublisher.Builder(serviceName,
                 // Use ServiceTalk's HTTP client to publish spans to Zipkin's HTTP API (run ZipkinServerSimulator).
-                new HttpReporter.Builder(HttpClients.forSingleAddress("localhost", 8081)).build()).build();
+                new HttpReporter.Builder(HttpClients.forSingleAddress("localhost", 8081)).build())
+                .localAddress(bindAddress)
+                .build();
              Tracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).addListener(zipkinPublisher).build()) {
-            HttpServers.forPort(8080)
-                    .appendServiceFilter(new TracingHttpServiceFilter(tracer, "servicetalk-test-server"))
+            HttpServers.forAddress(bindAddress)
+                    .appendServiceFilter(new TracingHttpServiceFilter(tracer, serviceName))
                     .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                         LOGGER.info("processed request {}", request.toString((name, value) -> value));
                         return responseFactory.ok();

@@ -20,17 +20,21 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.opentracing.http.TracingHttpServiceFilter;
+import io.servicetalk.opentracing.log4j2.ServiceTalkTracingThreadContextMap;
 import io.servicetalk.opentracing.zipkin.publisher.reporter.HttpReporter;
 
 import brave.Tracing;
 import brave.opentracing.BraveTracer;
 import brave.propagation.CurrentTraceContext;
 import brave.propagation.TraceContext;
+import io.opentracing.ScopeManager;
 import io.opentracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import zipkin2.reporter.brave.ZipkinSpanHandler;
 
+import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.opentracing.propagation.Format.Builtin.TEXT_MAP;
@@ -44,13 +48,19 @@ public final class BraveTracingServer {
 
     public static void main(String[] args) throws Exception {
         // Publishing to Zipkin is optional, but demonstrated for completeness.
-        try (Tracing tracing = Tracing.newBuilder().addSpanHandler(ZipkinSpanHandler.create(
+        final InetSocketAddress bindAddress = new InetSocketAddress(8080);
+        final String serviceName = "servicetalk-test-braveserver";
+        try (Tracing tracing = Tracing.newBuilder()
+                .localServiceName(serviceName)
+                .localIp(bindAddress.getHostString())
+                .localPort(bindAddress.getPort())
+                .addSpanHandler(ZipkinSpanHandler.create(
                         new HttpReporter.Builder(HttpClients.forSingleAddress("localhost", 8081)).build()))
-                .currentTraceContext(AsyncContextTraceContext.INSTANCE).build();
-             Tracer tracer = BraveTracer.newBuilder(tracing)
-                     .build()) {
-            HttpServers.forPort(8080)
-                    .appendServiceFilter(new TracingHttpServiceFilter(tracer, TEXT_MAP, "servicetalk-test-server"))
+                .currentTraceContext(AsyncContextTraceContext.INSTANCE)
+                .build();
+             Tracer tracer = BraveTracer.newBuilder(tracing).build()) {
+            HttpServers.forAddress(bindAddress)
+                    .appendServiceFilter(new TracingHttpServiceFilter(tracer, TEXT_MAP, serviceName))
                     .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                         LOGGER.info("processed request {}", request.toString((name, value) -> value));
                         return responseFactory.ok();
@@ -58,6 +68,11 @@ public final class BraveTracingServer {
         }
     }
 
+    /**
+     * Brave doesn't support injecting a {@link ScopeManager} so {@link MDC} doesn't reflect trace info. If {@link MDC}
+     * support is required with Brave, an approach similar to {@link ServiceTalkTracingThreadContextMap} could be taken
+     * leveraging {@link AsyncContextTraceContext}.
+     */
     private static final class AsyncContextTraceContext extends CurrentTraceContext {
         private static final AsyncContextMap.Key<TraceContext> SCOPE_KEY = newKey("bravetracing");
         public static final CurrentTraceContext INSTANCE = new AsyncContextTraceContext();

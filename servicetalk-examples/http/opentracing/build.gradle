@@ -23,7 +23,7 @@ dependencies {
   implementation project(":servicetalk-opentracing-http") // http client/server filters
   implementation project(":servicetalk-opentracing-inmemory") // ServiceTalk Tracer and related classes
   implementation project(":servicetalk-opentracing-asynccontext") // ServiceTalk ScopeManager
-  implementation project(":servicetalk-opentracing-log4j2") // optional: persist trace information in MDC
+  implementation project(":servicetalk-opentracing-log4j2") // optional: persist ServiceTalk ScopeManager traces to MDC
   implementation project(":servicetalk-opentracing-zipkin-publisher") // optional: publish traces to Zipkin
 
   implementation 'io.opentracing.brave:brave-opentracing:1.0.0' // optional: use 3rd party OpenTracing implementation
