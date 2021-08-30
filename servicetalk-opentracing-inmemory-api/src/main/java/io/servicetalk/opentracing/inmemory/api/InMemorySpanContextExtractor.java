@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,20 @@
  */
 package io.servicetalk.opentracing.inmemory.api;
 
-import io.opentracing.propagation.Format;
+import javax.annotation.Nullable;
 
 /**
- * A {@link Format} compatible with {@link InMemorySpanContext}.
+ * Used to extract {@link InMemorySpanContext} from a carrier of type {@link C}.
  * @param <C> the carrier type.
  */
-public interface InMemorySpanContextFormat<C> extends Format<C>,
-                                                      InMemorySpanContextInjector<C>,
-                                                      InMemorySpanContextExtractor<C> {
+public interface InMemorySpanContextExtractor<C> {
+    /**
+     * Extract the trace state from a carrier.
+     *
+     * @param carrier carrier to extract from
+     * @return extracted {@link InMemorySpanContext}, may be {@code null} if the carrier doesn't contain a valid span
+     * @throws Exception if any parsing error happened during extraction
+     */
+    @Nullable
+    InMemorySpanContext extract(C carrier) throws Exception;
 }
