@@ -36,8 +36,8 @@ import java.util.List;
  * data is available.
  * <p>
  * <em>Implementations are assumed to be synchronous.</em>
- * @deprecated Use {@link io.servicetalk.serializer.api.StreamingDeserializer}.
  * @param <T> Type of object to be deserialized.
+ * @deprecated Use {@link io.servicetalk.serializer.api.StreamingDeserializer}.
  */
 @Deprecated
 public interface StreamingDeserializer<T> extends GracefulAutoCloseable {
@@ -51,11 +51,11 @@ public interface StreamingDeserializer<T> extends GracefulAutoCloseable {
      * It is assumed that a single instance of {@link StreamingDeserializer} may receive calls to both this method and
      * {@link #deserialize(Iterable)}. Any left over data from one call is used by a subsequent call to the same or
      * different method.
-     * @deprecated Use {@link io.servicetalk.serializer.api.StreamingDeserializer} that understands your protocol's
-     * framing.
      * @param toDeserialize {@link Buffer} to deserialize.
      * @return {@link Iterable} containing zero or more deserialized instances of {@link T}, if any can be deserialized
      * from the data received till now.
+     * @deprecated Use {@link io.servicetalk.serializer.api.StreamingDeserializer} that understands your protocol's
+     * framing.
      */
     @Deprecated
     Iterable<T> deserialize(Buffer toDeserialize);
@@ -69,11 +69,11 @@ public interface StreamingDeserializer<T> extends GracefulAutoCloseable {
      * It is assumed that a single instance of {@link StreamingDeserializer} may receive calls to both this method and
      * {@link #deserialize(Buffer)}. Any left over data from one call is used by a subsequent call to the same or
      * different method.
-     * @deprecated Use
-     * {@link io.servicetalk.serializer.api.StreamingDeserializer#deserialize(Iterable, BufferAllocator)}.
      * @param toDeserialize {@link Iterable} of {@link Buffer}s to deserialize.
      * @return {@link Iterable} containing zero or more deserialized instances of {@link T}, if any can be deserialized
      * from the data received till now.
+     * @deprecated Use
+     * {@link io.servicetalk.serializer.api.StreamingDeserializer#deserialize(Iterable, BufferAllocator)}.
      */
     @Deprecated
     default Iterable<T> deserialize(Iterable<Buffer> toDeserialize) {
@@ -96,11 +96,11 @@ public interface StreamingDeserializer<T> extends GracefulAutoCloseable {
      * It is assumed that a single instance of {@link StreamingDeserializer} may receive calls to both this method and
      * {@link #deserialize(Buffer)}. Any left over data from one call is used by a subsequent call to the same or
      * different method.
-     * @deprecated Use
-     * {@link io.servicetalk.serializer.api.StreamingDeserializer#deserialize(Iterable, BufferAllocator)}.
      * @param toDeserialize {@link BlockingIterable} of {@link Buffer}s to deserialize.
      * @return {@link BlockingIterable} containing zero or more deserialized instances of {@link T}, if any can be
      * deserialized from the data received till now.
+     * @deprecated Use
+     * {@link io.servicetalk.serializer.api.StreamingDeserializer#deserialize(Iterable, BufferAllocator)}.
      */
     @Deprecated
     default BlockingIterable<T> deserialize(BlockingIterable<Buffer> toDeserialize) {

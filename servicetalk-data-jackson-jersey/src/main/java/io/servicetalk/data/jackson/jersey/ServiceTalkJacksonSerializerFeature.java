@@ -70,9 +70,9 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
 
     /**
      * Create a new {@link ContextResolver} for {@link JacksonSerializationProvider} used by this feature.
-     * @deprecated Use {@link #newContextResolver(ObjectMapper)}.
      * @param objectMapper the {@link ObjectMapper} to use for creating a {@link JacksonSerializationProvider}.
      * @return a {@link ContextResolver}.
+     * @deprecated Use {@link #newContextResolver(ObjectMapper)}.
      */
     @Deprecated
     public static ContextResolver<JacksonSerializationProvider> contextResolverFor(final ObjectMapper objectMapper) {
@@ -81,9 +81,9 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
 
     /**
      * Create a new {@link ContextResolver} for {@link JacksonSerializationProvider} used by this feature.
-     * @deprecated Use {@link #newContextResolver(JacksonSerializerFactory)}.
      * @param serializationProvider the {@link JacksonSerializationProvider} to use.
      * @return a {@link ContextResolver}.
+     * @deprecated Use {@link #newContextResolver(JacksonSerializerFactory)}.
      */
     @Deprecated
     public static ContextResolver<JacksonSerializationProvider> contextResolverFor(

@@ -66,11 +66,11 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * to continue writing a payload body. Each element will be serialized using provided {@code serializer}.
      * <p>
      * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
-     * @deprecated Use {@link #sendMetaData(HttpStreamingSerializer)}.
      * @param serializer used to serialize the payload elements
      * @param <T> the type of objects to write
      * @return {@link HttpPayloadWriter} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
+     * @deprecated Use {@link #sendMetaData(HttpStreamingSerializer)}.
      */
     @Deprecated
     public final <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {

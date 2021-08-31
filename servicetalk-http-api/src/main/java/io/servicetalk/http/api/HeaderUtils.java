@@ -665,10 +665,10 @@ public final class HeaderUtils {
      * If the name can not be matched to any of the supported encodings on this endpoint, then
      * a {@link UnsupportedContentEncodingException} is thrown.
      * If the matched encoding is {@link Identity#identity()} then this returns {@code null}.
-     * @deprecated Will be removed along with {@link ContentCodec}.
      * @param headers The headers to read the encoding name from
      * @param allowedEncodings The supported encodings for this endpoint
      * @return The {@link ContentCodec} that matches the name or null if matches to identity
+     * @deprecated Will be removed along with {@link ContentCodec}.
      */
     @Nullable
     @Deprecated

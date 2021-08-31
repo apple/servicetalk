@@ -88,9 +88,9 @@ public abstract class AbstractRetryingFilterBuilder<Builder
 
     /**
      * Creates a new retrying {@link Filter} which retries without delay.
+     * @return a new retrying {@link Filter} which retries without delay.
      * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration)} or
      * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     * @return a new retrying {@link Filter} which retries without delay
      */
     @Deprecated
     public final Filter buildWithImmediateRetries() {
@@ -99,10 +99,10 @@ public abstract class AbstractRetryingFilterBuilder<Builder
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @return A new retrying {@link Filter} which adds a constant delay between retries
+     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
+     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      */
     @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay) {
@@ -111,12 +111,12 @@ public abstract class AbstractRetryingFilterBuilder<Builder
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
-     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
      * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
      * @return A new retrying {@link Filter} which adds a constant delay between retries
+     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
+     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
      */
     @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {

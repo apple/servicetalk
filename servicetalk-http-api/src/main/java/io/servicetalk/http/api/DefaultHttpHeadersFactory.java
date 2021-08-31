@@ -32,10 +32,9 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
     /**
      * Create an instance of the factory with the default array size hint.
-     *
-     * @deprecated Use {@link #DefaultHttpHeadersFactory(boolean, boolean, boolean)}.
      * @param validateNames {@code true} to validate header/trailer names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @deprecated Use {@link #DefaultHttpHeadersFactory(boolean, boolean, boolean)}.
      */
     @Deprecated
     public DefaultHttpHeadersFactory(final boolean validateNames, final boolean validateCookies) {
@@ -56,12 +55,11 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
     /**
      * Create an instance of the factory.
-     *
-     * @deprecated Use {@link #DefaultHttpHeadersFactory(boolean, boolean, boolean, int, int)}.
      * @param validateNames {@code true} to validate header/trailer names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
      * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
      * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
+     * @deprecated Use {@link #DefaultHttpHeadersFactory(boolean, boolean, boolean, int, int)}.
      */
     @Deprecated
     public DefaultHttpHeadersFactory(final boolean validateNames, final boolean validateCookies,
