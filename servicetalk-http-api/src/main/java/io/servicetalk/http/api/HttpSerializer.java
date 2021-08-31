@@ -22,8 +22,8 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory to address serialization concerns for HTTP request/response payload bodies.
- * @deprecated Use {@link HttpSerializer2} or {@link HttpStreamingSerializer}.
  * @param <T> The type of objects to serialize.
+ * @deprecated Use {@link HttpSerializer2} or {@link HttpStreamingSerializer}.
  */
 @Deprecated
 public interface HttpSerializer<T> extends HttpSerializer2<T> {

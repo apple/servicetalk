@@ -22,8 +22,8 @@ public interface GrpcMetadata {
 
     /**
      * Returns the path for the associated <a href="https://www.grpc.io">gRPC</a> method.
-     * @deprecated Use {@link MethodDescriptor#httpPath()}.
      * @return The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @deprecated Use {@link MethodDescriptor#httpPath()}.
      */
     @Deprecated
     String path();

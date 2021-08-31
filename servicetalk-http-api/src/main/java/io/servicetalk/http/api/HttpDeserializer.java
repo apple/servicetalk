@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory to address deserialization concerns for HTTP request/response payload bodies.
- * @deprecated Use {@link HttpDeserializer2} or {@link HttpStreamingDeserializer}.
  * @param <T> The type of objects to deserialize.
+ * @deprecated Use {@link HttpDeserializer2} or {@link HttpStreamingDeserializer}.
  */
 @Deprecated
 public interface HttpDeserializer<T> {

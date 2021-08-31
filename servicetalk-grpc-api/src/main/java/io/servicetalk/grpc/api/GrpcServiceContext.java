@@ -34,8 +34,8 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
 
     /**
      * The {@link ContentCodec} codings available for this <a href="https://www.grpc.io">gRPC</a> call.
-     * @deprecated Will be removed along with {@link ContentCodec}.
      * @return the {@link ContentCodec} codings available for this <a href="https://www.grpc.io">gRPC</a> call.
+     * @deprecated Will be removed along with {@link ContentCodec}.
      */
     @Deprecated
     List<ContentCodec> supportedMessageCodings();

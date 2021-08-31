@@ -30,10 +30,10 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
 
     /**
      * Gets and deserializes the payload body.
-     * @deprecated Use {@link #payloadBody(HttpDeserializer2)}.
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
+     * @deprecated Use {@link #payloadBody(HttpDeserializer2)}.
      */
     @Deprecated
     default <T> T payloadBody(HttpDeserializer<T> deserializer) {
@@ -59,11 +59,11 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
 
     /**
      * Returns an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
-     * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
      * @return {@code this}
+     * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
      */
     @Deprecated
     <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);

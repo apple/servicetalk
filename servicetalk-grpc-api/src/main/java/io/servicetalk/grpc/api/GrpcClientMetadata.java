@@ -37,11 +37,9 @@ public interface GrpcClientMetadata extends GrpcMetadata {
     GrpcExecutionStrategy strategy();
 
     /**
-     * {@link ContentCodec} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
+     * {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @return {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @deprecated Use {@link #requestCompressor()}.
-     * @return {@link ContentCodec} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
      */
     @Deprecated
     ContentCodec requestEncoding();

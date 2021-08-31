@@ -202,7 +202,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link Route} to this factory.
-     * @deprecated Use {@link #addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -212,6 +211,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      */
     @Deprecated
     protected final <Req, Resp> void addRoute(
@@ -249,7 +249,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link Route} to this factory.
-     * @deprecated Use {@link #addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link Route} to add.
@@ -258,6 +257,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      */
     @Deprecated
     protected final <Req, Resp> void addRoute(
@@ -291,7 +291,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link StreamingRoute} to this factory.
-     * @deprecated Use {@link #addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -301,6 +300,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addStreamingRoute(
@@ -338,8 +338,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link StreamingRoute} to this factory.
-     * @deprecated Use {@link #addStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * StreamingRoute)}
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link StreamingRoute} to add.
@@ -348,6 +346,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * StreamingRoute)}
      */
     @Deprecated
     protected final <Req, Resp> void addStreamingRoute(
@@ -381,8 +381,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link RequestStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -392,6 +390,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addRequestStreamingRoute(
@@ -430,9 +430,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link RequestStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * RequestStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link RequestStreamingRoute} to add.
@@ -441,6 +438,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * RequestStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addRequestStreamingRoute(
@@ -475,8 +475,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link ResponseStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -486,6 +484,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addResponseStreamingRoute(
@@ -524,9 +524,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link ResponseStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * ResponseStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link ResponseStreamingRoute} to add.
@@ -535,6 +532,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * ResponseStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addResponseStreamingRoute(
@@ -569,7 +569,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingRoute} to this factory.
-     * @deprecated Use {@link #addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -579,6 +578,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingRoute(
@@ -617,8 +617,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingRoute} to this factory.
-     * @deprecated Use {@link #addBlockingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * BlockingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingRoute} to add.
@@ -627,6 +625,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use {@link #addBlockingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingRoute(
@@ -661,8 +661,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -672,6 +670,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingStreamingRoute(
@@ -710,9 +710,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * BlockingStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingStreamingRoute} to add.
@@ -721,6 +718,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingStreamingRoute(
@@ -755,8 +755,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingRequestStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -766,6 +764,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
@@ -804,9 +804,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingRequestStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * BlockingRequestStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingRequestStreamingRoute} to add.
@@ -815,6 +812,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingRequestStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
@@ -850,9 +850,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingResponseStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List,
-     * BlockingResponseStreamingRoute)}.
      * @param path for this route.
      * @param serviceClass {@link Class} of the gRPC service.
      * @param methodName the name of gRPC method.
@@ -862,6 +859,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingResponseStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
@@ -900,9 +900,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * Adds a {@link BlockingResponseStreamingRoute} to this factory.
-     * @deprecated Use
-     * {@link #addBlockingResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
-     * BlockingResponseStreamingRoute)}.
      * @param path for this route.
      * @param executionStrategy {@link GrpcExecutionStrategy} to use.
      * @param route {@link BlockingResponseStreamingRoute} to add.
@@ -911,6 +908,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
+     * @deprecated Use
+     * {@link #addBlockingResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List,
+     * BlockingResponseStreamingRoute)}.
      */
     @Deprecated
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(

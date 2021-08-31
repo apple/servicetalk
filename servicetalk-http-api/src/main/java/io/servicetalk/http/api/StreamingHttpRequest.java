@@ -38,10 +38,10 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Gets and deserializes the payload body.
-     * @deprecated Use {@link #payloadBody(HttpStreamingDeserializer)}.
      * @param deserializer The function that deserializes the underlying {@link Publisher}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
+     * @deprecated Use {@link #payloadBody(HttpStreamingDeserializer)}.
      */
     @Deprecated
     default <T> Publisher<T> payloadBody(HttpDeserializer<T> deserializer) {
@@ -90,11 +90,11 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing {@link Publisher} payload body.
-     * @deprecated Use {@link #payloadBody(Publisher, HttpStreamingSerializer)}.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
+     * @deprecated Use {@link #payloadBody(Publisher, HttpStreamingSerializer)}.
      */
     @Deprecated
     <T> StreamingHttpRequest payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
@@ -117,13 +117,13 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload transformed to the result of serialization.
-     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
      * {@link Publisher} will be transformed/consumed or else no more requests may be processed.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
      */
     @Deprecated
     <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
@@ -143,7 +143,6 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload transformed to the result of serialization.
-     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)}.
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
      * {@link Publisher} will be transformed/consumed or else no more requests may be processed.
@@ -152,6 +151,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
      * @return {@code this}
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)}.
      */
     @Deprecated
     default <T, R> StreamingHttpRequest transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
