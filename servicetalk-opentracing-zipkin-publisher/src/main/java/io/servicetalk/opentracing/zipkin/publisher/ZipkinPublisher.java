@@ -164,11 +164,13 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
                 .timestamp(span.startEpochMicros())
                 .localEndpoint(endpoint)
                 .duration(durationMicros);
+        span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
         Iterable<? extends InMemorySpanLog> logs = span.logs();
         if (logs != null) {
             logs.forEach(log -> builder.addAnnotation(log.epochMicros(), log.eventName()));
         }
         Object type = span.tags().get(Tags.SPAN_KIND.getKey());
+        boolean removeKindTag = true;
         if (Tags.SPAN_KIND_SERVER.equals(type)) {
             builder.kind(Span.Kind.SERVER);
         } else if (Tags.SPAN_KIND_CLIENT.equals(type)) {
@@ -177,11 +179,14 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
             builder.kind(Span.Kind.PRODUCER);
         } else if (Tags.SPAN_KIND_CONSUMER.equals(type)) {
             builder.kind(Span.Kind.CONSUMER);
+        } else {
+            removeKindTag = false;
         }
-        span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
 
         Span s = builder.build();
-        s.tags().remove(Tags.SPAN_KIND.getKey());
+        if (removeKindTag) {
+            s.tags().remove(Tags.SPAN_KIND.getKey());
+        }
         try {
             reporter.report(s);
         } catch (Throwable t) {
