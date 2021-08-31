@@ -15,7 +15,7 @@
  */
 
 plugins {
-  id "com.github.johnrengelman.shadow" version "$jmhShadowPluginVersion"
+  id "com.github.johnrengelman.shadow" version "$shadowPluginVersion"
   id "me.champeau.jmh" version "$jmhPluginVersion"
 }
 
