@@ -15,15 +15,14 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- Parameters/state is intentional -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancer$Host"/>
-    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
-  </Match>
-
-  <!-- Duration isn't mutable -->
-  <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory$Builder"/>
-    <Method name="healthCheckInterval"/>
+    <Or>
+      <Class name="io.servicetalk.http.utils.RequestTargetDecoderHttpServiceFilter"/>
+      <Class name="io.servicetalk.http.utils.RequestTargetEncoderHttpRequesterFilter"/>
+      <Class name="io.servicetalk.http.utils.RequestTargetEncoderHttpServiceFilter"/>
+    </Or>
+    <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

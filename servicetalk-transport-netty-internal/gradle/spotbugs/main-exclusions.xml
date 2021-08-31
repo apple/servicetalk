@@ -15,9 +15,36 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- For legacy compatibility class is not renamed in 0.41 branch -->
   <Match>
-    <!-- For legacy compatibility class is not renamed in 0.41 branch -->
     <Source name="~IoThreadFactory\.java"/>
     <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.DefaultNettyConnection"/>
+    <Method name="sslSession"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyIoThreadFactory$NettyIoThread"/>
+    <Method name="asyncContextMap"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.SplittingFlushStrategy"/>
+    <Method name="apply"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ByteToMessageDecoder"/>
+    <Method name="channelRead"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

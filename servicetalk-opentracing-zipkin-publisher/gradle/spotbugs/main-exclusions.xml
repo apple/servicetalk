@@ -15,15 +15,20 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- InetSocketAddress treated immutable -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancer$Host"/>
-    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
+    <Class name="io.servicetalk.opentracing.zipkin.publisher.ZipkinPublisher$Builder"/>
+    <Method name="localAddress"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 
   <!-- Duration isn't mutable -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory$Builder"/>
-    <Method name="healthCheckInterval"/>
+    <Or>
+      <Class name="io.servicetalk.opentracing.zipkin.publisher.ZipkinPublisher$Builder"/>
+      <Class name="io.servicetalk.opentracing.zipkin.publisher.reporter.HttpReporter$Builder"/>
+    </Or>
+    <Method name="batchSpans"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

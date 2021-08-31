@@ -27,4 +27,10 @@
     <Method name="verifyApplied"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel"/>
+    <Method name="config"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>
