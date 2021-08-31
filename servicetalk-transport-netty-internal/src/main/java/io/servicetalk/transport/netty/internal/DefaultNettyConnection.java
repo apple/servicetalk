@@ -216,10 +216,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
-        boolean supportsIoThread = executionContext.ioExecutor() instanceof NettyIoExecutor &&
-                ((NettyIoExecutor) executionContext.ioExecutor()).isIoThreadSupported();
         DefaultExecutionContext childExecutionContext = new DefaultExecutionContext(executionContext.bufferAllocator(),
-                fromNettyEventLoop(channel.eventLoop(), supportsIoThread),
+                fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, childExecutionContext,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, protocol,
@@ -266,8 +264,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 final DelayedCancellable delayedCancellable;
                 try {
                     delayedCancellable = new DelayedCancellable();
-                    boolean supportsIoThread = ioExecutor instanceof NettyIoExecutor &&
-                            ((NettyIoExecutor) ioExecutor).isIoThreadSupported();
+                    boolean supportsIoThread = null != ioExecutor && ioExecutor.isIoThreadSupported();
                     DefaultExecutionContext executionContext = new DefaultExecutionContext(allocator,
                             fromNettyEventLoop(channel.eventLoop(), supportsIoThread), executor, executionStrategy);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel,

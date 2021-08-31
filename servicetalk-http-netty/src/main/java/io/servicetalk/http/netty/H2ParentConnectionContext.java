@@ -30,7 +30,6 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
@@ -75,10 +74,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                               final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
-        boolean supportsIoThread = executionContext.ioExecutor() instanceof NettyIoExecutor &&
-                ((NettyIoExecutor) executionContext.ioExecutor()).isIoThreadSupported();
         this.executionContext = new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
-                fromNettyEventLoop(channel.eventLoop(), supportsIoThread),
+                fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.idleTimeoutMs = idleTimeoutMs;
