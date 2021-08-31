@@ -25,4 +25,14 @@
     </Or>
     <Bug pattern="SE_NO_SERIALVERSIONID"/>
   </Match>
+  <Match>
+    <Or>
+      <Class name="~io.servicetalk.gradle.plugin.internal.ProjectUtils.*"/>
+      <Class name="~io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin.*"/>
+      <Class name="~io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.*"/>
+      <Class name="~io.servicetalk.gradle.plugin.internal.ServiceTalkRootPlugin.*"/>
+      <Class name="~io.servicetalk.gradle.plugin.internal.Versions.*"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>
