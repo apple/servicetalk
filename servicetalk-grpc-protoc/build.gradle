@@ -52,8 +52,8 @@ jar {
 }
 
 shadowJar {
-  archiveBaseName = project.name + "-all"
-  classifier = ''
+  archiveBaseName = project.name
+  classifier = 'all'
 }
 
 def grpcPluginUberJarName = project.name + "-" + project.version + "-all.jar"
@@ -68,17 +68,6 @@ task buildExecutable(type: Copy) {
   }
 }
 tasks.compileJava.finalizedBy(buildExecutable)
-
-publishing {
-  publications {
-    mavenJava {
-      artifact(shadowJar.outputs.files.singleFile) {
-        classifier = "all"
-        extension = "jar"
-      }
-    }
-  }
-}
 
 protobuf {
   protoc {
