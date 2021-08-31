@@ -22,4 +22,25 @@
     <LocalVariable name="connectionAcceptor" />
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
+
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig"/>
+    <Method name="listenOptions"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.tcp.netty.internal.TcpServerConfig"/>
+    <Method name="sniConfig"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.tcp.netty.internal.TcpServerConfig"/>
+    <Method name="sslConfig"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

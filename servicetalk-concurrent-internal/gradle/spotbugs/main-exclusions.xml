@@ -15,15 +15,16 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- The cause is intentionally exposed, and is an internal utility -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancer$Host"/>
-    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
+    <Class name="io.servicetalk.concurrent.internal.TerminalNotification"/>
+    <Method name="cause"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
-
-  <!-- Duration isn't mutable -->
+  <!-- Not desirable to store a copy to the Thread object, false positive -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory$Builder"/>
-    <Method name="healthCheckInterval"/>
+    <Class name="io.servicetalk.concurrent.internal.ThreadInterruptingCancellable"/>
+    <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

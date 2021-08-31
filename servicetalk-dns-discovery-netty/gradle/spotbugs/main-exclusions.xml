@@ -15,15 +15,10 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- Duration is not modifiable, false positive -->
   <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancer$Host"/>
-    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
-  </Match>
-
-  <!-- Duration isn't mutable -->
-  <Match>
-    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory$Builder"/>
-    <Method name="healthCheckInterval"/>
+    <Class name="io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder"/>
+    <Method name="queryTimeout"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>
