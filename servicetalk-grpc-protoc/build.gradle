@@ -16,7 +16,7 @@
 
 buildscript {
   dependencies {
-    classpath "com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
+    classpath "gradle.plugin.com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
     classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
   }
 }
