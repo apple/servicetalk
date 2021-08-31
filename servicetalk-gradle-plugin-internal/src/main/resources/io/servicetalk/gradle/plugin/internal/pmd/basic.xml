@@ -44,6 +44,7 @@
   <rule ref="category/java/bestpractices.xml/CheckResultSet"/>
   <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
   <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
+  <rule ref="category/java/bestpractices.xml/SimplifiableTestAssertion"/>  
   <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
 
   <rule ref="category/java/codestyle.xml/ExtendsObject"/>
