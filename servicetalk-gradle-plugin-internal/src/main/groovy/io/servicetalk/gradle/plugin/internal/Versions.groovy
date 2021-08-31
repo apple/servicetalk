@@ -21,7 +21,7 @@ import static org.gradle.api.JavaVersion.VERSION_1_8
 
 final class Versions {
   static final String CHECKSTYLE_VERSION = "9.0"
-  static final String PMD_VERSION = "6.35.0"
+  static final String PMD_VERSION = "6.38.0"
   static final String SPOTBUGS_VERSION = "4.4.0"
   static final String PITEST_VERSION = "1.6.7"
   static final String PITEST_JUNIT5_PLUGIN_VERSION = "0.12"
