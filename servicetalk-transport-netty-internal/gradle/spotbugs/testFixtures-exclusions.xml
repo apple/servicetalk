@@ -15,12 +15,6 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @Before method instead of constructors for test rules -->
-  <Match>
-    <Class name="io.servicetalk.transport.netty.internal.ExecutionContextRule"/>
-    <Field name="ctx"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
   <!-- Not interested in returned values -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.MockFlushStrategy"/>

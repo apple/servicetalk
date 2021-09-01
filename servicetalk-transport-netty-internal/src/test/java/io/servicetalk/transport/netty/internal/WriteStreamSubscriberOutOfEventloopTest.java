@@ -113,7 +113,7 @@ class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventloopTest
             fromSource(subject).toFuture().get();
             fail();
         } catch (ExecutionException cause) {
-            assertSame(cause.getCause(), DELIBERATE_EXCEPTION);
+            assertSame(DELIBERATE_EXCEPTION, cause.getCause());
         }
     }
 

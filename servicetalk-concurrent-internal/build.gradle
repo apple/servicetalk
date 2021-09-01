@@ -33,6 +33,4 @@ dependencies {
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

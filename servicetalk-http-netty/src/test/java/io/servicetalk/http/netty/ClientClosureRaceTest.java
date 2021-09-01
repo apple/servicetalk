@@ -87,10 +87,10 @@ class ClientClosureRaceTest {
                                 US_ASCII));
 
                         final String initialLine = in.readLine();
-                        LOGGER.debug("initialLine: " + initialLine);
+                        LOGGER.debug("initialLine: {}", initialLine);
                         String line;
                         while ((line = in.readLine()) != null && !line.isEmpty()) {
-                            LOGGER.debug("line: " + line);
+                            LOGGER.debug("line: {}", line);
                         }
                         out.print("HTTP/1.1 200 OK\r\n");
                         out.print("content-length: 12\r\n");

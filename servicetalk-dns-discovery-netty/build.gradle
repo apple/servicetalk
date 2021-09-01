@@ -41,6 +41,4 @@ dependencies {
   testImplementation "org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

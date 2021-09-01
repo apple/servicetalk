@@ -23,7 +23,6 @@ import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.examples.http.service.composition.pojo.User;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
