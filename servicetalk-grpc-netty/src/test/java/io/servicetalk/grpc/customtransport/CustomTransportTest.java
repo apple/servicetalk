@@ -51,7 +51,7 @@ class CustomTransportTest {
     @EnumSource(ServiceType.class)
     void testCustomTransport(final ServiceType serviceType) throws Exception {
         // You can re-use the EventLoopGroup used by your Netty application, we create one to demonstrate its use.
-        EventLoopAwareNettyIoExecutor ioExecutor = createIoExecutor("netty-el-");
+        EventLoopAwareNettyIoExecutor ioExecutor = createIoExecutor("netty-el");
         // This is the Netty channel which is reading the request. See getServiceContext(Channel), depending
         // upon what control you want to give users knowing this may not be necessary.
         Channel c = new EmbeddedChannel();
