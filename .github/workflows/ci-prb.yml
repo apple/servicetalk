@@ -28,8 +28,8 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
       - name: Configure Windows Pagefile
         if: ${{ runner.os == 'Windows' }}
