@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectTimeoutException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
@@ -43,8 +44,8 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static java.lang.Boolean.TRUE;
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,8 +57,7 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
     private static final int TCP_BACKLOG = IS_LINUX ? 0 : 1;
-    private static final int CONNECT_TIMEOUT_MILLIS = (int) ofSeconds(1).toMillis();
-    private static final int VERIFY_REQUEST_AWAIT_MILLIS = 500;
+    private static final int CONNECT_TIMEOUT_MILLIS = (int) SECONDS.toMillis(2);
     private static final int TRY_REQUEST_AWAIT_MILLIS = 500;
 
     @Override
@@ -70,9 +70,14 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
         return super.newClientBuilder()
                 .appendConnectionFactoryFilter(withMax(5))
                 .autoRetryStrategy(DISABLE_AUTO_RETRIES)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue);
+    }
+
+    private StreamingHttpClient newClientWithConnectTimeout() {
+        return newClientBuilder()
                 // It's important to use CONNECT_TIMEOUT here to verify that connections aren't establishing.
-                .socketOption(CONNECT_TIMEOUT, CONNECT_TIMEOUT_MILLIS);
+                .socketOption(CONNECT_TIMEOUT, CONNECT_TIMEOUT_MILLIS)
+                .buildStreaming();
     }
 
     @Test
@@ -106,13 +111,15 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
         // Connection will establish but remain in the accept-queue
         // (i.e., NOT accepted by the server => occupying 1 backlog entry)
         assertConnectionRequestReceiveTimesOut(request);
-        final Single<StreamingHttpResponse> response =
-                streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request));
-        // Since we control the backlog size, this connection won't establish (i.e., NO syn-ack)
-        // timeout operator can be used to kill it or socket connection-timeout
-        final ExecutionException executionException =
-                assertThrows(ExecutionException.class, () -> awaitIndefinitely(response));
-        assertThat(executionException.getCause(), instanceOf(ConnectTimeoutException.class));
+        try (StreamingHttpClient client = newClientWithConnectTimeout()) {
+            // Since we control the backlog size, this connection won't establish (i.e., NO syn-ack)
+            // timeout operator can be used to kill it or socket connection-timeout
+            final Single<StreamingHttpResponse> response =
+                    client.reserveConnection(request).flatMap(conn -> conn.request(request));
+            final ExecutionException executionException =
+                    assertThrows(ExecutionException.class, () -> awaitIndefinitely(response));
+            assertThat(executionException.getCause(), instanceOf(ConnectTimeoutException.class));
+        }
     }
 
     private void assertConnectionRequestReceiveTimesOut(final StreamingHttpRequest request) {
@@ -123,8 +130,8 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
 
     private void assertConnectionRequestSucceeds(final StreamingHttpRequest request) throws Exception {
         final StreamingHttpResponse response =
-                await(streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request)),
-                        VERIFY_REQUEST_AWAIT_MILLIS, MILLISECONDS);
+                awaitIndefinitely(streamingHttpClient().reserveConnection(request)
+                        .flatMap(conn -> conn.request(request)));
         assert response != null;
         assertResponse(response, HTTP_1_1, OK, "");
     }
