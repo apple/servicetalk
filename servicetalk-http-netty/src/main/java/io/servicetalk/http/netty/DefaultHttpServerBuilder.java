@@ -29,7 +29,6 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -127,7 +126,7 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     @Override
     protected BooleanSupplier shouldOffload(IoExecutor ioExecutor) {
-        return ioExecutor instanceof NettyIoExecutor && ((NettyIoExecutor) ioExecutor).isIoThreadSupported() ?
+        return ioExecutor.isIoThreadSupported() ?
                 () -> Thread.currentThread() instanceof IoThreadFactory.IoThread :
                 Boolean.TRUE::booleanValue;
     }

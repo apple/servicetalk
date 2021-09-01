@@ -38,4 +38,12 @@ public interface IoExecutor extends ListenableAsyncCloseable {
      * @return {@code true} if supported
      */
     boolean isFileDescriptorSocketAddressSupported();
+
+    /**
+     * Determine if threads used by this {@link IoExecutor} are marked with {@link IoThreadFactory.IoThread} interface.
+     *
+     * @return {@code true} if supported
+     * @see IoThreadFactory.IoThread
+     */
+    boolean isIoThreadSupported();
 }
