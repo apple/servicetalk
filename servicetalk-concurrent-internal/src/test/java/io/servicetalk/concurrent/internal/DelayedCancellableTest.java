@@ -17,10 +17,9 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 
@@ -31,30 +30,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class DelayedCancellableTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-
+class DelayedCancellableTest {
     private final DelayedCancellable delayedCancellable = new DelayedCancellable();
     private Cancellable c1;
     private Cancellable c2;
     private ExecutorService executor;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         c1 = mock(Cancellable.class);
         c2 = mock(Cancellable.class);
         executor = newCachedThreadPool();
     }
 
-    @After
-    public void tearDown() throws InterruptedException {
+    @AfterEach
+    void tearDown() throws InterruptedException {
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @Test
-    public void multipleDelayedSubscriptionCancels() {
+    void multipleDelayedSubscriptionCancels() {
         delayedCancellable.delayedCancellable(c1);
         delayedCancellable.delayedCancellable(c2);
         verifyNoMoreInteractions(c1);
@@ -62,21 +58,21 @@ public class DelayedCancellableTest {
     }
 
     @Test
-    public void delayedCancelIsDelivered() {
+    void delayedCancelIsDelivered() {
         delayedCancellable.cancel();
         delayedCancellable.delayedCancellable(c1);
         verify(c1).cancel();
     }
 
     @Test
-    public void signalsAfterDelayedArePassedThrough() {
+    void signalsAfterDelayedArePassedThrough() {
         delayedCancellable.delayedCancellable(c1);
         delayedCancellable.cancel();
         verify(c1).cancel();
     }
 
     @Test
-    public void setDelayedFromAnotherThreadIsVisible() throws Exception {
+    void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedCancellable.cancel();
         executor.submit(() -> delayedCancellable.delayedCancellable(c1)).get();
         verify(c1).cancel();

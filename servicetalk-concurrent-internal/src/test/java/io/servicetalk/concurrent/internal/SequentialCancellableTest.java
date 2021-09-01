@@ -17,16 +17,16 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class SequentialCancellableTest {
+class SequentialCancellableTest {
 
     @Test
-    public void testWithIgnoreCancel() {
+    void testWithIgnoreCancel() {
         SequentialCancellable sc = new SequentialCancellable();
         sc.nextCancellable(Cancellable.IGNORE_CANCEL);
         Cancellable next = mock(Cancellable.class);
@@ -38,7 +38,7 @@ public class SequentialCancellableTest {
     }
 
     @Test
-    public void testWithCancel() {
+    void testWithCancel() {
         SequentialCancellable sc = new SequentialCancellable();
         Cancellable first = mock(Cancellable.class);
         sc.nextCancellable(first);

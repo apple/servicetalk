@@ -15,34 +15,34 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.matches;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class ThrowableUtilTest {
+class ThrowableUtilTest {
 
     @Test
-    public void testMatchesOriginalMatch() {
+    void testMatchesOriginalMatch() {
         NullPointerException npe = new NullPointerException();
         assertThat("Match not found.", matches(npe, NullPointerException.class), is(true));
     }
 
     @Test
-    public void testMatchesCauseMatch() {
+    void testMatchesCauseMatch() {
         IllegalArgumentException npe = new IllegalArgumentException(new NullPointerException());
         assertThat("Match not found.", matches(npe, NullPointerException.class), is(true));
     }
 
     @Test
-    public void testNoMatchOriginalNoCause() {
+    void testNoMatchOriginalNoCause() {
         NullPointerException npe = new NullPointerException();
         assertThat("Match not found.", matches(npe, IllegalArgumentException.class), is(false));
     }
 
     @Test
-    public void testNoMatchOriginalAndCause() {
+    void testNoMatchOriginalAndCause() {
         IllegalStateException npe = new IllegalStateException(new NullPointerException());
         assertThat("Match not found.", matches(npe, IllegalArgumentException.class), is(false));
     }
