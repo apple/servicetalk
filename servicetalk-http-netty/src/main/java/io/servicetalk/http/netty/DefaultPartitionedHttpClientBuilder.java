@@ -28,6 +28,7 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -253,6 +254,12 @@ final class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpCli
     @Override
     public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         builderTemplate.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> executor(final Executor executor) {
+        builderTemplate.executor(executor);
         return this;
     }
 

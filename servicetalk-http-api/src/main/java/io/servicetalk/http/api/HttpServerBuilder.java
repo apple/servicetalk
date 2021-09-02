@@ -323,6 +323,14 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
 
     /**
+     * Sets the {@link Executor} to use.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder executor(Executor executor);
+
+    /**
      * Sets the {@link BufferAllocator} to be used by this server.
      *
      * @param allocator {@link BufferAllocator} to use.
