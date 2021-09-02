@@ -32,8 +32,8 @@ import java.lang.reflect.Type;
  * @param <T> Type to be inferred.
  * @deprecated General {@link Type} serialization is not supported by all serializers. Defer
  * to your specific {@link io.servicetalk.serializer.api.Serializer} implementation. For example jackson offers
- * <a href="https://fasterxml.github.io/jackson-core/javadoc/2.2.0/com/fasterxml/jackson/core/type/TypeReference.html">TypeReference</a>
- * which can be used directly.
+ * <a href="https://fasterxml.github.io/jackson-core/javadoc/2.2.0/com/fasterxml/jackson/core/type/TypeReference.html">
+ * TypeReference</a> which can be used directly.
  */
 @Deprecated
 public abstract class TypeHolder<T> {
