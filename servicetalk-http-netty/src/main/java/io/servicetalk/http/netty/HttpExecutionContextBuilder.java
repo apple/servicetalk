@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -50,6 +51,17 @@ final class HttpExecutionContextBuilder {
      */
     public HttpExecutionContextBuilder ioExecutor(IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    /**
+     * Sets the {@link Executor} to use.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public HttpExecutionContextBuilder executor(Executor executor) {
+        executionContextBuilder.executor(executor);
         return this;
     }
 

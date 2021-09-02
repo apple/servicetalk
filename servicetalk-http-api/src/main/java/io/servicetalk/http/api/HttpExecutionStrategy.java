@@ -40,7 +40,10 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
      * @param <FS> The {@code FlushStrategy} type to use.
      * @return {@link Single} which is offloaded as required.
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
+     * {@link DefaultHttpExecutionStrategy#invokeClient(Executor, Publisher, Object, ClientInvoker)}.
      */
+    @Deprecated
     <FS> Single<StreamingHttpResponse> invokeClient(Executor fallback, Publisher<Object> flattenedRequest,
                                                     @Nullable FS flushStrategy, ClientInvoker<FS> client);
 
@@ -77,7 +80,10 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param service {@link Function} representing a service.
      * @return A {@link Single} that invokes the passed {@link Function} and returns the result asynchronously.
      * Invocation of {@link Function} will be offloaded if configured.
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
+     * {@link DefaultHttpExecutionStrategy#invokeService(Executor, Function)}.
      */
+    @Deprecated
     <T> Single<T> invokeService(Executor fallback, Function<Executor, T> service);
 
     /**
@@ -87,7 +93,10 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * {@link Executor}.
      * @param handler {@link StreamingHttpService} to wrap.
      * @return Wrapped {@link StreamingHttpService}.
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
+     * {@link DefaultHttpExecutionStrategy#offloadService(Executor, StreamingHttpService)}.
      */
+    @Deprecated
     StreamingHttpService offloadService(Executor fallback, StreamingHttpService handler);
 
     /**

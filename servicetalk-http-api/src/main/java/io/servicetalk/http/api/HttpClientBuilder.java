@@ -23,6 +23,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -44,6 +45,9 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
 abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> extends BaseHttpBuilder<R> {
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> executor(Executor executor);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
