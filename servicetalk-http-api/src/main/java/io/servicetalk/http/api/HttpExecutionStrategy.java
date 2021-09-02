@@ -73,7 +73,8 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * {@link Executor}.
      * @param handler {@link StreamingHttpService} to wrap.
      * @return Wrapped {@link StreamingHttpService}.
-     * @deprecated Will be replaced with a new class {@code StreamingHttpServiceToOffloadedStreamingHttpService}.
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
+     * {@link DefaultHttpExecutionStrategy#offloadService(Executor, StreamingHttpService)}.
      */
     @Deprecated
     StreamingHttpService offloadService(Executor fallback, StreamingHttpService handler);

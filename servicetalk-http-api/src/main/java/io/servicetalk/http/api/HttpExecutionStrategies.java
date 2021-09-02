@@ -66,7 +66,8 @@ public final class HttpExecutionStrategies {
      *
      * @param executor {@link Executor} to use.
      * @return Default {@link HttpExecutionStrategy}.
-     * @deprecated Set the {@link Executor} to use in the {@link io.servicetalk.transport.api.ExecutionContext}.
+     * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext} using
+     * {@code executor(Executor)} methods on client/server builders.
      */
     @Deprecated
     public static HttpExecutionStrategy defaultStrategy(Executor executor) {
@@ -226,7 +227,8 @@ public final class HttpExecutionStrategies {
          *
          * @param executor {@link Executor} to use.
          * @return {@code this}.
-         * @deprecated Set the {@link Executor} to use in the {@link io.servicetalk.transport.api.ExecutionContext}.
+         * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext} using
+         * {@code executor(Executor)} methods on client/server builders.
          */
         @Deprecated
         public Builder executor(Executor executor) {

@@ -74,7 +74,8 @@ public interface ExecutionStrategy {
      * Returns the {@link Executor}, if any, for this {@link ExecutionStrategy}.
      *
      * @return {@link Executor} for this {@link ExecutionStrategy}. {@code null} if none specified.
-     * @deprecated Take the {@link Executor} from the {@link io.servicetalk.transport.api.ExecutionContext}.
+     * @deprecated The {@link Executor} from the {@link io.servicetalk.transport.api.ExecutionContext} should be used
+     * instead.
      */
     @Deprecated
     @Nullable

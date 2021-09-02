@@ -25,9 +25,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A builder of homogeneous {@link StreamingHttpClient} instances which call the server associated with a partition
  * selected from a set of {@link PartitionedServiceDiscovererEvent}s resolved from a single unresolved address.
@@ -39,9 +36,6 @@ import org.slf4j.LoggerFactory;
  * @param <R> the type of address after resolution (resolved address)
  */
 public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PartitionedHttpClientBuilder.class);
-
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> the type of address before resolution (unresolved address)
@@ -78,8 +72,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
 
     @Override
     public PartitionedHttpClientBuilder<U, R> executor(Executor executor) {
-        LOGGER.warn("Unimplemented method MultiAddressHttpClientBuilder::executor() called");
-        return this;
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
     }
 
     @Override
