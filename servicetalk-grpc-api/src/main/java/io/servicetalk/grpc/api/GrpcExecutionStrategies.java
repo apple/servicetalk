@@ -45,7 +45,9 @@ public final class GrpcExecutionStrategies {
      *
      * @param executor {@link Executor} to use.
      * @return Default {@link GrpcExecutionStrategy}.
+     * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext}.
      */
+    @Deprecated
     public static GrpcExecutionStrategy defaultStrategy(final Executor executor) {
         return new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy(executor));
     }
@@ -133,7 +135,9 @@ public final class GrpcExecutionStrategies {
          *
          * @param executor {@link Executor} to use.
          * @return {@code this}.
+         * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext}.
          */
+        @Deprecated
         public Builder executor(Executor executor) {
             httpBuilder.executor(executor);
             return this;
@@ -143,7 +147,8 @@ public final class GrpcExecutionStrategies {
          * Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
          * single thread per subscribe of a source.
          * @return {@code this}.
-         * @deprecated Use a single threaded executor with {@link #executor(Executor)} to ensure affinity.
+         * @deprecated Use a single threaded executor set on {@link io.servicetalk.transport.api.ExecutionContext} to
+         * ensure affinity.
          */
         @Deprecated
         public Builder offloadWithThreadAffinity() {
