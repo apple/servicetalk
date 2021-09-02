@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -128,6 +129,11 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     @Override
     public Runnable wrapRunnable(final Runnable runnable, final AsyncContextMap contextMap) {
         return runnable;
+    }
+
+    @Override
+    public Callable wrapCallable(final Callable callable, final AsyncContextMap contextMap) {
+        return callable;
     }
 
     @Override

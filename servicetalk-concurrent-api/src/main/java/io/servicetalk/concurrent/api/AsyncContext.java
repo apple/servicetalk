@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.ConcurrentModificationException;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -240,6 +241,16 @@ public final class AsyncContext {
     public static Runnable wrapRunnable(Runnable runnable) {
         AsyncContextProvider provider = provider();
         return provider.wrapRunnable(runnable, provider.contextMap());
+    }
+
+    /**
+     * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
+     * @param callable The callable to wrap.
+     * @return The wrapped {@link Callable}.
+     */
+    public static Callable wrapCallable(Callable callable) {
+        AsyncContextProvider provider = provider();
+        return provider.wrapCallable(callable, provider.contextMap());
     }
 
     /**
