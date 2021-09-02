@@ -40,7 +40,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
      * @param <FS> The {@code FlushStrategy} type to use.
      * @return {@link Single} which is offloaded as required.
-     * @deprecated Copy the implementation from
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
      * {@link DefaultHttpExecutionStrategy#invokeClient(Executor, Publisher, Object, ClientInvoker)}.
      */
     @Deprecated
