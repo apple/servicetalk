@@ -243,8 +243,8 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Callable wrapCallable(final Callable callable, final AsyncContextMap contextMap) {
-        return new ContextPreservingCallable(callable, contextMap);
+    public <V> Callable<V> wrapCallable(final Callable<V> callable, final AsyncContextMap contextMap) {
+        return new ContextPreservingCallable<>(callable, contextMap);
     }
 
     @Override

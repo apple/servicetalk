@@ -246,9 +246,10 @@ public final class AsyncContext {
     /**
      * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
      * @param callable The callable to wrap.
+     * @param <V> The type of data returned by {@code callable}.
      * @return The wrapped {@link Callable}.
      */
-    public static Callable wrapCallable(Callable callable) {
+    public static <V> Callable<V> wrapCallable(Callable<V> callable) {
         AsyncContextProvider provider = provider();
         return provider.wrapCallable(callable, provider.contextMap());
     }

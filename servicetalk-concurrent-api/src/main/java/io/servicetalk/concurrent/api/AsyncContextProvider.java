@@ -192,9 +192,10 @@ interface AsyncContextProvider {
      * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
      * @param callable The callable to wrap.
      * @param contextMap The {@link AsyncContext}.
+     * @param <V> The type of data returned by {@code callable}.
      * @return The wrapped {@link Callable}.
      */
-    Callable wrapCallable(Callable callable, AsyncContextMap contextMap);
+    <V> Callable<V> wrapCallable(Callable<V> callable, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
