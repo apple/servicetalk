@@ -323,6 +323,16 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
 
     /**
+     * Sets the {@link Executor} to use.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public HttpServerBuilder executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
+
+    /**
      * Sets the {@link BufferAllocator} to be used by this server.
      *
      * @param allocator {@link BufferAllocator} to use.

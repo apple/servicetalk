@@ -66,7 +66,10 @@ public final class HttpExecutionStrategies {
      *
      * @param executor {@link Executor} to use.
      * @return Default {@link HttpExecutionStrategy}.
+     * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext} using
+     * {@code executor(Executor)} methods on client/server builders.
      */
+    @Deprecated
     public static HttpExecutionStrategy defaultStrategy(Executor executor) {
         return customStrategyBuilder().offloadAll().executor(executor).mergeStrategy(ReturnOther).build();
     }
@@ -224,7 +227,10 @@ public final class HttpExecutionStrategies {
          *
          * @param executor {@link Executor} to use.
          * @return {@code this}.
+         * @deprecated Set the executor to use on the {@link io.servicetalk.transport.api.ExecutionContext} using
+         * {@code executor(Executor)} methods on client/server builders.
          */
+        @Deprecated
         public Builder executor(Executor executor) {
             this.executor = requireNonNull(executor);
             return this;
@@ -246,8 +252,10 @@ public final class HttpExecutionStrategies {
          *
          * @param mergeStrategy {@link MergeStrategy} to use.
          * @return {@code this}.
+         * @deprecated Will be removed
          */
         // Intentionally package-private, API is not required to be public for the lack of use cases.
+        @Deprecated
         Builder mergeStrategy(MergeStrategy mergeStrategy) {
             this.mergeStrategy = mergeStrategy;
             return this;

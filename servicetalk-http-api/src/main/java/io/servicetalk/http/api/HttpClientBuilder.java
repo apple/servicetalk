@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
 /**
@@ -35,6 +36,14 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @return {@code this}.
      */
     HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} for all connections created from this builder.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    HttpClientBuilder<U, R, SDE> executor(Executor executor);
 
     /**
      * Sets the {@link BufferAllocator} for all connections created from this builder.

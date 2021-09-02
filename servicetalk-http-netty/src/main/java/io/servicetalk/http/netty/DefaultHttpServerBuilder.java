@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -98,6 +99,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
         return this;
     }
 

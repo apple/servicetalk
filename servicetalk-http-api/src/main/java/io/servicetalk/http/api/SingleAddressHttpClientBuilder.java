@@ -23,6 +23,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
@@ -50,7 +51,6 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  */
 public abstract class SingleAddressHttpClientBuilder<U, R>
         implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
-
     /**
      * Adds a {@link SocketOption} for all connections created by this builder.
      *
@@ -163,6 +163,11 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
