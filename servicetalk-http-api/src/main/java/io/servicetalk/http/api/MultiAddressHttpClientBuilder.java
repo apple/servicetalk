@@ -20,6 +20,9 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
  * absolute-form URL address information from each {@link StreamingHttpRequest}.
@@ -33,6 +36,9 @@ import io.servicetalk.transport.api.IoExecutor;
  */
 public abstract class MultiAddressHttpClientBuilder<U, R>
         implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiAddressHttpClientBuilder.class);
+
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.
@@ -68,7 +74,10 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
+    public MultiAddressHttpClientBuilder<U, R> executor(Executor executor) {
+        LOGGER.warn("Unimplemented method MultiAddressHttpClientBuilder::executor() called");
+        return this;
+    }
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

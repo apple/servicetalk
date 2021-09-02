@@ -31,6 +31,9 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.function.BooleanSupplier;
@@ -51,6 +54,8 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  */
 public abstract class SingleAddressHttpClientBuilder<U, R>
         implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleAddressHttpClientBuilder.class);
 
     /**
      * Adds a {@link SocketOption} for all connections created by this builder.
@@ -166,7 +171,10 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
+    public SingleAddressHttpClientBuilder<U, R> executor(Executor executor) {
+        LOGGER.warn("Unimplemented method SingleAddressHttpClientBuilder::executor() called");
+        return this;
+    }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
