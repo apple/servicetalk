@@ -60,7 +60,8 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param service {@link Function} representing a service.
      * @return A {@link Single} that invokes the passed {@link Function} and returns the result asynchronously.
      * Invocation of {@link Function} will be offloaded if configured.
-     * @deprecated Copy the implementation from {@link DefaultHttpExecutionStrategy#invokeService(Executor, Function)}.
+     * @deprecated This method will be removed in future releases. If you depend on it, copy the implementation from
+     * {@link DefaultHttpExecutionStrategy#invokeService(Executor, Function)}.
      */
     @Deprecated
     <T> Single<T> invokeService(Executor fallback, Function<Executor, T> service);
