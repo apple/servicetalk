@@ -18,6 +18,7 @@ package io.servicetalk.grpc.protoc;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.WildcardTypeName;
 
 import static com.squareup.javapoet.ClassName.bestGuess;
 
@@ -34,9 +35,12 @@ final class Types {
     private static final String routerApiPkg = basePkg + ".router.api";
     private static final String protobufDataPkg = basePkg + ".data.protobuf";
 
+    private static final TypeName Wildcard = WildcardTypeName.subtypeOf(Object.class);
     static final ClassName List = ClassName.get("java.util", "List");
     static final ClassName Objects = ClassName.get("java.util", "Objects");
     static final ClassName Collections = ClassName.get("java.util", "Collections");
+    static final ClassName Arrays = ClassName.get("java.util", "Arrays");
+    private static final ClassName Collection = ClassName.get("java.util", "Collection");
 
     private static final ClassName RouteExecutionStrategyFactory =
             bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
@@ -77,6 +81,8 @@ final class Types {
     static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");
     static final ClassName GrpcMethodDescriptor = bestGuess(grpcApiPkg + ".MethodDescriptor");
     static final ClassName GrpcMethodDescriptors = bestGuess(grpcApiPkg + ".MethodDescriptors");
+    static final ParameterizedTypeName GrpcMethodDescriptorCollection = ParameterizedTypeName.get(Collection,
+            ParameterizedTypeName.get(GrpcMethodDescriptor, Wildcard, Wildcard));
 
     static final ClassName BlockingClientCall = bestGuess(GrpcClientCallFactory + ".BlockingClientCall");
     static final ClassName BlockingRequestStreamingClientCall =

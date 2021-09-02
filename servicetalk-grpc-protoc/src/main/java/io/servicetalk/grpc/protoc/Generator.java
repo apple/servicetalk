@@ -46,6 +46,7 @@ import static io.servicetalk.grpc.protoc.NoopServiceCommentsMap.NOOP_MAP;
 import static io.servicetalk.grpc.protoc.StringUtils.escapeJavaDoc;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
 import static io.servicetalk.grpc.protoc.Types.AllGrpcRoutes;
+import static io.servicetalk.grpc.protoc.Types.Arrays;
 import static io.servicetalk.grpc.protoc.Types.AsyncCloseable;
 import static io.servicetalk.grpc.protoc.Types.BlockingClientCall;
 import static io.servicetalk.grpc.protoc.Types.BlockingGrpcClient;
@@ -76,6 +77,7 @@ import static io.servicetalk.grpc.protoc.Types.GrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionStrategy;
 import static io.servicetalk.grpc.protoc.Types.GrpcMethodDescriptor;
+import static io.servicetalk.grpc.protoc.Types.GrpcMethodDescriptorCollection;
 import static io.servicetalk.grpc.protoc.Types.GrpcMethodDescriptors;
 import static io.servicetalk.grpc.protoc.Types.GrpcPayloadWriter;
 import static io.servicetalk.grpc.protoc.Types.GrpcRouteExecutionStrategyFactory;
@@ -100,6 +102,8 @@ import static io.servicetalk.grpc.protoc.Types.Route;
 import static io.servicetalk.grpc.protoc.Types.Single;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
+import static io.servicetalk.grpc.protoc.Words.ASYNC_METHOD_DESCRIPTORS;
+import static io.servicetalk.grpc.protoc.Words.BLOCKING_METHOD_DESCRIPTORS;
 import static io.servicetalk.grpc.protoc.Words.Blocking;
 import static io.servicetalk.grpc.protoc.Words.Builder;
 import static io.servicetalk.grpc.protoc.Words.COMMENT_POST_TAG;
@@ -142,6 +146,7 @@ import static io.servicetalk.grpc.protoc.Words.initSerializationProvider;
 import static io.servicetalk.grpc.protoc.Words.isSupportedMessageCodingsEmpty;
 import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.methodDescriptor;
+import static io.servicetalk.grpc.protoc.Words.methodDescriptors;
 import static io.servicetalk.grpc.protoc.Words.onClose;
 import static io.servicetalk.grpc.protoc.Words.registerRoutes;
 import static io.servicetalk.grpc.protoc.Words.request;
@@ -167,6 +172,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
 final class Generator {
+    private static final int RPC_METHOD_NAME_LENGTH_GUESS = 16;
 
     private static final class RpcInterface {
         final MethodDescriptorProto methodProto;
@@ -334,16 +340,16 @@ final class Generator {
                                 "$T.$L.serializerDeserializer($T.parser()), $T::getSerializedSize, $L, $L, " +
                                 "$T.class, $S, $T.$L.serializerDeserializer($T.parser()), $T::getSerializedSize)",
                         GrpcMethodDescriptors, methodHttpPath, javaMethodName,
-                        clientStreaming, isAsync, inClass, PROTO_CONTENT_TYPE,
+                        clientStreaming, clientStreaming && isAsync, inClass, PROTO_CONTENT_TYPE,
                         ProtobufSerializerFactory, PROTOBUF, inClass, inClass,
                         serverStreaming, isAsync, outClass, PROTO_CONTENT_TYPE,
                         ProtobufSerializerFactory, PROTOBUF, outClass, outClass).build();
     }
 
-    private void addServiceRpcInterfaceSpec(final State state,
-                                            final TypeSpec.Builder serviceClassBuilder,
-                                            final MethodDescriptorProto methodProto,
-                                            final int methodIndex, final boolean isAsync) {
+    private String addServiceRpcInterfaceSpec(final State state,
+                                              final TypeSpec.Builder serviceClassBuilder,
+                                              final MethodDescriptorProto methodProto,
+                                              final int methodIndex, final boolean isAsync) {
         final String name = context.deconflictJavaTypeName(isAsync ?
                 sanitizeIdentifier(methodProto.getName(), false) + Rpc :
                 Blocking + sanitizeIdentifier(methodProto.getName(), false) + Rpc);
@@ -356,7 +362,7 @@ final class Generator {
         final String javaMethodName = routeName(methodProto);
         serviceClassBuilder.addField(newMethodDescriptorSpec(inClass, outClass, javaMethodName,
                 methodProto.getClientStreaming(), methodProto.getServerStreaming(), methodHttpPath,
-                methodDescriptorType, methodDescFieldName, true));
+                methodDescriptorType, methodDescFieldName, isAsync));
 
         final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH)
                 .addJavadoc(JAVADOC_DEPRECATED + " Use {@link #$L}." + lineSeparator(), methodDescriptor)
@@ -391,17 +397,43 @@ final class Generator {
 
         state.serviceRpcInterfaces.add(new RpcInterface(methodProto, !isAsync, ClassName.bestGuess(name)));
         serviceClassBuilder.addType(interfaceSpecBuilder.build());
+        return methodDescFieldName;
     }
 
     private TypeSpec.Builder addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         List<MethodDescriptorProto> methodDescriptorProtoList = state.serviceProto.getMethodList();
+        StringBuilder asyncMethodDescriptors =
+                new StringBuilder(methodDescriptorProtoList.size() * RPC_METHOD_NAME_LENGTH_GUESS);
+        StringBuilder blockingMethodDescriptors =
+                new StringBuilder(methodDescriptorProtoList.size() * RPC_METHOD_NAME_LENGTH_GUESS);
         for (int i = 0; i < methodDescriptorProtoList.size(); ++i) {
             MethodDescriptorProto methodProto = methodDescriptorProtoList.get(i);
-            addServiceRpcInterfaceSpec(state, serviceClassBuilder, methodProto, i, true);
-            addServiceRpcInterfaceSpec(state, serviceClassBuilder, methodProto, i, false);
+            asyncMethodDescriptors
+                    .append(addServiceRpcInterfaceSpec(state, serviceClassBuilder, methodProto, i, true)).append(", ");
+            blockingMethodDescriptors
+                    .append(addServiceRpcInterfaceSpec(state, serviceClassBuilder, methodProto, i, false)).append(", ");
         }
 
+        serviceClassBuilder
+                .addField(setInitializerList(FieldSpec.builder(GrpcMethodDescriptorCollection, ASYNC_METHOD_DESCRIPTORS)
+                .addModifiers(PRIVATE, STATIC, FINAL), asyncMethodDescriptors)
+                        .build())
+                .addField(setInitializerList(FieldSpec.builder(GrpcMethodDescriptorCollection,
+                                BLOCKING_METHOD_DESCRIPTORS)
+                        .addModifiers(PRIVATE, STATIC, FINAL), blockingMethodDescriptors)
+                        .build());
+
         return serviceClassBuilder;
+    }
+
+    private static FieldSpec.Builder setInitializerList(FieldSpec.Builder builder, StringBuilder sb) {
+        if (sb.length() == 0) {
+            builder.initializer("$T.emptyList()", Collections);
+        } else {
+            builder.initializer("$T.unmodifiableList($T.asList($L))", Collections, Arrays,
+                    sb.substring(0, sb.length() - 2));
+        }
+        return builder;
     }
 
     private void extractJavaDocComments(State state, int methodIndex, MethodSpec.Builder b) {
@@ -1393,9 +1425,7 @@ final class Generator {
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcBindableService,
-                        state.serviceFilterClass, state.serviceClass, state.serviceFilterFactoryClass))
-                // Generally redundant if there are any matching RPC interfaces
-                .addSuperinterface(blocking ? BlockingGrpcService : GrpcService);
+                        state.serviceFilterClass, state.serviceClass, state.serviceFilterFactoryClass));
 
         state.serviceRpcInterfaces.stream()
                 .filter(e -> e.blocking == blocking)
@@ -1414,6 +1444,15 @@ final class Generator {
                 .addModifiers(DEFAULT)
                 .returns(state.serviceFactoryClass)
                 .addStatement("return new $T(this)", state.serviceFactoryClass)
+                .build());
+
+        // Add the default methodDescriptors method.
+        interfaceSpecBuilder.addMethod(methodBuilder(methodDescriptors)
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC)
+                .addModifiers(DEFAULT)
+                .returns(GrpcMethodDescriptorCollection)
+                .addStatement("return $L", blocking ? BLOCKING_METHOD_DESCRIPTORS : ASYNC_METHOD_DESCRIPTORS)
                 .build());
 
         return interfaceSpecBuilder.build();
