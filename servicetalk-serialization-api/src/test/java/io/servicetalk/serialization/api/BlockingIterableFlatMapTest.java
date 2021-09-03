@@ -41,8 +41,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 class BlockingIterableFlatMapTest {
@@ -65,7 +65,7 @@ class BlockingIterableFlatMapTest {
         when(source.hasNext(anyLong(), any(TimeUnit.class))).thenReturn(false);
 
         assertThat("Iterator not empty.", flatMap.iterator().hasNext(1, MILLISECONDS), is(false));
-        verifyZeroInteractions(mapper);
+        verifyNoInteractions(mapper);
         verify(source).hasNext(anyLong(), any(TimeUnit.class));
         verifyNoMoreInteractions(source);
     }
@@ -75,7 +75,7 @@ class BlockingIterableFlatMapTest {
         when(source.hasNext()).thenReturn(false);
 
         assertThat("Iterator not empty.", flatMap.iterator().hasNext(), is(false));
-        verifyZeroInteractions(mapper);
+        verifyNoInteractions(mapper);
         verify(source).hasNext();
         verifyNoMoreInteractions(source);
     }

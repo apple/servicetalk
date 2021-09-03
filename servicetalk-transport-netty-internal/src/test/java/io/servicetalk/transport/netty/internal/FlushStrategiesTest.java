@@ -31,7 +31,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategies.flushWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class FlushStrategiesTest {
 
@@ -102,7 +102,7 @@ class FlushStrategiesTest {
         setupForBatch(2);
         durationSource.onComplete();
         listener.itemWritten(1);
-        verifyZeroInteractions(flushSender);
+        verifyNoInteractions(flushSender);
         listener.writeTerminated();
         verifyFlush(1);
     }
@@ -111,7 +111,7 @@ class FlushStrategiesTest {
     void testDurationEmitError() {
         setupForBatch(2);
         durationSource.onError(DELIBERATE_EXCEPTION);
-        verifyZeroInteractions(flushSender);
+        verifyNoInteractions(flushSender);
         listener.itemWritten(1);
         listener.itemWritten(2);
         verify(flushSender).flush();
@@ -122,7 +122,7 @@ class FlushStrategiesTest {
         setupForBatch(2);
         listener.writeTerminated();
         durationSource.onError(DELIBERATE_EXCEPTION);
-        verifyZeroInteractions(flushSender);
+        verifyNoInteractions(flushSender);
     }
 
     @Test
@@ -184,7 +184,7 @@ class FlushStrategiesTest {
         if (flushCount > 0) {
             Mockito.verify(flushSender, Mockito.times(flushCount)).flush();
         } else {
-            verifyZeroInteractions(flushSender);
+            verifyNoInteractions(flushSender);
         }
     }
 }

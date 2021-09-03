@@ -25,7 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class StrategyInfluencerChainBuilderTest {
@@ -42,7 +42,7 @@ class StrategyInfluencerChainBuilderTest {
 
         chain1.build().influenceStrategy(defaultStrategy());
 
-        verifyZeroInteractions(influencer2);
+        verifyNoInteractions(influencer2);
     }
 
     @Test

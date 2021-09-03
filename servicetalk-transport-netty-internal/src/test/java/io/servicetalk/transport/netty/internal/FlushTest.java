@@ -34,7 +34,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 class FlushTest extends AbstractFlushTest {
 
@@ -86,7 +85,7 @@ class FlushTest extends AbstractFlushTest {
         subscriber.awaitSubscription().cancel();
 
         verify(channel).eventLoop();
-        verifyZeroInteractions(channel);
+        verifyNoMoreInteractions(channel);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 

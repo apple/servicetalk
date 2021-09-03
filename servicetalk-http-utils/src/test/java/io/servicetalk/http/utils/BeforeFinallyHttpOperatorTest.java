@@ -72,8 +72,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class BeforeFinallyHttpOperatorTest {
@@ -130,7 +130,7 @@ class BeforeFinallyHttpOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
         final StreamingHttpResponse received = subscriber.verifyResponseReceived();
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
@@ -143,7 +143,7 @@ class BeforeFinallyHttpOperatorTest {
         final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
         // Old response should be preserved.
         assertThat("Duplicate response received.", received2, is(received));
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -230,12 +230,12 @@ class BeforeFinallyHttpOperatorTest {
 
         responseSingle.onSuccess(reqRespFactory.ok().payloadBody(never()));
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
         subscriber.cancellable.cancel();
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -277,12 +277,12 @@ class BeforeFinallyHttpOperatorTest {
 
         responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
         subscriber.cancellable.cancel();
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
 
@@ -332,7 +332,7 @@ class BeforeFinallyHttpOperatorTest {
 
         responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
@@ -375,7 +375,7 @@ class BeforeFinallyHttpOperatorTest {
 
         responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
@@ -449,7 +449,7 @@ class BeforeFinallyHttpOperatorTest {
 
         responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
@@ -531,7 +531,7 @@ class BeforeFinallyHttpOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);
         responseSingle.onSuccess(response);
 
-        verifyZeroInteractions(beforeFinally);
+        verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
         assert subscriber.response != null;
