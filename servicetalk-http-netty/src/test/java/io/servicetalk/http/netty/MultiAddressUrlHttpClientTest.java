@@ -82,8 +82,6 @@ class MultiAddressUrlHttpClientTest {
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
-
-
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
     private static String serverHost;
@@ -98,6 +96,7 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
+                .followRedirects(config -> { /* noop */ })
                 .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 

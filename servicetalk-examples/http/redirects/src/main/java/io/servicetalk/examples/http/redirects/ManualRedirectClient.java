@@ -27,7 +27,7 @@ import static io.servicetalk.examples.http.redirects.RedirectingServer.NON_SECUR
 import static io.servicetalk.examples.http.redirects.RedirectingServer.SECURE_SERVER_PORT;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
  * Async "Hello World" example that demonstrates how redirects can be handled manually when single-address clients are
@@ -48,7 +48,7 @@ public final class ManualRedirectClient {
 
             try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT).build()) {
                 // Redirect of a GET request with a custom header:
-                HttpRequest originalGet = client.get("http://localhost:8080/sayHello")
+                HttpRequest originalGet = client.get("/non-relative")
                         .addHeader(CUSTOM_HEADER, "value");
                 client.request(originalGet)
                         .flatMap(response -> {
@@ -64,16 +64,16 @@ public final class ManualRedirectClient {
                         })
                         .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textSerializerUtf8()));
+                            System.out.println(resp.payloadBody(textSerializerAscii()));
                             System.out.println();
                         })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
+                        // This example is demonstrating asynchronous execution, but needs to prevent the main thread
+                        // from exiting before the response has been processed. This isn't typical usage for an
+                        // asynchronous API but is useful for demonstration purposes.
                         .toFuture().get();
 
                 // Redirect of a POST request with a payload body:
-                HttpRequest originalPost = client.post("http://localhost:8080/sayHello")
+                HttpRequest originalPost = client.post("/non-relative")
                         .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content"));
                 client.request(originalPost)
                         .flatMap(response -> {
@@ -89,11 +89,11 @@ public final class ManualRedirectClient {
                         })
                         .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textSerializerUtf8()));
+                            System.out.println(resp.payloadBody(textSerializerAscii()));
                         })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
+                        // This example is demonstrating asynchronous execution, but needs to prevent the main thread
+                        // from exiting before the response has been processed. This isn't typical usage for an
+                        // asynchronous API but is useful for demonstration purposes.
                         .toFuture().get();
             }
         }

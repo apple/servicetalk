@@ -16,23 +16,25 @@
 package io.servicetalk.examples.http.redirects;
 
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.RedirectConfiguration;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
  * Async `Hello World` example that demonstrates how redirects can be handled automatically by a
  * {@link HttpClients#forMultiAddressUrl() multi-address} client.
- *
- * Automatic redirects have limitations. See {@link RedirectWithStateUrlClient} for more information.
+ * <p>
+ * Automatic non-relative redirects have limitations. See {@link RedirectConfiguration} and
+ * {@link RedirectWithStateUrlClient} for more information.
  */
 public final class SimpleRedirectUrlClient {
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forMultiAddressUrl()
-                // This is an optional configuration that applies more restrictive limit for the number or redirects:
-                .maxRedirects(1)
+                // Enables redirection:
+                .followRedirects(redirectConfiguration -> { /* noop */ })
                 .initializer((scheme, address, builder) -> {
                     // The custom SSL configuration here is necessary only because this example uses self-signed
                     // certificates. For cases when it's enough to use the local trust store, MultiAddressUrl client
@@ -42,14 +44,25 @@ public final class SimpleRedirectUrlClient {
                     }
                 })
                 .build()) {
-            client.request(client.get("http://localhost:8080/sayHello"))
+            client.request(client.get("http://localhost:8080/relative"))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textSerializerUtf8()));
+                        System.out.println(resp.payloadBody(textSerializerAscii()));
+                        System.out.println();
                     })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
+                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
+                    // exiting before the response has been processed. This isn't typical usage for an asynchronous API
+                    // but is useful for demonstration purposes.
+                    .toFuture().get();
+
+            client.request(client.get("http://localhost:8080/non-relative"))
+                    .whenOnSuccess(resp -> {
+                        System.out.println(resp.toString((name, value) -> value));
+                        System.out.println(resp.payloadBody(textSerializerAscii()));
+                    })
+                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
+                    // exiting before the response has been processed. This isn't typical usage for an asynchronous API
+                    // but is useful for demonstration purposes.
                     .toFuture().get();
         }
     }

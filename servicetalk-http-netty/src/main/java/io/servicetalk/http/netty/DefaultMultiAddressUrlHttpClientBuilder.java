@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.RedirectConfiguration;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -46,6 +47,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -69,16 +71,14 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
         extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
-    // https://tools.ietf.org/html/rfc2068#section-10.3 says:
-    // A user agent SHOULD NOT automatically redirect a request more than 5 times,
-    // since such redirects usually indicate an infinite loop.
-    private static final int DEFAULT_MAX_REDIRECTS = 5;
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
-    private int maxRedirects = DEFAULT_MAX_REDIRECTS;
+    private int maxRedirects;   // disabled by default
+    @Nullable
+    private Consumer<RedirectConfiguration> followRedirectsInitializer;
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
@@ -105,9 +105,18 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                             defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
                                     executionContext.bufferAllocator())));
 
-            // Need to wrap the top level client (group) in order for non-relative redirects to work
-            urlClient = maxRedirects <= 0 ? urlClient :
-                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient);
+            if (maxRedirects > 0 || followRedirectsInitializer != null) {
+                final RedirectingHttpRequesterFilter.Builder redirectBuilder =
+                        new RedirectingHttpRequesterFilter.Builder().allowNonRelativeRedirects(true);
+                if (maxRedirects > 0) {
+                    redirectBuilder.maxRedirects(maxRedirects);
+                }
+                if (followRedirectsInitializer != null) {
+                    followRedirectsInitializer.accept(redirectBuilder);
+                }
+                // Need to wrap the top-level client (group) in order for non-relative redirects to work
+                urlClient = redirectBuilder.build().create(urlClient);
+            }
 
             return new FilterableClientToClient(urlClient, executionContext.executionStrategy(),
                     buildContext.builder.buildStrategyInfluencerForClient(
@@ -142,7 +151,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
 
             final int parsedPort = metaData.port();
-            final int port = parsedPort >= 0 ? parsedPort : (HTTPS_SCHEME.equals(scheme) ? HTTPS : HTTP).port();
+            final int port = parsedPort >= 0 ? parsedPort :
+                    (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? HTTPS : HTTP).port();
 
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
@@ -346,8 +356,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
+    @Deprecated
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxRedirects(final int maxRedirects) {
+        if (maxRedirects < 0) {
+            throw new IllegalArgumentException("maxRedirects: " + maxRedirects + " (expected >= 0)");
+        }
         this.maxRedirects = maxRedirects;
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> followRedirects(
+            final Consumer<RedirectConfiguration> initializer) {
+        this.followRedirectsInitializer = requireNonNull(initializer);
         return this;
     }
 }
