@@ -22,5 +22,5 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

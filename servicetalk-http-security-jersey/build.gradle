@@ -35,7 +35,7 @@ dependencies {
   testImplementation "net.javacrumbs.json-unit:json-unit-fluent:$jsonUnitVersion"
   testImplementation "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
   testImplementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
