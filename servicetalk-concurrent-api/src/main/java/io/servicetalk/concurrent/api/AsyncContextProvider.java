@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -186,6 +187,15 @@ interface AsyncContextProvider {
      * @return The wrapped {@link Runnable}.
      */
     Runnable wrapRunnable(Runnable runnable, AsyncContextMap contextMap);
+
+    /**
+     * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
+     * @param callable The callable to wrap.
+     * @param contextMap The {@link AsyncContext}.
+     * @param <V> The type of data returned by {@code callable}.
+     * @return The wrapped {@link Callable}.
+     */
+    <V> Callable<V> wrapCallable(Callable<V> callable, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
