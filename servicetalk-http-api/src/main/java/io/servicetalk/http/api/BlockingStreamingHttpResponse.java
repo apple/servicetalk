@@ -106,7 +106,10 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #payloadBody(Iterable)}.
      */
     @Deprecated
-    BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
+    default BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody) {
+        payloadBody((Iterable<Buffer>) payloadBody);
+        return this;
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
