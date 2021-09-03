@@ -121,8 +121,10 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                      final HttpRequestMetaData metaData) {
-        return strategy.offloadReceive(executionContext.executor(),
-                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity()));
+        Single<ReservedStreamingHttpConnection> connection =
+                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity());
+        return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
+                connection.publishOn(executionContext.executor()) : connection;
     }
 
     @Override

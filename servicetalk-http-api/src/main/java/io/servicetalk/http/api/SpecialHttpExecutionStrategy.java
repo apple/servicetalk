@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
 /**
  *  Package private special purpose implementation for {@link HttpExecutionStrategy} to be used across programming model
  *  adapters, should not be made public. Provides a special execution strategy that overrides offloading behavior.
@@ -62,26 +58,6 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
             return this;
         }
-
-        @Override
-        public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-            return original;
-        }
-
-        @Override
-        public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-            return original;
-        }
-
-        @Override
-        public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-            return original;
-        }
-
-        @Override
-        public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-            return original;
-        }
     },
     /**
      * "default safe" execution strategy that offloads everything and defers to other execution strategies when merged.
@@ -117,26 +93,6 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
             return other;
-        }
-
-        @Override
-        public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-            return DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY.offloadSend(executor, original);
-        }
-
-        @Override
-        public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-            return DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY.offloadReceive(executor, original);
-        }
-
-        @Override
-        public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-            return DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY.offloadSend(executor, original);
-        }
-
-        @Override
-        public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-            return DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY.offloadReceive(executor, original);
         }
     }
 }

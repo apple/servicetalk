@@ -236,7 +236,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             final HttpExecutionStrategy executionStrategy = getResponseExecutionStrategy(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             final Publisher<Buffer> payloadBody = (executionStrategy != null ?
-                    executionStrategy.offloadSend(serviceCtx.executionContext().executor(), content) : content)
+                    executionStrategy.isSendOffloaded() ?
+                            content.subscribeOn(serviceCtx.executionContext().executor()) :
+                            content : content)
                     .beforeCancel(this::cancelResponse);  // Cleanup internal state if server cancels response body
 
             response = responseFactory.newResponse(status)

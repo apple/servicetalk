@@ -259,8 +259,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             final Cancellable cancellable;
             if (effectiveRouteStrategy != null) {
                 assert executor != null;
-                cancellable = effectiveRouteStrategy
-                        .offloadSend(executor, responseSingle)
+                cancellable = (effectiveRouteStrategy.isSendOffloaded() ?
+                        responseSingle.subscribeOn(executor) : responseSingle)
                         .subscribe(asyncContext::resume);
             } else {
                 cancellable = responseSingle.subscribe(asyncContext::resume);
