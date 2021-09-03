@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
@@ -34,6 +35,14 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <ResolvedAddress> the type of address after resolution (resolved address)
  */
 abstract class BaseHttpBuilder<ResolvedAddress> {
+
+    /**
+     * Sets the {@link Executor} for all connections created from this builder.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> executor(Executor executor);
 
     /**
      * Sets the {@link IoExecutor} for all connections created from this builder.

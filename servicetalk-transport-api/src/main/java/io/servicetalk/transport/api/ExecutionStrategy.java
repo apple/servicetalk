@@ -71,10 +71,13 @@ public interface ExecutionStrategy {
     <T> Publisher<T> offloadReceive(Executor fallback, Publisher<T> original);
 
     /**
-     * Returns the {@link Executor}, if any for this {@link ExecutionStrategy}.
+     * Returns the {@link Executor}, if any, for this {@link ExecutionStrategy}.
      *
      * @return {@link Executor} for this {@link ExecutionStrategy}. {@code null} if none specified.
+     * @deprecated The {@link Executor} from the {@link io.servicetalk.transport.api.ExecutionContext} should be used
+     * instead.
      */
+    @Deprecated
     @Nullable
     Executor executor();
 }

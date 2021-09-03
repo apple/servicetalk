@@ -20,6 +20,7 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
@@ -74,6 +75,11 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
                                                                        StreamingHttpConnectionFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 super.appendConnectionFilter(predicate, factory);
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
     }
 
     @Override
