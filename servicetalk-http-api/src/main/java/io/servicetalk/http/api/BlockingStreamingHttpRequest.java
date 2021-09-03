@@ -107,7 +107,9 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body.
      * @return {@code this}
+     * @deprecated Use {@link #payloadBody(Iterable)}.
      */
+    @Deprecated
     BlockingStreamingHttpRequest payloadBody(CloseableIterable<Buffer> payloadBody);
 
     /**
