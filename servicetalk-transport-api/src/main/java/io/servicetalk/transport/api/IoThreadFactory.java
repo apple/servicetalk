@@ -33,6 +33,24 @@ public interface IoThreadFactory<T extends Thread & IoThread> extends ThreadFact
      * interface.
      */
     interface IoThread extends AsyncContextMapHolder {
+
+        /**
+         * Returns {@code true} if the current thread is an {@link IoThread} otherwise {code false}.
+         *
+         * @return {@code true} if the current thread is an {@link IoThread} otherwise {code false}.
+         */
+        static boolean currentThreadIsIoThread() {
+            return isIoThread(Thread.currentThread());
+        }
+
+        /**
+         * Returns {@code true} if the specified thread is an {@link IoThread} otherwise {code false}.
+         *
+         * @return {@code true} if the specified thread is an {@link IoThread} otherwise {code false}.
+         */
+        static boolean isIoThread(Thread thread) {
+            return thread instanceof IoThread;
+        }
     }
 
     @Override

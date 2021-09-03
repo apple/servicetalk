@@ -25,6 +25,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceToOffloadedStreamingHttpService;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import java.util.List;
 
@@ -68,9 +70,9 @@ final class InOrderRouter implements StreamingHttpService {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
                 if (strategy != null) {
-                    Executor se = strategy.executor();
-                    Executor executor = null == se ? ctx.executionContext().executor() : se;
-                    service = strategy.offloadService(executor, service);
+                    Executor executor = ctx.executionContext().executor();
+                    service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(strategy,
+                            executor, IoThreadFactory.IoThread::currentThreadIsIoThread, service);
                 }
                 return service.handle(ctx, request, factory);
             }

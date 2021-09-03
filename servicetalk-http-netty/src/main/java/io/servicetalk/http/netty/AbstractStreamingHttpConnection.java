@@ -34,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -57,7 +58,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
         implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
 
-    private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRECNY_EVENT = new IgnoreConsumedEvent<>(0);
+    private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
     private final HttpConnectionContext connectionContext;
@@ -78,7 +79,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing().publishOn(executionContext.executor()))
-                .concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
+                .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT));
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
@@ -106,7 +107,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
         return defer(() -> {
-            final Publisher<Object> flatRequest;
+            Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
             if (canAddRequestContentLength(request)) {
                 flatRequest = setRequestContentLength(connectionContext().protocol(), request);
@@ -119,8 +120,22 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                                 .scanWith(HeaderUtils::insertTrailersMapper);
                 addRequestTransferEncodingIfNecessary(request);
             }
-            return strategy.invokeClient(executionContext.executor(), flatRequest,
-                    determineFlushStrategyForApi(request), this).subscribeShareContext();
+
+            if (strategy.isSendOffloaded()) {
+                flatRequest = flatRequest.subscribeOn(executionContext.executor(),
+                        IoThreadFactory.IoThread::currentThreadIsIoThread);
+            }
+            Single<StreamingHttpResponse> resp = invokeClient(flatRequest, determineFlushStrategyForApi(request));
+            if (strategy.isMetadataReceiveOffloaded()) {
+                resp = resp.publishOn(executionContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread);
+            }
+            if (strategy.isDataReceiveOffloaded()) {
+                resp = resp.map(response ->
+                        response.transformMessageBody(payload -> payload.publishOn(executionContext.executor(),
+                                IoThreadFactory.IoThread::currentThreadIsIoThread)));
+            }
+
+            return resp.subscribeShareContext();
         });
     }
 

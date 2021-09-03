@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
@@ -44,6 +45,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -53,9 +55,11 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
@@ -291,7 +295,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             assert executor != null;
             assert ctxRefProvider != null;
             final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
-            return effectiveRouteStrategy.invokeService(executor, actualExecutor ->
+            Function<Executor, ContainerResponse> service = actualExecutor ->
                     requestScope.runInScope(requestContext, () -> {
                         final ConnectionContext origConnectionContext = ctxRef.get();
                         if (!(origConnectionContext instanceof ExecutorOverrideConnectionContext)) {
@@ -304,7 +308,36 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                         setResponseExecutionStrategy(effectiveRouteStrategy, request);
 
                         return delegate.apply(requestProcessingCtx);
-                    }))
+                    });
+
+            Executor useExecutor = effectiveRouteStrategy instanceof JerseyRouteExecutionStrategy ?
+                    ((JerseyRouteExecutionStrategy) effectiveRouteStrategy).executor() :
+                    executor;
+
+            return (effectiveRouteStrategy.isMetadataReceiveOffloaded() ?
+                    useExecutor.submit(() -> service.apply(useExecutor)) :
+                    new SubscribableSingle<ContainerResponse>() {
+
+                        @Override
+                        protected void handleSubscribe(
+                                final SingleSource.Subscriber<? super ContainerResponse> subscriber) {
+                            try {
+                                subscriber.onSubscribe(IGNORE_CANCEL);
+                            } catch (Throwable cause) {
+                                handleExceptionFromOnSubscribe(subscriber, cause);
+                                return;
+                            }
+
+                            final ContainerResponse result;
+                            try {
+                                result = service.apply(useExecutor);
+                            } catch (Throwable t) {
+                                subscriber.onError(t);
+                                return;
+                            }
+                            subscriber.onSuccess(result);
+                        }
+                    })
                     .beforeFinally(requestContext::release);
         }
 
@@ -486,28 +519,27 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     // Variant of HttpExecutionStrategies#difference which is geared towards router logic
     @Nullable
-    private static HttpExecutionStrategy difference(final Executor fallback,
+    private static HttpExecutionStrategy difference(final Executor contextExecutor,
                                                     final HttpExecutionStrategy left,
                                                     final HttpExecutionStrategy right) {
-        if (left.equals(right) || noOffloads(right)) {
+        if (left.equals(right) || !right.hasOffloads()) {
             return null;
         }
-        if (noOffloads(left)) {
+        if (!left.hasOffloads()) {
             return right;
         }
 
-        final Executor rightExecutor = right.executor();
-        if (rightExecutor != null && rightExecutor != left.executor() && rightExecutor != fallback) {
-            // Since the original offloads were done on a different executor, we need to offload again
-            // and for this we assume that the intention is to offload only the call to handle
-            return customStrategyBuilder().offloadReceiveMetadata().executor(rightExecutor).build();
+        if (right instanceof JerseyRouteExecutionStrategy) {
+            final Executor rightExecutor = ((JerseyRouteExecutionStrategy) right).executor();
+            if (rightExecutor != contextExecutor) {
+                // Since the original offloads were done on a different executor, we need to offload again
+                // and for this we assume that the intention is to offload only the call to handle
+                return new JerseyRouteExecutionStrategy(
+                        customStrategyBuilder().offloadReceiveMetadata().build(), rightExecutor);
+            }
         }
 
         // There is no need to offload differently than what the left side has deemed safe enough
         return null;
-    }
-
-    private static boolean noOffloads(final HttpExecutionStrategy es) {
-        return !es.isMetadataReceiveOffloaded() && !es.isDataReceiveOffloaded() && !es.isSendOffloaded();
     }
 }

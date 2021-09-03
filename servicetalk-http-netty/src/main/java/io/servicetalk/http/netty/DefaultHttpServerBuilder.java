@@ -26,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
@@ -97,14 +96,14 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
-        executionContextBuilder.ioExecutor(ioExecutor);
+    public HttpServerBuilder executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
         return this;
     }
 
     @Override
-    public HttpServerBuilder executor(final Executor executor) {
-        executionContextBuilder.executor(executor);
+    public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
 
@@ -129,13 +128,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     protected HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return executionContextBuilder.build();
-    }
-
-    @Override
-    protected BooleanSupplier shouldOffload(IoExecutor ioExecutor) {
-        return ioExecutor.isIoThreadSupported() ?
-                () -> Thread.currentThread() instanceof IoThreadFactory.IoThread :
-                Boolean.TRUE::booleanValue;
     }
 
     @Override

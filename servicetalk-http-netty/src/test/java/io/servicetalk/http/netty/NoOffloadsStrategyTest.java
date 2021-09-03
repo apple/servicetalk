@@ -83,7 +83,7 @@ class NoOffloadsStrategyTest {
 
     @Test
     void turnOffAllExecutors() throws Exception {
-        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
+        serverBuilder.executor(immediate()).executionStrategy(customStrategyBuilder().offloadNone().build());
         StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
         client.request(client.get("/"));

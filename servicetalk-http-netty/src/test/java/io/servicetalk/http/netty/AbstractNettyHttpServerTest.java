@@ -161,7 +161,8 @@ abstract class AbstractNettyHttpServerTest {
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
-                .executionStrategy(defaultStrategy(serverExecutor))
+                .executor(serverExecutor)
+                .executionStrategy(defaultStrategy())
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)
@@ -198,9 +199,10 @@ abstract class AbstractNettyHttpServerTest {
             clientBuilder.appendClientFilter(clientFilterFactory);
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
-                .executionStrategy(defaultStrategy(clientExecutor))
+                .executor(clientExecutor)
+                .executionStrategy(defaultStrategy())
                 .protocols(protocol)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }

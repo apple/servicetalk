@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE;
@@ -72,15 +73,10 @@ import static org.hamcrest.Matchers.startsWith;
 class ExecutionStrategyTest {
 
     private static final String CONTEXT_EXEC_NAME_PREFIX = "context-executor";
-    private static final String FILTER_EXEC_NAME_PREFIX = "filter-executor";
 
     @RegisterExtension
     static final ExecutorExtension<Executor> CONTEXT_EXEC =
             ExecutorExtension.withCachedExecutor(CONTEXT_EXEC_NAME_PREFIX);
-
-    @RegisterExtension
-    static final ExecutorExtension<Executor> FILTER_EXEC =
-            ExecutorExtension.withCachedExecutor(FILTER_EXEC_NAME_PREFIX);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 
@@ -94,9 +90,8 @@ class ExecutionStrategyTest {
         public GrpcExecutionStrategy get(final String id) {
             switch (id) {
                 case "route":
-                    return defaultStrategy();
                 case "filter":
-                    return defaultStrategy(FILTER_EXEC.executor());
+                    return defaultStrategy();
                 default:
                     throw new IllegalArgumentException("Unknown id: " + id);
             }
@@ -110,10 +105,24 @@ class ExecutionStrategyTest {
                 // noop
             }
         },
-        CUSTOM {
+        CUSTOM_STRATEGY {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(defaultStrategy(CONTEXT_EXEC.executor()));
+                builder.executionStrategy(customStrategyBuilder().offloadAll().build());
+            }
+        },
+        CUSTOM_EXECUTOR {
+            @Override
+            void configureContextExecutionStrategy(GrpcServerBuilder builder) {
+                builder.executor(CONTEXT_EXEC.executor());
+            }
+        },
+        CUSTOM_EXECUTOR_STRATEGY {
+            @Override
+            void configureContextExecutionStrategy(GrpcServerBuilder builder) {
+                builder
+                        .executor(CONTEXT_EXEC.executor())
+                        .executionStrategy(customStrategyBuilder().offloadAll().build());
             }
         },
         NO_OFFLOADS {
@@ -356,6 +365,7 @@ class ExecutionStrategyTest {
         final ThreadInfo expected;
         switch (contextExecutionStrategy) {
             case DEFAULT:
+            case CUSTOM_STRATEGY:
                 switch (routeStrategy) {
                     case ASYNC_DEFAULT:
                     case ASYNC_CLASS_NO_OFFLOADS:
@@ -398,7 +408,8 @@ class ExecutionStrategyTest {
                         throw new IllegalStateException("Unknown route execution strategy: " + routeStrategy);
                 }
                 break;
-            case CUSTOM:
+            case CUSTOM_EXECUTOR:
+            case CUSTOM_EXECUTOR_STRATEGY:
                 switch (routeStrategy) {
                     case ASYNC_DEFAULT:
                     case ASYNC_CLASS_NO_OFFLOADS:

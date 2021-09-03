@@ -72,7 +72,7 @@ class ExecutionStrategyConfigurationFailuresTest {
             IllegalArgumentException.class,
             () -> new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                    singletonMap("test", defaultStrategy(TEST_EXEC.executor()))))
+                    singletonMap("test", defaultStrategy())))
                 .buildStreaming(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {

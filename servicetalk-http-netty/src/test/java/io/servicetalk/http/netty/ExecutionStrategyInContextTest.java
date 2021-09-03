@@ -34,9 +34,11 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -71,47 +73,9 @@ class ExecutionStrategyInContextTest {
         }
     }
 
-    @Test
-    void streamingDefaultStrategy() throws Exception {
-        testStreaming(false);
-    }
-
-    @Test
-    void streamingCustomStrategy() throws Exception {
-        testStreaming(true);
-    }
-
-    @Test
-    void asyncDefaultStrategy() throws Exception {
-        testAsync(false);
-    }
-
-    @Test
-    void asyncCustomStrategy() throws Exception {
-        testAsync(true);
-    }
-
-    @Test
-    void blockingDefaultStrategy() throws Exception {
-        testBlocking(false);
-    }
-
-    @Test
-    void blockingCustomStrategy() throws Exception {
-        testBlocking(true);
-    }
-
-    @Test
-    void blockingStreamingDefaultStrategy() throws Exception {
-        testBlockingStreaming(false);
-    }
-
-    @Test
-    void blockingStreamingCustomStrategy() throws Exception {
-        testBlockingStreaming(true);
-    }
-
-    private void testStreaming(boolean customStrategy) throws Exception {
+    @ParameterizedTest(name = "customStrategy={0}")
+    @ValueSource(booleans = {false, true})
+    void testStreaming(boolean customStrategy) throws Exception {
         StreamingHttpClient client = initClientAndServer(builder ->
                 builder.listenStreaming((ctx, request, responseFactory) -> {
                     serviceStrategyRef.set(ctx.executionContext().executionStrategy());
@@ -137,7 +101,9 @@ class ExecutionStrategyInContextTest {
                 equalStrategies(expectedClientStrategy));
     }
 
-    private void testAsync(boolean customStrategy) throws Exception {
+    @ParameterizedTest(name = "customStrategy={0}")
+    @ValueSource(booleans = {false, true})
+    void testAsync(boolean customStrategy) throws Exception {
         HttpClient client = initClientAndServer(builder ->
                 builder.listen((ctx, request, responseFactory) -> {
                     serviceStrategyRef.set(ctx.executionContext().executionStrategy());
@@ -163,7 +129,9 @@ class ExecutionStrategyInContextTest {
                 equalStrategies(expectedClientStrategy));
     }
 
-    private void testBlocking(boolean customStrategy) throws Exception {
+    @ParameterizedTest(name = "customStrategy={0}")
+    @ValueSource(booleans = {false, true})
+    void testBlocking(boolean customStrategy) throws Exception {
         BlockingHttpClient client = initClientAndServer(builder ->
                 builder.listenBlocking((ctx, request, responseFactory) -> {
                     serviceStrategyRef.set(ctx.executionContext().executionStrategy());
@@ -189,7 +157,9 @@ class ExecutionStrategyInContextTest {
                 equalStrategies(expectedClientStrategy));
     }
 
-    private void testBlockingStreaming(boolean customStrategy) throws Exception {
+    @ParameterizedTest(name = "customStrategy={0}")
+    @ValueSource(booleans = {false, true})
+    void testBlockingStreaming(boolean customStrategy) throws Exception {
         BlockingStreamingHttpClient client = initClientAndServer(builder -> {
             if (customStrategy) {
                 // Ensure we don't deadlock by not offloading receive meta
@@ -226,14 +196,14 @@ class ExecutionStrategyInContextTest {
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {
-            expectedServerStrategy = customStrategyBuilder().build();
+            expectedServerStrategy = customStrategyBuilder().offloadAll().build();
             serverBuilder.executionStrategy(expectedServerStrategy);
         }
         context = serverStarter.apply(serverBuilder).toFuture().get();
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 forSingleAddress(serverHostAndPort(context));
         if (customStrategy) {
-            expectedClientStrategy = customStrategyBuilder().build();
+            expectedClientStrategy = customStrategyBuilder().offloadAll().build();
             clientBuilder.executionStrategy(expectedClientStrategy);
         }
         return clientBuilder;
@@ -243,18 +213,21 @@ class ExecutionStrategyInContextTest {
         return new TypeSafeMatcher<HttpExecutionStrategy>() {
 
             @Override
-            protected boolean matchesSafely(final HttpExecutionStrategy item) {
-                if (expected == null || item == null) {
-                    return expected == item;
-                }
-                return expected.isDataReceiveOffloaded() == item.isDataReceiveOffloaded() &&
-                        expected.isMetadataReceiveOffloaded() == item.isMetadataReceiveOffloaded() &&
-                        expected.isSendOffloaded() == item.isSendOffloaded();
+            public void describeMismatchSafely(@Nullable HttpExecutionStrategy item, Description mismatchDescription) {
+                mismatchDescription
+                        .appendText("was strategy ")
+                        .appendValue(item);
+            }
+
+            @Override
+            protected boolean matchesSafely(final @Nullable HttpExecutionStrategy item) {
+                return Objects.equals(expected, item);
             }
 
             @Override
             public void describeTo(final Description description) {
-                description.appendValue(expected);
+                description.appendText("a strategy of ")
+                        .appendValue(expected);
             }
         };
     }

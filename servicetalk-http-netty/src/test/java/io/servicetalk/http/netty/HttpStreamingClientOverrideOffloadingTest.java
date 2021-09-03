@@ -17,9 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -57,14 +60,19 @@ class HttpStreamingClientOverrideOffloadingTest {
             throws Exception {
         this.isInvalidThread = params.isInvalidThread;
         this.overridingStrategy = params.overridingStrategy == null ?
-                defaultStrategy(executor) : params.overridingStrategy;
+                defaultStrategy() : params.overridingStrategy;
         server = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-        client = HttpClients.forSingleAddress(serverHostAndPort(server))
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(params.defaultStrategy == null ?
-                        defaultStrategy(executor) : params.defaultStrategy)
-                .buildStreaming();
+                        defaultStrategy() : params.defaultStrategy);
+        if (null == params.defaultStrategy) {
+            clientBuilder.executor(executor);
+        }
+
+        client = clientBuilder.buildStreaming();
     }
 
     enum Params {

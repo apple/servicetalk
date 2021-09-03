@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -110,7 +109,8 @@ class InsufficientlySizedExecutorHttpTest {
         server = forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server))
-                .executionStrategy(newStrategy())
+                .executor(executor)
+                .executionStrategy(offloadAllStrategy())
                 .buildStreaming();
     }
 
@@ -118,20 +118,18 @@ class InsufficientlySizedExecutorHttpTest {
                                                 boolean addConnectionAcceptor)
         throws Exception {
         executor = getExecutorForCapacity(capacity);
-        final HttpExecutionStrategy strategy = newStrategy();
+        final HttpExecutionStrategy strategy = offloadAllStrategy();
         HttpServerBuilder serverBuilder = forAddress(localAddress(0));
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
         }
-        server = serverBuilder.executionStrategy(strategy)
+        server = serverBuilder.executor(executor).executionStrategy(strategy)
                 .listenStreamingAndAwait((ctx, request, respFactory) -> succeeded(respFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
     }
 
-    private HttpExecutionStrategy newStrategy() {
-        assertNotNull(executor);
-        final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
-        return strategyBuilder.build();
+    private HttpExecutionStrategy offloadAllStrategy() {
+        return customStrategyBuilder().offloadAll().build();
     }
 
     @AfterEach

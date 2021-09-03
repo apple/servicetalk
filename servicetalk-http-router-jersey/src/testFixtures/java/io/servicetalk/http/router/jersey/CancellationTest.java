@@ -113,13 +113,13 @@ class CancellationTest {
         when(execCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(execCtx.executor()).thenReturn(execMock);
         when(execCtx.ioExecutor()).thenReturn(mock(IoExecutor.class));
-        when(execCtx.executionStrategy()).thenReturn(defaultStrategy(execMock));
+        when(execCtx.executionStrategy()).thenReturn(defaultStrategy());
 
         cancellableResources = new CancellableResources();
 
         jerseyRouter = new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                        singletonMap("test", defaultStrategy(execRule.executor()))))
+                        singletonMap("test", defaultStrategy())))
                 .buildStreaming(new Application() {
                     @Override
                     public Set<Object> getSingletons() {

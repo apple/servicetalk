@@ -49,6 +49,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
                                                         ExecutionContext {
 
     private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
+    private static final String EXEC_THREAD_PREFIX = "exec-ctx-rule-exec";
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;
@@ -88,7 +89,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
 
     public static ExecutionContextExtension cached(NettyIoThreadFactory nettyIoThreadFactory) {
         return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
-                Executors::newCachedThreadExecutor
+                () -> Executors.newCachedThreadExecutor(new DefaultThreadFactory(EXEC_THREAD_PREFIX))
         );
     }
 
@@ -104,7 +105,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
 
     private static ExecutionContextExtension fixed(int size, NettyIoThreadFactory nettyIoThreadFactory) {
         return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
-                () -> Executors.newFixedSizeExecutor(size)
+                () -> Executors.newFixedSizeExecutor(size, new DefaultThreadFactory(EXEC_THREAD_PREFIX))
         );
     }
 

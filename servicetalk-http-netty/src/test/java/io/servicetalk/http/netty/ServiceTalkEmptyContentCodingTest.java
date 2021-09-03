@@ -20,13 +20,14 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
 @Deprecated
 class ServiceTalkEmptyContentCodingTest extends ServiceTalkContentCodingTest {
 
     @Override
     void assertResponse(final StreamingHttpResponse response) throws Throwable {
-        verifyNoErrors();
+        assertNoAsyncErrors(errors);
 
         assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
     }

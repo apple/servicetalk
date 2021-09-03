@@ -15,19 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static java.lang.Thread.NORM_PRIORITY;
-
 public enum HttpTestExecutionStrategy {
     NO_OFFLOAD(HttpExecutionStrategies::noOffloadsStrategy),
-    CACHED(() -> HttpExecutionStrategies.defaultStrategy(newCachedThreadExecutor(
-            new DefaultThreadFactory("http-test-executor", true, NORM_PRIORITY))));
+    DEFAULT(HttpExecutionStrategies::defaultStrategy);
 
     final Supplier<HttpExecutionStrategy> executorSupplier;
 

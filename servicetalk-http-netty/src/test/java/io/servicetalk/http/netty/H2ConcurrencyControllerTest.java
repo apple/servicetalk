@@ -116,7 +116,8 @@ class H2ConcurrencyControllerTest {
         final HostAndPort serverAddress = of((InetSocketAddress) serverAcceptorChannel.localAddress());
         client = forResolvedAddress(serverAddress)
             .ioExecutor(CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(CTX.executor()))
+            .executor(CTX.executor())
+            .executionStrategy(defaultStrategy())
             .autoRetryStrategy(DISABLE_AUTO_RETRIES)    // All exceptions should be propagated
             .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
             .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {

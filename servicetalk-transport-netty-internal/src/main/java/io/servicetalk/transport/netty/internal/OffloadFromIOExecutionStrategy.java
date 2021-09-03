@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoThreadFactory;
 
-import javax.annotation.Nullable;
-
 final class OffloadFromIOExecutionStrategy implements ExecutionStrategy {
 
     static final ExecutionStrategy OFFLOAD_FROM_IO_STRATEGY = new OffloadFromIOExecutionStrategy();
@@ -31,33 +29,23 @@ final class OffloadFromIOExecutionStrategy implements ExecutionStrategy {
         // Singleton
     }
 
-    private static boolean onIOExecutorThread() {
-        return Thread.currentThread() instanceof IoThreadFactory.IoThread;
-    }
-
     @Override
     public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-        return original.subscribeOn(executor, OffloadFromIOExecutionStrategy::onIOExecutorThread);
+        return original.subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread);
     }
 
     @Override
     public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-        return original.publishOn(executor, OffloadFromIOExecutionStrategy::onIOExecutorThread);
+        return original.publishOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread);
     }
 
     @Override
     public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-        return original.subscribeOn(executor, OffloadFromIOExecutionStrategy::onIOExecutorThread);
+        return original.subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread);
     }
 
     @Override
     public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-        return original.publishOn(executor, OffloadFromIOExecutionStrategy::onIOExecutorThread);
-    }
-
-    @Nullable
-    @Override
-    public Executor executor() {
-        return null;
+        return original.publishOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread);
     }
 }

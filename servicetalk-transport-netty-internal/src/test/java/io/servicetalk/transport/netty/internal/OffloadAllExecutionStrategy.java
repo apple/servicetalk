@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
-import javax.annotation.Nullable;
-
 final class OffloadAllExecutionStrategy implements ExecutionStrategy {
 
     static final ExecutionStrategy OFFLOAD_ALL_STRATEGY = new OffloadAllExecutionStrategy();
@@ -48,11 +46,5 @@ final class OffloadAllExecutionStrategy implements ExecutionStrategy {
     @Override
     public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
         return original.publishOn(executor);
-    }
-
-    @Nullable
-    @Override
-    public Executor executor() {
-        return null;
     }
 }

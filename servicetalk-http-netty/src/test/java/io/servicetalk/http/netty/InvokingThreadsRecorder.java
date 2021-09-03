@@ -16,17 +16,12 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -44,16 +39,15 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @param <T> Type of the keys used in thread recorder map.
  */
-final class InvokingThreadsRecorder<T> {
+final class InvokingThreadsRecorder<T> implements AutoCloseable {
     static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @Nullable
@@ -62,10 +56,8 @@ final class InvokingThreadsRecorder<T> {
     private ServerContext context;
     @Nullable
     private StreamingHttpClient client;
-    @Nullable
-    private ConcurrentMap<T, Thread> invokingThreads;
-    @Nullable
-    private IoExecutor ioExecutor;
+    private final ConcurrentMap<T, Thread> invokingThreads = new ConcurrentHashMap<>();
+    private final IoExecutor ioExecutor = createIoExecutor(IO_EXECUTOR_NAME_PREFIX);
 
     InvokingThreadsRecorder(@Nullable HttpExecutionStrategy strategy) {
         this.strategy = strategy;
@@ -85,13 +77,11 @@ final class InvokingThreadsRecorder<T> {
 
     void init(BiFunction<IoExecutor, HttpServerBuilder, Single<ServerContext>> serverStarter,
               BiConsumer<IoExecutor, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientUpdater) {
-        invokingThreads = new ConcurrentHashMap<>();
-        ioExecutor = createIoExecutor(IO_EXECUTOR_NAME_PREFIX);
         try {
             HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
             context = serverStarter.apply(ioExecutor, serverBuilder).toFuture().get();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            fail("Exception in initialization", e);
         }
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 HttpClients.forSingleAddress(serverHostAndPort(context));
@@ -99,7 +89,8 @@ final class InvokingThreadsRecorder<T> {
         client = clientBuilder.buildStreaming();
     }
 
-    void dispose() throws Exception {
+    @Override
+    public void close() throws Exception {
         CompositeCloseable compositeCloseable = newCompositeCloseable();
         if (client != null) {
             compositeCloseable.append(client);
@@ -107,45 +98,32 @@ final class InvokingThreadsRecorder<T> {
         if (context != null) {
             compositeCloseable.append(context);
         }
-        if (ioExecutor != null) {
-            compositeCloseable.append(ioExecutor);
-        }
+        compositeCloseable.append(ioExecutor);
+
         compositeCloseable.close();
     }
 
     void assertNoOffload(final T offloadPoint) {
-        assert invokingThreads != null;
         assertThat("Unexpected thread for point: " + offloadPoint, invokingThreads.get(offloadPoint).getName(),
                 startsWith(IO_EXECUTOR_NAME_PREFIX));
     }
 
     void assertOffload(final T offloadPoint) {
-        assert invokingThreads != null;
         assertThat("Unexpected thread for point: " + offloadPoint, invokingThreads.get(offloadPoint).getName(),
                 not(startsWith(IO_EXECUTOR_NAME_PREFIX)));
     }
 
     void assertOffload(final T offloadPoint, final String executorNamePrefix) {
-        assert invokingThreads != null;
         assertThat("Unexpected thread for point: " + offloadPoint, invokingThreads.get(offloadPoint).getName(),
                 both(not(startsWith(IO_EXECUTOR_NAME_PREFIX))).and(startsWith(executorNamePrefix)));
     }
 
     Thread invokingThread(final T offloadPoint) {
-        assert invokingThreads != null;
         return invokingThreads.get(offloadPoint);
     }
 
     void verifyOffloadCount() {
-        assert invokingThreads != null;
         assertThat("Unexpected offload points recorded. " + invokingThreads, invokingThreads.size(), is(3));
-    }
-
-    void assertStrategyUsedForClient() {
-        assertThat("No user specified strategy found.", strategy, is(notNullValue()));
-        assertThat("Unknown user specified strategy.", strategy, instanceOf(InstrumentedStrategy.class));
-        InstrumentedStrategy instrumentedStrategy = (InstrumentedStrategy) strategy;
-        assertThat("User specified strategy not used.", instrumentedStrategy.isUsedForClientOffloading());
     }
 
     StreamingHttpClient client() {
@@ -159,7 +137,6 @@ final class InvokingThreadsRecorder<T> {
     }
 
     void recordThread(final T offloadPoint) {
-        assert invokingThreads != null;
         invokingThreads.put(offloadPoint, Thread.currentThread());
     }
 
@@ -170,20 +147,6 @@ final class InvokingThreadsRecorder<T> {
 
         InstrumentedStrategy(HttpExecutionStrategy delegate) {
             super(delegate);
-        }
-
-        @Override
-        public <FS> Single<StreamingHttpResponse> invokeClient(
-                final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
-                final ClientInvoker<FS> client) {
-            usedForClientOffloading = true;
-            return super.invokeClient(fallback, flattenedRequest, flushStrategy, client);
-        }
-
-        @Override
-        public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService handler) {
-            usedForServerOffloading = true;
-            return super.offloadService(fallback, handler);
         }
 
         boolean isUsedForClientOffloading() {
@@ -209,10 +172,8 @@ final class InvokingThreadsRecorder<T> {
 
             final InstrumentedStrategy that = (InstrumentedStrategy) o;
 
-            if (usedForClientOffloading != that.usedForClientOffloading) {
-                return false;
-            }
-            return usedForServerOffloading == that.usedForServerOffloading;
+            return usedForClientOffloading == that.usedForClientOffloading &&
+                    usedForServerOffloading == that.usedForServerOffloading;
         }
 
         @Override

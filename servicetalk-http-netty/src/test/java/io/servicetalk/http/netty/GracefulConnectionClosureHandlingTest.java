@@ -157,7 +157,8 @@ class GracefulConnectionClosureHandlingTest {
                 forAddress(localAddress(0)))
                 .protocols(protocol.config)
                 .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                .executor(SERVER_CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
@@ -216,8 +217,9 @@ class GracefulConnectionClosureHandlingTest {
                         .peerHost(serverPemHostname()).build()) :
                 forResolvedAddress(serverContext.listenAddress()))
                 .protocols(protocol.config)
+                .executor(CLIENT_CTX.executor())
                 .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                .executionStrategy(defaultStrategy())
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
                         new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)

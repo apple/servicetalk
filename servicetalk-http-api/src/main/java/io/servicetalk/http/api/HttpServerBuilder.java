@@ -258,8 +258,7 @@ public abstract class HttpServerBuilder {
                                                                     final StreamingHttpServiceFilterFactory factory) {
         checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
-        noOffloadServiceFilters.add(
-                service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
+        noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
     }
 
@@ -323,7 +322,7 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
 
     /**
-     * Sets the {@link Executor} to use.
+     * Sets the {@link Executor} to be used by this server.
      *
      * @param executor {@link Executor} to use.
      * @return {@code this}.
@@ -517,14 +516,6 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Returns a {@link BooleanSupplier} which determines if offloading is required in the current execution context.
-     *
-     * @param ioExecutor The IO Executor for the execution context
-     * @return a {@link BooleanSupplier} which determines if offloading is required in the current execution context.
-     */
-    protected abstract BooleanSupplier shouldOffload(IoExecutor ioExecutor);
-
-    /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
@@ -547,30 +538,20 @@ public abstract class HttpServerBuilder {
                 connectionAcceptorFactory.create(ACCEPT_ALL);
 
         final StreamingHttpService filteredService;
-
         HttpExecutionContext serviceContext;
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
             serviceContext = buildExecutionContext(strategy);
         } else {
-            boolean anyOffloads = strategy.isSendOffloaded() ||
-                    strategy.isMetadataReceiveOffloaded() ||
-                    strategy.isDataReceiveOffloaded();
-
             Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
 
-            if (anyOffloads) {
-                HttpExecutionStrategy offloadStrategy = strategy;
-                final Executor executor = strategy.executor();
-                strategy = null != executor ?
-                        HttpExecutionStrategies.customStrategyBuilder().offloadNone().executor(executor).build() :
-                        noOffloadsStrategy();
-                serviceContext = buildExecutionContext(strategy);
-                BooleanSupplier shouldOffload = shouldOffload(serviceContext.ioExecutor());
+            if (strategy.hasOffloads()) {
+                serviceContext = buildExecutionContext(noOffloadsStrategy());
+                BooleanSupplier shouldOffload = serviceContext.ioExecutor().shouldOffloadSupplier();
                 // We are going to have to offload, even if just to the raw service
                 OffloadingFilter offloadingFilter =
-                        new OffloadingFilter(offloadStrategy, buildFactory(serviceFilters), shouldOffload);
+                        new OffloadingFilter(strategy, buildFactory(serviceFilters), shouldOffload);
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters, Stream.of(offloadingFilter));
             } else {
                 // All the filters can be appended.

@@ -32,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -44,6 +43,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
@@ -58,25 +58,23 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class ServerEffectiveStrategyTest {
 
-    @Nullable
-    private Params params;
-
-    @AfterEach
-    void tearDown() throws Exception {
-        if (params != null) {
-            params.close();
-        }
-    }
-
     enum ServerStrategyCase implements Function<ServiceType, Params> {
-        defaultStrategyNoFilter(ServerEffectiveStrategyTest::noUserStrategyNoFilter),
-        defaultStrategyWithFilter(ServerEffectiveStrategyTest::noUserStrategyWithFilter),
-        userStrategyNoFilter(ServerEffectiveStrategyTest::userStrategyNoFilter),
-        userStrategyWithFilter(ServerEffectiveStrategyTest::userStrategyWithFilter),
-        userStrategyNoOffloadsNoFilter(ServerEffectiveStrategyTest::userStrategyNoOffloadsNoFilter),
-        userStrategyNoOffloadsWithFilter(ServerEffectiveStrategyTest::userStrategyNoOffloadsWithFilter),
-        customUserStrategyNoFilter(ServerEffectiveStrategyTest::customUserStrategyNoFilter),
-        customUserStrategyWithFilter(ServerEffectiveStrategyTest::customUserStrategyWithFilter);
+        defaultStrategyNoFilter(serviceType ->
+                new Params(serviceType, false, null, Offloads.DEFAULT)),
+        defaultStrategyWithFilter(serviceType ->
+                new Params(serviceType, true, null, Offloads.ALL)),
+        userStrategyNoFilter(serviceType ->
+                new Params(serviceType, false, defaultStrategy(), Offloads.DEFAULT)),
+        userStrategyWithFilter(serviceType ->
+                new Params(serviceType, true, defaultStrategy(), Offloads.ALL)),
+        userStrategyNoOffloadsNoFilter(serviceType ->
+                new Params(serviceType, false, noOffloadsStrategy(), Offloads.NONE)),
+        userStrategyNoOffloadsWithFilter(serviceType ->
+                new Params(serviceType, true, noOffloadsStrategy(), Offloads.NONE)),
+        customUserStrategyNoFilter(serviceType ->
+                new Params(serviceType, false, customStrategyBuilder().offloadAll().build(), Offloads.ALL)),
+        customUserStrategyWithFilter(serviceType ->
+                new Params(serviceType, true, customStrategyBuilder().offloadAll().build(), Offloads.ALL));
 
         private final Function<ServiceType, Params> paramsProvider;
 
@@ -90,86 +88,56 @@ class ServerEffectiveStrategyTest {
         }
     }
 
-    private static Params noUserStrategyNoFilter(ServiceType serviceType) {
-        return new Params(serviceType, false, null, Offloads.DEFAULT);
-    }
-
-    private static Params noUserStrategyWithFilter(ServiceType serviceType) {
-        return new Params(serviceType, true, null, Offloads.ALL);
-    }
-
-    private static Params userStrategyNoFilter(ServiceType serviceType) {
-        return new Params(serviceType, false, defaultStrategy(), Offloads.DEFAULT);
-    }
-
-    private static Params userStrategyWithFilter(ServiceType serviceType) {
-        return new Params(serviceType, true, defaultStrategy(), Offloads.ALL);
-    }
-
-    private static Params userStrategyNoOffloadsNoFilter(ServiceType serviceType) {
-        return new Params(serviceType, false, customStrategyBuilder().offloadNone().build(), Offloads.NONE);
-    }
-
-    private static Params userStrategyNoOffloadsWithFilter(ServiceType serviceType) {
-        return new Params(serviceType, true, customStrategyBuilder().offloadNone().build(), Offloads.NONE);
-    }
-
-    private static Params customUserStrategyNoFilter(ServiceType serviceType) {
-        return new Params(serviceType, false, customStrategyBuilder().offloadAll().build(), Offloads.ALL);
-    }
-
-    private static Params customUserStrategyWithFilter(ServiceType serviceType) {
-        return new Params(serviceType, true, customStrategyBuilder().offloadAll().build(), Offloads.ALL);
-    }
-
     @ParameterizedTest
     @EnumSource(ServerStrategyCase.class)
     void blocking(final ServerStrategyCase strategyCase) throws Exception {
-        params = strategyCase.apply(ServiceType.Blocking);
-        assertThat("Null params supplied", params, notNullValue());
-        BlockingHttpClient client = params.startBlocking();
-        client.request(client.get("/")
-                .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        params.verifyOffloads();
+        try (Params params = strategyCase.apply(ServiceType.Blocking)) {
+            assertThat("Null params supplied", params, notNullValue());
+            BlockingHttpClient client = params.startBlocking();
+            client.request(client.get("/")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
+            params.verifyOffloads();
+        }
     }
 
     @ParameterizedTest
     @EnumSource(ServerStrategyCase.class)
     void blockingStreaming(final ServerStrategyCase strategyCase) throws Exception {
-        params = strategyCase.apply(ServiceType.BlockingStreaming);
-        assertThat("Null params supplied", params, notNullValue());
-        assumeFalse(params.isNoOffloadsStrategy(), "Ignoring no-offloads strategy for blocking-streaming.");
-        BlockingHttpClient client = params.startBlockingStreaming();
-        client.request(client.get("/")
-                .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        params.verifyOffloads();
+        try (Params params = strategyCase.apply(ServiceType.BlockingStreaming)) {
+            assertThat("Null params supplied", params, notNullValue());
+            assumeFalse(params.isNoOffloadsStrategy(), "Ignoring no-offloads strategy for blocking-streaming.");
+            BlockingHttpClient client = params.startBlockingStreaming();
+            client.request(client.get("/")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
+            params.verifyOffloads();
+        }
     }
 
     @ParameterizedTest
     @EnumSource(ServerStrategyCase.class)
     void asyncStreaming(final ServerStrategyCase strategyCase) throws Exception {
-        params = strategyCase.apply(ServiceType.AsyncStreaming);
-        assertThat("Null params supplied", params, notNullValue());
-        BlockingHttpClient client = params.startAsyncStreaming();
-        client.request(client.get("/")
-                .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        params.verifyOffloads();
+        try (Params params = strategyCase.apply(ServiceType.AsyncStreaming)) {
+            assertThat("Null params supplied", params, notNullValue());
+            BlockingHttpClient client = params.startAsyncStreaming();
+            client.request(client.get("/")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
+            params.verifyOffloads();
+        }
     }
 
     @ParameterizedTest
     @EnumSource(ServerStrategyCase.class)
     void async(final ServerStrategyCase strategyCase) throws Exception {
-        params = strategyCase.apply(ServiceType.Async);
-        assertThat("Null params supplied", params, notNullValue());
-        BlockingHttpClient client = params.startAsync();
-        client.request(client.get("/")
-                .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
-        params.verifyOffloads();
+        try (Params params = strategyCase.apply(ServiceType.Async)) {
+            assertThat("Null params supplied", params, notNullValue());
+            BlockingHttpClient client = params.startAsync();
+            client.request(client.get("/")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
+            params.verifyOffloads();
+        }
     }
 
     private static final class Params implements AutoCloseable {
-        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor";
-
         private final EnumSet<ServerOffloadPoint> offloadPoints;
         private final EnumSet<ServerOffloadPoint> nonOffloadPoints;
         private final boolean addFilter;
@@ -178,45 +146,15 @@ class ServerEffectiveStrategyTest {
         Params(final ServiceType serviceType, boolean addFilter,
                @Nullable final HttpExecutionStrategy strategy, final Offloads expectedOffloads) {
             this.addFilter = addFilter;
-            this.invokingThreadsRecorder = null == strategy ?
-                    noStrategy() : userStrategyNoVerify(strategy);
-            switch (expectedOffloads) {
-                case NONE:
-                    offloadPoints = EnumSet.noneOf(ServerOffloadPoint.class);
-                    break;
-                case DEFAULT:
-                    switch (serviceType) {
-                        case Blocking:
-                            offloadPoints =
-                                    EnumSet.of(ServerOffloadPoint.ServiceHandle, ServerOffloadPoint.RequestPayload);
-                            break;
-                        case BlockingStreaming:
-                            offloadPoints = EnumSet.of(ServerOffloadPoint.ServiceHandle);
-                            break;
-                        case Async:
-                        case AsyncStreaming:
-                            offloadPoints = EnumSet.allOf(ServerOffloadPoint.class);
-                            break;
-                        default:
-                            throw new IllegalStateException("unexpected case " + serviceType);
-                    }
-                    break;
-                case ALL:
-                    offloadPoints = EnumSet.allOf(ServerOffloadPoint.class);
-                    break;
-                default:
-                    throw new IllegalStateException("unexpected case " + expectedOffloads);
-            }
+            this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategyNoVerify(strategy);
+            offloadPoints = expectedOffloads.forServiceType(serviceType);
             nonOffloadPoints = EnumSet.complementOf(offloadPoints);
         }
 
         boolean isNoOffloadsStrategy() {
             HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            return (null != strategy && !strategy.isSendOffloaded() &&
-                        !strategy.isMetadataReceiveOffloaded() && !strategy.isDataReceiveOffloaded()) ||
-                    (null == strategy && !defaultStrategy().isSendOffloaded() &&
-                            !defaultStrategy().isMetadataReceiveOffloaded() &&
-                            !defaultStrategy().isDataReceiveOffloaded());
+            return (null != strategy && !strategy.hasOffloads()) ||
+                    (null == strategy && !defaultStrategy().hasOffloads());
         }
 
         BlockingHttpClient startBlocking() {
@@ -311,7 +249,7 @@ class ServerEffectiveStrategyTest {
 
         @Override
         public void close() throws Exception {
-            invokingThreadsRecorder.dispose();
+            invokingThreadsRecorder.close();
         }
 
         private void initState(Function<HttpServerBuilder, Single<ServerContext>> serverStarter) {
@@ -368,9 +306,36 @@ class ServerEffectiveStrategyTest {
     }
 
     private enum Offloads {
-        NONE,
-        DEFAULT,
-        ALL
+        NONE() {
+            @Override
+            EnumSet<ServerOffloadPoint> forServiceType(ServiceType serviceType) {
+                return EnumSet.noneOf(ServerOffloadPoint.class);
+            }
+        },
+        DEFAULT() {
+            @Override
+            EnumSet<ServerOffloadPoint> forServiceType(ServiceType serviceType) {
+                switch (serviceType) {
+                    case Blocking:
+                        return EnumSet.of(ServerOffloadPoint.ServiceHandle, ServerOffloadPoint.RequestPayload);
+                    case BlockingStreaming:
+                        return EnumSet.of(ServerOffloadPoint.ServiceHandle);
+                    case Async:
+                    case AsyncStreaming:
+                        return EnumSet.allOf(ServerOffloadPoint.class);
+                    default:
+                        throw new IllegalStateException("unexpected case " + serviceType);
+                }
+            }
+        },
+        ALL() {
+            @Override
+            EnumSet<ServerOffloadPoint> forServiceType(ServiceType serviceType) {
+                return EnumSet.allOf(ServerOffloadPoint.class);
+            }
+        };
+
+        abstract EnumSet<ServerOffloadPoint> forServiceType(ServiceType clientType);
     }
 
     private enum ServiceType {
