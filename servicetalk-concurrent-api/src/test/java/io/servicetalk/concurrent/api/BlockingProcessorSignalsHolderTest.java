@@ -26,8 +26,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 class BlockingProcessorSignalsHolderTest {
     private final DefaultBlockingProcessorSignalsHolder<Integer> buffer;
@@ -50,7 +50,7 @@ class BlockingProcessorSignalsHolderTest {
     void consumeEmpty() {
         assertThrows(TimeoutException.class,
                 () -> buffer.consume(consumer, 1, MILLISECONDS), "Unexpected consume when empty.");
-        verifyZeroInteractions(consumer);
+        verifyNoInteractions(consumer);
     }
 
     @Test

@@ -46,7 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class WriteStreamSubscriberFutureListenersTest {
@@ -112,7 +112,7 @@ class WriteStreamSubscriberFutureListenersTest {
     void singleWriteThenSourceComplete() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         subscriber.onComplete();
-        verifyZeroInteractions(listener1);
+        verifyNoInteractions(listener1);
 
         channel.flush();
         verifyListenerInvokedWithSuccess(listener1);
@@ -122,7 +122,7 @@ class WriteStreamSubscriberFutureListenersTest {
     void singleWriteThenSourceFail() throws Exception {
         ChannelFutureListener listener1 = doWrite();
         subscriber.onError(DELIBERATE_EXCEPTION);
-        verifyZeroInteractions(listener1);
+        verifyNoInteractions(listener1);
 
         channel.flush();
         verifyListenerInvokedWithFailure(listener1);
@@ -133,8 +133,8 @@ class WriteStreamSubscriberFutureListenersTest {
         ChannelFutureListener listener1 = doWrite();
         ChannelFutureListener listener2 = doWrite();
         subscriber.onComplete();
-        verifyZeroInteractions(listener1);
-        verifyZeroInteractions(listener2);
+        verifyNoInteractions(listener1);
+        verifyNoInteractions(listener2);
 
         channel.flush();
         verifyListenerInvokedWithSuccess(listener1);
@@ -146,8 +146,8 @@ class WriteStreamSubscriberFutureListenersTest {
         ChannelFutureListener listener1 = doWrite();
         ChannelFutureListener listener2 = doWrite();
         subscriber.onError(DELIBERATE_EXCEPTION);
-        verifyZeroInteractions(listener1);
-        verifyZeroInteractions(listener2);
+        verifyNoInteractions(listener1);
+        verifyNoInteractions(listener2);
 
         channel.flush();
         verifyListenerInvokedWithFailure(listener1);
@@ -183,7 +183,7 @@ class WriteStreamSubscriberFutureListenersTest {
     private ChannelFutureListener doWrite() throws InterruptedException {
         subscriber.onNext(1);
         ChannelFutureListener listener = listeners.take();
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
         return listener;
     }
 

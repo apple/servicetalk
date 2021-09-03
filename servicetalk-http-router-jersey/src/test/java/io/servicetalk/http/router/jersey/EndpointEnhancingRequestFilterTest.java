@@ -26,24 +26,20 @@ import javax.inject.Provider;
 import javax.ws.rs.container.ContainerRequestContext;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.internal.util.reflection.FieldSetter.setField;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class EndpointEnhancingRequestFilterTest {
 
     @Test
-    void shouldNotFilterNonStRequests() throws Exception {
-        EndpointEnhancingRequestFilter filter = new EndpointEnhancingRequestFilter();
+    void shouldNotFilterNonStRequests() {
         Provider<Ref<ConnectionContext>> ctxRefProvider = () -> Refs.of(null);
         Provider<RouteStrategiesConfig> routeStrategiesConfigProvider = () -> mock(RouteStrategiesConfig.class);
         RequestScope requestScope = mock(RequestScope.class);
-        setField(filter, filter.getClass().getDeclaredField("ctxRefProvider"), ctxRefProvider);
-        setField(filter, filter.getClass().getDeclaredField("routeStrategiesConfigProvider"),
-                routeStrategiesConfigProvider);
-        setField(filter, filter.getClass().getDeclaredField("requestScope"), requestScope);
+        EndpointEnhancingRequestFilter filter = new EndpointEnhancingRequestFilter(ctxRefProvider,
+                routeStrategiesConfigProvider, requestScope);
 
         ContainerRequestContext context = mock(ContainerRequestContext.class);
         filter.filter(mock(ContainerRequestContext.class));
-        verifyZeroInteractions(context);
+        verifyNoInteractions(context);
     }
 }

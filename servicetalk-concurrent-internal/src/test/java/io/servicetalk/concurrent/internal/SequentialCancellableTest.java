@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class SequentialCancellableTest {
 
@@ -31,7 +31,7 @@ class SequentialCancellableTest {
         sc.nextCancellable(Cancellable.IGNORE_CANCEL);
         Cancellable next = mock(Cancellable.class);
         sc.nextCancellable(next);
-        verifyZeroInteractions(next);
+        verifyNoInteractions(next);
 
         sc.cancel();
         verify(next).cancel();
@@ -45,11 +45,11 @@ class SequentialCancellableTest {
         Cancellable second = mock(Cancellable.class);
         sc.nextCancellable(second);
 
-        verifyZeroInteractions(first);
-        verifyZeroInteractions(second);
+        verifyNoInteractions(first);
+        verifyNoInteractions(second);
 
         sc.cancel();
         verify(second).cancel();
-        verifyZeroInteractions(first);
+        verifyNoInteractions(first);
     }
 }
