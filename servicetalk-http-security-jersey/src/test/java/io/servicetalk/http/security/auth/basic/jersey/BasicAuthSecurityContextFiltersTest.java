@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,7 +88,7 @@ class BasicAuthSecurityContextFiltersTest {
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey).build();
 
         filter.filter(requestCtx);
-        verifyZeroInteractions(requestCtx);
+        verifyNoInteractions(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_PRINCIPAL);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -123,7 +123,7 @@ class BasicAuthSecurityContextFiltersTest {
                 .build();
 
         filter.filter(requestCtx);
-        verifyZeroInteractions(requestCtx);
+        verifyNoInteractions(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -162,7 +162,7 @@ class BasicAuthSecurityContextFiltersTest {
                 .build();
 
         filter.filter(requestCtx);
-        verifyZeroInteractions(requestCtx);
+        verifyNoInteractions(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);

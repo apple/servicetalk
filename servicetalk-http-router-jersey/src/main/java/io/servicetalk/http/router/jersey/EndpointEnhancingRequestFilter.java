@@ -66,6 +66,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRe
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutionStrategy;
 import static java.lang.Integer.MAX_VALUE;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.noContent;
 
@@ -84,15 +85,17 @@ import static javax.ws.rs.core.Response.noContent;
 final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     private final EnhancedEndpointCache enhancedEndpointCache = new EnhancedEndpointCache();
+    private final Provider<Ref<ConnectionContext>> ctxRefProvider;
+    private final Provider<RouteStrategiesConfig> routeStrategiesConfigProvider;
+    private final RequestScope requestScope;
 
-    @Context
-    private Provider<Ref<ConnectionContext>> ctxRefProvider;
-
-    @Context
-    private Provider<RouteStrategiesConfig> routeStrategiesConfigProvider;
-
-    @Context
-    private RequestScope requestScope;
+    EndpointEnhancingRequestFilter(@Context final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                   @Context final Provider<RouteStrategiesConfig> routeStrategiesConfigProvider,
+                                   @Context final RequestScope requestScope) {
+        this.ctxRefProvider = requireNonNull(ctxRefProvider);
+        this.routeStrategiesConfigProvider = requireNonNull(routeStrategiesConfigProvider);
+        this.requestScope = requireNonNull(requestScope);
+    }
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
