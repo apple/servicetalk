@@ -31,7 +31,10 @@ public interface ExecutionStrategy {
      * @param original {@link Single} to offload.
      * @param <T> Type of result of the {@code original} {@link Single}.
      * @return Offloaded {@link Single}.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpExecutionStrategy#offloadSend()}
      */
+    @Deprecated
     <T> Single<T> offloadSend(Executor executor, Single<T> original);
 
     /**
@@ -41,7 +44,10 @@ public interface ExecutionStrategy {
      * @param original {@link Single} to offload.
      * @param <T> Type of result of the {@code original} {@link Single}.
      * @return Offloaded {@link Single}.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpExecutionStrategy#offloadReceive()}
      */
+    @Deprecated
     <T> Single<T> offloadReceive(Executor executor, Single<T> original);
 
     /**
@@ -51,7 +57,10 @@ public interface ExecutionStrategy {
      * @param original {@link Publisher} to offload.
      * @param <T> Type of items emitted from the {@code original} {@link Publisher}.
      * @return Offloaded {@link Publisher}.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpExecutionStrategy#offloadSend()}
      */
+    @Deprecated
     <T> Publisher<T> offloadSend(Executor executor, Publisher<T> original);
 
     /**
@@ -61,6 +70,9 @@ public interface ExecutionStrategy {
      * @param original {@link Publisher} to offload.
      * @param <T> Type of items emitted from the {@code original} {@link Publisher}.
      * @return Offloaded {@link Publisher}.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpExecutionStrategy#offloadReceive()}
      */
+    @Deprecated
     <T> Publisher<T> offloadReceive(Executor executor, Publisher<T> original);
 }
