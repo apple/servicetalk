@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -238,6 +239,11 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public Runnable wrapRunnable(final Runnable runnable, final AsyncContextMap contextMap) {
         return new ContextPreservingRunnable(runnable, contextMap);
+    }
+
+    @Override
+    public <V> Callable<V> wrapCallable(final Callable<V> callable, final AsyncContextMap contextMap) {
+        return new ContextPreservingCallable<>(callable, contextMap);
     }
 
     @Override
