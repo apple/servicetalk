@@ -184,7 +184,11 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
+    default <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody,
+                                                         HttpSerializer<T> serializer) {
+        payloadBody((Iterable<T>) payloadBody, serializer);
+        return this;
+    }
 
     /**
      * Set the {@link HttpMessageBodyIterable} for this response.
