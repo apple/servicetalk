@@ -83,8 +83,7 @@ public final class BufferPublisherInputStream extends InputStream {
      * @param executionStrategy the {@link HttpExecutionStrategy} to use.
      * @param executor the {@link Executor} to use with the {@link HttpExecutionStrategy}.
      */
-    public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
-                                final Executor executor) {
+    public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy, final Executor executor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = executionStrategy.isMetadataReceiveOffloaded() || executionStrategy.isDataReceiveOffloaded() ?
                     publisher.publishOn(executor) : publisher;

@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
@@ -124,7 +125,8 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         Single<ReservedStreamingHttpConnection> connection =
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity());
         return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                connection.publishOn(executionContext.executor()) : connection;
+                connection.publishOn(executionContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread) :
+                connection;
     }
 
     @Override
