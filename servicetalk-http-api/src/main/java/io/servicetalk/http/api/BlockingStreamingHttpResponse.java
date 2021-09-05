@@ -79,8 +79,13 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body.
      * @return {@code this}
+     * @deprecated Use {@link #payloadBody(Iterable)}.
      */
-    BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
+    @Deprecated
+    default BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody) {
+        payloadBody((Iterable<Buffer>) payloadBody);
+        return this;
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
@@ -125,8 +130,14 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
+     * @deprecated Use {@link #payloadBody(Iterable, HttpSerializer)}.
      */
-    <T> BlockingStreamingHttpResponse payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
+    @Deprecated
+    default <T> BlockingStreamingHttpResponse payloadBody(CloseableIterable<T> payloadBody,
+                                                          HttpSerializer<T> serializer) {
+        payloadBody((Iterable<T>) payloadBody, serializer);
+        return this;
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed to the result of
