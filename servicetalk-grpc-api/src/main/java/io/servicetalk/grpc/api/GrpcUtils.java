@@ -97,7 +97,6 @@ final class GrpcUtils {
                 @Override
                 protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
                         throws Throwable {
-
                     // local cancel
                     if (cause instanceof CancellationException) {
                         // include the cause so that caller can determine who cancelled request
@@ -106,12 +105,8 @@ final class GrpcUtils {
 
                     // local timeout
                     if (cause instanceof TimeoutException) {
-                        // omit the cause unless DEBUG logging has been configured
-                        throw new GrpcStatusException(
-                                LOGGER.isDebugEnabled() ?
-                                    new GrpcStatus(DEADLINE_EXCEEDED, cause) :
-                                    DEADLINE_EXCEEDED.status(),
-                                () -> null);
+                        // include the cause so the caller sees the time duration.
+                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED, cause), () -> null);
                     }
 
                     throw cause;
@@ -234,8 +229,7 @@ final class GrpcUtils {
         } else if (cause instanceof CancellationException) {
             status = new GrpcStatus(CANCELLED, cause);
         } else if (cause instanceof TimeoutException) {
-            // omit cause unless logging configured for debug
-            status = LOGGER.isDebugEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
+            status = new GrpcStatus(DEADLINE_EXCEEDED, cause);
         } else {
             // Initialize detail because cause is often lost
             status = new GrpcStatus(UNKNOWN, cause, cause.toString());
