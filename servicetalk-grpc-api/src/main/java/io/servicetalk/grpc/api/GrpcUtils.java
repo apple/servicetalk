@@ -229,8 +229,7 @@ final class GrpcUtils {
         } else if (cause instanceof CancellationException) {
             status = new GrpcStatus(CANCELLED, cause);
         } else if (cause instanceof TimeoutException) {
-            // omit cause unless logging configured for debug
-            status = LOGGER.isDebugEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
+            status = new GrpcStatus(DEADLINE_EXCEEDED, cause);
         } else {
             // Initialize detail because cause is often lost
             status = new GrpcStatus(UNKNOWN, cause, cause.toString());
