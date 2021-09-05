@@ -421,12 +421,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     /**
+     * Visible for testing.
+     * <p>
      * This connection does not allow concurrent writes and so this method can determine if there is a writing pending.
      *
      * @return {@code true} if a write is already active.
      */
     boolean isWriteActive() {
-        return channelOutboundListener != NoopChannelOutboundListener.INSTANCE && channelOutboundListener != this;
+        final ChannelOutboundListener listener = channelOutboundListener;
+        return listener != NoopChannelOutboundListener.INSTANCE && listener != this;
     }
 
     @Override
