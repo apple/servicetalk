@@ -635,54 +635,27 @@ class ProtocolCompatibilityTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
-    void serverTimeout(boolean stClient, boolean stServer) throws Exception {
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+                "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
+    void timeoutMidRequest(boolean stClient, boolean stServer, boolean clientInitiatedTimeout) throws Exception {
+        Duration clientTimeout = clientInitiatedTimeout ? DEFAULT_DEADLINE : null;
+        Duration serverTimeout = clientInitiatedTimeout ? null : DEFAULT_DEADLINE;
         BlockingQueue<Throwable> serverErrorQueue = new ArrayBlockingQueue<>(16);
         final TestServerContext server = stServer ?
                 serviceTalkServer(ErrorMode.NONE, false, noOffloadsStrategy(), null, null, serverErrorQueue) :
                 grpcJavaServer(ErrorMode.NONE, false, null);
-        try (ServerContext proxyCtx = buildTimeoutProxy(server.listenAddress(), DEFAULT_DEADLINE, false)) {
+        try (ServerContext proxyCtx = buildTimeoutProxy(server.listenAddress(), serverTimeout, false)) {
             final CompatClient client = stClient ?
-                    serviceTalkClient(proxyCtx.listenAddress(), false, null, null) :
-                    grpcJavaClient(proxyCtx.listenAddress(), null, false, null);
+                    serviceTalkClient(proxyCtx.listenAddress(), false, null, clientTimeout) :
+                    grpcJavaClient(proxyCtx.listenAddress(), null, false, clientTimeout);
             try {
                 PublisherSource.Processor<CompatRequest, CompatRequest> reqPub = newPublisherProcessor();
                 reqPub.onNext(CompatRequest.newBuilder().setId(3).build());
                 validateGrpcErrorInResponse(client.bidirectionalStreamingCall(fromSource(reqPub)).toFuture(), false,
+                        clientInitiatedTimeout ? DEADLINE_EXCEEDED :
                         // FIXME: status should always be CANCELLED, we don't map Http2Exceptions errorCode.
                         stClient ? UNKNOWN : CANCELLED,
                         null);
-
-                // It is possible that the timeout on the client occurred before writing the request, in which case the
-                // server will never request the request, and therefore no error is expected.
-                Throwable cause = serverErrorQueue.poll(DEFAULT_DEADLINE.toNanos() * 2, NANOSECONDS);
-                if (cause != null) {
-                    assertThat(cause, is(SERVER_PROCESSED_TOKEN));
-                    cause = serverErrorQueue.take();
-                    assertThat(cause, instanceOf(IOException.class));
-                }
-            } finally {
-                closeAll(server, client);
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
-    void clientTimeout(boolean stClient, boolean stServer) throws Exception {
-        BlockingQueue<Throwable> serverErrorQueue = new ArrayBlockingQueue<>(16);
-        final TestServerContext server = stServer ?
-                serviceTalkServer(ErrorMode.NONE, false, noOffloadsStrategy(), null, null, serverErrorQueue) :
-                grpcJavaServer(ErrorMode.NONE, false, null);
-        try (ServerContext proxyCtx = buildTimeoutProxy(server.listenAddress(), null, false)) {
-            final CompatClient client = stClient ?
-                    serviceTalkClient(proxyCtx.listenAddress(), false, null, DEFAULT_DEADLINE) :
-                    grpcJavaClient(proxyCtx.listenAddress(), null, false, DEFAULT_DEADLINE);
-            try {
-                PublisherSource.Processor<CompatRequest, CompatRequest> reqPub = newPublisherProcessor();
-                reqPub.onNext(CompatRequest.newBuilder().setId(3).build());
-                validateGrpcErrorInResponse(client.bidirectionalStreamingCall(fromSource(reqPub)).toFuture(), false,
-                        DEADLINE_EXCEEDED, null);
 
                 // It is possible that the timeout on the client occurred before writing the request, in which case the
                 // server will never request the request, and therefore no error is expected.
