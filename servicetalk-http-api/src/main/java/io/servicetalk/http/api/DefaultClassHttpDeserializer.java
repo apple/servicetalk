@@ -26,9 +26,9 @@ import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 
 /**
  * A {@link HttpDeserializer} that can deserialize to a {@link Class} of type {@link T}.
- * @deprecated Will be removed with {@link HttpDeserializer}.
  * @param <T> Type to deserialize.
  * @see DefaultTypeHttpSerializer
+ * @deprecated Will be removed with {@link HttpDeserializer}.
  */
 @Deprecated
 final class DefaultClassHttpDeserializer<T> implements HttpDeserializer<T> {

@@ -31,4 +31,21 @@
     </Or>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
+
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.ProxyResponseException"/>
+    <Method name="status"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+
+  <!-- Duration isn't mutable -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2KeepAlivePolicies$KeepAlivePolicyBuilder"/>
+    <Or>
+      <Method name="ackTimeout"/>
+      <Method name="idleDuration"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

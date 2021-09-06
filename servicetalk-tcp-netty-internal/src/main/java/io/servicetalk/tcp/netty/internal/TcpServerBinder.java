@@ -107,8 +107,16 @@ public final class TcpServerBinder {
                         ((ReferenceCounted) msg).release();
                     }
                 }
-                if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
-                    LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
+                if (msg instanceof Channel) {
+                    final Channel channel = (Channel) msg;
+                    if (!channel.isActive()) {
+                        channel.close();
+                        LOGGER.debug("Channel ({}) is accepted, but was already inactive", msg);
+                        return;
+                    } else if (!channelSet.addIfAbsent(channel)) {
+                        LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
+                        return;
+                    }
                 }
                 ctx.fireChannelRead(msg);
             }

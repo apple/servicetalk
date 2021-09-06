@@ -27,10 +27,10 @@ import java.util.function.Consumer;
 
 /**
  * An {@link HttpSerializer} that serializes a {@link TypeHolder} of type {@link T}.
- * @deprecated Will be removed with {@link HttpSerializer}.
  * @param <T> Type to serialize
  * @see DefaultClassHttpSerializer
  * @see DefaultSizeAwareTypeHttpSerializer
+ * @deprecated Will be removed with {@link HttpSerializer}.
  */
 @Deprecated
 final class DefaultTypeHttpSerializer<T> implements HttpSerializer<T> {

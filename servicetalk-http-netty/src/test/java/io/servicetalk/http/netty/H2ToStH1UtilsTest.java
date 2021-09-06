@@ -26,32 +26,49 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.netty.util.internal.PlatformDependent.hashCodeAscii;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_PATCH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPIRES;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersSplitCookieCrumbs;
-import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 class H2ToStH1UtilsTest {
 
+    private static final int ARRAY_SIZE_HINT = 16;
+    private static final HttpHeadersFactory H1_FACTORY = new DefaultHttpHeadersFactory(true, true,
+            ARRAY_SIZE_HINT, 0);
+    private static final HttpHeadersFactory H2_FACTORY = new H2HeadersFactory(true, true, ARRAY_SIZE_HINT, 0);
+
+    private static int bucketIndex(int hashCode) {
+        return hashCode & (ARRAY_SIZE_HINT - 1);
+    }
+
     @Test
     void testH1HeadersSplitCookieCrumbsForH1Headers() {
-        testH1HeadersSplitCookieCrumbs(DefaultHttpHeadersFactory.INSTANCE);
+        CharSequence secondHeaderName = EXPIRES;
+        assertThat(bucketIndex(caseInsensitiveHashCode(COOKIE)),
+                equalTo(bucketIndex(caseInsensitiveHashCode(secondHeaderName))));
+        testH1HeadersSplitCookieCrumbs(H1_FACTORY, secondHeaderName);
     }
 
     @Test
     void testH1HeadersSplitCookieCrumbsForH2Headers() {
-        testH1HeadersSplitCookieCrumbs(H2HeadersFactory.INSTANCE);
+        CharSequence secondHeaderName = ACCEPT_PATCH;
+        assertThat(bucketIndex(hashCodeAscii(COOKIE)), equalTo(bucketIndex(hashCodeAscii(secondHeaderName))));
+        testH1HeadersSplitCookieCrumbs(H2_FACTORY, secondHeaderName);
     }
 
-    void testH1HeadersSplitCookieCrumbs(HttpHeadersFactory headersFactory) {
+    void testH1HeadersSplitCookieCrumbs(HttpHeadersFactory headersFactory, CharSequence secondHeaderName) {
         HttpHeaders headers = headersFactory.newHeaders();
         // Add two headers which will be saved in the same entries[index]:
-        headers.add(new ConstantHashCharSequence(COOKIE), "a=b; c=d; e=f");
-        headers.add(new ConstantHashCharSequence(ACCEPT_PATCH), TEXT_PLAIN);
+        headers.add(COOKIE, "a=b; c=d; e=f");
+        String secondHeaderValue = "some-value";
+        headers.add(secondHeaderName, secondHeaderValue);
         h1HeadersSplitCookieCrumbs(headers);
 
         List<HttpCookiePair> cookies = new ArrayList<>();
@@ -62,46 +79,6 @@ class H2ToStH1UtilsTest {
         assertThat(cookies, containsInAnyOrder(new DefaultHttpCookiePair("a", "b"),
                 new DefaultHttpCookiePair("c", "d"),
                 new DefaultHttpCookiePair("e", "f")));
-    }
-
-    private static final class ConstantHashCharSequence implements CharSequence {
-        private final CharSequence sequence;
-
-        ConstantHashCharSequence(final CharSequence sequence) {
-            this.sequence = requireNonNull(sequence);
-        }
-
-        @Override
-        public int length() {
-            return sequence.length();
-        }
-
-        @Override
-        public char charAt(final int index) {
-            return sequence.charAt(index);
-        }
-
-        @Override
-        public CharSequence subSequence(final int start, final int end) {
-            return new ConstantHashCharSequence(sequence.subSequence(start, end));
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;   // always the same
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof ConstantHashCharSequence)) {
-                return false;
-            }
-            return sequence.equals(((ConstantHashCharSequence) o).sequence);
-        }
-
-        @Override
-        public String toString() {
-            return sequence.toString();
-        }
+        assertThat(headers.get(secondHeaderName), equalTo(secondHeaderValue));
     }
 }

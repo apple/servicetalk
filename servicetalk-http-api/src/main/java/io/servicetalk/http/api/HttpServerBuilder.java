@@ -281,8 +281,7 @@ public abstract class HttpServerBuilder {
                                                                     final StreamingHttpServiceFilterFactory factory) {
         checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
-        noOffloadServiceFilters.add(
-                service -> new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
+        noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
     }
 
@@ -344,6 +343,16 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     public abstract HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} to be used by this server.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public HttpServerBuilder executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.
@@ -499,6 +508,32 @@ public abstract class HttpServerBuilder {
                                                       HttpExecutionStrategy strategy,
                                                       boolean drainRequestPayloadBody);
 
+    /**
+     * Build the execution context for this builder.
+     *
+     * @param strategy The execution strategy to be used for the context
+     * @return the configured and built HTTP execution context.
+     */
+    protected abstract HttpExecutionContext buildExecutionContext(HttpExecutionStrategy strategy);
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     *
+     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
+     * @param context the {@link HttpExecutionContext} to use for the service.
+     * @param service {@link StreamingHttpService} to use for the server.
+     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
+     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
+                                                      HttpExecutionContext context,
+                                                      StreamingHttpService service,
+                                                      boolean drainRequestPayloadBody);
+
     private Single<ServerContext> listenForAdapter(ServiceAdapterHolder adapterHolder) {
         return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
     }
@@ -520,39 +555,36 @@ public abstract class HttpServerBuilder {
      * @param strategy the {@link HttpExecutionStrategy} to use for the service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-
      */
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
 
         final StreamingHttpService filteredService;
+        HttpExecutionContext serviceContext;
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
+            serviceContext = buildExecutionContext(strategy);
         } else {
-            boolean anyOffloads = strategy.isSendOffloaded() ||
-                    strategy.isMetadataReceiveOffloaded() ||
-                    strategy.isDataReceiveOffloaded();
-
             Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
 
-            if (anyOffloads) {
+            if (strategy.hasOffloads()) {
+                serviceContext = buildExecutionContext(noOffloadsStrategy());
+                BooleanSupplier shouldOffload = serviceContext.ioExecutor().shouldOffloadSupplier();
                 // We are going to have to offload, even if just to the raw service
-                nonOffloadingFilters = Stream.concat(nonOffloadingFilters,
-                        Stream.of(new OffloadingFilter(strategy, buildFactory(serviceFilters))));
-                final Executor executor = strategy.executor();
-                strategy = null != executor ?
-                        HttpExecutionStrategies.customStrategyBuilder().offloadNone().executor(executor).build() :
-                        noOffloadsStrategy();
+                OffloadingFilter offloadingFilter =
+                        new OffloadingFilter(strategy, buildFactory(serviceFilters), shouldOffload);
+                nonOffloadingFilters = Stream.concat(nonOffloadingFilters, Stream.of(offloadingFilter));
             } else {
                 // All the filters can be appended.
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
+                serviceContext = buildExecutionContext(strategy);
             }
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
+        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody);
     }
 
     private HttpExecutionStrategyInfluencer strategyInfluencer(Object service) {

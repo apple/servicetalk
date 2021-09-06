@@ -54,6 +54,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -65,7 +66,6 @@ import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -79,8 +79,8 @@ class PredicateRouterOffloadingTest {
 
     @RegisterExtension
     final ExecutionContextExtension executionContextRule = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)),
-            () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)));
+            () -> createIoExecutor(IO_EXECUTOR_NAME_PREFIX),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX)));
     @Nullable
     private ServerContext context;
     @Nullable
@@ -112,9 +112,10 @@ class PredicateRouterOffloadingTest {
     void predicateAndRouteAreOffloaded(RouteServiceType routeServiceType) throws Exception {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
+        serverBuilder.executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread)
-                        .executionStrategy(defaultStrategy(executionContextRule.executor())),
+                        .executionStrategy(defaultStrategy()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -128,6 +129,7 @@ class PredicateRouterOffloadingTest {
         this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
+        serverBuilder.executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread).executionStrategy(noOffloadsStrategy()),
                 this::recordThread);
@@ -143,10 +145,10 @@ class PredicateRouterOffloadingTest {
     void routeOffloadedAndNotPredicate(RouteServiceType routeServiceType) throws Exception {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
-        serverBuilder.executionStrategy(noOffloadsStrategy());
+        serverBuilder.executionStrategy(noOffloadsStrategy()).executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread)
-                        .executionStrategy(defaultStrategy(executionContextRule.executor())),
+                        .executionStrategy(defaultStrategy()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -193,7 +195,7 @@ class PredicateRouterOffloadingTest {
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         final HttpExecutionStrategy routerStrat = newMetaUnaffectingExecutionStrategy();
         final HttpExecutionStrategy routeStrat = newMetaUnaffectingExecutionStrategy();
-        serverBuilder.executionStrategy(routerStrat);
+        serverBuilder.executionStrategy(routerStrat).executor(immediate());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread).executionStrategy(routeStrat),
                 this::recordThread);
@@ -209,7 +211,7 @@ class PredicateRouterOffloadingTest {
     }
 
     private HttpPredicateRouterBuilder newRouterBuilder() {
-        serverBuilder.executionStrategy(defaultStrategy(executionContextRule.executor()));
+        serverBuilder.executionStrategy(defaultStrategy());
         return new HttpPredicateRouterBuilder();
     }
 

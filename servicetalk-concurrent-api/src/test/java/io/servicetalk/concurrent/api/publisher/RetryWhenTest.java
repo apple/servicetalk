@@ -50,8 +50,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 class RetryWhenTest {
@@ -107,7 +107,7 @@ class RetryWhenTest {
         source.onComplete();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
 
-        verifyZeroInteractions(shouldRetry);
+        verifyNoInteractions(shouldRetry);
     }
 
     @Test

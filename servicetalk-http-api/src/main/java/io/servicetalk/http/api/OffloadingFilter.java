@@ -15,10 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Single;
-
-import static java.util.function.Function.identity;
+import java.util.function.BooleanSupplier;
 
 /**
  * An {@link StreamingHttpServiceFilterFactory} implementation which offloads filters using a provided strategy.
@@ -27,50 +24,25 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
 
     private final HttpExecutionStrategy strategy;
     private final StreamingHttpServiceFilterFactory offloaded;
+    private final BooleanSupplier shouldOffload;
 
     /**
      * @param strategy Execution strategy for the offloaded filters
      * @param offloaded Filters to be offloaded
+     * @param shouldOffload returns true if offloading is appropriate for the current execution context.
      */
-    OffloadingFilter(HttpExecutionStrategy strategy, StreamingHttpServiceFilterFactory offloaded) {
+    OffloadingFilter(HttpExecutionStrategy strategy, StreamingHttpServiceFilterFactory offloaded,
+                     BooleanSupplier shouldOffload) {
         this.strategy = strategy;
         this.offloaded = offloaded;
+        this.shouldOffload = shouldOffload;
     }
 
     @Override
     public StreamingHttpServiceFilter create(StreamingHttpService service) {
-        return new StreamingHttpServiceFilter(offloaded.create(service)) {
-
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                Executor se = strategy.executor();
-                Executor e = null != se ? se : ctx.executionContext().executor();
-
-                // The service should see our ExecutionStrategy inside the ExecutionContext:
-                final HttpServiceContext wrappedCtx =
-                        new ExecutionContextOverridingServiceContext(ctx, strategy, e);
-
-                if (strategy.isDataReceiveOffloaded()) {
-                    request = request.transformMessageBody(p -> p.publishOn(e));
-                }
-                final Single<StreamingHttpResponse> resp;
-                if (strategy.isMetadataReceiveOffloaded()) {
-                    final StreamingHttpRequest r = request;
-                    resp = e.submit(() -> delegate().handle(wrappedCtx, r, responseFactory).subscribeShareContext())
-                            // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                            .flatMap(identity());
-                } else {
-                    resp = delegate().handle(wrappedCtx, request, responseFactory);
-                }
-                return strategy.isSendOffloaded() ?
-                        // This is different from invokeService() where we just offload once on the  flattened
-                        // (meta + data) stream. In this case, we need to preserve the service contract and hence
-                        // have to offload both meta and data separately.
-                        resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
-            }
-        };
+        StreamingHttpService offloadedService = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
+                strategy, null, shouldOffload, offloaded.create(service));
+        return new StreamingHttpServiceFilter(offloadedService);
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.Cancellable;
@@ -23,7 +22,6 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
@@ -92,22 +90,20 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelin
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
-    private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
+    private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
                                             FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                            HttpExecutionStrategy executionStrategy,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy, keepAliveManager);
+        super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
     }
 
     interface H2ClientParentConnection extends FilterableStreamingHttpConnection, NettyConnectionContext {
     }
 
-    static Single<H2ClientParentConnection> initChannel(Channel channel, BufferAllocator allocator,
-                                                        Executor executor, H2ProtocolConfig config,
+    static Single<H2ClientParentConnection> initChannel(Channel channel, HttpExecutionContext executionContext,
+                                                        H2ProtocolConfig config,
                                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                                         FlushStrategy parentFlushStrategy,
                                                         @Nullable Long idleTimeoutMs,
-                                                        HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,
                                                         boolean allowDropTrailersReadFromTransport) {
@@ -121,7 +117,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     delayedCancellable = new DelayedCancellable();
                     KeepAliveManager keepAliveManager = new KeepAliveManager(channel, config.keepAlivePolicy());
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, idleTimeoutMs, executionStrategy,
+                            executionContext, parentFlushStrategy, idleTimeoutMs,
                             keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
@@ -350,18 +346,16 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             closeHandler, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
-                                    parentContext.executionContext().bufferAllocator(),
-                                    parentContext.executionContext().executor(), LAST_CHUNK_PREDICATE,
+                                    parentContext.executionContext(), LAST_CHUNK_PREDICATE,
                                     closeHandler,
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
-                                    parentContext.executionContext().executionStrategy(),
                                     HTTP_2_0,
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
                                     true,
-                                    Http2Exception::wrapIfNecessary);
+                                    NettyHttp2ExceptionUtils::wrapIfNecessary);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.

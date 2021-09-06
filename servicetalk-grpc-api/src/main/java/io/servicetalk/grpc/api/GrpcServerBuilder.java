@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -233,6 +234,14 @@ public abstract class GrpcServerBuilder {
         doAppendHttpServiceFilter(predicate, factory);
         return this;
     }
+
+    /**
+     * Sets the {@link Executor} to be used by this server.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder executor(Executor executor);
 
     /**
      * Sets the {@link IoExecutor} to be used by this server.

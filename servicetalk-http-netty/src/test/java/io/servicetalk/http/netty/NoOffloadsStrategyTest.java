@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -39,7 +38,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,7 +55,7 @@ class NoOffloadsStrategyTest {
     private BlockingHttpClient client;
 
     NoOffloadsStrategyTest() {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME, true, NORM_PRIORITY));
+        ioExecutor = createIoExecutor(IO_EXECUTOR_NAME);
         serverBuilder = HttpServers.forAddress(localAddress(0)).ioExecutor(ioExecutor);
     }
 
@@ -85,7 +83,7 @@ class NoOffloadsStrategyTest {
 
     @Test
     void turnOffAllExecutors() throws Exception {
-        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
+        serverBuilder.executor(immediate()).executionStrategy(customStrategyBuilder().offloadNone().build());
         StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
         client.request(client.get("/"));

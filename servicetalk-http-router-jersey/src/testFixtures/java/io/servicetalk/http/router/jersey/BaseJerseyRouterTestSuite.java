@@ -15,10 +15,13 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 import org.junit.platform.suite.api.SuiteDisplayName;
 
+@Execution(ExecutionMode.CONCURRENT)
 @Suite
 @SuiteDisplayName("JerseyRouterTestSuite")
 @SelectClasses({

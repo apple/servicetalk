@@ -2207,10 +2207,10 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     * @deprecated Use {@link #multicast(int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
+     * @deprecated Use {@link #multicast(int)}.
      */
     @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers) {
@@ -2237,12 +2237,12 @@ public abstract class Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
-     * @deprecated Use {@link #multicast(int, int)}.
      * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
      * before subscribing to this {@link Publisher}.
      * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
      * for unequal demand.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
+     * @deprecated Use {@link #multicast(int, int)}.
      */
     @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers, int queueLimit) {

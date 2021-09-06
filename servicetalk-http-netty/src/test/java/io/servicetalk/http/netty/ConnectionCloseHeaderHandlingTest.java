@@ -133,8 +133,9 @@ final class ConnectionCloseHeaderHandlingTest {
                     HttpServers.forAddress(newSocketAddress()) :
                     HttpServers.forAddress(localAddress(0)))
                     .ioExecutor(serverCtx.ioExecutor())
-                    .executionStrategy(defaultStrategy(serverCtx.executor()))
-                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+                    .executor(serverCtx.executor())
+                    .executionStrategy(defaultStrategy())
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                     .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                         @Override
                         public Completable accept(final ConnectionContext context) {
@@ -207,8 +208,9 @@ final class ConnectionCloseHeaderHandlingTest {
                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                             .peerHost(serverPemHostname()).build()) :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
+                    .executor(clientCtx.executor())
                     .ioExecutor(clientCtx.ioExecutor())
-                    .executionStrategy(defaultStrategy(clientCtx.executor()))
+                    .executionStrategy(defaultStrategy())
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .buildStreaming();
             connection = client.reserveConnection(client.get("/")).toFuture().get();

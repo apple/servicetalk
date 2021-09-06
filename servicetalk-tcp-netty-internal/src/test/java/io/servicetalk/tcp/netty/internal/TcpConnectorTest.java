@@ -100,7 +100,7 @@ final class TcpConnectorTest extends AbstractTcpServerTest {
         NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
                 serverContext.listenAddress(), new TcpClientConfig().asReadOnly(), false,
                 CLIENT_CTX, (channel, connectionObserver) -> DefaultNettyConnection.initChannel(channel,
-                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), o -> true,
+                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), CLIENT_CTX.ioExecutor(), o -> true,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> {
                             channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override

@@ -20,6 +20,7 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
@@ -91,6 +92,12 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
             throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
         }
         this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> executor(final Executor executor) {
+        httpClientBuilder.executor(executor);
         return this;
     }
 

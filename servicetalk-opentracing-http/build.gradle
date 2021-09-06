@@ -41,10 +41,8 @@ dependencies {
   testImplementation project(":servicetalk-opentracing-log4j2")
   testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

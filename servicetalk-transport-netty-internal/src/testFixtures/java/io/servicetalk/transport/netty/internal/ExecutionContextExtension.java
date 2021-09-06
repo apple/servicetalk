@@ -31,14 +31,13 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -50,6 +49,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
                                                         ExecutionContext {
 
     private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
+    private static final String EXEC_THREAD_PREFIX = "exec-ctx-rule-exec";
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;
@@ -61,7 +61,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     public ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
                                      final Supplier<IoExecutor> ioExecutorSupplier,
                                      final Supplier<Executor> executorSupplier) {
-        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_ALL_STRATEGY);
+        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_FROM_IO_STRATEGY);
     }
 
     private ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
@@ -75,37 +75,37 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     }
 
     public static ExecutionContextExtension immediate() {
-        return immediate(new IoThreadFactory(IO_THREAD_PREFIX));
+        return immediate(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    private static ExecutionContextExtension immediate(ThreadFactory ioThreadFactory) {
-        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
+    private static ExecutionContextExtension immediate(NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
                 Executors::immediate);
     }
 
     public static ExecutionContextExtension cached() {
-        return cached(new IoThreadFactory(IO_THREAD_PREFIX));
+        return cached(new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    public static ExecutionContextExtension cached(ThreadFactory ioThreadFactory) {
-        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
-                Executors::newCachedThreadExecutor
+    public static ExecutionContextExtension cached(NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
+                () -> Executors.newCachedThreadExecutor(new DefaultThreadFactory(EXEC_THREAD_PREFIX))
         );
     }
 
     public static ExecutionContextExtension cached(String ioThreadPrefix, String executorThreadPrefix) {
         return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
-                newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
+                () -> createIoExecutor(ioThreadPrefix),
                 () -> newCachedThreadExecutor(new DefaultThreadFactory(executorThreadPrefix)));
     }
 
     private static ExecutionContextExtension fixed(int size) {
-        return fixed(size, new IoThreadFactory(IO_THREAD_PREFIX));
+        return fixed(size, new NettyIoThreadFactory(IO_THREAD_PREFIX));
     }
 
-    private static ExecutionContextExtension fixed(int size, ThreadFactory ioThreadFactory) {
-        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
-                () -> Executors.newFixedSizeExecutor(size)
+    private static ExecutionContextExtension fixed(int size, NettyIoThreadFactory nettyIoThreadFactory) {
+        return new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR, newIoExecutor(nettyIoThreadFactory),
+                () -> Executors.newFixedSizeExecutor(size, new DefaultThreadFactory(EXEC_THREAD_PREFIX))
         );
     }
 
@@ -113,8 +113,8 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
         return fixed(1);
     }
 
-    public static ExecutionContextExtension single(ThreadFactory ioThreadFactory) {
-        return fixed(1, ioThreadFactory);
+    public static ExecutionContextExtension single(NettyIoThreadFactory nettyIoThreadFactory) {
+        return fixed(1, nettyIoThreadFactory);
     }
 
     public ExecutionContextExtension setClassLevel(final boolean classLevel) {
@@ -142,7 +142,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
         return ctx.executionStrategy();
     }
 
-    private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {
+    private static Supplier<IoExecutor> newIoExecutor(NettyIoThreadFactory threadFactory) {
         return () -> createIoExecutor(threadFactory);
     }
 

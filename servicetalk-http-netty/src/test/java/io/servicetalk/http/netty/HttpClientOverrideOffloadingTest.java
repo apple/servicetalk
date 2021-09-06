@@ -15,10 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -38,7 +40,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -46,26 +47,32 @@ import static org.hamcrest.Matchers.hasSize;
 class HttpClientOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-client-io-executor";
 
-    private IoExecutor ioExecutor;
-    private Executor executor;
+    private final IoExecutor ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
+    private final Executor executor = newCachedThreadExecutor();
     private Predicate<Thread> isInvalidThread;
     private HttpExecutionStrategy overridingStrategy;
     private ServerContext server;
     private HttpClient client;
 
     void setUp(final Params params) throws Exception {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
-                NORM_PRIORITY));
-        executor = newCachedThreadExecutor();
         this.isInvalidThread = params.isInvalidThread;
         this.overridingStrategy = params.overridingStrategy == null ?
-                defaultStrategy(executor) : params.overridingStrategy;
+                defaultStrategy() : params.overridingStrategy;
         server = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-        client = HttpClients.forSingleAddress(serverHostAndPort(server))
-                .ioExecutor(ioExecutor)
-                .executionStrategy(params.defaultStrategy == null ? defaultStrategy(executor) : params.defaultStrategy)
-                .build();
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                HttpClients.forSingleAddress(serverHostAndPort(server))
+                .ioExecutor(ioExecutor);
+        if (params.defaultStrategy == null) {
+            clientBuilder
+                    .executor(executor)
+                    .executionStrategy(defaultStrategy());
+        } else {
+            clientBuilder
+                    .executionStrategy(params.defaultStrategy);
+        }
+
+        client = clientBuilder.build();
     }
 
     enum Params {

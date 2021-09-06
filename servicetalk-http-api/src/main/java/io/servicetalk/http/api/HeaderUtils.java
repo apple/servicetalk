@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.serialization.api.SerializationException;
@@ -84,10 +83,10 @@ public final class HeaderUtils {
                 }
                 return "<filtered>";
             };
-    private static final ByteProcessor TOKEN_VALIDATOR = value -> {
-        validateToken(value);
-        return true;
-    };
+    // ASCII symbols:
+    private static final byte HT = 9;
+    private static final byte DEL = 127;
+    private static final byte CONTROL_CHARS_MASK = (byte) 0xE0;
 
     private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
@@ -269,7 +268,11 @@ public final class HeaderUtils {
      * @param key the cookie name or header name to validate.
      */
     static void validateCookieTokenAndHeaderName(final CharSequence key) {
-        forEachByte(key, TOKEN_VALIDATOR);
+        forEachByte(key, HeaderUtils::validateToken);
+    }
+
+    static void validateHeaderValue(final CharSequence value) {
+        forEachByte(value, HeaderUtils::validateHeaderValue);
     }
 
     /**
@@ -662,10 +665,10 @@ public final class HeaderUtils {
      * If the name can not be matched to any of the supported encodings on this endpoint, then
      * a {@link UnsupportedContentEncodingException} is thrown.
      * If the matched encoding is {@link Identity#identity()} then this returns {@code null}.
-     * @deprecated Will be removed along with {@link ContentCodec}.
      * @param headers The headers to read the encoding name from
      * @param allowedEncodings The supported encodings for this endpoint
      * @return The {@link ContentCodec} that matches the name or null if matches to identity
+     * @deprecated Will be removed along with {@link ContentCodec}.
      */
     @Nullable
     @Deprecated
@@ -770,11 +773,11 @@ public final class HeaderUtils {
     }
 
     /**
-     * Validate char is valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
+     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
      *
      * @param value the character to validate.
      */
-    private static void validateToken(final byte value) {
+    private static boolean validateToken(final byte value) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -805,10 +808,37 @@ public final class HeaderUtils {
             throw new IllegalCharacterException(value,
                     "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
         }
+        return true;
     }
 
     // visible for testing
     static boolean isTchar(final byte value) {
         return isBitSet(value, TCHAR_LMASK, TCHAR_HMASK);
+    }
+
+    /**
+     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> character.
+     *
+     * @param value the character to validate.
+     */
+    private static boolean validateHeaderValue(final byte value) {
+        // HEADER
+        // header-field   = field-name ":" OWS field-value OWS
+        //
+        // field-value    = *( field-content / obs-fold )
+        // field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+        // field-vchar    = VCHAR / obs-text
+        //
+        // obs-fold       = CRLF 1*( SP / HTAB )
+        //                ; obsolete line folding
+        //                ; see Section 3.2.4
+        //
+        // Note: we do not support obs-fold.
+        // Illegal chars are control chars (0-31) except HT (9), and DEL (127):
+        if (((value & CONTROL_CHARS_MASK) == 0 && value != HT) || value == DEL) {
+            throw new IllegalCharacterException(value,
+                    "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
+        }
+        return true;
     }
 }

@@ -15,16 +15,16 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @Before method instead of constructors for test rules -->
-  <Match>
-    <Class name="io.servicetalk.transport.netty.internal.ExecutionContextRule"/>
-    <Field name="ctx"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
   <!-- Not interested in returned values -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.MockFlushStrategy"/>
     <Method name="verifyApplied"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel"/>
+    <Method name="config"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
 </FindBugsFilter>

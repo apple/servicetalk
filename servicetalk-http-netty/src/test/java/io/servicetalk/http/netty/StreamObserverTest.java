@@ -17,9 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -57,8 +58,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -85,7 +85,7 @@ class StreamObserverTest {
     private final HttpClient client;
     private final CountDownLatch requestReceived = new CountDownLatch(1);
 
-    StreamObserverTest() {
+    StreamObserverTest() throws Exception {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");
@@ -101,7 +101,7 @@ class StreamObserverTest {
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
         when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
 
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Http2StreamChannel>() {
             @Override
             protected void initChannel(final Http2StreamChannel ch) {
@@ -124,15 +124,18 @@ class StreamObserverTest {
     }
 
     @AfterEach
-    void teardown() {
-        safeSync(() -> serverAcceptorChannel.close().syncUninterruptibly());
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly());
+    void teardown() throws Exception {
+        safeSync(() -> serverAcceptorChannel.close().sync());
+        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
         safeClose(client);
     }
 
-    static void safeSync(Runnable runnable) {
+    static void safeSync(Callable<Object> callable) throws Exception {
         try {
-            runnable.run();
+            callable.call();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }

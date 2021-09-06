@@ -21,6 +21,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -34,6 +35,8 @@ import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMap;
 
 import java.util.function.UnaryOperator;
 
@@ -63,8 +66,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName) {
+    public TracingHttpRequesterFilter(final Tracer tracer, final String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -75,10 +77,29 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName,
-                                      boolean validateTraceKeyFormat) {
+    public TracingHttpRequesterFilter(final Tracer tracer, final String componentName, boolean validateTraceKeyFormat) {
         super(tracer, componentName, validateTraceKeyFormat);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param tracer The {@link Tracer}.
+     * @param componentName The component name used during building new spans.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link HttpHeaders}.
+     */
+    public TracingHttpRequesterFilter(final Tracer tracer, final String componentName, Format<HttpHeaders> format) {
+        super(tracer, componentName, format);
+    }
+
+    /**
+     * Create a new instance.
+     * @param tracer The {@link Tracer}.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link TextMap}.
+     * @param componentName The component name used during building new spans.
+     */
+    public TracingHttpRequesterFilter(final Tracer tracer, final Format<TextMap> format, final String componentName) {
+        super(tracer, format, componentName);
     }
 
     @Override
@@ -137,7 +158,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         Span span = spanBuilder.start();
         Scope scope = tracer.activateSpan(span);
         try {
-            tracer.inject(span.context(), formatter, request.headers());
+            injector.accept(span.context(), request.headers());
             return new ScopeTracker(scope, span);
         } catch (Throwable cause) {
             handlePrematureError(span, scope);

@@ -109,4 +109,23 @@ public class CaptureReferences<E extends Enum<E>, R> {
     public void assertCaptured(String reason, E slot, Matcher<? super R> matcher) throws AssertionError {
         org.hamcrest.MatcherAssert.assertThat(reason + " : " + slot, captured(slot), matcher);
     }
+
+    /**
+     * Asserts that the reference captured in the specified slot matches the provided matcher.
+     *
+     * @param reason message to include for failed matches
+     * @param stack the stack to include
+     * @param slot slot of interest
+     * @param matcher the matcher which will be applied to the captured reference
+     * @throws AssertionError if the captured value of the slot does not match
+     */
+    public void assertCaptured(String reason, Throwable stack, E slot, Matcher<? super R> matcher)
+            throws AssertionError {
+        try {
+            org.hamcrest.MatcherAssert.assertThat(reason + " : " + slot, captured(slot), matcher);
+        } catch (AssertionError assertionError) {
+            assertionError.initCause(stack);
+            throw assertionError;
+        }
+    }
 }

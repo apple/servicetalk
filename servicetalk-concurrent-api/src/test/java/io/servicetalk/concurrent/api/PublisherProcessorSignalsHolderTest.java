@@ -28,8 +28,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 class PublisherProcessorSignalsHolderTest {
     private final List<Object> pastBufferSizeSignals;
@@ -86,7 +86,7 @@ class PublisherProcessorSignalsHolderTest {
     @Test
     void tryConsumeEmpty() {
         assertThat("Item consumed when empty.", buffer.tryConsume(consumer), is(false));
-        verifyZeroInteractions(consumer);
+        verifyNoInteractions(consumer);
     }
 
     @Test

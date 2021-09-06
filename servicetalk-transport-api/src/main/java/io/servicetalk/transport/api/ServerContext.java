@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 /**
  * Context for servers.
  */
-public interface ServerContext extends ListenableAsyncCloseable, GracefulAutoCloseable {
+public interface ServerContext extends ServerListenContext, ListenableAsyncCloseable, GracefulAutoCloseable {
 
     /**
      * Listen address for the server associated with this context.

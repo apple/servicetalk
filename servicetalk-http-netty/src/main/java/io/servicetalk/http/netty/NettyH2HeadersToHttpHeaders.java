@@ -19,6 +19,7 @@ import io.servicetalk.http.api.HeaderUtils;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpSetCookie;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.Http2Headers;
@@ -33,6 +34,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.forEachByte;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.domainMatches;
@@ -45,12 +47,21 @@ import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static java.util.Collections.emptyIterator;
 
 final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
-    private final boolean validateCookies;
-    private final Http2Headers nettyHeaders;
 
-    NettyH2HeadersToHttpHeaders(final Http2Headers nettyHeaders, final boolean validateCookies) {
+    // ASCII symbols:
+    private static final byte HT = 9;
+    private static final byte DEL = 127;
+    private static final byte CONTROL_CHARS_MASK = (byte) 0xE0;
+
+    private final Http2Headers nettyHeaders;
+    private final boolean validateCookies;
+    private final boolean validateValues;
+
+    NettyH2HeadersToHttpHeaders(final Http2Headers nettyHeaders, final boolean validateCookies,
+                                final boolean validateValues) {
         this.nettyHeaders = nettyHeaders;
         this.validateCookies = validateCookies;
+        this.validateValues = validateValues;
     }
 
     Http2Headers nettyHeaders() {
@@ -101,45 +112,45 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
 
     @Override
     public HttpHeaders add(final CharSequence name, final CharSequence value) {
-        nettyHeaders.add(name, value);
+        nettyHeaders.add(name, validateHeaderValue(value));
         return this;
     }
 
     @Override
     public HttpHeaders add(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        nettyHeaders.add(name, values);
+        nettyHeaders.add(name, validateHeaderValue(values));
         return this;
     }
 
     @Override
     public HttpHeaders add(final CharSequence name, final CharSequence... values) {
-        nettyHeaders.add(name, values);
+        nettyHeaders.add(name, validateHeaderValue(values));
         return this;
     }
 
     @Override
     public HttpHeaders add(final HttpHeaders headers) {
         for (Entry<CharSequence, CharSequence> entry : headers) {
-            nettyHeaders.add(entry.getKey(), entry.getValue());
+            nettyHeaders.add(entry.getKey(), validateHeaderValue(entry.getValue()));
         }
         return this;
     }
 
     @Override
     public HttpHeaders set(final CharSequence name, final CharSequence value) {
-        nettyHeaders.set(name, value);
+        nettyHeaders.set(name, validateHeaderValue(value));
         return this;
     }
 
     @Override
     public HttpHeaders set(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        nettyHeaders.set(name, values);
+        nettyHeaders.set(name, validateHeaderValue(values));
         return this;
     }
 
     @Override
     public HttpHeaders set(final CharSequence name, final CharSequence... values) {
-        nettyHeaders.set(name, values);
+        nettyHeaders.set(name, validateHeaderValue(values));
         return this;
     }
 
@@ -327,6 +338,7 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
         return sizeBefore != size();
     }
 
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     private static final class CookiesIterator extends HeaderUtils.CookiesIterator {
         private final Iterator<CharSequence> valueItr;
         @Nullable
@@ -352,6 +364,7 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
         }
     }
 
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     private static final class CookiesByNameIterator extends HeaderUtils.CookiesByNameIterator {
         private final Iterator<CharSequence> valueItr;
         @Nullable
@@ -484,5 +497,56 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
         public void remove() {
             valueItr.remove();
         }
+    }
+
+    private CharSequence validateHeaderValue(final CharSequence value) {
+        if (validateValues) {
+            forEachByte(value, NettyH2HeadersToHttpHeaders::validateHeaderValue);
+        }
+        return value;
+    }
+
+    private Iterable<? extends CharSequence> validateHeaderValue(final Iterable<? extends CharSequence> values) {
+        if (validateValues) {
+            for (CharSequence v : values) {
+                forEachByte(v, NettyH2HeadersToHttpHeaders::validateHeaderValue);
+            }
+        }
+        return values;
+    }
+
+    private CharSequence[] validateHeaderValue(final CharSequence... values) {
+        if (validateValues) {
+            for (CharSequence v : values) {
+                forEachByte(v, NettyH2HeadersToHttpHeaders::validateHeaderValue);
+            }
+        }
+        return values;
+    }
+
+    /**
+     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> character.
+     *
+     * @param value the character to validate.
+     */
+    private static boolean validateHeaderValue(final byte value) {
+        // HEADER
+        // header-field   = field-name ":" OWS field-value OWS
+        //
+        // field-value    = *( field-content / obs-fold )
+        // field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+        // field-vchar    = VCHAR / obs-text
+        //
+        // obs-fold       = CRLF 1*( SP / HTAB )
+        //                ; obsolete line folding
+        //                ; see Section 3.2.4
+        //
+        // Note: we do not support obs-fold.
+        // Illegal chars are control chars (0-31) except HT (9), and DEL (127):
+        if (((value & CONTROL_CHARS_MASK) == 0 && value != HT) || value == DEL) {
+            throw new IllegalCharacterException(value,
+                    "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
+        }
+        return true;
     }
 }

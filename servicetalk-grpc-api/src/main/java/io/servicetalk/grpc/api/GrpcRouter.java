@@ -53,8 +53,10 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceToOffloadedStreamingHttpService;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
 
 import java.io.IOException;
@@ -161,8 +163,13 @@ final class GrpcRouter {
             final String path = entry.getKey();
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
-            verifyNoOverrides(allRoutes.put(path, adapterHolder.serviceInvocationStrategy()
-                    .offloadService(executionContext.executor(), route)), path, emptyMap());
+            verifyNoOverrides(allRoutes.put(path,
+                            StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
+                                    adapterHolder.serviceInvocationStrategy(),
+                                    executionContext.executor(),
+                                    IoThreadFactory.IoThread::currentThreadIsIoThread,
+                                    route)),
+                    path, emptyMap());
         }
     }
 

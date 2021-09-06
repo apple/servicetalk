@@ -23,7 +23,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +90,7 @@ class HttpsProxyTest {
 
     void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(serverIoExecutor = createIoExecutor(new IoThreadFactory("server-io-executor")))
+                .ioExecutor(serverIoExecutor = createIoExecutor("server-io-executor"))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()

@@ -148,11 +148,13 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                         ") header is not expected for " + httpMethod.name() + " request");
             }
         }
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
+        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
+                headersFactory.validateValues());
     }
 
     private NettyH2HeadersToHttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
+        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
+                headersFactory.validateValues());
     }
 
     private static HttpRequestMethod sequenceToHttpRequestMethod(CharSequence sequence) {

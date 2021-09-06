@@ -34,9 +34,9 @@ public interface StreamingSerializer {
 
     /**
      * Serializes the passed {@link Object} {@code toSerialize} into the passed {@link Buffer} synchronously.
-     * @deprecated Use {@link io.servicetalk.serializer.api.StreamingSerializer}.
      * @param toSerialize {@link Object} to serialize.
      * @param destination {@link Buffer} to which the serialized representation of {@code toSerialize} is to be written.
+     * @deprecated Use {@link io.servicetalk.serializer.api.StreamingSerializer}.
      */
     @Deprecated
     void serialize(Object toSerialize, Buffer destination);

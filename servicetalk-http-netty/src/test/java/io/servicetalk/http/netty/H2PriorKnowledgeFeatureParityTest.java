@@ -23,14 +23,13 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -53,6 +52,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
@@ -135,14 +135,13 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.String.valueOf;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
@@ -180,7 +179,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     private void setUp(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
-        serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         this.h2PriorKnowledge = h2PriorKnowledge;
     }
 
@@ -188,23 +187,19 @@ class H2PriorKnowledgeFeatureParityTest {
     private static Stream<Arguments> clientExecutors() {
         return Stream.of(Arguments.of(NO_OFFLOAD, true),
                          Arguments.of(NO_OFFLOAD, false),
-                         Arguments.of(CACHED, true),
-                         Arguments.of(CACHED, false));
+                         Arguments.of(DEFAULT, true),
+                         Arguments.of(DEFAULT, false));
     }
 
     @AfterEach
     void teardown() throws Exception {
         if (serverAcceptorChannel != null) {
-            serverAcceptorChannel.close().syncUninterruptibly();
+            serverAcceptorChannel.close().sync();
         }
         if (h1ServerContext != null) {
             h1ServerContext.close();
         }
-        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
-        Executor executor = clientExecutionStrategy.executor();
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
+        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
@@ -625,7 +620,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 request.trailers().set("mytrailer", "myvalue");
             }
             if (h2PriorKnowledge) {
-                assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
+                assertThrows(H2StreamResetException.class, () -> client.request(request));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     assertThrows(IOException.class, () -> {
@@ -1324,7 +1319,7 @@ class H2PriorKnowledgeFeatureParityTest {
             serverChannelLatch.await();
             Channel serverParentChannel = serverParentChannelRef.get();
             serverParentChannel.writeAndFlush(new DefaultHttp2SettingsFrame(
-                    new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).syncUninterruptibly();
+                    new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).sync();
 
             Iterator<? extends ConsumableEvent<Integer>> maxItr = maxConcurrentPubQueue.take().toIterable().iterator();
             // Verify that the initial maxConcurrency value is the default number
@@ -1490,7 +1485,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
     static Channel bindH2Server(EventLoopGroup serverEventLoopGroup, ChannelHandler childChannelHandler,
                                 Consumer<ChannelPipeline> parentChannelInitializer,
-                                UnaryOperator<Http2FrameCodecBuilder> configureH2Codec) {
+                                UnaryOperator<Http2FrameCodecBuilder> configureH2Codec) throws Exception {
         ServerBootstrap sb = new ServerBootstrap();
         sb.group(serverEventLoopGroup);
         sb.channel(serverChannel(serverEventLoopGroup, InetSocketAddress.class));
@@ -1502,7 +1497,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 parentChannelInitializer.accept(ch.pipeline());
             }
         });
-        return sb.bind(localAddress(0)).syncUninterruptibly().channel();
+        return sb.bind(localAddress(0)).sync().channel();
     }
 
     private InetSocketAddress bindHttpEchoServer() throws Exception {

@@ -55,55 +55,55 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
                 // Insert a custom value into AsyncContext map
                 AsyncContext.current().put(ASYNC_CONTEXT_CUSTOM_KEY, ASYNC_CONTEXT_VALUE);
 
-                capture(CaptureSlot.IN_APP);
+                capture(CaptureSlot.APP);
 
                 // Add thread/context recording test points
                 final Completable original = testCompletable
                         .liftSync(subscriber -> {
-                            capture(CaptureSlot.IN_OFFLOADED_SUBSCRIBE);
+                            capture(CaptureSlot.OFFLOADED_SUBSCRIBE);
                             return subscriber;
                         })
-                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_ORIGINAL_ON_SUBSCRIBE))
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.ORIGINAL_ON_SUBSCRIBE))
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capture(CaptureSlot.IN_ORIGINAL_ON_COMPLETE);
+                                capture(CaptureSlot.ORIGINAL_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capture(CaptureSlot.IN_ORIGINAL_ON_ERROR);
+                                capture(CaptureSlot.ORIGINAL_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capture(CaptureSlot.IN_OFFLOADED_CANCEL);
+                                capture(CaptureSlot.OFFLOADED_CANCEL);
                             }
                         });
 
                 // Perform offloading and add more thread/context recording test points
                 Completable offloaded = offloadingFunction.apply(original, testExecutor.executor())
                         .liftSync(subscriber -> {
-                            capture(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+                            capture(CaptureSlot.ORIGINAL_SUBSCRIBE);
                             return subscriber;
                         })
-                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.IN_OFFLOADED_ON_SUBSCRIBE))
+                        .beforeOnSubscribe(cancellable -> capture(CaptureSlot.OFFLOADED_ON_SUBSCRIBE))
                         .beforeFinally(new TerminalSignalConsumer() {
 
                             @Override
                             public void onComplete() {
-                                capture(CaptureSlot.IN_OFFLOADED_ON_COMPLETE);
+                                capture(CaptureSlot.OFFLOADED_ON_COMPLETE);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                capture(CaptureSlot.IN_OFFLOADED_ON_ERROR);
+                                capture(CaptureSlot.OFFLOADED_ON_ERROR);
                             }
 
                             @Override
                             public void cancel() {
-                                capture(CaptureSlot.IN_ORIGINAL_CANCEL);
+                                capture(CaptureSlot.ORIGINAL_CANCEL);
                             }
                         });
 
@@ -163,15 +163,15 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
         }
 
         // Ensure that Async Context Map was correctly set during signals
-        AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.IN_APP);
+        AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.APP);
         assertThat(appMap, notNullValue());
-        AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.IN_ORIGINAL_SUBSCRIBE);
+        AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.ORIGINAL_SUBSCRIBE);
         assertThat(subscribeMap, notNullValue());
         assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
         assertThat("Missing custom async context entry ",
                 subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
         EnumSet<CaptureSlot> checkSlots =
-                EnumSet.complementOf(EnumSet.of(CaptureSlot.IN_APP, CaptureSlot.IN_ORIGINAL_SUBSCRIBE));
+                EnumSet.complementOf(EnumSet.of(CaptureSlot.APP, CaptureSlot.ORIGINAL_SUBSCRIBE));
         checkSlots.stream()
                 .filter(slot -> null != capturedContexts.captured(slot))
                 .forEach(slot -> {

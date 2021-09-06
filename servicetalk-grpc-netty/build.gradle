@@ -51,6 +51,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-transport-netty")
+  testImplementation project(":servicetalk-serializer-utils")
   testImplementation "io.grpc:grpc-core:$grpcVersion"
   testImplementation("io.grpc:grpc-netty:$grpcVersion") {
     exclude group: "io.netty"
@@ -61,10 +62,8 @@ dependencies {
   testImplementation "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsApiVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
 protobuf {

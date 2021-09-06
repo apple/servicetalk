@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -125,7 +124,7 @@ class BasicAuthStrategyInfluencerTest {
     }
 
     private BlockingHttpClient setup(boolean noOffloadsInfluence) throws Exception {
-        ioExecutor = NettyIoExecutors.createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+        ioExecutor = NettyIoExecutors.createIoExecutor(IO_EXECUTOR_NAME_PREFIX);
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         when(credentialsVerifier.apply(anyString(), anyString())).thenReturn(succeeded("success"));
         when(credentialsVerifier.closeAsync()).thenReturn(completed());

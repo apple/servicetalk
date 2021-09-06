@@ -108,7 +108,7 @@ class PrematureClosureBeforeResponsePayloadBodyTest {
         bs.childOption(ALLOW_HALF_CLOSURE, true);
         bs.childOption(AUTO_CLOSE, false);
         server = (ServerSocketChannel) bs.bind(localAddress(0))
-            .syncUninterruptibly().channel();
+            .sync().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
@@ -125,7 +125,7 @@ class PrematureClosureBeforeResponsePayloadBodyTest {
         try {
             client.closeGracefully();
         } finally {
-            server.close().syncUninterruptibly();
+            server.close().sync();
         }
     }
 

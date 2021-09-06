@@ -16,14 +16,14 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-
-import java.util.concurrent.ThreadFactory;
 
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isEpollAvailable;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isKQueueAvailable;
@@ -42,33 +42,63 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static EventLoopAwareNettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
-        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+    public static EventLoopAwareNettyIoExecutor createIoExecutor() {
+        return createIoExecutor(newIoThreadFactory());
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
+     *
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(String threadNamePrefix) {
+        return createIoExecutor(newIoThreadFactory(threadNamePrefix));
     }
 
     /**
      * Create a new {@link NettyIoExecutor}.
      *
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link ThreadFactory} to use.
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @return The created {@link IoExecutor}
      */
-    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
-        validateIoThreads(ioThreads);
-        return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, String threadNamePrefix) {
+        return createIoExecutor(ioThreads, newIoThreadFactory(threadNamePrefix));
     }
 
     /**
-     * Create a new {@link EventLoopGroup}.
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param ioThreads number of threads
-     * @param threadFactory the {@link ThreadFactory} to use.
+     * @param <T> Type of the IO thread instances created by factory.
+     * @param threadFactory the {@link IoThreadFactory} to use. If possible you should use an instance of
+     * {@link NettyIoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
-    public static EventLoopGroup createEventLoopGroup(int ioThreads, ThreadFactory threadFactory) {
+    public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
+            IoThreadFactory<T> threadFactory) {
+        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param <T> Type of the IO thread instances created by factory.
+     * @param ioThreads number of threads.
+     * @param threadFactory the {@link IoThreadFactory} to use. If possible you should use an instance of
+     * {@link NettyIoThreadFactory} as it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     */
+    public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
+            int ioThreads, IoThreadFactory<T> threadFactory) {
+        validateIoThreads(ioThreads);
+        return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true, true);
+    }
+
+    private static <T extends Thread & IoThread> EventLoopGroup createEventLoopGroup(int ioThreads,
+            IoThreadFactory<T> threadFactory) {
         validateIoThreads(ioThreads);
         return isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
                 isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
@@ -102,6 +132,19 @@ public final class NettyIoExecutors {
     }
 
     /**
+     * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoop}.
+     *
+     * @param eventLoop {@link EventLoop} to use to create a new {@link NettyIoExecutor}.
+     * @param isIoThreadSupported if {@code true} then event loop threads are guaranteed to implement
+     * {@link IoThreadFactory.IoThread} contract. Note: passing an incorrect value here may result in unexpected
+     * behavior and incorrect offloading.
+     * @return New {@link NettyIoExecutor} using the passed {@link EventLoop}.
+     */
+    public static NettyIoExecutor fromNettyEventLoop(EventLoop eventLoop, boolean isIoThreadSupported) {
+        return new EventLoopIoExecutor(eventLoop, true, isIoThreadSupported);
+    }
+
+    /**
      * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
      *
      * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
@@ -111,9 +154,30 @@ public final class NettyIoExecutors {
         return new EventLoopGroupIoExecutor(eventLoopGroup, true);
     }
 
+    /**
+     * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     *
+     * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
+     * @param isIoThreadSupported if {@code true} then event loop threads are guaranteed to implement
+     * {@link IoThreadFactory.IoThread} contract. Note: passing an incorrect value here may result in unexpected
+     * behavior and incorrect offloading.
+     * @return New {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     */
+    public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup, boolean isIoThreadSupported) {
+        return new EventLoopGroupIoExecutor(eventLoopGroup, true, isIoThreadSupported);
+    }
+
     private static void validateIoThreads(final int ioThreads) {
         if (ioThreads <= 0) {
             throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
         }
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory() {
+        return newIoThreadFactory(NettyIoExecutor.class.getSimpleName());
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
+        return new NettyIoThreadFactory(prefix);
     }
 }

@@ -51,6 +51,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
     private static final Duration FULL_JITTER = ofDays(1024);
     private static final Duration NULL_JITTER = ofMillis(1);
     private int maxRetries;
+    protected boolean evaluateDelayedRetries;
     @Nullable
     private BiPredicate<Meta, Throwable> retryForPredicate;
 
@@ -87,39 +88,39 @@ public abstract class AbstractRetryingFilterBuilder<Builder
 
     /**
      * Creates a new retrying {@link Filter} which retries without delay.
+     * @return a new retrying {@link Filter} which retries without delay.
      * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration)} or
      * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     * @return a new retrying {@link Filter} which retries without delay
      */
     @Deprecated
     public final Filter buildWithImmediateRetries() {
-        return build(readOnlySettings(null, NULL_JITTER, null, null, false));
+        return build(readOnlySettings(null, NULL_JITTER, null, null, false, evaluateDelayedRetries));
     }
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @return A new retrying {@link Filter} which adds a constant delay between retries
+     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
+     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
      */
     @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, null, false));
+        return build(readOnlySettings(delay, NULL_JITTER, null, null, false, evaluateDelayedRetries));
     }
 
     /**
      * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
-     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
      * @param delay Constant {@link Duration} of delay between retries
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
      * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
      * @return A new retrying {@link Filter} which adds a constant delay between retries
+     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
+     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
      */
     @Deprecated
     public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, timerExecutor, false));
+        return build(readOnlySettings(delay, NULL_JITTER, null, timerExecutor, false, evaluateDelayedRetries));
     }
 
     /**
@@ -131,7 +132,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
     public final Filter buildWithConstantBackoffFullJitter(final Duration delay) {
-        return build(readOnlySettings(delay, FULL_JITTER, null, null, false));
+        return build(readOnlySettings(delay, FULL_JITTER, null, null, false, evaluateDelayedRetries));
     }
 
     /**
@@ -145,7 +146,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
     public final Filter buildWithConstantBackoffFullJitter(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, FULL_JITTER, null, timerExecutor, false));
+        return build(readOnlySettings(delay, FULL_JITTER, null, timerExecutor, false, evaluateDelayedRetries));
     }
 
     /**
@@ -157,7 +158,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
     public final Filter buildWithConstantBackoffDeltaJitter(final Duration delay, final Duration jitter) {
-        return build(readOnlySettings(delay, jitter, null, null, false));
+        return build(readOnlySettings(delay, jitter, null, null, false, evaluateDelayedRetries));
     }
 
     /**
@@ -172,7 +173,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public final Filter buildWithConstantBackoffDeltaJitter(final Duration delay, final Duration jitter,
                                                             final Executor timerExecutor) {
-        return build(readOnlySettings(delay, jitter, null, timerExecutor, false));
+        return build(readOnlySettings(delay, jitter, null, timerExecutor, false, evaluateDelayedRetries));
     }
 
     /**
@@ -186,7 +187,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
      */
     public final Filter buildWithExponentialBackoffFullJitter(final Duration initialDelay, final Duration maxDelay) {
-        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, null, true));
+        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, null, true, evaluateDelayedRetries));
     }
 
     /**
@@ -203,7 +204,8 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public final Filter buildWithExponentialBackoffFullJitter(final Duration initialDelay, final Duration maxDelay,
                                                               final Executor timerExecutor) {
-        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, timerExecutor, true));
+        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, timerExecutor, true,
+                evaluateDelayedRetries));
     }
 
     /**
@@ -217,7 +219,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public final Filter buildWithExponentialBackoffDeltaJitter(final Duration initialDelay, final Duration jitter,
                                                                final Duration maxDelay) {
-        return build(readOnlySettings(initialDelay, jitter, maxDelay, null, true));
+        return build(readOnlySettings(initialDelay, jitter, maxDelay, null, true, evaluateDelayedRetries));
     }
 
     /**
@@ -233,7 +235,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public final Filter buildWithExponentialBackoffDeltaJitter(final Duration initialDelay, final Duration jitter,
                                                                final Duration maxDelay, final Executor timerExecutor) {
-        return build(readOnlySettings(initialDelay, jitter, maxDelay, timerExecutor, true));
+        return build(readOnlySettings(initialDelay, jitter, maxDelay, timerExecutor, true, evaluateDelayedRetries));
     }
 
     /**
@@ -258,10 +260,11 @@ public abstract class AbstractRetryingFilterBuilder<Builder
                                                              final Duration jitter,
                                                              @Nullable final Duration maxDelay,
                                                              @Nullable final Executor timerExecutor,
-                                                             final boolean exponential) {
+                                                             final boolean exponential,
+                                                             final boolean evaluateDelayedRetries) {
         return new ReadOnlyRetryableSettings<>(maxRetries > 0 ? maxRetries : (exponential ? 2 : 1),
                 retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate(),
-                initialDelay, jitter, maxDelay, timerExecutor, exponential);
+                initialDelay, jitter, maxDelay, timerExecutor, exponential, evaluateDelayedRetries);
     }
 
     /**
@@ -281,6 +284,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
         @Nullable
         private final Executor timerExecutor;
         private final boolean exponential;
+        private final boolean evaluateDelayedRetries;
 
         private ReadOnlyRetryableSettings(final int maxRetries,
                                           final BiPredicate<Meta, Throwable> retryForPredicate,
@@ -288,7 +292,8 @@ public abstract class AbstractRetryingFilterBuilder<Builder
                                           final Duration jitter,
                                           @Nullable final Duration maxDelay,
                                           @Nullable final Executor timerExecutor,
-                                          final boolean exponential) {
+                                          final boolean exponential,
+                                          final boolean evaluateDelayedRetries) {
             this.maxRetries = maxRetries;
             this.retryForPredicate = retryForPredicate;
             this.initialDelay = initialDelay;
@@ -296,6 +301,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
             this.exponential = exponential;
             this.jitter = requireNonNull(jitter);
             this.maxDelay = maxDelay;
+            this.evaluateDelayedRetries = evaluateDelayedRetries;
         }
 
         /**
@@ -307,6 +313,15 @@ public abstract class AbstractRetryingFilterBuilder<Builder
          */
         public boolean isRetryable(final Meta meta, final Throwable throwable) {
             return retryForPredicate.test(meta, throwable);
+        }
+
+        /**
+         * Checks whether to evaluate the {@link Throwable} for a constant delay info, in which case that delay will
+         * be additive to this configuration.
+         * @return {@code true} if the {@link Throwable} should be evaluated for constant delay info.
+         */
+        public boolean evaluateDelayedRetries() {
+            return evaluateDelayedRetries;
         }
 
         /**

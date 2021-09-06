@@ -15,7 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,10 +25,10 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
+class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
     @Test
-    public void duplicateEventsAreIgnored() {
+    void duplicateEventsAreIgnored() {
         assertThat(lb.usedAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -43,7 +43,7 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
     }
 
     @Test
-    public void handleDiscoveryEvents() {
+    void handleDiscoveryEvents() {
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -79,7 +79,7 @@ public class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest 
     }
 
     @Test
-    public void hostDownGracefullyClosesConnections() throws Exception {
+    void hostDownGracefullyClosesConnections() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         TestLoadBalancedConnection host1Conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
 

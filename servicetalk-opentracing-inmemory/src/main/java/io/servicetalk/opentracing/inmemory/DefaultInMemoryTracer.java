@@ -201,8 +201,8 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
         }
 
         @Override
-        protected InMemorySpan createSpan(
-                @Nullable String kind, String operationName, List<InMemoryReference> references,
+        InMemorySpan createSpan(
+                String operationName, List<InMemoryReference> references,
                 Map<String, Object> tags, int maxTagSize, boolean ignoreActiveSpan, long startTimestampMicros) {
             InMemorySpanContext maybeParent = parent();
             if (maybeParent == null && !ignoreActiveSpan) {

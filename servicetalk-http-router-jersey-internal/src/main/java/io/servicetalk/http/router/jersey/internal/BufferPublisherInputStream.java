@@ -81,12 +81,12 @@ public final class BufferPublisherInputStream extends InputStream {
      * Offload operations on the wrapped {@link Publisher Publisher&lt;Buffer&gt;} to the designated executor.
      *
      * @param executionStrategy the {@link HttpExecutionStrategy} to use.
-     * @param fallbackExecutor the {@link Executor} to use as a fallback with the {@link HttpExecutionStrategy}.
+     * @param executor the {@link Executor} to use with the {@link HttpExecutionStrategy}.
      */
     public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
-                                final Executor fallbackExecutor) {
+                                final Executor executor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
-            publisher = executionStrategy.offloadReceive(fallbackExecutor, publisher);
+            publisher = executionStrategy.offloadReceive(executor, publisher);
         } else {
             throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
         }

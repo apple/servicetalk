@@ -739,7 +739,7 @@ class DefaultHttpSetCookiesTest {
 
     @Test
     void invalidCookieNameNoThrowIfNoValidate() {
-        final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false).newHeaders();
+        final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false, false).newHeaders();
         headers.add("set-cookie", "q@werty=12345");
         headers.getSetCookie("q@werty");
     }

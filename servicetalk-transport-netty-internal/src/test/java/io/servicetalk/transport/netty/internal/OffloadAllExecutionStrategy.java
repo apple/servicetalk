@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
-import javax.annotation.Nullable;
-
 final class OffloadAllExecutionStrategy implements ExecutionStrategy {
 
     static final ExecutionStrategy OFFLOAD_ALL_STRATEGY = new OffloadAllExecutionStrategy();
@@ -31,28 +29,22 @@ final class OffloadAllExecutionStrategy implements ExecutionStrategy {
     }
 
     @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return original.subscribeOn(fallback);
+    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
+        return original.subscribeOn(executor);
     }
 
     @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return original.publishOn(fallback);
+    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
+        return original.publishOn(executor);
     }
 
     @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return original.subscribeOn(fallback);
+    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
+        return original.subscribeOn(executor);
     }
 
     @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return original.publishOn(fallback);
-    }
-
-    @Nullable
-    @Override
-    public Executor executor() {
-        return null;
+    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
+        return original.publishOn(executor);
     }
 }

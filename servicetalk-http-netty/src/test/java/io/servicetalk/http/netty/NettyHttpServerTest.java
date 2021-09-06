@@ -21,23 +21,31 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpServiceContext;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -49,6 +57,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
@@ -73,6 +82,8 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ROT13;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_TEST_PUBLISHER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -146,6 +157,35 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         request.headers().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, "hello");
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] disableOffloading={0}")
+    @ValueSource(booleans = {true, false})
+    void testServiceThrowsReturnsErrorResponse(boolean disableOffloading) throws Exception {
+        // the test suite state isn't used by this individual test, but cleanup code requires it is initialized.
+        setUp(IMMEDIATE, IMMEDIATE);
+
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+        if (disableOffloading) {
+            serverBuilder.executionStrategy(noOffloadsStrategy());
+        }
+        try (ServerContext serverCtx = serverBuilder.listenStreamingAndAwait((ctx, request, responseFactory) -> {
+                    throw DELIBERATE_EXCEPTION;
+                });
+             BlockingHttpClient client = disableOffloading(HttpClients.forResolvedAddress(serverHostAndPort(serverCtx)),
+                     disableOffloading)
+                     .buildBlocking()) {
+            HttpResponse resp = client.request(client.get("/"));
+            assertThat(resp.status(), is(INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> disableOffloading(
+            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder, boolean disableOffloading) {
+        if (disableOffloading) {
+            clientBuilder.executionStrategy(noOffloadsStrategy());
+        }
+        return clientBuilder;
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0} server={1}")

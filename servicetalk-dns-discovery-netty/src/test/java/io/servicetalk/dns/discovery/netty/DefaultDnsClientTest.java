@@ -52,8 +52,7 @@ import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createCnameRecord;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.net.InetAddress.getByName;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -82,7 +81,7 @@ class DefaultDnsClientTest {
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     @BeforeEach
     public void setup() throws Exception {
-        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
+        nettyIoExecutor = createIoExecutor();
 
         dnsServer = new TestDnsServer(recordStore);
         dnsServer.start();

@@ -54,7 +54,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DnsServiceDiscovererObserverTest {
@@ -293,7 +293,7 @@ class DnsServiceDiscovererObserverTest {
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsQuery(HOST_NAME);
-        verifyZeroInteractions(observer);
+        verifyNoInteractions(observer);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         verify(observer).onNewDiscovery(HOST_NAME);
@@ -306,7 +306,7 @@ class DnsServiceDiscovererObserverTest {
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsSrvQuery(SERVICE_NAME);
-        verifyZeroInteractions(observer);
+        verifyNoInteractions(observer);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         verify(observer).onNewDiscovery(SERVICE_NAME);
@@ -321,7 +321,7 @@ class DnsServiceDiscovererObserverTest {
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsQuery(HOST_NAME);
-        verifyZeroInteractions(observer, discoveryObserver);
+        verifyNoInteractions(observer, discoveryObserver);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         verify(observer).onNewDiscovery(HOST_NAME);
@@ -339,7 +339,7 @@ class DnsServiceDiscovererObserverTest {
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsQuery(INVALID);
-        verifyZeroInteractions(observer, discoveryObserver, resolutionObserver);
+        verifyNoInteractions(observer, discoveryObserver, resolutionObserver);
         // Wait until SD returns at least one address:
         ExecutionException ee = assertThrows(ExecutionException.class,
                 () -> publisher.takeAtMost(1).ignoreElements().toFuture().get());
@@ -359,7 +359,7 @@ class DnsServiceDiscovererObserverTest {
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsQuery(HOST_NAME);
-        verifyZeroInteractions(observer, discoveryObserver, resolutionObserver);
+        verifyNoInteractions(observer, discoveryObserver, resolutionObserver);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         verify(observer).onNewDiscovery(HOST_NAME);

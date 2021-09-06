@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpResponse;
@@ -49,8 +48,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -68,8 +66,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
         assumeTrue(isValid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
 
-        EventLoopGroup serverEventLoopGroup = createEventLoopGroup(2,
-                new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
+        EventLoopGroup serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         Channel serverAcceptorChannel = null;
         try {
             ServerBootstrap sb = new ServerBootstrap();
@@ -90,7 +87,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
                     p.addLast(EchoServerHandler.INSTANCE);
                 }
             });
-            serverAcceptorChannel = sb.bind(localAddress(0)).syncUninterruptibly().channel();
+            serverAcceptorChannel = sb.bind(localAddress(0)).sync().channel();
 
             try (BlockingHttpClient client = HttpClients.forSingleAddress(
                     HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
@@ -109,9 +106,9 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
             }
         } finally {
             if (serverAcceptorChannel != null) {
-                serverAcceptorChannel.close().syncUninterruptibly();
+                serverAcceptorChannel.close().sync();
             }
-            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
+            serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync();
         }
     }
 

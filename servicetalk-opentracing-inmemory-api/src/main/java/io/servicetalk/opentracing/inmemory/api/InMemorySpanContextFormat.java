@@ -17,28 +17,11 @@ package io.servicetalk.opentracing.inmemory.api;
 
 import io.opentracing.propagation.Format;
 
-import javax.annotation.Nullable;
-
 /**
  * A {@link Format} compatible with {@link InMemorySpanContext}.
  * @param <C> the carrier type.
  */
-public interface InMemorySpanContextFormat<C> extends Format<C> {
-    /**
-     * Inject a trace state into a carrier.
-     *
-     * @param context span context
-     * @param carrier carrier to inject into
-     */
-    void inject(InMemorySpanContext context, C carrier);
-
-    /**
-     * Extract the trace state from a carrier.
-     *
-     * @param carrier carrier to extract from
-     * @return extracted {@link InMemorySpanContext}, may be {@code null} if the carrier doesn't contain a valid span
-     * @throws Exception if any parsing error happened during extraction
-     */
-    @Nullable
-    InMemorySpanContext extract(C carrier) throws Exception;
+public interface InMemorySpanContextFormat<C> extends Format<C>,
+                                                      InMemorySpanContextInjector<C>,
+                                                      InMemorySpanContextExtractor<C> {
 }

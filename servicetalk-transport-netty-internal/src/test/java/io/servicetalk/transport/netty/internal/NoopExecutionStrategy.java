@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
-import javax.annotation.Nullable;
-
 final class NoopExecutionStrategy implements ExecutionStrategy {
 
     static final ExecutionStrategy NOOP_STRATEGY = new NoopExecutionStrategy();
@@ -31,28 +29,22 @@ final class NoopExecutionStrategy implements ExecutionStrategy {
     }
 
     @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
+    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
         return original;
     }
 
     @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
+    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
         return original;
     }
 
     @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
+    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
         return original;
     }
 
     @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
+    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
         return original;
-    }
-
-    @Nullable
-    @Override
-    public Executor executor() {
-        return null;
     }
 }

@@ -17,10 +17,9 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -37,30 +36,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class DelayedSubscriptionTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+class DelayedSubscriptionTest {
 
     private final DelayedSubscription delayedSubscription = new DelayedSubscription();
     private Subscription s1;
     private Subscription s2;
     private ExecutorService executor;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         s1 = mock(Subscription.class);
         s2 = mock(Subscription.class);
         executor = newCachedThreadPool();
     }
 
-    @After
-    public void tearDown() throws InterruptedException {
+    @AfterEach
+    void tearDown() throws InterruptedException {
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     @Test
-    public void multipleDelayedSubscriptionCancels() {
+    void multipleDelayedSubscriptionCancels() {
         delayedSubscription.delayedSubscription(s1);
         delayedSubscription.delayedSubscription(s2);
         verifyNoMoreInteractions(s1);
@@ -69,7 +66,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void delaySubscriptionIsRequested() {
+    void delaySubscriptionIsRequested() {
         delayedSubscription.request(100);
         delayedSubscription.request(5);
         delayedSubscription.delayedSubscription(s1);
@@ -78,7 +75,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void delaySubscriptionIsCancelled() {
+    void delaySubscriptionIsCancelled() {
         delayedSubscription.request(100);
         delayedSubscription.request(5);
         delayedSubscription.cancel();
@@ -88,7 +85,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void invalidRequestNIsPassedThrough() {
+    void invalidRequestNIsPassedThrough() {
         delayedSubscription.request(100);
         delayedSubscription.request(-1);
         delayedSubscription.delayedSubscription(s1);
@@ -97,7 +94,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void invalidRequestNZeroIsNotPassedThrough() {
+    void invalidRequestNZeroIsNotPassedThrough() {
         delayedSubscription.request(100);
         delayedSubscription.request(0);
         delayedSubscription.delayedSubscription(s1);
@@ -106,7 +103,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void signalsAfterDelayedArePassedThrough() {
+    void signalsAfterDelayedArePassedThrough() {
         delayedSubscription.request(2);
         delayedSubscription.delayedSubscription(s1);
         verify(s1).request(2);
@@ -120,7 +117,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void setDelayedFromAnotherThreadIsVisible() throws Exception {
+    void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedSubscription.request(2);
         executor.submit(() -> delayedSubscription.delayedSubscription(s1)).get();
         verify(s1).request(2);
@@ -128,7 +125,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void concurrentRequestAndSwap() throws Exception {
+    void concurrentRequestAndSwap() throws Exception {
         for (int i = 0; i < 1000; i++) {
             doConcurrentRequestAndSwap();
         }

@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
@@ -421,6 +422,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
         return this;
     }
 

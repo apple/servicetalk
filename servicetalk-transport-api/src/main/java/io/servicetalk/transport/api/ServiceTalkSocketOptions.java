@@ -28,19 +28,19 @@ import static java.util.Objects.requireNonNull;
 public final class ServiceTalkSocketOptions {
 
     /**
-     * The connect timeout in milliseconds.
+     * Connect timeout in milliseconds.
      */
     public static final SocketOption<Integer> CONNECT_TIMEOUT =
             new ServiceTalkSocketOption<>("CONNECT_TIMEOUT", Integer.class);
 
     /**
-     * The threshold after which the the Endpoint is not writable anymore.
+     * The threshold after which the Endpoint is not writable anymore.
      */
     public static final SocketOption<Integer> WRITE_BUFFER_THRESHOLD =
             new ServiceTalkSocketOption<>("WRITE_BUFFER_THRESHOLD", Integer.class);
 
     /**
-     * Allow to idle timeout in milli seconds after which the connection is closed.
+     * Connection idle timeout in milliseconds after which the connection is closed.
      */
     public static final SocketOption<Long> IDLE_TIMEOUT = new ServiceTalkSocketOption<>("IDLE_TIMEOUT", Long.class);
 

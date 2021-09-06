@@ -15,126 +15,54 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
 
-import java.util.Objects;
-import java.util.function.Function;
-import javax.annotation.Nullable;
+import java.util.EnumSet;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
-import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
-import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
-import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_SEND;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.toMask;
 
 /**
- * Default implementation for {@link HttpExecutionStrategy}.
+ * Package private default implementation for {@link HttpExecutionStrategy} to be used across programming model
+ * adapters, should not be made public.
+ *
+ * @see SpecialHttpExecutionStrategy
+ * @see HttpExecutionStrategies
  */
-final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
+enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
-    static final byte OFFLOAD_RECEIVE_META = 1;
-    static final byte OFFLOAD_RECEIVE_DATA = 2;
-    static final byte OFFLOAD_SEND = 4;
-    @Nullable
-    private final Executor executor;
+    OFFLOAD_NONE_STRATEGY(EnumSet.noneOf(HttpExecutionStrategies.HttpOffload.class)),
+    OFFLOAD_RECEIVE_META_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META)),
+    OFFLOAD_RECEIVE_DATA_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA)),
+    OFFLOAD_RECEIVE_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA)),
+    OFFLOAD_SEND_STRATEGY(EnumSet.of(OFFLOAD_SEND)),
+    OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_SEND)),
+    OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND)),
+    OFFLOAD_ALL_STRATEGY(EnumSet.allOf(HttpExecutionStrategies.HttpOffload.class));
+
+    private static final DefaultHttpExecutionStrategy[] VALUES = values();
+
     private final byte offloads;
-    private final MergeStrategy mergeStrategy;
 
-    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads,
-                                 final MergeStrategy mergeStrategy) {
-        this.mergeStrategy = mergeStrategy;
-        this.executor = executor;
-        this.offloads = offloads;
+    DefaultHttpExecutionStrategy(EnumSet<HttpExecutionStrategies.HttpOffload> offloads) {
+        this.offloads = toMask(offloads);
     }
 
-    DefaultHttpExecutionStrategy(byte offloadOverride, HttpExecutionStrategy original) {
-        offloads = offloadOverride;
-        executor = original.executor();
-        if (original instanceof DefaultHttpExecutionStrategy) {
-            DefaultHttpExecutionStrategy originalAsDefault = (DefaultHttpExecutionStrategy) original;
-            mergeStrategy = originalAsDefault.mergeStrategy;
-        } else {
-            mergeStrategy = Merge;
+    static DefaultHttpExecutionStrategy fromMask(byte mask) {
+        if (mask < 0 || mask >= VALUES.length) {
+            throw new IllegalArgumentException("Unsupported offload flags mask");
         }
-    }
 
-    @Nullable
-    @Override
-    public Executor executor() {
-        return executor;
+        return VALUES[mask];
     }
 
     @Override
-    public <FS> Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, Publisher<Object> flattenedRequest, @Nullable final FS flushStrategy,
-            final ClientInvoker<FS> client) {
-        final Executor e = executor(fallback);
-        if (offloaded(OFFLOAD_SEND)) {
-            flattenedRequest = flattenedRequest.subscribeOn(e);
-        }
-        Single<StreamingHttpResponse> resp = client.invokeClient(flattenedRequest, flushStrategy);
-        if (offloaded(OFFLOAD_RECEIVE_META)) {
-            resp = resp.publishOn(e);
-        }
-        if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            resp = resp.map(response -> response.transformMessageBody(payload -> payload.publishOn(e)));
-        }
-        return resp;
-    }
-
-    @Override
-    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService service) {
-        return new StreamingHttpService() {
-            private final Executor e = executor(fallback);
-
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                // We compute the difference between the ExecutionStrategy from the current ExecutionContext and this
-                // ExecutionStrategy to understand if we need to offload more than we already offloaded:
-                final HttpExecutionStrategy diff = difference(fallback, ctx.executionContext().executionStrategy(),
-                        DefaultHttpExecutionStrategy.this);
-                // The service should see this ExecutionStrategy inside the ExecutionContext:
-                final HttpServiceContext wrappedCtx =
-                        new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
-                if (diff == null) {
-                    return service.handle(wrappedCtx, request, responseFactory);
-                } else {
-                    if (diff.isDataReceiveOffloaded()) {
-                        request = request.transformMessageBody(p -> p.publishOn(e));
-                    }
-                    final Single<StreamingHttpResponse> resp;
-                    if (diff.isMetadataReceiveOffloaded()) {
-                        final StreamingHttpRequest r = request;
-                        resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
-                                // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                                .flatMap(identity());
-                    } else {
-                        resp = service.handle(wrappedCtx, request, responseFactory);
-                    }
-                    return diff.isSendOffloaded() ?
-                            // This is different as compared to invokeService() where we just offload once on the
-                            // flattened (meta + data) stream. In this case, we need to preserve the service contract
-                            // and hence have to offload both meta and data separately.
-                            resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
-                }
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return service.closeAsync();
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return service.closeAsyncGracefully();
-            }
-        };
+    public boolean hasOffloads() {
+        return offloads != 0;
     }
 
     @Override
@@ -154,140 +82,56 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        if (equals(other)) {
+        if (this == other) {
             return this;
         }
 
-        switch (mergeStrategy) {
-            case ReturnSelf:
-                return this;
-            case ReturnOther:
-                // If this strategy has an executor then we should preserve the executor even if we are returning other,
-                // as the executors are provided by the user and our default behavior of custom merging shouldn't omit
-                // the executor.
-                if (executor == null || executor == other.executor()) {
-                    return other;
-                } else if (other instanceof DefaultHttpExecutionStrategy) {
-                    DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
-                    return new DefaultHttpExecutionStrategy(executor, otherAsDefault.offloads,
-                            otherAsDefault.mergeStrategy);
-                } else {
-                    return new DefaultHttpExecutionStrategy(executor, generateOffloadsFlag(other),
-                            Merge);
-                }
-            case Merge:
-                break;
-            default:
-                throw new AssertionError("Unknown merge strategy: " + mergeStrategy);
+        if (other instanceof SpecialHttpExecutionStrategy) {
+            // For consistency with SpecialHttpExecutionStrategy#merge(HttpExecutionStrategy)
+            return other.merge(this);
         }
 
-        if (other instanceof NoOffloadsHttpExecutionStrategy) {
-            return other;
-        }
+        // merge the offload flags
 
-        final Executor otherExecutor = other.executor();
-        final Executor executor = otherExecutor == null ? this.executor : otherExecutor;
-        if (other instanceof DefaultHttpExecutionStrategy) {
-            DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
-            if (otherAsDefault.mergeStrategy == ReturnOther) {
-                // If other strategy just returns the mergeWith strategy, then no point in merging here.
-                // return this;
-                return this.executor == otherExecutor ? this :
-                        new DefaultHttpExecutionStrategy(executor, offloads, mergeStrategy);
-            }
-            // We checked above that the two strategies are not equal, so just merge and return.
-            return new DefaultHttpExecutionStrategy(executor, (byte) (otherAsDefault.offloads | offloads),
-                    // Conservatively always merge if the two merge strategies are not equal
-                    otherAsDefault.mergeStrategy == mergeStrategy ? mergeStrategy : Merge);
-        }
+        byte otherOffloads = generateOffloadsFlag(other);
 
-        final byte otherOffloads;
-        final MergeStrategy otherMergeStrategy;
-        otherOffloads = generateOffloadsFlag(other);
-        otherMergeStrategy = Merge; // always default to merge
-
-        return (otherOffloads == offloads && executor == otherExecutor &&
-                otherMergeStrategy == mergeStrategy) ? this :
-                new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads), otherMergeStrategy);
+        return offloads == (offloads | otherOffloads) ?
+                this : fromMask((byte) (offloads | otherOffloads));
     }
 
     private static byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
-        return (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
-                (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
-                (strategy.isSendOffloaded() ? OFFLOAD_SEND : 0));
+        return strategy instanceof DefaultHttpExecutionStrategy ?
+                ((DefaultHttpExecutionStrategy) strategy).offloads :
+        (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA.mask() : 0) |
+                (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META.mask() : 0) |
+                (strategy.isSendOffloaded() ? OFFLOAD_SEND.mask() : 0));
     }
 
     @Override
-    public <T> Single<T> invokeService(final Executor fallback, final Function<Executor, T> service) {
-        final Executor e = executor(fallback);
-        if (offloaded(OFFLOAD_RECEIVE_META)) {
-            return e.submit(() -> service.apply(e));
-        }
-        return new FunctionToSingle<>(service, e);
+    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
+        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor) : original;
     }
 
     @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor(fallback)) : original;
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
+    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
         return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
-                original.publishOn(executor(fallback)) : original;
+                original.publishOn(executor) : original;
     }
 
     @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor(fallback)) : original;
+    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
+        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor) : original;
     }
 
     @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
+    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
         return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
-                original.publishOn(executor(fallback)) : original;
-    }
-
-    private Executor executor(final Executor fallback) {
-        requireNonNull(fallback);
-        return executor == null ? fallback : executor;
+                original.publishOn(executor) : original;
     }
 
     // Visible for testing
-    boolean offloaded(byte flag) {
-        return (offloads & flag) == flag;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DefaultHttpExecutionStrategy)) {
-            return false;
-        }
-
-        final DefaultHttpExecutionStrategy that = (DefaultHttpExecutionStrategy) o;
-
-        return offloads == that.offloads &&
-                Objects.equals(executor, that.executor) &&
-                mergeStrategy == that.mergeStrategy;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = executor != null ? executor.hashCode() : 0;
-        result = 31 * result + offloads;
-        result = 31 * result + mergeStrategy.hashCode();
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "executor=" + executor +
-                ", offloads=" + offloads +
-                ", mergeStrategy=" + mergeStrategy +
-                '}';
+    boolean offloaded(HttpExecutionStrategies.HttpOffload flag) {
+        byte mask = flag.mask();
+        return (offloads & mask) == mask;
     }
 }

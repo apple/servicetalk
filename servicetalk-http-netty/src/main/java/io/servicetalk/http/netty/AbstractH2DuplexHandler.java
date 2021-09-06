@@ -39,8 +39,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
-import static io.servicetalk.http.netty.Http2Exception.newStreamResetException;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
+import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.newStreamResetException;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
