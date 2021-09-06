@@ -54,6 +54,20 @@ public class Http2Exception extends IOException {
     }
 
     /**
+     * Create a new instance.
+     * @param streamId <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.1.1">Stream Identifier</a> the
+     * exception relates to. {@code 0} for the connection stream or {@code > 0} for a non-connection stream.
+     * @param error The error code.
+     * @param message The detail message (which is saved for later retrieval by the {@link #getMessage()} method).
+     * @param cause The original cause which lead to this exception.
+     */
+    public Http2Exception(final int streamId, final Http2ErrorCode error, final String message, final Throwable cause) {
+        super(message, cause);
+        this.streamId = validateStreamId(streamId);
+        this.error = requireNonNull(error);
+    }
+
+    /**
      * Get the error code which caused this exception.
      * @return the error code which caused this exception.
      */

@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An enum containing http/2 <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">error codes</a>.
+ * Represents an <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">http/2 error code</a>.
  */
 public final class Http2ErrorCode {
     /**
