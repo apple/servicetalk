@@ -149,8 +149,8 @@ public abstract class GrpcServerBuilder {
      * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
      * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
      *
-     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      * @return {@code this}.
+     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      */
     @Deprecated
     public abstract GrpcServerBuilder disableDrainingRequestPayloadBody();
@@ -171,7 +171,10 @@ public abstract class GrpcServerBuilder {
      * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder drainRequestPayloadBody(boolean enable);
+    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
+        throw new UnsupportedOperationException("Setting automatic request draining using this method is not yet " +
+                "supported. Only deprecated variant is available currently: disableDrainingRequestPayloadBody().");
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.

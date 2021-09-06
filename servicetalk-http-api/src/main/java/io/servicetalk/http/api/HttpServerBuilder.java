@@ -151,8 +151,8 @@ public abstract class HttpServerBuilder {
      * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
      * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
      *
-     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      * @return {@code this}.
+     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      */
     @Deprecated
     public final HttpServerBuilder disableDrainingRequestPayloadBody() {
