@@ -162,7 +162,7 @@ class StreamObserverTest {
 
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/second")).toFuture().get());
-            assertThat(e.getCause(), instanceOf(Http2Exception.class));
+            assertThat(e.getCause(), instanceOf(NettyHttp2ExceptionUtils.class));
             assertThat(e.getCause(), instanceOf(RetryableException.class));
             assertThat(e.getCause().getCause(), instanceOf(StreamException.class));
 

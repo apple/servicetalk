@@ -15,11 +15,9 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.servicetalk.http.api.Http2ErrorCode;
 
 import static java.lang.Integer.parseInt;
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * Standard gRPC status codes.
@@ -63,18 +61,31 @@ public enum GrpcStatusCode {
     /** Cannot authenticate the client. */
     UNAUTHENTICATED(16);
 
-    private static final Map<Integer, GrpcStatusCode> INT_TO_STATUS_CODE_MAP;
+    private static final GrpcStatusCode[] INT_TO_STATUS_CODE_MAP;
+    private static final GrpcStatusCode[] H2_ERROR_TO_STATUS_CODE_MAP;
 
     static {
-        final Map<Integer, GrpcStatusCode> intToStatusCodeMap = new HashMap<>(GrpcStatusCode.values().length);
-        for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatusCode replaced = intToStatusCodeMap.put(code.value(), code);
-            if (replaced != null) {
-                throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
-                        code.value(), replaced, code));
-            }
+        final GrpcStatusCode[] statusCodes = GrpcStatusCode.values();
+        INT_TO_STATUS_CODE_MAP = new GrpcStatusCode[statusCodes.length];
+        for (GrpcStatusCode code : statusCodes) {
+            INT_TO_STATUS_CODE_MAP[code.value()] = code;
         }
-        INT_TO_STATUS_CODE_MAP = unmodifiableMap(intToStatusCodeMap);
+
+        H2_ERROR_TO_STATUS_CODE_MAP = new GrpcStatusCode[Http2ErrorCode.values().length];
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.NO_ERROR.errorCode()] = UNAVAILABLE;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.PROTOCOL_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.INTERNAL_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.FLOW_CONTROL_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.SETTINGS_TIMEOUT.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.STREAM_CLOSED.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.FRAME_SIZE_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.REFUSED_STREAM.errorCode()] = UNAVAILABLE;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.CANCEL.errorCode()] = CANCELLED;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.COMPRESSION_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.CONNECT_ERROR.errorCode()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.ENHANCE_YOUR_CALM.errorCode()] = RESOURCE_EXHAUSTED;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.INADEQUATE_SECURITY.errorCode()] = PERMISSION_DENIED;
+        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.HTTP_1_1_REQUIRED.errorCode()] = UNKNOWN;
     }
 
     private final int value;
@@ -104,7 +115,8 @@ public enum GrpcStatusCode {
      * @return status code associated with the code value, or {@link #UNKNOWN}.
      */
     public static GrpcStatusCode fromCodeValue(int codeValue) {
-        return INT_TO_STATUS_CODE_MAP.getOrDefault(codeValue, UNKNOWN);
+        return codeValue < 0 || codeValue >= INT_TO_STATUS_CODE_MAP.length ?
+                UNKNOWN : INT_TO_STATUS_CODE_MAP[codeValue];
     }
 
     /**
@@ -122,6 +134,17 @@ public enum GrpcStatusCode {
      * @return a standard {@link GrpcStatus} with this status code.
      */
     public GrpcStatus status() {
-        return GrpcStatus.CACHED_INSTANCES.get(value);
+        return GrpcStatus.fromCodeValue(value);
+    }
+
+    /**
+     * Convert from {@link Http2ErrorCode} to {@link GrpcStatus}.
+     * @param errorCode the {@link Http2ErrorCode} to convert.
+     * @return the result of the conversion.
+     */
+    static GrpcStatusCode fromHttp2Exception(Http2ErrorCode errorCode) {
+        final int h2ErrorCode = (int) errorCode.errorCode();
+        return h2ErrorCode < 0 || h2ErrorCode >= H2_ERROR_TO_STATUS_CODE_MAP.length ?
+                UNKNOWN : H2_ERROR_TO_STATUS_CODE_MAP[h2ErrorCode];
     }
 }

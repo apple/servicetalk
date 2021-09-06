@@ -29,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.http.netty.Http2Exception.H2StreamResetException;
+import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
