@@ -119,7 +119,6 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
@@ -658,10 +657,7 @@ class ProtocolCompatibilityTest {
                 PublisherSource.Processor<CompatRequest, CompatRequest> reqPub = newPublisherProcessor();
                 reqPub.onNext(CompatRequest.newBuilder().setId(3).build());
                 validateGrpcErrorInResponse(client.bidirectionalStreamingCall(fromSource(reqPub)).toFuture(), false,
-                        clientInitiatedTimeout ? DEADLINE_EXCEEDED :
-                        // FIXME: status should always be CANCELLED, we don't map Http2Exceptions errorCode.
-                        stClient ? UNKNOWN : CANCELLED,
-                        null);
+                        clientInitiatedTimeout ? DEADLINE_EXCEEDED : CANCELLED, null);
 
                 // It is possible that the timeout on the client occurred before writing the request, in which case the
                 // server will never request the request, and therefore no error is expected.

@@ -28,6 +28,7 @@ import io.servicetalk.encoding.api.internal.ContentCodecToBufferDecoder;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -46,8 +47,6 @@ import io.servicetalk.serializer.api.SerializerDeserializer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -70,6 +69,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -83,7 +83,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
     private static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
     static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
     static final CharSequence GRPC_CONTENT_TYPE = newAsciiString(GRPC_CONTENT_TYPE_PREFIX);
@@ -236,8 +235,11 @@ final class GrpcUtils {
     }
 
     static GrpcStatus toGrpcStatus(Throwable cause) {
-        GrpcStatus status;
-        if (cause instanceof MessageEncodingException) {
+        final GrpcStatus status;
+        if (cause instanceof Http2Exception) {
+            Http2Exception h2Exception = (Http2Exception) cause;
+            status = new GrpcStatus(fromHttp2ErrorCode(h2Exception.errorCode()), cause);
+        } else if (cause instanceof MessageEncodingException) {
             MessageEncodingException msgEncException = (MessageEncodingException) cause;
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
                     + "' not supported ");
