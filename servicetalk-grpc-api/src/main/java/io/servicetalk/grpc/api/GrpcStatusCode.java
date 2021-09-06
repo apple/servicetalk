@@ -71,21 +71,21 @@ public enum GrpcStatusCode {
             INT_TO_STATUS_CODE_MAP[code.value()] = code;
         }
 
-        H2_ERROR_TO_STATUS_CODE_MAP = new GrpcStatusCode[Http2ErrorCode.values().length];
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.NO_ERROR.errorCode()] = UNAVAILABLE;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.PROTOCOL_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.INTERNAL_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.FLOW_CONTROL_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.SETTINGS_TIMEOUT.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.STREAM_CLOSED.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.FRAME_SIZE_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.REFUSED_STREAM.errorCode()] = UNAVAILABLE;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.CANCEL.errorCode()] = CANCELLED;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.COMPRESSION_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.CONNECT_ERROR.errorCode()] = INTERNAL;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.ENHANCE_YOUR_CALM.errorCode()] = RESOURCE_EXHAUSTED;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.INADEQUATE_SECURITY.errorCode()] = PERMISSION_DENIED;
-        H2_ERROR_TO_STATUS_CODE_MAP[(int) Http2ErrorCode.HTTP_1_1_REQUIRED.errorCode()] = UNKNOWN;
+        H2_ERROR_TO_STATUS_CODE_MAP = new GrpcStatusCode[Http2ErrorCode.HTTP_1_1_REQUIRED.code() + 1];
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.NO_ERROR.code()] = UNAVAILABLE;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.PROTOCOL_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.INTERNAL_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.FLOW_CONTROL_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.SETTINGS_TIMEOUT.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.STREAM_CLOSED.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.FRAME_SIZE_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.REFUSED_STREAM.code()] = UNAVAILABLE;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.CANCEL.code()] = CANCELLED;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.COMPRESSION_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.CONNECT_ERROR.code()] = INTERNAL;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.ENHANCE_YOUR_CALM.code()] = RESOURCE_EXHAUSTED;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.INADEQUATE_SECURITY.code()] = PERMISSION_DENIED;
+        H2_ERROR_TO_STATUS_CODE_MAP[Http2ErrorCode.HTTP_1_1_REQUIRED.code()] = UNKNOWN;
     }
 
     private final int value;
@@ -142,8 +142,8 @@ public enum GrpcStatusCode {
      * @param errorCode the {@link Http2ErrorCode} to convert.
      * @return the result of the conversion.
      */
-    static GrpcStatusCode fromHttp2Exception(Http2ErrorCode errorCode) {
-        final int h2ErrorCode = (int) errorCode.errorCode();
+    static GrpcStatusCode fromHttp2ErrorCode(Http2ErrorCode errorCode) {
+        final int h2ErrorCode = errorCode.code();
         return h2ErrorCode < 0 || h2ErrorCode >= H2_ERROR_TO_STATUS_CODE_MAP.length ?
                 UNKNOWN : H2_ERROR_TO_STATUS_CODE_MAP[h2ErrorCode];
     }

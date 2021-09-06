@@ -29,27 +29,27 @@ public class Http2Exception extends IOException {
 
     /**
      * Create a new instance.
-     * @param streamId {@code 0} for the connection stream, {@code > 0} for a non-connection stream, and {@code < 0} if
-     * unknown.
+     * @param streamId <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.1.1">Stream Identifier</a> the
+     * exception relates to. {@code 0} for the connection stream or {@code > 0} for a non-connection stream.
      * @param error The error code.
      * @param message The detail message (which is saved for later retrieval by the {@link #getMessage()} method).
      */
     public Http2Exception(final int streamId, final Http2ErrorCode error, final String message) {
         super(message);
-        this.streamId = streamId;
+        this.streamId = validateStreamId(streamId);
         this.error = requireNonNull(error);
     }
 
     /**
      * Create a new instance.
-     * @param streamId {@code 0} for the connection stream, {@code > 0} for a non-connection stream, and {@code < 0} if
-     * unknown.
+     * @param streamId <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.1.1">Stream Identifier</a> the
+     * exception relates to. {@code 0} for the connection stream or {@code > 0} for a non-connection stream.
      * @param error The error code.
      * @param cause The original cause which lead to this exception.
      */
     public Http2Exception(final int streamId, final Http2ErrorCode error, final Throwable cause) {
         super(cause);
-        this.streamId = streamId;
+        this.streamId = validateStreamId(streamId);
         this.error = requireNonNull(error);
     }
 
@@ -62,10 +62,18 @@ public class Http2Exception extends IOException {
     }
 
     /**
-     * The stream ID associated with the exception.
-     * @return {@code 0} for the connection stream, {@code > 0} for a non-connection stream, and {@code < 0} if unknown.
+     * The <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.1.1">Stream Identifier</a> associated with
+     * the exception.
+     * @return {@code 0} for the connection stream, {@code > 0} for a non-connection stream, or {@code < 0} if unknown.
      */
     public final int streamId() {
+        return streamId;
+    }
+
+    private static int validateStreamId(int streamId) {
+        if (streamId < 0) {
+            throw new IllegalArgumentException("streamId: " + streamId + "(expected >=0)");
+        }
         return streamId;
     }
 }

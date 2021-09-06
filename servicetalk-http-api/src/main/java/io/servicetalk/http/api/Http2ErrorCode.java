@@ -17,38 +17,99 @@ package io.servicetalk.http.api;
 
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An enum containing http/2 <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">error codes</a>.
  */
-public enum Http2ErrorCode {
-    NO_ERROR(0x0),
-    PROTOCOL_ERROR(0x1),
-    INTERNAL_ERROR(0x2),
-    FLOW_CONTROL_ERROR(0x3),
-    SETTINGS_TIMEOUT(0x4),
-    STREAM_CLOSED(0x5),
-    FRAME_SIZE_ERROR(0x6),
-    REFUSED_STREAM(0x7),
-    CANCEL(0x8),
-    COMPRESSION_ERROR(0x9),
-    CONNECT_ERROR(0xA),
-    ENHANCE_YOUR_CALM(0xB),
-    INADEQUATE_SECURITY(0xC),
-    HTTP_1_1_REQUIRED(0xD);
+public final class Http2ErrorCode {
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">NO_ERROR</a>.
+     */
+    public static final Http2ErrorCode NO_ERROR = new Http2ErrorCode(0x0, "NO_ERROR");
 
-    private final long errorCode;
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">PROTOCOL_ERROR</a>.
+     */
+    public static final Http2ErrorCode PROTOCOL_ERROR = new Http2ErrorCode(0x1, "PROTOCOL_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">INTERNAL_ERROR</a>.
+     */
+    public static final Http2ErrorCode INTERNAL_ERROR = new Http2ErrorCode(0x2, "INTERNAL_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">FLOW_CONTROL_ERROR</a>.
+     */
+    public static final Http2ErrorCode FLOW_CONTROL_ERROR = new Http2ErrorCode(0x3, "FLOW_CONTROL_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">SETTINGS_TIMEOUT</a>.
+     */
+    public static final Http2ErrorCode SETTINGS_TIMEOUT = new Http2ErrorCode(0x4, "SETTINGS_TIMEOUT");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">STREAM_CLOSED</a>.
+     */
+    public static final Http2ErrorCode STREAM_CLOSED = new Http2ErrorCode(0x5, "STREAM_CLOSED");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">FRAME_SIZE_ERROR</a>.
+     */
+    public static final Http2ErrorCode FRAME_SIZE_ERROR = new Http2ErrorCode(0x6, "FRAME_SIZE_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">REFUSED_STREAM</a>.
+     */
+    public static final Http2ErrorCode REFUSED_STREAM = new Http2ErrorCode(0x7, "REFUSED_STREAM");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">CANCEL</a>.
+     */
+    public static final Http2ErrorCode CANCEL = new Http2ErrorCode(0x8, "CANCEL");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">COMPRESSION_ERROR</a>.
+     */
+    public static final Http2ErrorCode COMPRESSION_ERROR = new Http2ErrorCode(0x9, "COMPRESSION_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">CONNECT_ERROR</a>.
+     */
+    public static final Http2ErrorCode CONNECT_ERROR = new Http2ErrorCode(0xA, "CONNECT_ERROR");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">ENHANCE_YOUR_CALM</a>.
+     */
+    public static final Http2ErrorCode ENHANCE_YOUR_CALM = new Http2ErrorCode(0xB, "ENHANCE_YOUR_CALM");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">INADEQUATE_SECURITY</a>.
+     */
+    public static final Http2ErrorCode INADEQUATE_SECURITY = new Http2ErrorCode(0xC, "INADEQUATE_SECURITY");
+
+    /**
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">HTTP_1_1_REQUIRED</a>.
+     */
+    public static final Http2ErrorCode HTTP_1_1_REQUIRED = new Http2ErrorCode(0xD, "HTTP_1_1_REQUIRED");
+
+    private final int errorCode;
+    private final String name;
     private static final Http2ErrorCode[] INT_TO_ENUM_MAP;
     static {
-        Http2ErrorCode[] errors = Http2ErrorCode.values();
-        Http2ErrorCode[] map = new Http2ErrorCode[errors.length];
+        final Http2ErrorCode[] errors = new Http2ErrorCode[] {NO_ERROR, PROTOCOL_ERROR, INTERNAL_ERROR,
+                FLOW_CONTROL_ERROR, SETTINGS_TIMEOUT, STREAM_CLOSED, FRAME_SIZE_ERROR, REFUSED_STREAM, CANCEL,
+                COMPRESSION_ERROR, CONNECT_ERROR, ENHANCE_YOUR_CALM, INADEQUATE_SECURITY, HTTP_1_1_REQUIRED};
+        final Http2ErrorCode[] map = new Http2ErrorCode[errors.length];
         for (Http2ErrorCode error : errors) {
-            map[(int) error.errorCode()] = error;
+            map[error.code()] = error;
         }
         INT_TO_ENUM_MAP = map;
     }
 
-    Http2ErrorCode(long errorCode) {
+    private Http2ErrorCode(int errorCode, String name) {
         this.errorCode = errorCode;
+        this.name = requireNonNull(name);
     }
 
     /**
@@ -56,8 +117,31 @@ public enum Http2ErrorCode {
      * @return the decimal value of the <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">
      * error code</a>.
      */
-    public long errorCode() {
+    public int code() {
         return errorCode;
+    }
+
+    /**
+     * Get the string description of the error code.
+     * @return the string description of the error code.
+     */
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
+    public int hashCode() {
+        return errorCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o || (o instanceof Http2ErrorCode && errorCode == ((Http2ErrorCode) o).errorCode);
     }
 
     /**
@@ -68,7 +152,18 @@ public enum Http2ErrorCode {
      * @return {@link Http2ErrorCode} representing {@code errorCode}, or {@code null} if no mapping exists.
      */
     @Nullable
-    public static Http2ErrorCode valueOf(long errorCode) {
-        return errorCode >= INT_TO_ENUM_MAP.length || errorCode < 0 ? null : INT_TO_ENUM_MAP[(int) errorCode];
+    public static Http2ErrorCode of(int errorCode) {
+        return errorCode >= INT_TO_ENUM_MAP.length || errorCode < 0 ? null : INT_TO_ENUM_MAP[errorCode];
+    }
+
+    /**
+     * Returns a {@link Http2ErrorCode} for the specified {@code errorCode} and {@code name}.
+     * @param errorCode numeric value of
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">error code</a>.
+     * @param name The {@link String} name description for the error code.
+     * @return a {@link Http2ErrorCode} for the specified {@code errorCode} and {@code name}.
+     */
+    public static Http2ErrorCode of(int errorCode, String name) {
+        return new Http2ErrorCode(errorCode, name);
     }
 }

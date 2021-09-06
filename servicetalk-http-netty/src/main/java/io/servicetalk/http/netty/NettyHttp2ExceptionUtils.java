@@ -22,14 +22,10 @@ import io.servicetalk.transport.api.RetryableException;
 import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2Exception.StreamException;
 import io.netty.handler.codec.http2.Http2FrameStream;
-import io.netty.handler.codec.http2.Http2FrameStreamException;
-import io.netty.handler.codec.http2.Http2NoMoreStreamIdsException;
-import io.netty.handler.codec.http2.Http2ResetFrame;
 
 import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 
 final class NettyHttp2ExceptionUtils {
-
     private NettyHttp2ExceptionUtils() {
     }
 
@@ -41,8 +37,9 @@ final class NettyHttp2ExceptionUtils {
             return isRetryable(h2Cause) ? new RetryableStacklessHttp2Exception(streamId, h2Cause) :
                     new StacklessHttp2Exception(streamId, h2Cause);
         }
-        if (cause instanceof Http2FrameStreamException) {
-            Http2FrameStreamException streamException = (Http2FrameStreamException) cause;
+        if (cause instanceof io.netty.handler.codec.http2.Http2FrameStreamException) {
+            io.netty.handler.codec.http2.Http2FrameStreamException streamException =
+                    (io.netty.handler.codec.http2.Http2FrameStreamException) cause;
             return isRetryable(streamException) ?
                     new RetryableStacklessHttp2Exception(streamException.stream().id(), streamException) :
                     new StacklessHttp2Exception(streamException.stream().id(), streamException);
@@ -53,7 +50,7 @@ final class NettyHttp2ExceptionUtils {
     static class H2StreamResetException extends Http2Exception {
         private static final long serialVersionUID = -7096164907438998924L;
 
-        H2StreamResetException(int streamId, long errorCode) {
+        H2StreamResetException(int streamId, int errorCode) {
             this(streamId, stErrorCode(errorCode));
         }
 
@@ -63,12 +60,13 @@ final class NettyHttp2ExceptionUtils {
         }
     }
 
-    static H2StreamResetException newStreamResetException(final Http2ResetFrame resetFrame) {
+    static H2StreamResetException newStreamResetException(
+            final io.netty.handler.codec.http2.Http2ResetFrame resetFrame) {
         final Http2FrameStream stream = resetFrame.stream();
         assert stream != null;
         return resetFrame.errorCode() == REFUSED_STREAM.code() ?
-                new H2StreamRefusedException(stream.id(), resetFrame.errorCode()) :
-                new H2StreamResetException(stream.id(), resetFrame.errorCode());
+                new H2StreamRefusedException(stream.id()) :
+                new H2StreamResetException(stream.id(), (int) resetFrame.errorCode());
     }
 
     /**
@@ -87,10 +85,10 @@ final class NettyHttp2ExceptionUtils {
         //  - Http2ChannelClosedException
         return cause.error() == REFUSED_STREAM
                 // The  second check captures "No more streams can be created on this connection":
-                || cause instanceof Http2NoMoreStreamIdsException;
+                || cause instanceof io.netty.handler.codec.http2.Http2NoMoreStreamIdsException;
     }
 
-    private static boolean isRetryable(final Http2FrameStreamException cause) {
+    private static boolean isRetryable(final io.netty.handler.codec.http2.Http2FrameStreamException cause) {
         return cause.error() == REFUSED_STREAM;
     }
 
@@ -101,7 +99,7 @@ final class NettyHttp2ExceptionUtils {
             super(streamId, nettyToStErrorCode(cause.error()), cause);
         }
 
-        StacklessHttp2Exception(int streamId, Http2FrameStreamException cause) {
+        StacklessHttp2Exception(int streamId, io.netty.handler.codec.http2.Http2FrameStreamException cause) {
             super(streamId, nettyToStErrorCode(cause.error()), cause);
         }
 
@@ -119,7 +117,8 @@ final class NettyHttp2ExceptionUtils {
             super(streamId, nettyToStErrorCode(cause.error()), cause);
         }
 
-        RetryableStacklessHttp2Exception(final int streamId, Http2FrameStreamException cause) {
+        RetryableStacklessHttp2Exception(final int streamId,
+                                         io.netty.handler.codec.http2.Http2FrameStreamException cause) {
             super(streamId, nettyToStErrorCode(cause.error()), cause);
         }
 
@@ -136,17 +135,17 @@ final class NettyHttp2ExceptionUtils {
     private static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
         private static final long serialVersionUID = -2151927266051609262L;
 
-        H2StreamRefusedException(int streamId, long errorCode) {
-            super(streamId, stErrorCode(errorCode));
+        H2StreamRefusedException(int streamId) {
+            super(streamId, Http2ErrorCode.REFUSED_STREAM);
         }
     }
 
     private static Http2ErrorCode nettyToStErrorCode(Http2Error error) {
-        return stErrorCode(error.code());
+        return stErrorCode((int) error.code());
     }
 
-    private static Http2ErrorCode stErrorCode(long code) {
-        Http2ErrorCode errorCode = Http2ErrorCode.valueOf(code);
-        return errorCode == null ? Http2ErrorCode.INTERNAL_ERROR : errorCode;
+    private static Http2ErrorCode stErrorCode(int code) {
+        Http2ErrorCode errorCode = Http2ErrorCode.of(code);
+        return errorCode == null ? Http2ErrorCode.of(code, String.valueOf(code)) : errorCode;
     }
 }

@@ -20,6 +20,7 @@ import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
@@ -162,7 +163,7 @@ class StreamObserverTest {
 
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/second")).toFuture().get());
-            assertThat(e.getCause(), instanceOf(NettyHttp2ExceptionUtils.class));
+            assertThat(e.getCause(), instanceOf(Http2Exception.class));
             assertThat(e.getCause(), instanceOf(RetryableException.class));
             assertThat(e.getCause().getCause(), instanceOf(StreamException.class));
 

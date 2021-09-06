@@ -57,7 +57,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
-import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2Exception;
+import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
@@ -222,7 +222,7 @@ final class GrpcUtils {
         GrpcStatus status;
         if (cause instanceof Http2Exception) {
             Http2Exception h2Exception = (Http2Exception) cause;
-            status = new GrpcStatus(fromHttp2Exception(h2Exception.errorCode()), cause);
+            status = new GrpcStatus(fromHttp2ErrorCode(h2Exception.errorCode()), cause);
         } else if (cause instanceof MessageEncodingException) {
             MessageEncodingException msgEncException = (MessageEncodingException) cause;
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
