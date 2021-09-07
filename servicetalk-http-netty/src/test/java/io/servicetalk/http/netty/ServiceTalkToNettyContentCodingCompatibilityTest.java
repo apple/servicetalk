@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -60,7 +60,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
 
     @Override
     void start() throws Exception {
-        serverEventLoopGroup = createIoExecutor(2, new NettyIoThreadFactory("server-io")).eventLoopGroup();
+        serverEventLoopGroup = createIoExecutor(2, new IoThreadFactory("server-io")).eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
