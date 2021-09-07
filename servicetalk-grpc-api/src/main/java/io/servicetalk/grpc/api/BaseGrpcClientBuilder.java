@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -31,6 +32,14 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 interface BaseGrpcClientBuilder<U, R> {
+
+    /**
+     * Sets the {@link Executor} for all connections created from this builder.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    BaseGrpcClientBuilder<U, R> executor(Executor executor);
 
     /**
      * Sets the {@link IoExecutor} for all clients created from this builder.
