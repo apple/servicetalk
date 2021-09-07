@@ -327,9 +327,7 @@ public abstract class HttpServerBuilder {
      * @param executor {@link Executor} to use.
      * @return {@code this}.
      */
-    public HttpServerBuilder executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    public abstract HttpServerBuilder executor(Executor executor);
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.
