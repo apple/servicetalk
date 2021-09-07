@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -25,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -47,6 +47,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
+import static java.lang.Thread.NORM_PRIORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,10 +57,10 @@ class HttpServerMultipleRequestsTest {
 
     @RegisterExtension
     final ExecutionContextExtension serverExecution =
-            cached(new NettyIoThreadFactory("server-io"));
+            cached(new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
     @RegisterExtension
     final ExecutionContextExtension clientExecution =
-            cached(new NettyIoThreadFactory("client-io"));
+            cached(new DefaultThreadFactory("client-io", true, NORM_PRIORITY));
 
     @Disabled("https://github.com/apple/servicetalk/issues/981")
     @Test

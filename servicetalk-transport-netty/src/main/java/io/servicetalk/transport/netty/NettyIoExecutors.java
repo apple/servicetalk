@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoThreadFactory;
-import io.servicetalk.transport.api.IoThreadFactory.IoThread;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -36,25 +34,11 @@ public final class NettyIoExecutors {
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
      * @param ioThreads number of threads.
-     * @param threadFactory the {@link ThreadFactory} to use.
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
+     * of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
-     * @deprecated Use {@link #createIoExecutor(int, IoThreadFactory)}.
      */
-    @Deprecated
     public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
-        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
-    }
-
-    /**
-     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
-     *
-     * @param <T> Type of the IO thread instances created by factory.
-     * @param ioThreads number of threads.
-     * @param threadFactory the {@link IoThreadFactory} to use.
-     * @return The created {@link IoExecutor}
-     */
-    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(int ioThreads,
-            IoThreadFactory<T> threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
     }
 
@@ -65,28 +49,16 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads, new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(ioThreads, newIoThreadFactory());
     }
 
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param <T> Type of the IO thread instances created by factory.
-     * @param threadFactory the {@link IoThreadFactory} to use.
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
+     * of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
-    public static <T extends Thread & IoThread> IoExecutor createIoExecutor(IoThreadFactory<T> threadFactory) {
-        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
-    }
-
-    /**
-     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
-     *
-     * @param threadFactory the {@link ThreadFactory} to use.
-     * @return The created {@link IoExecutor}
-     * @deprecated Use {@link #createIoExecutor(IoThreadFactory)}.
-     */
-    @Deprecated
     public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
@@ -97,6 +69,10 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(newIoThreadFactory());
+    }
+
+    private static IoThreadFactory newIoThreadFactory() {
+        return new IoThreadFactory(NettyIoExecutor.class.getSimpleName());
     }
 }

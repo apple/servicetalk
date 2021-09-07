@@ -32,7 +32,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
@@ -89,7 +89,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached(new NettyIoThreadFactory("stserverio"));
+            ExecutionContextExtension.cached(new IoThreadFactory("stserverio"));
 
     protected RouterApi api;
 
