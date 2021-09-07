@@ -17,6 +17,7 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -163,6 +164,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     public GrpcServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         contextBuilder.ioExecutor(ioExecutor);
         httpServerBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder executor(final Executor executor) {
+        contextBuilder.executor(executor);
+        httpServerBuilder.executor(executor);
         return this;
     }
 

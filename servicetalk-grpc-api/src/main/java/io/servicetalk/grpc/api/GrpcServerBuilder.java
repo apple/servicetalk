@@ -17,11 +17,13 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -265,6 +267,16 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} to use.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    public GrpcServerBuilder executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.

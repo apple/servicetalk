@@ -23,6 +23,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
@@ -43,6 +44,9 @@ import java.util.function.Predicate;
 
 interface SingleAddressGrpcClientBuilder<U, R,
         SDE extends ServiceDiscovererEvent<R>> extends BaseGrpcClientBuilder<U, R> {
+
+    @Override
+    SingleAddressGrpcClientBuilder<U, R, SDE> executor(Executor executor);
 
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);

@@ -21,6 +21,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -65,6 +66,11 @@ public abstract class GrpcClientBuilder<U, R>
     protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = DeadlineUtils.GRPC_DEADLINE_KEY;
 
     private boolean appendedCatchAllFilter;
+
+    @Override
+    public GrpcClientBuilder<U, R> executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
 
     @Override
     public abstract GrpcClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
