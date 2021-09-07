@@ -33,7 +33,8 @@ import static java.util.Objects.requireNonNull;
  * @see NettyIoThreadFactory
  */
 @Deprecated
-public class IoThreadFactory implements io.servicetalk.transport.api.IoThreadFactory<NettyIoThread> {
+public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
+                                        io.servicetalk.transport.api.IoThreadFactory<NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
