@@ -15,10 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.transport.api.IoThreadFactory;
-
-import io.netty.util.concurrent.FastThreadLocalThread;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -29,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default {@link IoThreadFactory} to create IO {@link NettyIoThread}s.
  */
-public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThreadFactory.NettyIoThread> {
+public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
@@ -81,25 +78,5 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
             t.setPriority(NORM_PRIORITY);
         }
         return t;
-    }
-
-    public static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
-        @Nullable
-        private AsyncContextMap asyncContextMap;
-
-        NettyIoThread(@Nullable ThreadGroup group, Runnable target, String name) {
-            super(group, target, name);
-        }
-
-        @Override
-        public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
-            this.asyncContextMap = asyncContextMap;
-        }
-
-        @Nullable
-        @Override
-        public AsyncContextMap asyncContextMap() {
-            return asyncContextMap;
-        }
     }
 }
