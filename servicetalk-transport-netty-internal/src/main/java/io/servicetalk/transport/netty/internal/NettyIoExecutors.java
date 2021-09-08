@@ -62,6 +62,16 @@ public final class NettyIoExecutors {
      * Create a new {@link NettyIoExecutor}.
      *
      * @param ioThreads number of threads.
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads) {
+        return createIoExecutor(ioThreads, newIoThreadFactory());
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param ioThreads number of threads.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @return The created {@link IoExecutor}
      */
@@ -173,10 +183,21 @@ public final class NettyIoExecutors {
         }
     }
 
+    /**
+     * Creates a new {@link NettyIoThreadFactory} instance with the default thread name prefix.
+     *
+     * @return a new {@link NettyIoThreadFactory} instance.
+     */
     private static NettyIoThreadFactory newIoThreadFactory() {
         return newIoThreadFactory(NettyIoExecutor.class.getSimpleName());
     }
 
+    /**
+     * Creates a new {@link NettyIoThreadFactory} instance.
+     *
+     * @param prefix The prefix for thread names created by the factory.
+     * @return a new {@link NettyIoThreadFactory} instance.
+     */
     private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
         return new NettyIoThreadFactory(prefix);
     }
