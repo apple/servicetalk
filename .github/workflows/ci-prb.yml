@@ -18,18 +18,11 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
+          cache: 'gradle'
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
-      - name: Cache Gradle Packages
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
       - name: Configure Windows Pagefile
         if: ${{ runner.os == 'Windows' }}
