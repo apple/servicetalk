@@ -47,6 +47,7 @@ public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @deprecated Consider using {@code io.servicetalk.transport.netty.NettyIoExecutors#createIoExecutor(String)}.
      */
+    @Deprecated
     public IoThreadFactory(String threadNamePrefix) {
         this(threadNamePrefix, true);
     }
