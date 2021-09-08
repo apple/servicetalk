@@ -148,15 +148,31 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
          * <p>
          * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
-         * {@link StreamingHttpRequest#payloadBody() payload body} that is replayable, i.e. multiple subscribes to the
+         * {@link StreamingHttpRequest#payloadBody() payload body} that is re-playable, i.e. multiple subscribes to the
          * payload {@link Publisher} emit the same data. {@link Publisher}s that do not emit any data or which are
-         * created from in-memory data are typically replayable.
+         * created from in-memory data are typically re-playable.
          *
          * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
          */
         public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
             return defaultRetryForPredicate().or((meta, throwable) ->
                     throwable instanceof IOException && meta.method().properties().isIdempotent());
+        }
+
+        /**
+         * Behaves as {@link #defaultRetryForPredicate()}, but also retries {@link DelayedRetry} errors when marked
+         * as such.
+         * <p>
+         * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
+         * {@link StreamingHttpRequest#payloadBody() payload body} that is re-playable, i.e. multiple subscribes to the
+         * payload {@link Publisher} emit the same data. {@link Publisher}s that do not emit any data or which are
+         * created from in-memory data are typically re-playable.
+         *
+         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
+         */
+        public BiPredicate<HttpRequestMetaData, Throwable> retryForDelayedRetryPredicate() {
+            return defaultRetryForPredicate().or((meta, throwable) ->
+                    throwable instanceof DelayedRetry);
         }
     }
 
