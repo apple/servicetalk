@@ -18,8 +18,6 @@ package io.servicetalk.transport.netty;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.IoThreadFactory.IoThread;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
-import io.servicetalk.transport.netty.internal.NettyIoThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -65,13 +63,13 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads, newIoThreadFactory());
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads);
     }
 
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
-     * @param <T> Type of the IO thread instances created by factory.
+     * @param <T> Type of threads created by {@link IoThreadFactory}
      * @param threadFactory the {@link IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
@@ -112,14 +110,6 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(newIoThreadFactory());
-    }
-
-    private static NettyIoThreadFactory newIoThreadFactory() {
-        return newIoThreadFactory(NettyIoExecutor.class.getSimpleName());
-    }
-
-    private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
-        return new NettyIoThreadFactory(prefix);
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor();
     }
 }
