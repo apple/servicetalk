@@ -17,6 +17,8 @@ package io.servicetalk.transport.netty.internal;
 
 /**
  * Default {@link io.servicetalk.transport.api.IoThreadFactory} to create IO {@link IoThread}s.
+ *
+ * @see io.servicetalk.transport.netty.internal.NettyIoExecutors
  */
 public final class NettyIoThreadFactory extends IoThreadFactory {
 

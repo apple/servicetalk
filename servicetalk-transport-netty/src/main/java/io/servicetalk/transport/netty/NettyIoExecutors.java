@@ -65,7 +65,7 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads, new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(ioThreads, newIoThreadFactory());
     }
 
     /**
@@ -91,12 +91,35 @@ public final class NettyIoExecutors {
         return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
 
+    public static IoExecutor createIoExecutor(String threadNamePrefix) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadNamePrefix);
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
+     *
+     * @param ioThreads number of threads.
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createIoExecutor(int ioThreads, String threadNamePrefix) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadNamePrefix);
+    }
+
     /**
      * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(new NettyIoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(newIoThreadFactory());
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory() {
+        return newIoThreadFactory(NettyIoExecutor.class.getSimpleName());
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
+        return new NettyIoThreadFactory(prefix);
     }
 }

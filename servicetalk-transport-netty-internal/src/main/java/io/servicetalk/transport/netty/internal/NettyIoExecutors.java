@@ -44,6 +44,36 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
      *
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor() {
+        return createIoExecutor(newIoThreadFactory());
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
+     *
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(String threadNamePrefix) {
+        return createIoExecutor(newIoThreadFactory(threadNamePrefix));
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param ioThreads number of threads.
+     * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
+     * @return The created {@link IoExecutor}
+     */
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, String threadNamePrefix) {
+        return createIoExecutor(ioThreads, newIoThreadFactory(threadNamePrefix));
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
+     *
      * @param <T> Type of the IO thread instances created by factory.
      * @param threadFactory the {@link IoThreadFactory} to use. If possible you should use an instance of
      * {@link NettyIoThreadFactory} as it allows internal optimizations.
@@ -163,5 +193,13 @@ public final class NettyIoExecutors {
         if (ioThreads <= 0) {
             throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
         }
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory() {
+        return newIoThreadFactory(NettyIoExecutor.class.getSimpleName());
+    }
+
+    private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
+        return new NettyIoThreadFactory(prefix);
     }
 }
