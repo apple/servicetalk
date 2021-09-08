@@ -129,19 +129,20 @@ final class ProxyTunnel implements AutoCloseable {
             final String host = authority.substring(0, colon);
             final int port = Integer.parseInt(authority.substring(colon + 1));
 
-            final Socket clientSocket = new Socket(host, port);
-            connectCount.incrementAndGet();
-            final OutputStream out = socket.getOutputStream();
-            out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-            out.flush();
+            try (Socket clientSocket = new Socket(host, port)) {
+                connectCount.incrementAndGet();
+                final OutputStream out = socket.getOutputStream();
+                out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+                out.flush();
 
-            final InputStream cin = clientSocket.getInputStream();
-            Future<Void> f = executor.submit(() -> {
-                copyStream(out, cin);
-                return null;
-            });
-            copyStream(clientSocket.getOutputStream(), in);
-            f.get(); // wait for the copy of proxy client input to server output to finish copying.
+                final InputStream cin = clientSocket.getInputStream();
+                Future<Void> f = executor.submit(() -> {
+                    copyStream(out, cin);
+                    return null;
+                });
+                copyStream(clientSocket.getOutputStream(), in);
+                f.get(); // wait for the copy of proxy client input to server output to finish copying.
+            }
         } else {
             throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
