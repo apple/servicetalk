@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -86,7 +87,7 @@ public final class BufferPublisherInputStream extends InputStream {
     public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy, final Executor executor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = executionStrategy.isMetadataReceiveOffloaded() || executionStrategy.isDataReceiveOffloaded() ?
-                    publisher.publishOn(executor) : publisher;
+                    publisher.publishOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread) : publisher;
         } else {
             throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
         }
