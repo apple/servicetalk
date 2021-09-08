@@ -78,7 +78,7 @@ public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
         return t;
     }
 
-    public static final class NettyIoThread extends FastThreadLocalThread
+    static final class NettyIoThread extends FastThreadLocalThread
             implements io.servicetalk.transport.api.IoThreadFactory.IoThread {
 
         @Nullable
