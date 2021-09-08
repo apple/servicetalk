@@ -20,8 +20,8 @@ SCRIPT=$(basename "${BASH_SOURCE:-stidn}")
 if [ $# -lt 1 ] || [ $# -gt 3 ]; then
   echo "# This script compares versions for binary backward compatibility."
   echo "# Usage: ${SCRIPT} <old_version> (<new_version> (<group_id>))"
-  echo "# if <new_version> unspecified then comparison will be made againt local build"
-  echo "# if <group_id> unspecified then local dir gradle 'group' property will be used"
+  echo "# if optional <new_version> unspecified then comparison will be made againt local build"
+  echo "# if optional <group_id> unspecified then local dir gradle 'group' property will be used"
   exit 1
 fi
 
@@ -30,17 +30,23 @@ MVN_REPO="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceSt
 JAPICMP_VERSION="0.15.3"
 JAR_DIR="${MVN_REPO}/com/github/siom79/japicmp/japicmp/${JAPICMP_VERSION}"
 JAR_FILE="${JAR_DIR}/japicmp-${JAPICMP_VERSION}-jar-with-dependencies.jar"
-if ! test -e "${JAR_FILE}"; then
+if [ ! -f "${JAR_FILE}" ]; then
   mvn -N dependency:get \
     -DgroupId=com.github.siom79.japicmp -DartifactId=japicmp -Dversion="${JAPICMP_VERSION}" \
-    -Dtransitive=false -Dclassifier=jar-with-dependencies 1>&2 || exit 1
+    -Dtransitive=false -Dclassifier=jar-with-dependencies 2>&1 || exit 1
 fi
 
-OLD_ST_VERSION="${1}"
+OLD_ST_VERSION="${1:-}"
+LOCAL="${2:-local}"
 NEW_ST_VERSION="${2:-$(./gradlew properties | grep '^version: ' | cut -f 2 -d ' ')}"
 GROUP_ID="${3:-$(./gradlew properties | grep '^group: ' | cut -f 2 -d ' ')}"
-GROUP_PATH=$(echo "$GROUP_ID" | tr '.' '/')
-BASEPATH="$MVN_REPO/$GROUP_PATH/"
+GROUP_PATH=$(echo "${GROUP_ID}" | tr '.' '/')
+BASEPATH="${MVN_REPO}/${GROUP_PATH}/"
+
+if [ -z "${OLD_ST_VERSION}" ]; then
+  echo "# Error: Old version not specified."
+  exit 1
+fi
 
 # All servicetalk modules except:
 # servicetalk-benchmarks, servicetalk-bom, servicetalk-examples, servicetalk-gradle-plugin-internal
@@ -48,21 +54,35 @@ ARTIFACTS="$(find servicetalk-* -type d -maxdepth 0 |
   grep -v -- '-\(benchmarks\|bom\|examples\|gradle-plugin-internal\)$')"
 
 for ARTIFACT_ID in ${ARTIFACTS}; do
-  mvn -N -U dependency:get -DgroupId="${GROUP_ID}" -DartifactId="${ARTIFACT_ID}" \
-    -Dversion="${OLD_ST_VERSION}" -Dtransitive=false >/dev/null || continue
+  OLD_JAR="${BASEPATH}/${ARTIFACT_ID}/${OLD_ST_VERSION}/${ARTIFACT_ID}-${OLD_ST_VERSION}.jar"
 
-  if [[ ${NEW_ST_VERSION} =~ .+-SNAPSHOT$ ]]; then
-    NEWPATH="${ARTIFACT_ID}/build/libs"
+  FOUND_OLD=$( (mvn -N -U dependency:get \
+    -DgroupId="${GROUP_ID}" -DartifactId="${ARTIFACT_ID}" \
+    -Dversion="${OLD_ST_VERSION}" -Dtransitive=false 1>&2 >/dev/null && echo true) ||
+    echo false)
+
+  if [ "${FOUND_OLD}" = "false" ] || [ ! -f "${OLD_JAR}" ]; then
+    echo "# Skipping ${ARTIFACT_ID} : old artifact (${OLD_ST_VERSION}) not found"
+    echo ""
+    continue
+  fi
+
+  if [ "${LOCAL}" = "local" ]; then
+    NEW_JAR="${ARTIFACT_ID}/build/libs/${ARTIFACT_ID}-${NEW_ST_VERSION}.jar"
   else
     mvn -N -U dependency:get -DgroupId="${GROUP_ID}" -DartifactId="${ARTIFACT_ID}" \
       -Dversion="${NEW_ST_VERSION}" -Dtransitive=false >/dev/null
-    NEWPATH="${BASEPATH}/${ARTIFACT_ID}/${NEW_ST_VERSION}"
+    NEW_JAR="${BASEPATH}/${ARTIFACT_ID}/${NEW_ST_VERSION}/${ARTIFACT_ID}-${NEW_ST_VERSION}.jar"
+  fi
+
+  if [ ! -f "${NEW_JAR}" ]; then
+    echo "# Skipping ${ARTIFACT_ID} : new artifact (${NEW_ST_VERSION}) not found"
+    echo ""
+    continue
   fi
 
   java -jar "$JAR_FILE" --no-error-on-exclusion-incompatibility --report-only-filename \
     -a protected -b --ignore-missing-classes --include-synthetic \
-    --old "${BASEPATH}/${ARTIFACT_ID}/${OLD_ST_VERSION}/${ARTIFACT_ID}-${OLD_ST_VERSION}.jar" \
-    --new "${NEWPATH}/${ARTIFACT_ID}-${NEW_ST_VERSION}.jar" |
-    grep -v -- '--ignore-missing-classes'
+    --old "${OLD_JAR}" --new "${NEW_JAR}" | grep -v -- '--ignore-missing-classes'
   echo ""
 done
