@@ -27,7 +27,9 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -117,7 +119,8 @@ final class ProxyTunnel implements AutoCloseable {
         return new String(bytes, 0, i, UTF_8);
     }
 
-    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException {
+    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
+            ExecutionException, InterruptedException {
         if (initialLine.startsWith(CONNECT_PREFIX)) {
             final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
             final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
@@ -133,8 +136,9 @@ final class ProxyTunnel implements AutoCloseable {
             out.flush();
 
             final InputStream cin = clientSocket.getInputStream();
-            executor.submit(() -> copyStream(out, cin));
+            Future<?> f = executor.submit(() -> copyStream(out, cin));
             copyStream(clientSocket.getOutputStream(), in);
+            f.get(); // wait for the copy of proxy client input to server output to finish copying.
         } else {
             throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
@@ -165,6 +169,7 @@ final class ProxyTunnel implements AutoCloseable {
 
     @FunctionalInterface
     private interface ProxyRequestHandler {
-        void handle(Socket socket, InputStream in, String initialLine) throws IOException;
+        void handle(Socket socket, InputStream in, String initialLine) throws IOException,
+                ExecutionException, InterruptedException;
     }
 }
