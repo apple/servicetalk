@@ -136,7 +136,10 @@ final class ProxyTunnel implements AutoCloseable {
             out.flush();
 
             final InputStream cin = clientSocket.getInputStream();
-            Future<?> f = executor.submit(() -> copyStream(out, cin));
+            Future<Void> f = executor.submit(() -> {
+                copyStream(out, cin);
+                return null;
+            });
             copyStream(clientSocket.getOutputStream(), in);
             f.get(); // wait for the copy of proxy client input to server output to finish copying.
         } else {
@@ -144,25 +147,18 @@ final class ProxyTunnel implements AutoCloseable {
         }
     }
 
-    private static void copyStream(final OutputStream out, final InputStream cin) {
+    private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
         try {
             int b;
             while ((b = cin.read()) >= 0) {
                 out.write(b);
             }
             out.flush();
-        } catch (IOException e) {
-            LOGGER.error("Proxy exception", e);
         } finally {
             try {
                 cin.close();
-            } catch (IOException closeE) {
-                LOGGER.error("Cannot close InputStream", closeE);
-            }
-            try {
+            } finally {
                 out.close();
-            } catch (IOException closeE) {
-                LOGGER.error("Cannot close OutputStream", closeE);
             }
         }
     }
