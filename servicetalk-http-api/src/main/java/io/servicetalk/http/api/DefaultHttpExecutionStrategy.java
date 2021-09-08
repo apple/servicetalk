@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
 import java.util.EnumSet;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
@@ -105,28 +101,6 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA.mask() : 0) |
                 (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META.mask() : 0) |
                 (strategy.isSendOffloaded() ? OFFLOAD_SEND.mask() : 0));
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor) : original;
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-        return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
-                original.publishOn(executor) : original;
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.subscribeOn(executor) : original;
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-        return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
-                original.publishOn(executor) : original;
     }
 
     // Visible for testing
