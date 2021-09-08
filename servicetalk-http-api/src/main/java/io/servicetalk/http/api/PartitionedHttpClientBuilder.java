@@ -35,14 +35,14 @@ import io.servicetalk.transport.api.IoExecutor;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      */
     @FunctionalInterface
-    public interface SingleAddressInitializer<U, R> {
+    interface SingleAddressInitializer<U, R> {
         /**
          * Configures the passed {@link SingleAddressHttpClientBuilder} for a given set of {@link PartitionAttributes}.
          *
@@ -68,16 +68,18 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
     }
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> executor(Executor executor);
+    default PartitionedHttpClientBuilder<U, R> executor(Executor executor) {
+        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
+    }
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -88,7 +90,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
+    PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
@@ -98,7 +100,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
-    public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+    PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy);
 
     /**
@@ -111,7 +113,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
      * queued for each partition.
      * @return {@code this}.
      */
-    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
+    PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
 
     /**
      * Sets {@link PartitionMapFactory} to use by all {@link StreamingHttpClient}s created by this builder.
@@ -119,7 +121,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
      * @param partitionMapFactory {@link PartitionMapFactory} to use.
      * @return {@code this}.
      */
-    public abstract PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
+    PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
@@ -127,5 +129,5 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
      * {@link StreamingHttpClient}s.
      * @return {@code this}
      */
-    public abstract PartitionedHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
+    PartitionedHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 }
