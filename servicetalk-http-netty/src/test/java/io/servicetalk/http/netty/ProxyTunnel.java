@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -106,18 +107,17 @@ final class ProxyTunnel implements AutoCloseable {
     }
 
     private static String readLine(final InputStream in) throws IOException {
-        byte[] bytes = new byte[1024];
-        int i = 0;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(512);
         int b;
         while ((b = in.read()) >= 0) {
             if (b == '\n') {
                 break;
             }
             if (b != '\r') {
-                bytes[i++] = (byte) b;
+                bos.write((byte) b);
             }
         }
-        return new String(bytes, 0, i, UTF_8);
+        return bos.toString(UTF_8.name());
     }
 
     private void handleRequest(final Socket socket, final String initialLine) throws IOException, ExecutionException,
