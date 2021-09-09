@@ -135,10 +135,9 @@ final class ProxyTunnel implements AutoCloseable {
                 out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
                 out.flush();
 
-                final InputStream cin = clientSocket.getInputStream();
                 Future<Void> f = executor.submit(() -> {
                     try {
-                        copyStream(out, cin);
+                        copyStream(out, clientSocket.getInputStream());
                     } finally {
                         clientSocket.shutdownInput();
                         socket.shutdownOutput();
