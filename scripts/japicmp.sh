@@ -18,10 +18,14 @@
 SCRIPT=$(basename "${BASH_SOURCE:-stidn}")
 
 if [ $# -lt 1 ] || [ $# -gt 3 ]; then
+  echo "# Usage"
+  echo "#    ${SCRIPT} <old_version> (<new_version> (<group_id>))"
+  echo "# Description"
   echo "# This script compares versions for binary backward compatibility."
-  echo "# Usage: ${SCRIPT} <old_version> (<new_version> (<group_id>))"
-  echo "# if optional <new_version> unspecified then comparison will be made againt local build"
+  echo "# It must be run from a directory containing a clone of ServiceTalk"
+  echo "# if optional <new_version> unspecified or string 'local' then compare to local build"
   echo "# if optional <group_id> unspecified then local dir gradle 'group' property will be used"
+  echo "# Comparisons against local build assume that './gradlew build' has been run."
   exit 1
 fi
 
