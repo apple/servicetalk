@@ -75,7 +75,7 @@ final class ProxyTunnel implements AutoCloseable {
                             // ignore headers
                         }
 
-                        handler.handle(socket, in, initialLine);
+                        handler.handle(socket, initialLine);
                     } catch (Exception e) {
                         LOGGER.debug("Error from proxy", e);
                     } finally {
@@ -94,7 +94,7 @@ final class ProxyTunnel implements AutoCloseable {
     }
 
     void badResponseProxy() {
-        handler = (socket, in, initialLine) -> {
+        handler = (socket, initialLine) -> {
             socket.getOutputStream().write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
             socket.getOutputStream().flush();
         };
@@ -119,8 +119,8 @@ final class ProxyTunnel implements AutoCloseable {
         return new String(bytes, 0, i, UTF_8);
     }
 
-    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
-            ExecutionException, InterruptedException {
+    private void handleRequest(final Socket socket, final String initialLine) throws IOException, ExecutionException,
+            InterruptedException {
         if (initialLine.startsWith(CONNECT_PREFIX)) {
             final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
             final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
@@ -145,7 +145,7 @@ final class ProxyTunnel implements AutoCloseable {
                     return null;
                 });
                 try {
-                    copyStream(clientSocket.getOutputStream(), in);
+                    copyStream(clientSocket.getOutputStream(), socket.getInputStream());
                 } finally {
                     clientSocket.shutdownOutput();
                     socket.shutdownInput();
@@ -155,13 +155,14 @@ final class ProxyTunnel implements AutoCloseable {
         } else {
             throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
-        // No need to close InputStream, the socket will be closed outside the scope of this method.
+        // The socket will be closed outside the scope of this method.
     }
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
-        int b;
-        while ((b = cin.read()) >= 0) { // read individual bytes to maximize the change data will arrive divided.
-            out.write(b);
+        int read;
+        final byte[] bytes = new byte[2048];
+        while ((read = cin.read(bytes)) >= 0) {
+            out.write(bytes, 0, read);
             out.flush();
         }
         // Don't close either stream as we need full duplex behavior and closing a stream of a Socket will close
@@ -170,7 +171,6 @@ final class ProxyTunnel implements AutoCloseable {
 
     @FunctionalInterface
     private interface ProxyRequestHandler {
-        void handle(Socket socket, InputStream in, String initialLine) throws IOException,
-                ExecutionException, InterruptedException;
+        void handle(Socket socket, String initialLine) throws IOException, ExecutionException, InterruptedException;
     }
 }
