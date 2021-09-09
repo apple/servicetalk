@@ -56,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -92,6 +91,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GR
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,7 +106,7 @@ class GracefulConnectionClosureHandlingTest {
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
     static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER =
-            stringStreamingSerializer(StandardCharsets.UTF_8, headers -> { });
+            stringStreamingSerializer(UTF_8, headers -> { });
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
