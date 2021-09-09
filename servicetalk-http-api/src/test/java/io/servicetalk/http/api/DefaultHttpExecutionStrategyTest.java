@@ -179,7 +179,8 @@ class DefaultHttpExecutionStrategyTest {
     void offloadSendSingle(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.offloadSend(executor, never())).subscribe(__ -> {
+        analyzer.instrumentSend(strategy.isSendOffloaded() ?
+                never().subscribeOn(executor) : never()).subscribe(__ -> {
         }).cancel();
         analyzer.awaitCancel.await();
         analyzer.verifySend();
@@ -190,7 +191,7 @@ class DefaultHttpExecutionStrategyTest {
     void offloadSendPublisher(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.offloadSend(executor, from(1))).toFuture().get();
+        analyzer.instrumentSend(strategy.isSendOffloaded() ? from(1).subscribeOn(executor) : from(1)).toFuture().get();
         analyzer.verifySend();
     }
 
@@ -199,7 +200,8 @@ class DefaultHttpExecutionStrategyTest {
     void offloadReceiveSingle(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, succeeded(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
+                succeeded(1).publishOn(executor) : succeeded(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -208,7 +210,8 @@ class DefaultHttpExecutionStrategyTest {
     void offloadReceivePublisher(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, from(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
+                from(1).publishOn(executor) : from(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 

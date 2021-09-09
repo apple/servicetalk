@@ -27,7 +27,9 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -75,12 +77,12 @@ final class ProxyTunnel implements AutoCloseable {
 
                         handler.handle(socket, in, initialLine);
                     } catch (Exception e) {
-                        LOGGER.error("Error from proxy", e);
+                        LOGGER.debug("Error from proxy", e);
                     } finally {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.debug("Error from proxy server socket close", e);
                         }
                     }
                 });
@@ -117,54 +119,58 @@ final class ProxyTunnel implements AutoCloseable {
         return new String(bytes, 0, i, UTF_8);
     }
 
-    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException {
-        if (initialLine.startsWith(CONNECT_PREFIX)) {
-            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-            final String protocol = initialLine.substring(end + 1);
-            final int colon = authority.indexOf(':');
-            final String host = authority.substring(0, colon);
-            final int port = Integer.parseInt(authority.substring(colon + 1));
+    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
+            ExecutionException, InterruptedException {
+        try {
+            if (initialLine.startsWith(CONNECT_PREFIX)) {
+                final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+                final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+                final String protocol = initialLine.substring(end + 1);
+                final int colon = authority.indexOf(':');
+                final String host = authority.substring(0, colon);
+                final int port = Integer.parseInt(authority.substring(colon + 1));
 
-            final Socket clientSocket = new Socket(host, port);
-            connectCount.incrementAndGet();
-            final OutputStream out = socket.getOutputStream();
-            out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-            out.flush();
+                try (Socket clientSocket = new Socket(host, port)) {
+                    connectCount.incrementAndGet();
+                    final OutputStream out = socket.getOutputStream();
+                    out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+                    out.flush();
 
-            final InputStream cin = clientSocket.getInputStream();
-            executor.submit(() -> copyStream(out, cin));
-            copyStream(clientSocket.getOutputStream(), in);
-        } else {
-            throw new RuntimeException("Unrecognized initial line: " + initialLine);
+                    final InputStream cin = clientSocket.getInputStream();
+                    Future<Void> f = executor.submit(() -> {
+                        copyStream(out, cin);
+                        return null;
+                    });
+                    copyStream(clientSocket.getOutputStream(), in);
+                    f.get(); // wait for the copy of proxy client input to server output to finish copying.
+                }
+            } else {
+                throw new RuntimeException("Unrecognized initial line: " + initialLine);
+            }
+        } finally {
+            in.close();
         }
     }
 
-    private static void copyStream(final OutputStream out, final InputStream cin) {
+    private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
         try {
             int b;
             while ((b = cin.read()) >= 0) {
                 out.write(b);
             }
             out.flush();
-        } catch (IOException e) {
-            LOGGER.error("Proxy exception", e);
         } finally {
             try {
                 cin.close();
-            } catch (IOException closeE) {
-                LOGGER.error("Cannot close InputStream", closeE);
-            }
-            try {
+            } finally {
                 out.close();
-            } catch (IOException closeE) {
-                LOGGER.error("Cannot close OutputStream", closeE);
             }
         }
     }
 
     @FunctionalInterface
     private interface ProxyRequestHandler {
-        void handle(Socket socket, InputStream in, String initialLine) throws IOException;
+        void handle(Socket socket, InputStream in, String initialLine) throws IOException,
+                ExecutionException, InterruptedException;
     }
 }

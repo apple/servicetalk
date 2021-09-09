@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
@@ -103,25 +102,6 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body.
      * @return {@code this}
-     * @deprecated Use {@link #payloadBody(Iterable)}.
-     */
-    @Deprecated
-    default BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody) {
-        payloadBody((Iterable<Buffer>) payloadBody);
-        return this;
-    }
-
-    /**
-     * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
-     * <p>
-     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
-     * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
-     * control.
-     * <p>
-     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing payload body that is being replaced.
-     * @param payloadBody The new payload body.
-     * @return {@code this}
      */
     BlockingStreamingHttpResponse payloadBody(InputStream payloadBody);
 
@@ -164,28 +144,6 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @return {@code this}
      */
     <T> BlockingStreamingHttpResponse payloadBody(Iterable<T> payloadBody, HttpStreamingSerializer<T> serializer);
-
-    /**
-     * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to the result of serialization.
-     * <p>
-     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
-     * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
-     * fine grain control.
-     * <p>
-     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing payload body that is being replaced.
-     * @param payloadBody The new payload body, prior to serialization.
-     * @param serializer Used to serialize the payload body.
-     * @param <T> The type of objects to serialize.
-     * @return {@code this}
-     * @deprecated Use {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
-     */
-    @Deprecated
-    default <T> BlockingStreamingHttpResponse payloadBody(CloseableIterable<T> payloadBody,
-                                                          HttpSerializer<T> serializer) {
-        payloadBody((Iterable<T>) payloadBody, serializer);
-        return this;
-    }
 
     /**
      * Set the {@link HttpMessageBodyIterable} for this response.

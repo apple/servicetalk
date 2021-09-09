@@ -65,6 +65,7 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
@@ -272,14 +273,14 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
                                 assertGlobalExecutor(testMode, context, threadingInfo);
                                 return;
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                         }
                     case EXEC:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                             case NO_OFFLOADS:
                                 assertGlobalExecutor(testMode, context, threadingInfo);
@@ -297,14 +298,14 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
                                 assertRouterExecutor(testMode, context, threadingInfo);
                                 return;
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                         }
                     case EXEC:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                             case NO_OFFLOADS:
                                 assertRouterExecutor(testMode, context, threadingInfo);
@@ -362,6 +363,15 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         }
     }
 
+    private void assertOffloaded(final TestMode testMode, final String context,
+                                      final Map<String, String> threadingInfo) {
+        assertThat(context, threadingInfo.get(THREAD_NAME), not(isIoExecutorThread()));
+        assertThat(context, threadingInfo.get(EXEC_NAME), not(isIoExecutor()));
+        if (testMode.rs) {
+            assertThat(context, threadingInfo.get(RS_THREAD_NAME), not(isIoExecutorThread()));
+        }
+    }
+
     private static void assertRouteExecutor(final TestMode testMode, final String context,
                                             final Map<String, String> threadingInfo) {
         assertThat(context, threadingInfo.get(THREAD_NAME), isRouteExecutorThread());
@@ -395,6 +405,10 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
 
     private static Matcher<String> isGlobalExecutor() {
         return new ExecutorMatcher(globalExecutionContext().executor(), "st-executor");
+    }
+
+    private static Matcher<String> isIoExecutor() {
+        return new ExecutorMatcher(globalExecutionContext().ioExecutor(), "st-stserverio");
     }
 
     private static Matcher<String> isGlobalExecutorThread() {

@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
@@ -259,8 +260,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             final Cancellable cancellable;
             if (effectiveRouteStrategy != null) {
                 assert executor != null;
-                cancellable = effectiveRouteStrategy
-                        .offloadSend(executor, responseSingle)
+                cancellable = (effectiveRouteStrategy.isSendOffloaded() ?
+                        responseSingle.subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread) :
+                        responseSingle)
                         .subscribe(asyncContext::resume);
             } else {
                 cancellable = responseSingle.subscribe(asyncContext::resume);
