@@ -77,12 +77,12 @@ final class ProxyTunnel implements AutoCloseable {
 
                         handler.handle(socket, in, initialLine);
                     } catch (Exception e) {
-                        LOGGER.error("Error from proxy", e);
+                        LOGGER.debug("Error from proxy", e);
                     } finally {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.debug("Error from proxy server socket close", e);
                         }
                     }
                 });
@@ -121,30 +121,34 @@ final class ProxyTunnel implements AutoCloseable {
 
     private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
             ExecutionException, InterruptedException {
-        if (initialLine.startsWith(CONNECT_PREFIX)) {
-            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-            final String protocol = initialLine.substring(end + 1);
-            final int colon = authority.indexOf(':');
-            final String host = authority.substring(0, colon);
-            final int port = Integer.parseInt(authority.substring(colon + 1));
+        try {
+            if (initialLine.startsWith(CONNECT_PREFIX)) {
+                final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+                final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+                final String protocol = initialLine.substring(end + 1);
+                final int colon = authority.indexOf(':');
+                final String host = authority.substring(0, colon);
+                final int port = Integer.parseInt(authority.substring(colon + 1));
 
-            try (Socket clientSocket = new Socket(host, port)) {
-                connectCount.incrementAndGet();
-                final OutputStream out = socket.getOutputStream();
-                out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-                out.flush();
+                try (Socket clientSocket = new Socket(host, port)) {
+                    connectCount.incrementAndGet();
+                    final OutputStream out = socket.getOutputStream();
+                    out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+                    out.flush();
 
-                final InputStream cin = clientSocket.getInputStream();
-                Future<Void> f = executor.submit(() -> {
-                    copyStream(out, cin);
-                    return null;
-                });
-                copyStream(clientSocket.getOutputStream(), in);
-                f.get(); // wait for the copy of proxy client input to server output to finish copying.
+                    final InputStream cin = clientSocket.getInputStream();
+                    Future<Void> f = executor.submit(() -> {
+                        copyStream(out, cin);
+                        return null;
+                    });
+                    copyStream(clientSocket.getOutputStream(), in);
+                    f.get(); // wait for the copy of proxy client input to server output to finish copying.
+                }
+            } else {
+                throw new RuntimeException("Unrecognized initial line: " + initialLine);
             }
-        } else {
-            throw new RuntimeException("Unrecognized initial line: " + initialLine);
+        } finally {
+            in.close();
         }
     }
 
