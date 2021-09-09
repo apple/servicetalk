@@ -137,14 +137,20 @@ final class ProxyTunnel implements AutoCloseable {
 
                 final InputStream cin = clientSocket.getInputStream();
                 Future<Void> f = executor.submit(() -> {
-                    copyStream(out, cin);
-                    clientSocket.shutdownInput();
-                    socket.shutdownOutput();
+                    try {
+                        copyStream(out, cin);
+                    } finally {
+                        clientSocket.shutdownInput();
+                        socket.shutdownOutput();
+                    }
                     return null;
                 });
-                copyStream(clientSocket.getOutputStream(), in);
-                clientSocket.shutdownOutput();
-                socket.shutdownInput();
+                try {
+                    copyStream(clientSocket.getOutputStream(), in);
+                } finally {
+                    clientSocket.shutdownOutput();
+                    socket.shutdownInput();
+                }
                 f.get(); // wait for the copy of proxy client input to server output to finish copying.
             }
         } else {
