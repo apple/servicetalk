@@ -18,13 +18,22 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.ClearAsyncContextHttpServiceFilter;
+import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
@@ -32,18 +41,86 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-final class DefaultHttpServerBuilder extends HttpServerBuilder {
+import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpServerBuilder.buildFactory;
+import static io.servicetalk.http.api.HttpServerBuilder.buildInfluencer;
+import static io.servicetalk.http.api.HttpServerBuilder.buildService;
+import static io.servicetalk.http.api.HttpServerBuilder.checkNonOffloading;
+import static io.servicetalk.http.api.HttpServerBuilder.influenceStrategy;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static java.util.Objects.requireNonNull;
 
+final class DefaultHttpServerBuilder implements HttpServerBuilder {
+
+    @Nullable
+    private ConnectionAcceptorFactory connectionAcceptorFactory;
+    private final List<StreamingHttpServiceFilterFactory> noOffloadServiceFilters = new ArrayList<>();
+    private final List<StreamingHttpServiceFilterFactory> serviceFilters = new ArrayList<>();
+    private HttpExecutionStrategy strategy = defaultStrategy();
+    private boolean drainRequestPayloadBody = true;
     private final HttpServerConfig config = new HttpServerConfig();
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private final SocketAddress address;
 
     DefaultHttpServerBuilder(SocketAddress address) {
+        appendNonOffloadingServiceFilter(ClearAsyncContextHttpServiceFilter.CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER);
         this.address = address;
+    }
+
+    @Override
+    public HttpServerBuilder disableDrainingRequestPayloadBody() {
+        this.drainRequestPayloadBody = false;
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+        if (connectionAcceptorFactory == null) {
+            connectionAcceptorFactory = factory;
+        } else {
+            connectionAcceptorFactory = connectionAcceptorFactory.append(factory);
+        }
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter", defaultStrategy(), factory));
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                    final StreamingHttpServiceFilterFactory factory) {
+        checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
+        checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
+        noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        requireNonNull(factory);
+        serviceFilters.add(factory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                       final StreamingHttpServiceFilterFactory factory) {
+        appendServiceFilter(toConditionalServiceFilterFactory(predicate, factory));
+        return this;
     }
 
     @Override
@@ -102,6 +179,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
@@ -114,6 +197,38 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
+    public Single<ServerContext> listen(final HttpService service) {
+        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+    }
+
+    @Override
+    public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+        return listenForService(service, strategy);
+    }
+
+    @Override
+    public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+    }
+
+    @Override
+    public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     *
+     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
+     * @param service {@link StreamingHttpService} to use for the server.
+     * @param strategy the {@link HttpExecutionStrategy} to use for the service.
+     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
+     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
     protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
                                              final StreamingHttpService service,
                                              final HttpExecutionStrategy strategy,
@@ -124,13 +239,30 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         return doListen(connectionAcceptor, httpExecutionContext, service, drainRequestPayloadBody);
     }
 
-    @Override
+    /**
+     * Build the execution context for this builder.
+     *
+     * @param strategy The execution strategy to be used for the context
+     * @return the configured and built HTTP execution context.
+     */
     protected HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return executionContextBuilder.build();
     }
 
-    @Override
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     *
+     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
+     * @param context the {@link HttpExecutionContext} to use for the service.
+     * @param service {@link StreamingHttpService} to use for the server.
+     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
+     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
     protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
                                              final HttpExecutionContext context,
                                              final StreamingHttpService service,
@@ -147,5 +279,66 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                     service, drainRequestPayloadBody);
         }
         return NettyHttpServer.bind(context, roConfig, address, connectionAcceptor, service, drainRequestPayloadBody);
+    }
+
+    private Single<ServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
+        return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     * <p>/p>
+     * The execution path for a request will be offloaded from the IO thread as required to ensure safety. The
+     * <dl>
+     *     <dt>read side</dt>
+     *     <dd>IO thread → request → non-offload filters → offload filters → raw service</dd>
+     *     <dt>subscribe/request side</dt>
+     *     <dd>IO thread → subscribe/request/cancel → non-offload filters → offload filters → raw service</dd>
+     * </dl>
+     *
+     * @param rawService {@link StreamingHttpService} to use for the server.
+     * @param strategy the {@link HttpExecutionStrategy} to use for the service.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
+        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                connectionAcceptorFactory.create(ACCEPT_ALL);
+
+        final StreamingHttpService filteredService;
+        HttpExecutionContext serviceContext;
+
+        if (noOffloadServiceFilters.isEmpty()) {
+            filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
+            serviceContext = buildExecutionContext(strategy);
+        } else {
+            Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
+
+            if (strategy.hasOffloads()) {
+                serviceContext = buildExecutionContext(noOffloadsStrategy());
+                BooleanSupplier shouldOffload = serviceContext.ioExecutor().shouldOffloadSupplier();
+                // We are going to have to offload, even if just to the raw service
+                OffloadingFilter offloadingFilter =
+                        new OffloadingFilter(strategy, buildFactory(serviceFilters), shouldOffload);
+                nonOffloadingFilters = Stream.concat(nonOffloadingFilters, Stream.of(offloadingFilter));
+            } else {
+                // All the filters can be appended.
+                nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
+                serviceContext = buildExecutionContext(strategy);
+            }
+            filteredService = buildService(nonOffloadingFilters, rawService);
+        }
+
+        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody);
+    }
+
+    private HttpExecutionStrategyInfluencer strategyInfluencer(Object service) {
+        HttpExecutionStrategyInfluencer influencer =
+                buildInfluencer(serviceFilters, strategy -> influenceStrategy(service, strategy));
+        HttpExecutionStrategy useStrategy = influencer.influenceStrategy(strategy);
+
+        return s -> s.merge(useStrategy);
     }
 }

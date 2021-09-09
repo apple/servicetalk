@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * Clears the {@link AsyncContext} for a new request.
  */
-final class ClearAsyncContextHttpServiceFilter implements
+public final class ClearAsyncContextHttpServiceFilter implements
                                                StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
-    static final ClearAsyncContextHttpServiceFilter CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER =
+    public static final ClearAsyncContextHttpServiceFilter CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER =
             new ClearAsyncContextHttpServiceFilter();
 
     private ClearAsyncContextHttpServiceFilter() {
