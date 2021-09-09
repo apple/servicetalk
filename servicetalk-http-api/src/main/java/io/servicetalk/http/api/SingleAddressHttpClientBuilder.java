@@ -182,9 +182,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    public abstract SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

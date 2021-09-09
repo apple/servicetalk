@@ -83,7 +83,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
         return t;
     }
 
-    public static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
+    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
         @Nullable
         private AsyncContextMap asyncContextMap;
 
