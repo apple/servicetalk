@@ -121,51 +121,46 @@ final class ProxyTunnel implements AutoCloseable {
 
     private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
             ExecutionException, InterruptedException {
-        try {
-            if (initialLine.startsWith(CONNECT_PREFIX)) {
-                final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-                final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-                final String protocol = initialLine.substring(end + 1);
-                final int colon = authority.indexOf(':');
-                final String host = authority.substring(0, colon);
-                final int port = Integer.parseInt(authority.substring(colon + 1));
+        if (initialLine.startsWith(CONNECT_PREFIX)) {
+            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+            final String protocol = initialLine.substring(end + 1);
+            final int colon = authority.indexOf(':');
+            final String host = authority.substring(0, colon);
+            final int port = Integer.parseInt(authority.substring(colon + 1));
 
-                try (Socket clientSocket = new Socket(host, port)) {
-                    connectCount.incrementAndGet();
-                    final OutputStream out = socket.getOutputStream();
-                    out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-                    out.flush();
+            try (Socket clientSocket = new Socket(host, port)) {
+                connectCount.incrementAndGet();
+                final OutputStream out = socket.getOutputStream();
+                out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+                out.flush();
 
-                    final InputStream cin = clientSocket.getInputStream();
-                    Future<Void> f = executor.submit(() -> {
-                        copyStream(out, cin);
-                        return null;
-                    });
-                    copyStream(clientSocket.getOutputStream(), in);
-                    f.get(); // wait for the copy of proxy client input to server output to finish copying.
-                }
-            } else {
-                throw new RuntimeException("Unrecognized initial line: " + initialLine);
+                final InputStream cin = clientSocket.getInputStream();
+                Future<Void> f = executor.submit(() -> {
+                    copyStream(out, cin);
+                    clientSocket.shutdownInput();
+                    socket.shutdownOutput();
+                    return null;
+                });
+                copyStream(clientSocket.getOutputStream(), in);
+                clientSocket.shutdownOutput();
+                socket.shutdownInput();
+                f.get(); // wait for the copy of proxy client input to server output to finish copying.
             }
-        } finally {
-            in.close();
+        } else {
+            throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
+        // No need to close InputStream, the socket will be closed outside the scope of this method.
     }
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
-        try {
-            int b;
-            while ((b = cin.read()) >= 0) {
-                out.write(b);
-            }
+        int b;
+        while ((b = cin.read()) >= 0) { // read individual bytes to maximize the change data will arrive divided.
+            out.write(b);
             out.flush();
-        } finally {
-            try {
-                cin.close();
-            } finally {
-                out.close();
-            }
         }
+        // Don't close either stream as we need full duplex behavior and closing a stream of a Socket will close
+        // the entire Socket. Shutting down the input/output is done outside the scope of this method.
     }
 
     @FunctionalInterface
