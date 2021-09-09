@@ -74,7 +74,7 @@ final class ProxyTunnel implements AutoCloseable {
                         final InputStream in = socket.getInputStream();
                         final String initialLine = readLine(in);
                         while (readLine(in).length() > 0) {
-                            // ignore headers
+                            // Ignore headers.
                         }
 
                         handler.handle(socket, initialLine);
