@@ -95,8 +95,9 @@ final class ProxyTunnel implements AutoCloseable {
 
     void badResponseProxy() {
         handler = (socket, initialLine) -> {
-            socket.getOutputStream().write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
-            socket.getOutputStream().flush();
+            final OutputStream os = socket.getOutputStream();
+            os.write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
+            os.flush();
         };
     }
 
