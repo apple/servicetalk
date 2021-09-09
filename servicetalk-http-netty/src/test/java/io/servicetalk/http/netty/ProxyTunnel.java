@@ -154,7 +154,7 @@ final class ProxyTunnel implements AutoCloseable {
                 }
             }
         } else {
-            throw new RuntimeException("Unrecognized initial line: " + initialLine);
+            throw new IllegalArgumentException("Unrecognized initial line: " + initialLine);
         }
         // The Socket is closed outside the scope of this method.
     }
