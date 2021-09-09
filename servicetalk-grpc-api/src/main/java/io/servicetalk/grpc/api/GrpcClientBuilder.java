@@ -231,9 +231,12 @@ public abstract class GrpcClientBuilder<U, R>
      * instance.
      *
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
+     * @deprecated Use {@link GrpcClientFactory#newClient(GrpcClientCallFactory)}
+     * or {@link GrpcClientFactory#newBlockingClient(GrpcClientCallFactory)}
+     * and provide a custom {@link GrpcClientCallFactory} instead.
      */
+    @Deprecated
     public final MultiClientBuilder buildMulti() {
-
         GrpcClientCallFactory callFactory = newGrpcClientCallFactory();
         return new MultiClientBuilder() {
             @Override
@@ -324,7 +327,11 @@ public abstract class GrpcClientBuilder<U, R>
     /**
      * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients sharing the
      * same underlying transport instance.
+     * @deprecated Use {@link GrpcClientFactory#newClient(GrpcClientCallFactory)}
+     * or {@link GrpcClientFactory#newBlockingClient(GrpcClientCallFactory)}
+     * and provide a custom {@link GrpcClientCallFactory} instead.
      */
+    @Deprecated
     public interface MultiClientBuilder {
 
         /**
