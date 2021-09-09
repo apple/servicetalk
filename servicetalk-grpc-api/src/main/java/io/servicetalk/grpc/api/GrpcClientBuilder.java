@@ -284,7 +284,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * @deprecated Use {@link #hostHeaderFallback(boolean)}.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> disableHostHeaderFallback();
+    public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
 
     /**
      * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.

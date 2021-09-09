@@ -153,7 +153,9 @@ public abstract class GrpcServerBuilder {
      * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      */
     @Deprecated
-    public abstract GrpcServerBuilder disableDrainingRequestPayloadBody();
+    public GrpcServerBuilder disableDrainingRequestPayloadBody() {
+        return drainRequestPayloadBody(false);
+    }
 
     /**
      * Configures automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is

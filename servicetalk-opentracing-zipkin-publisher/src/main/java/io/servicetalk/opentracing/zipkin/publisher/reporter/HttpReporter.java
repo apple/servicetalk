@@ -264,8 +264,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
          */
         @Deprecated
         public Builder disableSpanBatching() {
-            this.batchingEnabled = false;
-            return this;
+            return spansBatchingEnabled(false);
         }
 
         /**

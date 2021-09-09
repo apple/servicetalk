@@ -97,7 +97,9 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @deprecated Use {@link #hostHeaderFallback(boolean)}.
      */
     @Deprecated
-    public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+    public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
 
     /**
      * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
