@@ -83,7 +83,7 @@ final class ProxyTunnel implements AutoCloseable {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            LOGGER.debug("Error from proxy server socket close", e);
+                            LOGGER.debug("Error from proxy server socket {} close", socket, e);
                         }
                     }
                 });
