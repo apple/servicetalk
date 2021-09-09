@@ -105,8 +105,7 @@ class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
-    static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER =
-            stringStreamingSerializer(UTF_8, headers -> { });
+    static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER = stringStreamingSerializer(UTF_8, hdr -> { });
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
