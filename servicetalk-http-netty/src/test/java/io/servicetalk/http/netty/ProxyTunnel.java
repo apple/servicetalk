@@ -142,7 +142,8 @@ final class ProxyTunnel implements AutoCloseable {
                     } finally {
                         try {
                             // We are simulating a proxy that doesn't do half closure. The proxy should close the server
-                            // socket as soon as the server read is done.
+                            // socket as soon as the server read is done. ServiceTalk's CloseHandler is expected to
+                            // handle this gracefully (and delay FIN/RST until requests/responses are completed).
                             serverSocket.close();
                         } catch (IOException e) {
                             LOGGER.debug("Error closing serverSocket", e);
