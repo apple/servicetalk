@@ -119,7 +119,7 @@ final class ProxyTunnel implements AutoCloseable {
         return bos.toString(UTF_8.name());
     }
 
-    private void handleRequest(final Socket socket, final String initialLine) throws IOException {
+    private void handleRequest(final Socket serverSocket, final String initialLine) throws IOException {
         if (initialLine.startsWith(CONNECT_PREFIX)) {
             final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
             final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
@@ -130,37 +130,47 @@ final class ProxyTunnel implements AutoCloseable {
 
             try (Socket clientSocket = new Socket(host, port)) {
                 connectCount.incrementAndGet();
-                final OutputStream out = socket.getOutputStream();
+                final OutputStream out = serverSocket.getOutputStream();
                 out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
                 out.flush();
 
                 executor.submit(() -> {
                     try {
                         copyStream(out, clientSocket.getInputStream());
+                    } catch (IOException e) {
+                        LOGGER.debug("Error copying clientSocket input to serverSocket output", e);
                     } finally {
-                        // We are simulating a proxy that doesn't do half closure. The proxy should close the server
-                        // socket as soon as the server read is done.
-                        socket.close();
+                        try {
+                            // We are simulating a proxy that doesn't do half closure. The proxy should close the server
+                            // socket as soon as the server read is done.
+                            serverSocket.close();
+                        } catch (IOException e) {
+                            LOGGER.debug("Error closing serverSocket", e);
+                        }
                     }
-                    return null;
                 });
-                copyStream(clientSocket.getOutputStream(), socket.getInputStream());
+                copyStream(clientSocket.getOutputStream(), serverSocket.getInputStream());
+
+                // Don't wait on the clientSocket input to serverSocket output copy to complete. We want to simulate a
+                // proxy that doesn't do half closure and that means we should close as soon as possible. ServiceTalk's
+                // CloseHandler should handle this scenario gracefully (and delay FIN/RST until requests/responses are
+                // completed).
             }
         } else {
             throw new IllegalArgumentException("Unrecognized initial line: " + initialLine);
         }
-        // The Socket is closed outside the scope of this method.
+        // serverSocket is closed outside the scope of this method.
     }
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
         int read;
-        final byte[] bytes = new byte[256];
+        // Intentionally use a small size to increase the likelihood of data fragmentation on the wire.
+        final byte[] bytes = new byte[8];
         while ((read = cin.read(bytes)) >= 0) {
             out.write(bytes, 0, read);
             out.flush();
         }
-        // Don't close either Stream! We are simulating a proxy that doesn't do half closure, and close the socket
-        // outside the scope of this method.
+        // Don't close either Stream! We close the socket outside the scope of this method (in a specific sequence).
     }
 
     @FunctionalInterface
