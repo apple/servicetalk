@@ -144,7 +144,7 @@ final class ProxyTunnel implements AutoCloseable {
                         try {
                             // We are simulating a proxy that doesn't do half closure. The proxy should close the server
                             // socket as soon as the server read is done. ServiceTalk's CloseHandler is expected to
-                            // handle this gracefully (and delay FIN/RST until requests/responses are completed).
+                            // handle this gracefully (and delay FIN/RST until requests/responses complete).
                             serverSocket.close();
                         } catch (IOException e) {
                             LOGGER.debug("Error closing serverSocket", e);
@@ -155,8 +155,7 @@ final class ProxyTunnel implements AutoCloseable {
 
                 // Don't wait on the clientSocket input to serverSocket output copy to complete. We want to simulate a
                 // proxy that doesn't do half closure and that means we should close as soon as possible. ServiceTalk's
-                // CloseHandler should handle this scenario gracefully (and delay FIN/RST until requests/responses are
-                // completed).
+                // CloseHandler should handle this gracefully (and delay FIN/RST until requests/responses complete).
             }
         } else {
             throw new IllegalArgumentException("Unrecognized initial line: " + initialLine);
