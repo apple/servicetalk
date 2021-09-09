@@ -51,6 +51,7 @@ final class ProxyTunnel implements AutoCloseable {
     private ServerSocket serverSocket;
     private ProxyRequestHandler handler = this::handleRequest;
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void close() throws Exception {
         try {
