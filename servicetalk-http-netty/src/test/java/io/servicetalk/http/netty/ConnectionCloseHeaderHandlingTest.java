@@ -200,7 +200,9 @@ final class ConnectionCloseHeaderHandlingTest {
                                     }
                                 } while (!done);
                             }
-                            writer.write(content);
+                            if (!content.isEmpty()) {
+                                writer.write(content);
+                            }
                         }
                     });
 
