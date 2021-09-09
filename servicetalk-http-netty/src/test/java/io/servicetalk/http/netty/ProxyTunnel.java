@@ -154,7 +154,7 @@ final class ProxyTunnel implements AutoCloseable {
         } else {
             throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
-        // The socket will be closed outside the scope of this method.
+        // The Socket is closed outside the scope of this method.
     }
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
