@@ -160,7 +160,7 @@ final class ProxyTunnel implements AutoCloseable {
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
         int read;
-        final byte[] bytes = new byte[2048];
+        final byte[] bytes = new byte[1024];
         while ((read = cin.read(bytes)) >= 0) {
             out.write(bytes, 0, read);
             out.flush();
