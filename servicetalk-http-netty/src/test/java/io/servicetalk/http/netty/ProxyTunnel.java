@@ -21,15 +21,14 @@ import io.servicetalk.transport.api.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -40,7 +39,6 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 final class ProxyTunnel implements AutoCloseable {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyTunnel.class);
     private static final String CONNECT_PREFIX = "CONNECT ";
 
@@ -51,6 +49,7 @@ final class ProxyTunnel implements AutoCloseable {
     private ServerSocket serverSocket;
     private ProxyRequestHandler handler = this::handleRequest;
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void close() throws Exception {
         try {
@@ -61,6 +60,7 @@ final class ProxyTunnel implements AutoCloseable {
         }
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
         final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
@@ -72,17 +72,17 @@ final class ProxyTunnel implements AutoCloseable {
                         final InputStream in = socket.getInputStream();
                         final String initialLine = readLine(in);
                         while (readLine(in).length() > 0) {
-                            // ignore headers
+                            // Ignore headers.
                         }
 
-                        handler.handle(socket, in, initialLine);
+                        handler.handle(socket, initialLine);
                     } catch (Exception e) {
-                        LOGGER.debug("Error from proxy", e);
+                        LOGGER.debug("Error from proxy {}", socket, e);
                     } finally {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            LOGGER.debug("Error from proxy server socket close", e);
+                            LOGGER.debug("Error from proxy server socket {} close", socket, e);
                         }
                     }
                 });
@@ -94,9 +94,10 @@ final class ProxyTunnel implements AutoCloseable {
     }
 
     void badResponseProxy() {
-        handler = (socket, in, initialLine) -> {
-            socket.getOutputStream().write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
-            socket.getOutputStream().flush();
+        handler = (socket, initialLine) -> {
+            final OutputStream os = socket.getOutputStream();
+            os.write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
+            os.flush();
         };
     }
 
@@ -105,72 +106,65 @@ final class ProxyTunnel implements AutoCloseable {
     }
 
     private static String readLine(final InputStream in) throws IOException {
-        byte[] bytes = new byte[1024];
-        int i = 0;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(512);
         int b;
         while ((b = in.read()) >= 0) {
             if (b == '\n') {
                 break;
             }
             if (b != '\r') {
-                bytes[i++] = (byte) b;
+                bos.write((byte) b);
             }
         }
-        return new String(bytes, 0, i, UTF_8);
+        return bos.toString(UTF_8.name());
     }
 
-    private void handleRequest(final Socket socket, final InputStream in, final String initialLine) throws IOException,
-            ExecutionException, InterruptedException {
-        try {
-            if (initialLine.startsWith(CONNECT_PREFIX)) {
-                final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-                final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-                final String protocol = initialLine.substring(end + 1);
-                final int colon = authority.indexOf(':');
-                final String host = authority.substring(0, colon);
-                final int port = Integer.parseInt(authority.substring(colon + 1));
+    private void handleRequest(final Socket socket, final String initialLine) throws IOException {
+        if (initialLine.startsWith(CONNECT_PREFIX)) {
+            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+            final String protocol = initialLine.substring(end + 1);
+            final int colon = authority.indexOf(':');
+            final String host = authority.substring(0, colon);
+            final int port = Integer.parseInt(authority.substring(colon + 1));
 
-                try (Socket clientSocket = new Socket(host, port)) {
-                    connectCount.incrementAndGet();
-                    final OutputStream out = socket.getOutputStream();
-                    out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-                    out.flush();
+            try (Socket clientSocket = new Socket(host, port)) {
+                connectCount.incrementAndGet();
+                final OutputStream out = socket.getOutputStream();
+                out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+                out.flush();
 
-                    final InputStream cin = clientSocket.getInputStream();
-                    Future<Void> f = executor.submit(() -> {
-                        copyStream(out, cin);
-                        return null;
-                    });
-                    copyStream(clientSocket.getOutputStream(), in);
-                    f.get(); // wait for the copy of proxy client input to server output to finish copying.
-                }
-            } else {
-                throw new RuntimeException("Unrecognized initial line: " + initialLine);
+                executor.submit(() -> {
+                    try {
+                        copyStream(out, clientSocket.getInputStream());
+                    } finally {
+                        // We are simulating a proxy that doesn't do half closure. The proxy should close the server
+                        // socket as soon as the server read is done.
+                        socket.close();
+                    }
+                    return null;
+                });
+                copyStream(clientSocket.getOutputStream(), socket.getInputStream());
             }
-        } finally {
-            in.close();
+        } else {
+            throw new IllegalArgumentException("Unrecognized initial line: " + initialLine);
         }
+        // The Socket is closed outside the scope of this method.
     }
 
     private static void copyStream(final OutputStream out, final InputStream cin) throws IOException {
-        try {
-            int b;
-            while ((b = cin.read()) >= 0) {
-                out.write(b);
-            }
+        int read;
+        final byte[] bytes = new byte[256];
+        while ((read = cin.read(bytes)) >= 0) {
+            out.write(bytes, 0, read);
             out.flush();
-        } finally {
-            try {
-                cin.close();
-            } finally {
-                out.close();
-            }
         }
+        // Don't close either Stream! We are simulating a proxy that doesn't do half closure, and close the socket
+        // outside the scope of this method.
     }
 
     @FunctionalInterface
     private interface ProxyRequestHandler {
-        void handle(Socket socket, InputStream in, String initialLine) throws IOException,
-                ExecutionException, InterruptedException;
+        void handle(Socket socket, String initialLine) throws IOException;
     }
 }
