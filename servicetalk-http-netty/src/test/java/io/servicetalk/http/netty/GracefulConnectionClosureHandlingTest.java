@@ -21,6 +21,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -509,6 +510,7 @@ class GracefulConnectionClosureHandlingTest {
         CharSequence contentLengthHeader = response.headers().get(CONTENT_LENGTH);
         assertThat(contentLengthHeader, is(notNullValue()));
         int actualContentLength = response.payloadBody().map(Buffer::readableBytes)
+                .onErrorResume(cause -> Publisher.empty())
                 .collect(() -> 0, Integer::sum).toFuture().get();
         assertThat(valueOf(actualContentLength), contentEqualTo(contentLengthHeader));
     }
