@@ -165,7 +165,7 @@ final class ProxyTunnel implements AutoCloseable {
             out.write(bytes, 0, read);
             out.flush();
         }
-        // Don't close either Stream as we need full duplex behavior and closing a Stream of a Socket will close the
+        // Don't close either Stream! We need full duplex behavior and closing a Stream of a Socket will close the
         // entire Socket. Shutting down the input/output done outside the scope of this method.
     }
 
