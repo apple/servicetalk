@@ -62,6 +62,7 @@ final class ProxyTunnel implements AutoCloseable {
         }
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
         final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
