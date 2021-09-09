@@ -113,7 +113,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      */
     public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable) {
         throw new UnsupportedOperationException("Setting automatic host header fallback using this method is not" +
-                " yet supported. Only deprecated variant is available currently: disableHostHeaderFallback().");
+                " yet supported.");
     }
 
     /**
