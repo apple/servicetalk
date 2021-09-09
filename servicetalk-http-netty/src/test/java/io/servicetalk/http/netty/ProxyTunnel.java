@@ -41,7 +41,6 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 final class ProxyTunnel implements AutoCloseable {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyTunnel.class);
     private static final String CONNECT_PREFIX = "CONNECT ";
 
