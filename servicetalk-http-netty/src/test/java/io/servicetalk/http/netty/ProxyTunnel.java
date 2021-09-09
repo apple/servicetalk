@@ -106,17 +106,18 @@ final class ProxyTunnel implements AutoCloseable {
     }
 
     private static String readLine(final InputStream in) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(512);
-        int b;
-        while ((b = in.read()) >= 0) {
-            if (b == '\n') {
-                break;
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(512)) {
+            int b;
+            while ((b = in.read()) >= 0) {
+                if (b == '\n') {
+                    break;
+                }
+                if (b != '\r') {
+                    bos.write((byte) b);
+                }
             }
-            if (b != '\r') {
-                bos.write((byte) b);
-            }
+            return bos.toString(UTF_8.name());
         }
-        return bos.toString(UTF_8.name());
     }
 
     private void handleRequest(final Socket serverSocket, final String initialLine) throws IOException {
