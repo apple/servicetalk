@@ -39,9 +39,9 @@ function bom_artifacts() {
     grep '^servicetalk-' |
     sort -) <<"XSLTDOC"
 <?xml version="1.0"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
-	xmlns:p="http://maven.apache.org/POM/4.0.0" 
-	xmlns:exslt="http://exslt.org/common" version="1.0" extension-element-prefixes="exslt">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:p="http://maven.apache.org/POM/4.0.0"
+    xmlns:exslt="http://exslt.org/common" version="1.0" extension-element-prefixes="exslt">
   <xsl:output omit-xml-declaration="yes" indent="no" method="text"/>
   <xsl:template match="/">
     <xsl:for-each select="//p:dependencyManagement/p:dependencies/p:dependency">
