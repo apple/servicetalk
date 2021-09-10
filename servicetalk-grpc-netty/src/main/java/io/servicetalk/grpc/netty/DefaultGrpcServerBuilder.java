@@ -149,8 +149,8 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder disableDrainingRequestPayloadBody() {
-        httpServerBuilder.disableDrainingRequestPayloadBody();
+    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
+        httpServerBuilder.drainRequestPayloadBody(enable);
         return this;
     }
 

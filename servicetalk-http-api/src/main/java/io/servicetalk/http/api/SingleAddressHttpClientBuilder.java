@@ -66,7 +66,56 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
+    /**
+     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     *
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
+     */
+    @Deprecated
     @Override
+    public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
+
+    /**
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
+     *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable) {
+        throw new UnsupportedOperationException("Setting automatic host header fallback using this method is not" +
+                " yet supported by " + getClass().getSimpleName());
+    }
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
+     * processing
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
+     * </pre>
+     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
+     * purpose of filtering.
+     * @return {@code this}
+     */
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
 
@@ -85,12 +134,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
