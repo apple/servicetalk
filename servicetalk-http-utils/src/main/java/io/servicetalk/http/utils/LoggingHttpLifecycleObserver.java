@@ -18,11 +18,8 @@ package io.servicetalk.http.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 import io.servicetalk.transport.api.ConnectionInfo;
@@ -63,17 +60,15 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
         @Nullable
         private ConnectionInfo connInfo;
         @Nullable
-        private HttpRequestMethod requestMethod;
-        @Nullable
-        private String requestTarget;
-        @Nullable
-        private HttpProtocolVersion requestVersion;
+        private HttpRequestMetaData requestMetaData;
         private long requestSize;
+        private int requestTrailers;
         @Nullable
         private Object requestResult;
         @Nullable
-        private HttpResponseStatus responseStatus;
+        private HttpResponseMetaData responseMetaData;
         private long responseSize;
+        private int responseTrailers;
         @Nullable
         private Object responseResult;
 
@@ -89,12 +84,8 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
 
         @Override
         public HttpRequestObserver onRequest(final HttpRequestMetaData requestMetaData) {
-            assert this.requestMethod == null;
-            assert this.requestTarget == null;
-            assert this.requestVersion == null;
-            this.requestMethod = requestMetaData.method();
-            this.requestTarget = requestMetaData.requestTarget();
-            this.requestVersion = requestMetaData.version();
+            assert this.requestMetaData == null;
+            this.requestMetaData = requestMetaData;
             return this;
         }
 
@@ -105,12 +96,13 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
 
         @Override
         public void onRequestTrailers(final HttpHeaders trailers) {
-            // ignore for this implementation
+            requestTrailers = trailers.size();
         }
 
         @Override
         public void onRequestComplete() {
             assert requestResult == null;
+            assert requestMetaData != null;
             requestResult = Result.complete;
         }
 
@@ -128,8 +120,8 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
 
         @Override
         public HttpResponseObserver onResponse(final HttpResponseMetaData responseMetaData) {
-            assert this.responseStatus == null;
-            this.responseStatus = responseMetaData.status();
+            assert this.responseMetaData == null;
+            this.responseMetaData = responseMetaData;
             return this;
         }
 
@@ -140,13 +132,13 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
 
         @Override
         public void onResponseTrailers(final HttpHeaders trailers) {
-            // ignore for this implementation
+            responseTrailers = trailers.size();
         }
 
         @Override
         public void onResponseComplete() {
             assert responseResult == null;
-            assert responseStatus != null;
+            assert responseMetaData != null;
             responseResult = Result.complete;
         }
 
@@ -165,22 +157,26 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
         @Override
         public void onExchangeFinally() {
             // request info always expected to be available:
-            assert requestMethod != null;
-            assert requestTarget != null;
-            assert requestVersion != null;
-            final HttpResponseStatus responseStatus = this.responseStatus;
-            if (responseStatus != null) {
-                logger.log("connection={} request=\"{} {} {}\" requestSize={} requestResult={} " +
-                                "responseCode={} responseSize={} responseResult={} duration={}ms",
+            final HttpRequestMetaData requestMetaData = this.requestMetaData;
+            assert requestMetaData != null;
+            final HttpResponseMetaData responseMetaData = this.responseMetaData;
+            if (responseMetaData != null) {
+                logger.log("connection={} " +
+                        "request=\"{} {} {}\" requestHeaders={} requestSize={} requestTrailers={} requestResult={} " +
+                        "responseCode={} responseHeaders={} responseSize={} responseTrailers={} responseResult={} " +
+                        "duration={}ms",
                         connInfo == null ? "unknown" : connInfo,
-                        requestMethod, requestTarget, requestVersion, requestSize, unwrapResult(requestResult),
-                        responseStatus.code(), responseSize, unwrapResult(responseResult),
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
+                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                        responseTrailers, unwrapResult(responseResult),
                         NANOSECONDS.toMillis(nanoTime() - startTime), merge(responseResult, requestResult));
             } else {
-                logger.log("connection={} request=\"{} {} {}\" requestSize={} requestResult={} responseResult={} " +
-                                "duration={}ms",
+                logger.log("connection={} request=\"{} {} {}\" requestHeaders={} requestSize={} requestTrailers={} " +
+                                "requestResult={} responseResult={} duration={}ms",
                         connInfo == null ? "unknown" : connInfo,
-                        requestMethod, requestTarget, requestVersion, requestSize, unwrapResult(requestResult),
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
                         unwrapResult(responseResult),
                         NANOSECONDS.toMillis(nanoTime() - startTime), merge(responseResult, requestResult));
             }
