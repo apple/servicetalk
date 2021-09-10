@@ -138,6 +138,17 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
+     * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
+     *
+     * @param lifecycleObserver A {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
+     * @return {@code this}.
+     */
+    public GrpcServerBuilder lifecycleObserver(GrpcLifecycleObserver lifecycleObserver) {
+        throw new UnsupportedOperationException(
+                "Setting GrpcLifecycleObserver using this method is not yet supported by " + getClass().getName());
+    }
+
+    /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
      * consumed by the service.
      * <p>
