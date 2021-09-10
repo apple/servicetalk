@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -30,12 +31,15 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.IoThreadFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.http.netty.AbstractLifecycleObserverHttpFilter.ON_CONNECTION_SELECTED_CONSUMER;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
@@ -69,6 +73,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatMap(c -> {
+                final Consumer<ConnectionInfo> onConnectionSelected = AsyncContext.get(ON_CONNECTION_SELECTED_CONSUMER);
+                if (onConnectionSelected != null) {
+                    onConnectionSelected.accept(c.connectionContext());
+                    AsyncContext.remove(ON_CONNECTION_SELECTED_CONSUMER);
+                }
                 final OwnedRunnable ownedRunnable = c.connectionContext().protocol().major() <= 1 ? null :
                         new OwnedRunnable(c::requestFinished);
                 return c.request(strategy, ownedRunnable == null ? request :

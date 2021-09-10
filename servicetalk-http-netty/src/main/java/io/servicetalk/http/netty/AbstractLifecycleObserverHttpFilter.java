@@ -16,6 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -43,12 +45,15 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);
+    static final Key<Consumer<ConnectionInfo>> ON_CONNECTION_SELECTED_CONSUMER =
+            newKey("ON_CONNECTION_SELECTED_CONSUMER");
 
     private final HttpLifecycleObserver observer;
 
@@ -73,6 +78,11 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                     NoopHttpExchangeObserver.INSTANCE);
             if (connInfo != null) {
                 safeReport(onExchange::onConnectionSelected, connInfo, onExchange, "onConnectionSelected");
+            } else {
+                // Pass it down to LoadBalancedStreamingHttpClient
+                // FIXME: switch to RequestContext when it's available
+                AsyncContext.put(ON_CONNECTION_SELECTED_CONSUMER, selectedConnection -> safeReport(
+                        onExchange::onConnectionSelected, selectedConnection, onExchange, "onConnectionSelected"));
             }
             final ExchangeContext exchangeContext = new ExchangeContext(onExchange);
             final HttpRequestObserver onRequest = safeReport(onExchange::onRequest, request, onExchange,
