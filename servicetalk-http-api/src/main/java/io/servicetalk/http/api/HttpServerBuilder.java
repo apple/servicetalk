@@ -140,6 +140,14 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
+     * Sets a {@link TransportObserver} that provides visibility into HTTP lifecycle events.
+     *
+     * @param lifecycleObserver A {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder lifecycleObserver(HttpLifecycleObserver lifecycleObserver);
+
+    /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
      * consumed by the service.
      * <p>
