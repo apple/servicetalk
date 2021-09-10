@@ -22,7 +22,8 @@ dependencies {
     implementation project(":servicetalk-annotations")
     implementation project(":servicetalk-buffer-netty")
     implementation project(":servicetalk-concurrent-internal")
-    implementation "io.netty:netty-codec:$nettyVersion"
+    implementation(platform("io.netty:netty-bom:$nettyVersion"))
+    implementation "io.netty:netty-codec"
     implementation "com.google.code.findbugs:jsr305:$jsr305Version"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

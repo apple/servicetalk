@@ -24,5 +24,6 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-common:$nettyVersion"
+  implementation(platform("io.netty:netty-bom:$nettyVersion"))
+  implementation "io.netty:netty-common"
 }

@@ -18,7 +18,8 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-buffer-api")
-  api "io.netty:netty-buffer:$nettyVersion"
+  api(platform("io.netty:netty-bom:$nettyVersion"))
+  api "io.netty:netty-buffer"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-utils-internal")

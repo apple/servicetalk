@@ -26,11 +26,11 @@ dependencies {
   implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-resolver-dns:$nettyVersion"
+  implementation "io.netty:netty-resolver-dns"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-  runtimeOnly "io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64"
-  runtimeOnly "io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-aarch_64"
+  runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
+  runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
