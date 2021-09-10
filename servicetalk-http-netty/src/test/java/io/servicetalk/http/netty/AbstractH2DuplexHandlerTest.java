@@ -236,7 +236,9 @@ class AbstractH2DuplexHandlerTest {
         assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(contentLength)));
         if (endStream) {
             HttpHeaders trailers = channel.readInbound();
-            assertThat(trailers.isEmpty(), is(true));
+            if (trailers != null) {
+                assertThat(trailers.isEmpty(), is(true));
+            }
         } else {
             // No more items at this moment:
             assertThat(channel.inboundMessages(), is(empty()));
@@ -309,7 +311,9 @@ class AbstractH2DuplexHandlerTest {
             channel.writeInbound(new DefaultHttp2HeadersFrame(new DefaultHttp2Headers().set("trailer", "value"), true));
         }
         HttpHeaders trailers = channel.readInbound();
-        assertThat(trailers.isEmpty(), is(!addTrailers));
+        if (trailers != null) {
+            assertThat(trailers.isEmpty(), is(!addTrailers));
+        }
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
@@ -327,7 +331,9 @@ class AbstractH2DuplexHandlerTest {
         assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(0)));
 
         HttpHeaders trailers = channel.readInbound();
-        assertThat(trailers.isEmpty(), is(true));
+        if (trailers != null) {
+            assertThat(trailers.isEmpty(), is(true));
+        }
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
@@ -392,11 +398,19 @@ class AbstractH2DuplexHandlerTest {
 
         Http2HeadersFrame headersFrame = channel.readOutbound();
         assertThat("Unexpected endStream flag value at headers frame", headersFrame.isEndStream(), is(false));
+        assertEmptyDataFrame();
         Http2DataFrame dataFrame = channel.readOutbound();
         assertThat("Unexpected data", dataFrame.content().toString(US_ASCII), is("data"));
         assertThat("Unexpected endStream flag value at data frame", dataFrame.isEndStream(), is(false));
+        assertEmptyDataFrame();
         dataFrame = channel.readOutbound();
         assertThat("Unexpected endStream flag value at last frame", dataFrame.isEndStream(), is(true));
         assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
+    }
+
+    private void assertEmptyDataFrame() {
+        Http2DataFrame dataFrame = channel.readOutbound();
+        assertThat(dataFrame.content().readableBytes(), is(0));
+        dataFrame.release();
     }
 }

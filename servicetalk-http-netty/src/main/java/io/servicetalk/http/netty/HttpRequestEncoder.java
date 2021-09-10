@@ -39,6 +39,7 @@ import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
@@ -83,7 +84,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     @Override
     protected void sanitizeHeadersBeforeEncode(final HttpRequestMetaData msg, final boolean isAlwaysEmpty) {
         // This method has side effects on the methodQueue for the following reasons:
-        // - createMessage will not necessary fire a message up the pipeline.
+        // - createMessage will not necessarily fire a message up the pipeline.
         // - the trigger points on the queue are currently symmetric for the request/response decoder and
         // request/response encoder. We may use header information on the response decoder side, and the queue
         // interaction is conditional (1xx responses don't touch the queue).
@@ -144,5 +145,11 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
         // if this happens just force http/1.1 to avoid generating an invalid request.
         (message.version().major() == 1 ? message.version() : HTTP_1_1).writeTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
+    }
+
+    @Override
+    protected long getContentLength(final HttpRequestMetaData message) {
+        final long len = HttpObjectDecoder.getContentLength(message);
+        return len < 0 && shouldAddZeroContentLength(message.method()) ? 0 : len;
     }
 }

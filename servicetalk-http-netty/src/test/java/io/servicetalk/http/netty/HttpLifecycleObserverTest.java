@@ -149,9 +149,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
         bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -162,9 +162,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
         bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, true);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, true, true);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, true);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, true, true);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -175,9 +175,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
         bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -188,9 +188,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
         bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -339,7 +339,6 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         verify(serverResponseObserver, atMostOnce()).onResponseData(any(Buffer.class));
         serverInOrder.verify(serverResponseObserver).onResponseCancel();
         serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
-        serverRequestInOrder.verify(serverRequestObserver).onRequestTrailers(any(HttpHeaders.class));
         serverRequestInOrder.verify(serverRequestObserver).onRequestComplete();
         serverInOrder.verify(serverExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
@@ -358,7 +357,8 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     private static void verifyObservers(boolean client, HttpLifecycleObserver lifecycle, HttpExchangeObserver exchange,
                                         HttpRequestObserver request, HttpResponseObserver response,
-                                        InOrder inOrder, InOrder requestInOrder, boolean hasMessageBody) {
+                                        InOrder inOrder, InOrder requestInOrder, boolean hasMessageBody,
+                                        boolean hasTrailers) {
         inOrder.verify(lifecycle).onNewExchange();
         if (client) {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
@@ -369,12 +369,12 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         }
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
         inOrder.verify(response, hasMessageBody ? times(1) : never()).onResponseData(any(Buffer.class));
-        inOrder.verify(response, hasMessageBody || client ? times(1) : never())
+        inOrder.verify(response, hasTrailers && !client ? times(1) : never())
                 .onResponseTrailers(any(HttpHeaders.class));
         inOrder.verify(response).onResponseComplete();
 
         requestInOrder.verify(request, hasMessageBody ? times(1) : never()).onRequestData(any(Buffer.class));
-        requestInOrder.verify(request, hasMessageBody || !client ? times(1) : never())
+        requestInOrder.verify(request, hasTrailers && client ? times(1) : never())
                 .onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
@@ -396,9 +396,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
         inOrder.verify(response).onResponseError(!client ? DELIBERATE_EXCEPTION : any());
 
-        if (!client) {
-            requestInOrder.verify(request).onRequestTrailers(any(HttpHeaders.class));
-        }
+        requestInOrder.verify(request, never()).onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
         inOrder.verify(exchange).onExchangeFinally();

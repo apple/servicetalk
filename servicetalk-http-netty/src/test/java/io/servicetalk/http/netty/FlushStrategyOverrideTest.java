@@ -57,6 +57,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 
 class FlushStrategyOverrideTest {
@@ -122,7 +123,7 @@ class FlushStrategyOverrideTest {
         serverFlush.flush();
 
         Collection<Object> chunks = clientResp.get();
-        assertThat("Unexpected items received.", chunks, hasSize(4 /*3 chunks + last chunk*/));
+        assertThat("Unexpected items received.", chunks, hasSize(3 /*3 chunks (includes empty last chunk)*/));
 
         c.cancel(); // revert to flush on each.
 
@@ -132,7 +133,7 @@ class FlushStrategyOverrideTest {
         clientStrategy.verifyNoMoreInteractions();
         service.getLastUsedStrategy();
         serverStrategy.verifyNoMoreInteractions();
-        assertThat("Unexpected payload for regular flush.", secondReqChunks, hasSize(1/*last chunk*/));
+        assertThat("Unexpected payload for regular flush.", secondReqChunks, empty());
     }
 
     private static final class FlushingService implements StreamingHttpService {

@@ -24,12 +24,15 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.unset;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.has;
 import static java.util.Objects.requireNonNull;
 
 final class NonPipelinedCloseHandler extends CloseHandler {
@@ -65,6 +68,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
+        ctx.pipeline().fireUserEventTriggered(InboundDataEndEvent.INSTANCE);
         state = unset(state, READ);
         inboundEventCheckClose(ctx.channel(), closeEvent);
     }
@@ -106,7 +110,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
-        if (!has(state, IN_CLOSED)) {
+        if (!isAllSet(state, IN_CLOSED)) {
             state = unset(set(state, IN_CLOSED), READ);
             final CloseEvent evt = CHANNEL_CLOSED_INBOUND;
             storeCloseRequestAndEmit(evt);
@@ -116,7 +120,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedOutbound(final ChannelHandlerContext ctx) {
-        if (!has(state, OUT_CLOSED)) {
+        if (!isAllSet(state, OUT_CLOSED)) {
             state = unset(set(state, OUT_CLOSED), WRITE);
             final CloseEvent evt = CHANNEL_CLOSED_OUTBOUND;
             storeCloseRequestAndEmit(evt);
@@ -154,6 +158,39 @@ final class NonPipelinedCloseHandler extends CloseHandler {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(32);
+        if (isAnySet(state, IS_CLIENT)) {
+            sb.append("CLIENT,");
+        } else {
+            sb.append("SERVER,");
+        }
+        if (isAnySet(state, READ)) {
+            sb.append("READ,");
+        }
+        if (isAnySet(state, WRITE)) {
+            sb.append("WRITE,");
+        }
+        if (isAnySet(state, IN_CLOSED)) {
+            sb.append("IN_CLOSED,");
+        }
+        if (isAnySet(state, OUT_CLOSED)) {
+            sb.append("OUT_CLOSED,");
+        }
+        if (isAnySet(state, GRACEFUL_CLOSE)) {
+            sb.append("GRACEFUL_CLOSE,");
+        }
+        if (isAnySet(state, CLOSED)) {
+            sb.append("CLOSED,");
+        }
+        if (closeEvent != null) {
+            sb.append(closeEvent).append(',');
+        }
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
+    }
+
     private void inboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
         if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_IN_CLOSED) && !isAllSet(state, WRITE))) {
             closeChannel(channel, evt);
@@ -179,26 +216,10 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     }
 
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
-        if (!has(state, CLOSED)) {
+        if (!isAllSet(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
             LOGGER.trace("{} Closing channel – evt: {}", channel, evt);
             channel.close();
         }
-    }
-
-    private static byte set(byte state, byte flags) {
-        return (byte) (state | flags);
-    }
-
-    private static byte unset(byte state, byte flags) {
-        return (byte) (state & ~flags);
-    }
-
-    private static boolean isAllSet(byte state, byte flags) {
-        return (state & flags) == flags;
-    }
-
-    private static boolean isAnySet(byte state, byte flags) {
-        return (state & flags) != 0;
     }
 }

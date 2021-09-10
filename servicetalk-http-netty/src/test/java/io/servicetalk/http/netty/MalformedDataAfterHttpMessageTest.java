@@ -36,8 +36,10 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
@@ -59,7 +61,9 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -95,7 +99,10 @@ class MalformedDataAfterHttpMessageTest {
             assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
 
             // Verify that the next request fails and connection gets closed:
-            assertThrows(DecoderException.class, () -> connection.request(connection.get("/")));
+            // The exception generation is currently racy. A write maybe triggered while the channel is not active
+            // which will lead to ClosedChannelException.
+            assertThat(assertThrows(Exception.class, () -> connection.request(connection.get("/"))),
+                    anyOf(instanceOf(DecoderException.class), instanceOf(ClosedChannelException.class)));
             connectionClosedLatch.await();
         } finally {
             server.close().sync();
@@ -113,13 +120,10 @@ class MalformedDataAfterHttpMessageTest {
 
             Buffer malformedBody = client.executionContext().bufferAllocator().fromAscii(CONTENT)
                 .writeShort(0); // malformed data at the end of the request msg
-            HttpResponse response = connection.request(connection.post("/")
-                                                           .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
-                                                           .setHeader(CONTENT_TYPE, TEXT_PLAIN)
-                                                           .payloadBody(malformedBody));
-            assertThat(response.status(), is(OK));
-            assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
-            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
+            assertThrows(IOException.class, () -> connection.request(connection.post("/")
+                    .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                    .setHeader(CONTENT_TYPE, TEXT_PLAIN)
+                    .payloadBody(malformedBody)));
 
             // Server should close the connection:
             connectionClosedLatch.await();

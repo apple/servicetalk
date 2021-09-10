@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.http.api.HttpStreamingSerializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
@@ -38,12 +39,13 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -53,6 +55,8 @@ class ServerGracefulConnectionClosureHandlingTest {
     static final ExecutionContextExtension SERVER_CTX =
         ExecutionContextExtension.cached("server-io", "server-executor");
 
+    private static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER =
+            stringStreamingSerializer(UTF_8, hdr -> { });
     private static final String REQUEST_CONTENT = "request_content";
     private static final String RESPONSE_CONTENT = "response_content";
 
@@ -79,12 +83,9 @@ class ServerGracefulConnectionClosureHandlingTest {
                     return completed();
                 }
             }).listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
-                        .addHeader(CONTENT_LENGTH, valueOf(
-                                RESPONSE_CONTENT.length()))
-                        .payloadBody(
-                                request.payloadBody().ignoreElements()
-                                        .concat(from(RESPONSE_CONTENT)),
-                                appSerializerUtf8FixLen())
+                        .addHeader(CONTENT_LENGTH, valueOf(RESPONSE_CONTENT.length()))
+                        .payloadBody(request.payloadBody().ignoreElements().concat(from(RESPONSE_CONTENT)),
+                                RAW_STRING_SERIALIZER)
                         // Close ServerContext after response is complete
                         .transformMessageBody(payload -> payload
                                 .whenFinally(serverClose.get()))));
@@ -117,7 +118,7 @@ class ServerGracefulConnectionClosureHandlingTest {
             while (in.read() >= 0) {
                 total++;
             }
-            assertThat(total, is(114));
+            assertThat(total, is(55));
         }
 
         awaitServerConnectionClosed();

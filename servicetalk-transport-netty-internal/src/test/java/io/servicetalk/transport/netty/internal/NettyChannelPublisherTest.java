@@ -27,6 +27,7 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
@@ -88,15 +89,23 @@ class NettyChannelPublisherTest {
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedDuplexChannel(false);
+        CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
         NettyConnection<Integer, Object> connection =
-                DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null,
-                terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
+                DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
+                immediate(), null, closeHandler, defaultFlushStrategy(), null, channel ->
                                 channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                 @Override
                 public void read(ChannelHandlerContext ctx) throws Exception {
                     readRequested = true;
                     super.read(ctx);
+                }
+            }).addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                    ctx.fireChannelRead(msg);
+                    if (msg instanceof Integer && terminalPredicate.test((Integer) msg)) {
+                        closeHandler.protocolPayloadEndInbound(ctx);
+                    }
                 }
             }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = connection.read();
@@ -115,9 +124,9 @@ class NettyChannelPublisherTest {
             channel.close();
         }
         channel = new EmbeddedDuplexChannel(false);
-        NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null, (Integer obj) -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                defaultFlushStrategy(), null, channel -> {
+        NettyConnection<Integer, Object> connection = DefaultNettyConnection.<Integer, Object>initChannel(channel,
+                DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
+                channel -> {
                     channel.pipeline().addLast(new ChannelDuplexHandler() {
                         @Override
                         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
@@ -494,7 +503,7 @@ class NettyChannelPublisherTest {
             }
         });
         assertThat("Unexpected value.", resultRef.get(), is(1));
-        assertThat("Channel closed.", channel.closeFuture().isDone(), is(false));
+        assertThat("Channel closed.", channel.closeFuture().isDone(), is(true));
     }
 
     @Test
@@ -598,10 +607,8 @@ class NettyChannelPublisherTest {
         assertFalse(channel.isActive());
         assertFalse(channel.isOpen());
 
-        AtomicReference<Throwable> exRef = new AtomicReference<>();
-        publisher.beforeOnError(exRef::set).forEach(__ -> { });
-        assertThat("Subscriber active post channel error.", exRef.get(),
-                is(instanceOf(ClosedChannelException.class)));
+        toSource(publisher).subscribe(subscriber2);
+        assertThat(subscriber2.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -650,8 +657,7 @@ class NettyChannelPublisherTest {
 
         assertThat(subscriber.takeOnNext(), is(1));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        // only the active subscriber sees the initial exception, subsequent subscribers will observe a closed channel
-        assertThat(subscriber2.awaitOnError(), instanceOf(ClosedChannelException.class));
+        assertThat(subscriber2.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     private void testChannelReadThrows(boolean requestLate) {

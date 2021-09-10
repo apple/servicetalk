@@ -241,7 +241,7 @@ class GrpcLifecycleObserverTest {
             verifyGrpcStatus(inOrder, response, UNKNOWN);
             if (client) {
                 if (aggregated) {
-                    verifyEmptyTrailers(inOrder, response);
+                    inOrder.verify(response, never()).onResponseTrailers(any(HttpHeaders.class));
                     inOrder.verify(response).onResponseComplete();
                 } else {
                     inOrder.verify(response).onResponseError(any(GrpcStatusException.class));
@@ -252,11 +252,7 @@ class GrpcLifecycleObserverTest {
         }
 
         requestInOrder.verify(request).onRequestData(any(Buffer.class));
-        if (client) {
-            requestInOrder.verify(request, never()).onRequestTrailers(any(HttpHeaders.class));
-        } else {
-            verifyEmptyTrailers(requestInOrder, request);
-        }
+        requestInOrder.verify(request, never()).onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
         inOrder.verify(exchange).onExchangeFinally();
@@ -267,18 +263,6 @@ class GrpcLifecycleObserverTest {
         ArgumentCaptor<GrpcStatus> grpcStatus = ArgumentCaptor.forClass(GrpcStatus.class);
         inOrder.verify(response).onGrpcStatus(grpcStatus.capture());
         assertThat("Unexpected gRPC status", grpcStatus.getValue().code(), is(expectedCode));
-    }
-
-    private static void verifyEmptyTrailers(InOrder inOrder, GrpcRequestObserver request) {
-        ArgumentCaptor<HttpHeaders> requestTrailers = ArgumentCaptor.forClass(HttpHeaders.class);
-        inOrder.verify(request).onRequestTrailers(requestTrailers.capture());
-        assertThat("Unexpected request trailers", requestTrailers.getValue().size(), is(0));
-    }
-
-    private static void verifyEmptyTrailers(InOrder inOrder, GrpcResponseObserver response) {
-        ArgumentCaptor<HttpHeaders> requestTrailers = ArgumentCaptor.forClass(HttpHeaders.class);
-        inOrder.verify(response).onResponseTrailers(requestTrailers.capture());
-        assertThat("Unexpected request trailers", requestTrailers.getValue().size(), is(0));
     }
 
     private static final class EchoService implements TesterService {

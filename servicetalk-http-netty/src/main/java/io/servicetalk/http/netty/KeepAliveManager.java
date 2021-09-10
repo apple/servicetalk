@@ -20,9 +20,11 @@ import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
@@ -35,8 +37,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
+import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static java.lang.Boolean.TRUE;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -93,7 +98,7 @@ final class KeepAliveManager {
 
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
         this(channel, keepAlivePolicy, (task, delay, unit) ->
-                channel.eventLoop().schedule(task, delay, unit),
+                        channel.eventLoop().schedule(task, delay, unit),
                 (ch, idlenessThresholdSeconds, onIdle) -> ch.pipeline().addLast(
                         new IdleStateHandler(idlenessThresholdSeconds, idlenessThresholdSeconds, 0) {
                             @Override
@@ -105,6 +110,10 @@ final class KeepAliveManager {
 
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy,
                      final Scheduler scheduler, final IdlenessDetector idlenessDetector) {
+        if (channel instanceof DuplexChannel) {
+            channel.config().setOption(ALLOW_HALF_CLOSURE, TRUE);
+            channel.config().setAutoClose(false);
+        }
         this.channel = channel;
         this.scheduler = scheduler;
         if (keepAlivePolicy != null) {
@@ -199,6 +208,16 @@ final class KeepAliveManager {
                 .addListener(pingWriteCompletionListener);
     }
 
+    void channelOutputShutdown() {
+        assert channel.eventLoop().inEventLoop();
+        channelHalfShutdown(DuplexChannel::isInputShutdown);
+    }
+
+    void channelInputShutdown() {
+        assert channel.eventLoop().inEventLoop();
+        channelHalfShutdown(DuplexChannel::isOutputShutdown);
+    }
+
     /**
      * Scheduler of {@link Runnable}s.
      */
@@ -230,6 +249,25 @@ final class KeepAliveManager {
          * @param onIdle {@link Runnable} to call when the channel is idle more than {@code idlenessThresholdSeconds}.
          */
         void configure(Channel channel, int idlenessThresholdSeconds, Runnable onIdle);
+    }
+
+    @FunctionalInterface
+    private interface BooleanFunction<T> {
+        boolean apply(T arg);
+    }
+
+    private void channelHalfShutdown(BooleanFunction<DuplexChannel> otherSideShutdown) {
+        if (channel instanceof DuplexChannel) {
+            final DuplexChannel duplexChannel = (DuplexChannel) channel;
+            if (otherSideShutdown.apply(duplexChannel) ||
+                    (gracefulCloseState != GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT && gracefulCloseState != CLOSED)) {
+                // If we have not started the graceful close process, or waiting for ack/read to complete the graceful
+                // close process just force a close now because we will not read any more data.
+                duplexChannel.close();
+            }
+        } else {
+            channel.close();
+        }
     }
 
     private void doCloseAsyncGracefully0(final Runnable whenInitiated) {
@@ -299,8 +337,28 @@ final class KeepAliveManager {
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
         // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
         // closure, if there is no write pending then flush is a noop.
-        channel.flush();
-        channel.close();
+        channel.writeAndFlush(EMPTY_BUFFER).addListener(f -> {
+            SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+            if (sslHandler != null) {
+                // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
+                sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());
+            } else {
+                doShutdownOutput();
+            }
+        });
+    }
+
+    private void doShutdownOutput() {
+        if (channel instanceof DuplexChannel) {
+            final DuplexChannel duplexChannel = (DuplexChannel) channel;
+            duplexChannel.shutdownOutput().addListener(f -> {
+                if (duplexChannel.isInputShutdown()) {
+                    channel.close();
+                }
+            });
+        } else {
+            channel.close();
+        }
     }
 
     private void cancelIfStateIsAFuture(@Nullable final Object state) {

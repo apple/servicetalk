@@ -85,7 +85,6 @@ public class TcpServer {
         return TcpServerBinder.bind(localAddress(port), config, false, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
-                        buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                         new TcpServerChannelInitializer(config, connectionObserver)
                                 .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,

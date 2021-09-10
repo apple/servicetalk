@@ -22,25 +22,27 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
-import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyChannelPublisher.class);
     // All state is only touched from eventloop.
     private long requestCount;
     private boolean requested;
-    private boolean inProcessPending;
     @Nullable
     private SubscriptionImpl subscription;
     @Nullable
@@ -51,13 +53,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private final Channel channel;
     private final CloseHandler closeHandler;
     private final EventLoop eventLoop;
-    private final Predicate<T> terminalSignalPredicate;
 
-    NettyChannelPublisher(Channel channel, Predicate<T> terminalSignalPredicate, CloseHandler closeHandler) {
+    NettyChannelPublisher(Channel channel, CloseHandler closeHandler) {
         this.eventLoop = channel.eventLoop();
         this.channel = channel;
         this.closeHandler = closeHandler;
-        this.terminalSignalPredicate = requireNonNull(terminalSignalPredicate);
     }
 
     @Override
@@ -89,19 +89,57 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
+    /**
+     * Signifies all data has been read and {@link Subscriber#onComplete()} should be emitted.
+     */
+    void channelOnComplete() {
+        assertInEventloop();
+        if (fatalError != null) {
+            return;
+        }
+
+        if (subscription == null || hasQueuedSignals()) {
+            addPending(complete());
+            if (subscription != null) {
+                processPending(subscription);
+            }
+        } else {
+            emitComplete(subscription);
+        }
+    }
+
+    void channelOnError(Throwable throwable) {
+        assertInEventloop();
+        if (fatalError == null) {
+            fatalError = throwable;
+            channelOnError0(throwable);
+        }
+    }
+
+    private void channelOnError0(Throwable throwable) {
+        assignConnectionError(channel, throwable);
+        if (subscription == null) {
+            closeChannelInbound();
+            if (hasQueuedSignals()) {
+                addPending(error(throwable));
+            }
+        } else if (hasQueuedSignals()) {
+            addPending(error(throwable));
+            processPending(subscription);
+        } else {
+            emitError(subscription, throwable);
+        }
+    }
+
     private void channelReadReferenceCounted(ReferenceCounted data) {
         try {
             data.release();
         } finally {
             // We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
             // in error conditions. Hence we fail-fast when we see such objects.
-            pending = null;
-            if (fatalError == null) {
-                fatalError = new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
-                        data.getClass().getSimpleName());
-                exceptionCaught0(fatalError);
-            }
-            close(channel, fatalError);
+            emitCatchError(subscription,
+                    new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
+                            data.getClass().getSimpleName()));
         }
     }
 
@@ -113,39 +151,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
-    void exceptionCaught(Throwable throwable) {
-        assertInEventloop();
-        if (fatalError != null) {
-            return;
-        }
-        exceptionCaught0(throwable);
-    }
-
-    private void exceptionCaught0(Throwable throwable) {
-        assignConnectionError(channel, throwable);
-        if (subscription == null || shouldBuffer()) {
-            addPending(TerminalNotification.error(throwable));
-            if (subscription != null) {
-                processPending(subscription);
-            }
-        } else {
-            sendErrorToTarget(subscription, throwable);
-        }
-    }
-
-    void channelInboundClosed(Throwable cause) {
-        assertInEventloop();
-        if (fatalError == null) {
-            fatalError = cause;
-            exceptionCaught0(fatalError);
-        }
-    }
-
     // All private methods MUST be invoked from the eventloop.
 
     private void requestN(long n, SubscriptionImpl forSubscription) {
         if (forSubscription != subscription) {
-            // Subscriptions shares common state hence a requestN after termination/cancellation must be ignored
+            // Subscription shares common state hence a requestN after termination/cancellation must be ignored
             return;
         }
         if (isRequestNValid(n)) {
@@ -165,76 +175,94 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     }
 
     private boolean processPending(SubscriptionImpl target) {
-        // Should always be called from eventloop. (assert done before calling)
-        if (!inProcessPending && pending != null && !pending.isEmpty()) {
-            inProcessPending = true;
-            try {
-                while (requestCount > 0) {
-                    Object p = pending.poll();
-                    if (p == null) {
-                        break;
-                    }
-                    if (p instanceof TerminalNotification) {
-                        sendErrorToTarget(target, (TerminalNotification) p);
+        // Should always be called from EventLoop. (assert done before calling)
+        if (!hasQueuedSignals()) {
+            return false;
+        }
+        assert pending != null; // checked by hasQueuedSignals
+
+        for (;;) {
+            while (requestCount > 0) {
+                Object p = pending.poll();
+                if (p == null) {
+                    return false;
+                } else if (p instanceof TerminalNotification) {
+                    emit(target, (TerminalNotification) p);
+                    // stop draining the pending events if the current Subscription is still the same for which
+                    // we started draining, continue emitting the remaining data if there is a new Subscriber
+                    if (subscription == null || subscription == target) {
                         return true;
                     }
-                    if (emit(target, p)) {
-                        if (subscription == target || subscription == null) {
-                            // stop draining the pending events if the current Subscription is still the same for which
-                            // we started draining, continue emitting the remaining data if there is a new Subscriber
-                            return true;
-                        }
-                        target = subscription;
-                    }
+                    target = subscription;
+                } else {
+                    emit(target, p);
+                    // If emit terminates it will clear the queue, set a fatal error, and propagate the error. No need
+                    // to have special recovery code in this loop.
                 }
-                if (pending.peek() instanceof TerminalNotification) {
-                    sendErrorToTarget(target, (TerminalNotification) pending.poll());
+            }
+            if (pending.peek() instanceof TerminalNotification) {
+                emit(target, (TerminalNotification) pending.poll());
+                // stop draining the pending events if the current Subscription is still the same for which
+                // we started draining, continue emitting the remaining data if there is a new Subscriber
+                if (subscription == null || subscription == target) {
                     return true;
                 }
-            } finally {
-                inProcessPending = false;
+                target = subscription;
+            } else {
+                return false;
             }
         }
-        return false;
     }
 
-    private boolean emit(SubscriptionImpl target, Object next) {
+    private void emit(SubscriptionImpl target, Object next) {
+        assert requestCount > 0;
         --requestCount;
-        @SuppressWarnings("unchecked")
-        final T t = (T) next;
-        /*
-         * In case when this Publisher is converted to a Single (with isLast always returning true),
-         * it should be possible for us to cancel the Subscription inside onNext.
-         * Operators like first that pick a single item does exactly that.
-         * If we do not resetSubscription() before onNext such a cancel will be illegal and close the connection.
-         */
-        final boolean isLast = terminalSignalPredicate.test(t);
-        if (isLast) {
-            resetSubscription();
-        }
         try {
+            @SuppressWarnings("unchecked")
+            final T t = (T) next;
             target.associatedSub.onNext(t);
         } catch (Throwable cause) {
-            // Ensure we call subscriber.onError(..)  and cancel the subscription
-            sendErrorToTarget(target, cause);
-
-            // Return true as we want to signal we had a terminal event.
-            return true;
+            emitCatchError(target, cause);
         }
-        if (isLast) {
+    }
+
+    private void emitCatchError(@Nullable SubscriptionImpl target, Throwable cause) {
+        // If we have items queued, we may deliver partial content to the next subscriber. So consider the error fatal.
+        if (pending != null) {
+            pending.clear();
+        }
+        if (fatalError == null) {
+            fatalError = cause;
+        }
+        if (target != null) {
+            emitError(target, cause);
+        } else {
+            LOGGER.debug("caught unexpected exception, closing channel {}", channel, cause);
+            // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting
+            // complete, which should not close the channel.
+            closeChannelInbound();
+        }
+    }
+
+    private void emit(SubscriptionImpl target, TerminalNotification terminal) {
+        final Throwable cause = terminal.cause();
+        if (cause == null) {
+            emitComplete(target);
+        } else {
+            emitError(target, cause);
+        }
+    }
+
+    private void emitComplete(SubscriptionImpl target) {
+        resetSubscription();
+        try {
             target.associatedSub.onComplete();
-            return true;
+        } catch (Throwable cause) {
+            emitCatchError(null, cause);
         }
-        return false;
     }
 
-    private void sendErrorToTarget(SubscriptionImpl target, TerminalNotification terminal) {
-        Throwable throwable = terminal.cause();
-        assert throwable != null;
-        sendErrorToTarget(target, throwable);
-    }
-
-    private void sendErrorToTarget(SubscriptionImpl target, Throwable throwable) {
+    private void emitError(SubscriptionImpl target, Throwable throwable) {
         resetSubscription();
         try {
             target.associatedSub.onError(throwable);
@@ -249,21 +277,14 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     private void cancel(SubscriptionImpl forSubscription) {
         if (forSubscription != subscription) {
-            // Subscriptions shares common state hence a requestN after termination/cancellation must be ignored
+            // Subscription shares common state hence a requestN after termination/cancellation must be ignored
             return;
         }
         resetSubscription();
 
         // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
         // any future Subscribers don't get partial data delivered from the queue.
-        pending = null;
-        if (fatalError == null) {
-            fatalError = StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel");
-        }
-
-        // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete,
-        // which should not close the channel.
-        closeChannelInbound();
+        emitCatchError(null, StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel"));
     }
 
     private void closeChannelInbound() {
@@ -288,7 +309,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     }
 
     private boolean shouldBuffer() {
-        return (pending != null && !pending.isEmpty()) || requestCount == 0;
+        return hasQueuedSignals() || requestCount == 0;
+    }
+
+    private boolean hasQueuedSignals() {
+        return pending != null && !pending.isEmpty();
     }
 
     private void subscribe0(Subscriber<? super T> subscriber) {
@@ -304,9 +329,9 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
             if (subscription == this.subscription && !processPending(subscription) &&
-                    (fatalError != null && (pending == null || pending.isEmpty()))) {
+                    (fatalError != null && !hasQueuedSignals())) {
                 // We are already on the eventloop, so we are sure that nobody else is emitting to the Subscriber.
-                sendErrorToTarget(subscription, fatalError);
+                emitError(subscription, fatalError);
             }
         }
     }

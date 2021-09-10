@@ -81,6 +81,7 @@ class PipelinedHttpConnectionTest {
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
         when(connection.executionContext()).thenReturn(ctx);
+        when(connection.protocol()).thenReturn(HTTP_1_1);
         when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all

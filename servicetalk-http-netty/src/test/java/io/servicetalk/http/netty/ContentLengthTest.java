@@ -231,7 +231,7 @@ class ContentLengthTest {
     private static void assertFlattened(final Collection<Object> flattened,
                                         final Matcher<CharSequence> matcher,
                                         final AtomicBoolean messageBodySubscribed) {
-        assertThat("Unexpected number of items in the flattened stream.", flattened, hasSize(greaterThanOrEqualTo(2)));
+        assertThat("Unexpected number of items in the flattened stream.", flattened, hasSize(greaterThanOrEqualTo(1)));
         Iterator<Object> iterator = flattened.iterator();
         Object firstItem = iterator.next();
         assertThat("Unexpected first item in the flattened stream.", firstItem, instanceOf(HttpMetaData.class));
@@ -247,7 +247,8 @@ class ContentLengthTest {
             prev = last;
             last = iterator.next();
         }
-        assertThat("Unexpected last item in the flattened stream.", last, instanceOf(HttpHeaders.class));
+        assertThat("Unexpected last item in the flattened stream.", last, anyOf(nullValue(), instanceOf(Buffer.class),
+                instanceOf(HttpHeaders.class)));
         assertThat("Unexpected previous item in the flattened stream.", prev,
                 anyOf(nullValue(), instanceOf(Buffer.class)));
     }

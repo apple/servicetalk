@@ -286,6 +286,7 @@ public abstract class CloseHandler {
 
         @Override
         public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
+            ctx.pipeline().fireUserEventTriggered(InboundDataEndEvent.INSTANCE);
         }
 
         @Override
@@ -314,15 +315,29 @@ public abstract class CloseHandler {
     }
 
     /**
-     * Netty UserEvent to indicate the end of a outbound data was observed at the transport.
+     * {@link NettyUserEvent} to indicate the end of outbound data was observed at the transport.
      */
     static final class OutboundDataEndEvent extends NettyUserEvent {
         /**
-         * Netty UserEvent instance to indicate an outbound end of data.
+         * {@link NettyUserEvent} instance to indicate an outbound end of data.
          */
         static final OutboundDataEndEvent INSTANCE = new OutboundDataEndEvent();
 
         private OutboundDataEndEvent() {
+            // No instances.
+        }
+    }
+
+    /**
+     * {@link NettyUserEvent} to indicate the end of inbound data was observed at the transport.
+     */
+    static final class InboundDataEndEvent extends NettyUserEvent {
+        static final InboundDataEndEvent INSTANCE = new InboundDataEndEvent();
+
+        /**
+         * {@link NettyUserEvent} to indicate the end of inbound data was observed at the transport.
+         */
+        private InboundDataEndEvent() {
             // No instances.
         }
     }

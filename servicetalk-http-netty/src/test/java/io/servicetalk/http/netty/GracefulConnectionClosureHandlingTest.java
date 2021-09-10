@@ -78,7 +78,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpProtocol.values;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -308,7 +307,6 @@ class GracefulConnectionClosureHandlingTest {
                                                          boolean initiateClosureFromClient,
                                                          boolean useUds,
                                                          boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -334,7 +332,6 @@ class GracefulConnectionClosureHandlingTest {
     @MethodSource("data")
     void closeAfterFullRequestSentNoResponseReceived(HttpProtocol protocol, boolean initiateClosureFromClient,
                                                      boolean useUds, boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest request = newRequest("/first");
         Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
@@ -360,7 +357,6 @@ class GracefulConnectionClosureHandlingTest {
                                                                boolean initiateClosureFromClient,
                                                                boolean useUds,
                                                                boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -387,7 +383,6 @@ class GracefulConnectionClosureHandlingTest {
                                                            boolean initiateClosureFromClient,
                                                            boolean useUds,
                                                            boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest request = newRequest("/first");
         Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
@@ -412,7 +407,6 @@ class GracefulConnectionClosureHandlingTest {
                                                            boolean initiateClosureFromClient,
                                                            boolean useUds,
                                                            boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -452,7 +446,6 @@ class GracefulConnectionClosureHandlingTest {
                                                                      boolean initiateClosureFromClient,
                                                                      boolean useUds,
                                                                      boolean viaProxy) throws Exception {
-        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest firstRequest = newRequest("/first");
         Future<StreamingHttpResponse> firstResponseFuture = connection.request(firstRequest).toFuture();
@@ -502,11 +495,6 @@ class GracefulConnectionClosureHandlingTest {
 
         awaitConnectionClosed();
         assertNextRequestFails();
-    }
-
-    private static void assumeNonFlaky(HttpProtocol protocol, boolean initiateClosureFromClient, boolean viaProxy) {
-        assumeFalse(protocol == HTTP_1 && !initiateClosureFromClient && viaProxy,
-                "https://github.com/apple/servicetalk/issues/1507");
     }
 
     private StreamingHttpRequest newRequest(String path) {

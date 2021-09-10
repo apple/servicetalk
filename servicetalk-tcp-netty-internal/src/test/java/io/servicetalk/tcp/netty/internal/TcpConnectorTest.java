@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
@@ -97,25 +98,31 @@ final class TcpConnectorTest extends AbstractTcpServerTest {
         final CountDownLatch registeredLatch = new CountDownLatch(1);
         final CountDownLatch activeLatch = new CountDownLatch(1);
 
+        CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
         NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
                 serverContext.listenAddress(), new TcpClientConfig().asReadOnly(), false,
                 CLIENT_CTX, (channel, connectionObserver) -> DefaultNettyConnection.initChannel(channel,
-                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), CLIENT_CTX.ioExecutor(), o -> true,
-                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> {
-                            channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void channelRegistered(ChannelHandlerContext ctx) {
-                                    registeredLatch.countDown();
-                                    ctx.fireChannelRegistered();
-                                }
+                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), CLIENT_CTX.ioExecutor(), closeHandler,
+                        defaultFlushStrategy(), null, channel2 ->
+                                channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRegistered(ChannelHandlerContext ctx) {
+                                registeredLatch.countDown();
+                                ctx.fireChannelRegistered();
+                            }
 
-                                @Override
-                                public void channelActive(ChannelHandlerContext ctx) {
-                                    activeLatch.countDown();
-                                    ctx.fireChannelActive();
-                                }
-                            });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), connectionObserver, true),
+                            @Override
+                            public void channelActive(ChannelHandlerContext ctx) {
+                                activeLatch.countDown();
+                                ctx.fireChannelActive();
+                            }
+
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                                ctx.fireChannelRead(msg);
+                                closeHandler.protocolPayloadEndInbound(ctx);
+                            }
+                        }), CLIENT_CTX.executionStrategy(), mock(Protocol.class), connectionObserver, true),
                 NoopTransportObserver.INSTANCE).toFuture().get();
         connection.closeAsync().toFuture().get();
 

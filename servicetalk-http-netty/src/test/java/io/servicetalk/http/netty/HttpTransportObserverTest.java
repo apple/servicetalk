@@ -251,7 +251,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     @EnumSource(HttpProtocol.class)
     void serverFailsResponsePayloadBodyBeforeRead(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
-        testServerFailsResponsePayloadBody(SVC_ERROR_BEFORE_READ, false);
+        testServerFailsResponsePayloadBody(SVC_ERROR_BEFORE_READ, true);
     }
 
     @ParameterizedTest(name = "protocol={0}")

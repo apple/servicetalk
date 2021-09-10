@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.RetryableException;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -36,6 +37,8 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -97,11 +100,18 @@ class NettyPipelinedConnectionTest {
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> MAX_VALUE);
+        CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null,
-                obj -> true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
-                channel2 -> { }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true)
+                immediate(), null, closeHandler, defaultFlushStrategy(), null, channel2 -> {
+                    channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                            ctx.fireChannelRead(msg);
+                            closeHandler.protocolPayloadEndInbound(ctx);
+                        }
+                    });
+                }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true)
                         .toFuture().get();
         requester = new NettyPipelinedConnection<>(connection);
     }

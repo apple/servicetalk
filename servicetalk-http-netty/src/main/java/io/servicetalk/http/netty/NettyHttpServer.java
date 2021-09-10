@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
@@ -58,6 +59,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
+import io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -66,6 +68,7 @@ import io.netty.handler.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
@@ -84,19 +87,23 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
-import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.shouldAppendTrailers;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.HttpObjectDecoder.getContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.InProgress;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.Start;
@@ -163,8 +170,8 @@ final class NettyHttpServer {
         }
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
-                httpExecutionContext.ioExecutor(), LAST_CHUNK_PREDICATE,
-                closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
+                httpExecutionContext.ioExecutor(), closeHandler, config.tcpConfig().flushStrategy(),
+                        config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,
@@ -239,6 +246,7 @@ final class NettyHttpServer {
         private final NettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
+        @Nullable
         private final SplittingFlushStrategy splittingFlushStrategy;
         private final boolean drainRequestPayloadBody;
         private final boolean requireTrailerHeader;
@@ -262,18 +270,41 @@ final class NettyHttpServer {
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
                     HttpExecutionStrategies.noOffloadsStrategy());
             this.service = service;
-            this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
-                    itemWritten -> {
-                        if (itemWritten instanceof HttpResponseMetaData) {
-                            final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
-                            return protocol().major() > 1 && emptyMessageBody(metadata) ? End : Start;
-                        }
-                        if (itemWritten instanceof HttpHeaders) {
-                            return End;
-                        }
-                        return InProgress;
-                    });
-            connection.updateFlushStrategy((current, isCurrentOriginal) -> splittingFlushStrategy);
+            // H2 uses child channels, doesn't support pipelining, and doesn't repeat the write operation on the same
+            // channel. We therefore don't need the splitting flush in this case.
+            if (protocol().major() <= 1) {
+                this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
+                        new FlushBoundaryProvider() {
+                            private long contentLength;
+                            @Override
+                            public FlushBoundary detectBoundary(@Nullable final Object itemWritten) {
+                                if (itemWritten instanceof HttpResponseMetaData) {
+                                    final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
+                                    contentLength = getContentLength(metadata);
+                                    // The content length maybe unknown at this point (e.g. 204 response) but then later
+                                    // determined to be 0. In that case we should conservatively use End and rely upon
+                                    // adjustForMissingBoundaries to accommodate if more data comes. Otherwise the
+                                    // FlushStrategy may not trigger a flush (e.g. flushOnEnd) and if so the response
+                                    // won't actually be written.
+                                    return contentLength > 0 ||
+                                            (contentLength < 0 && isTransferEncodingChunked(metadata.headers())) ?
+                                            Start : End;
+                                }
+                                if (itemWritten instanceof Buffer) {
+                                    return contentLength > 0 &&
+                                            (contentLength -= ((Buffer) itemWritten).readableBytes()) <= 0 ?
+                                            End : InProgress;
+                                }
+                                if (itemWritten instanceof HttpHeaders) {
+                                    return End;
+                                }
+                                return InProgress;
+                            }
+                        });
+                connection.updateFlushStrategy((current, isCurrentOriginal) -> splittingFlushStrategy);
+            } else {
+                this.splittingFlushStrategy = null;
+            }
             this.drainRequestPayloadBody = drainRequestPayloadBody;
             this.requireTrailerHeader = requireTrailerHeader;
         }
@@ -291,7 +322,8 @@ final class NettyHttpServer {
 
         @Override
         public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-            return splittingFlushStrategy.updateFlushStrategy(strategyProvider);
+            return splittingFlushStrategy == null ? connection.updateFlushStrategy(strategyProvider) :
+                    splittingFlushStrategy.updateFlushStrategy(strategyProvider);
         }
 
         @Override
@@ -344,14 +376,31 @@ final class NettyHttpServer {
                         }));
 
                 final HttpRequestMethod requestMethod = request.method();
+                final boolean isHeadRequest = HEAD.equals(request.method());
                 // Don't expect any exceptions from service because it's already wrapped with
                 // ExceptionMapperServiceFilter
                 Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
-                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
-                            if (flushStrategy != null) {
+                            // SplittingFlushStrategy needs to be aware of protocols constraints in order to determine
+                            // boundaries between responses. However it isn't aware of request data and content-length
+                            // for HEAD requests won't actually be followed by payload. It also has a method
+                            // adjustForMissingBoundaries to accommodate for missing End boundaries, so just flush on
+                            // each. SplittingFlushStrategy should be removed when NettyHttpServer writes per request
+                            // instead of a single stream with repeat() operator, and this code can also be removed.
+                            if (isHeadRequest && splittingFlushStrategy != null) {
                                 splittingFlushStrategy.updateFlushStrategy(
-                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
+                                        (prev, isOriginal) -> isOriginal ? flushOnEach() : prev, 1);
+                            } else {
+                                final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                                if (flushStrategy != null) {
+                                    final FlushStrategyProvider provider = (prev, isOriginal) ->
+                                            isOriginal ? flushStrategy : prev;
+                                    if (splittingFlushStrategy != null) {
+                                        splittingFlushStrategy.updateFlushStrategy(provider, 1);
+                                    } else {
+                                        updateFlushStrategy(provider);
+                                    }
+                                }
                             }
                             return handleResponse(protocol(), requestMethod, response);
                         });
@@ -379,11 +428,16 @@ final class NettyHttpServer {
             if (canAddResponseContentLength(response, requestMethod)) {
                 return setResponseContentLength(protocolVersion, response);
             } else {
-                final Publisher<Object> flatResponse = emptyMessageBody(response, response.messageBody()) ?
-                        flatEmptyMessage(protocolVersion, response, response.messageBody()) :
-                        // Not necessary to defer subscribe to the messageBody because server does not retry responses
-                        Single.<Object>succeeded(response).concat(response.messageBody())
-                                .scanWith(HeaderUtils::insertTrailersMapper);
+                Publisher<Object> flatResponse;
+                if (emptyMessageBody(response, response.messageBody())) {
+                    flatResponse = flatEmptyMessage(protocolVersion, response, response.messageBody());
+                } else {
+                    // Not necessary to defer subscribe to the messageBody because server does not retry responses
+                    flatResponse = Single.<Object>succeeded(response).concat(response.messageBody());
+                    if (shouldAppendTrailers(protocolVersion, response.headers())) {
+                        flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
+                    }
+                }
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }
@@ -551,24 +605,27 @@ final class NettyHttpServer {
                     LOGGER.trace("{} Client closed the {} connection without sending {}.",
                             connection, connection.protocol(),
                             HTTP_2_0.equals(connection.protocol()) ? "GO_AWAY" : "'Connection: close' header", t);
-                    return;
-                }
-                if (t.getCause() instanceof DecoderException) {
+                } else if (t.getCause() instanceof DecoderException) {
                     logDecoderException((DecoderException) t.getCause(), connection);
-                    return;
+                } else {
+                    logUnexpectedException(t.getCause() instanceof IOException ? t.getCause() : t, connection);
                 }
             } else if (t instanceof DecoderException) {
                 logDecoderException((DecoderException) t, connection);
-                return;
+            } else {
+                logUnexpectedException(t, connection);
             }
-            LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
-                    HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
         }
 
         private static void logDecoderException(final DecoderException e,
                                                 final NettyConnection<Object, Object> connection) {
             LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}.", connection,
                     connection.protocol(), HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", e);
+        }
+
+        private static void logUnexpectedException(final Throwable t, NettyConnection<Object, Object> connection) {
+            LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
+                    HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
         }
     }
 }

@@ -52,12 +52,12 @@ import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.shouldAppendTrailers;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
         implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
-
     private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
@@ -112,12 +112,16 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             if (canAddRequestContentLength(request)) {
                 flatRequest = setRequestContentLength(connectionContext().protocol(), request);
             } else {
-                flatRequest = emptyMessageBody(request, request.messageBody()) ?
-                        flatEmptyMessage(connectionContext().protocol(), request, request.messageBody()) :
-                        // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
-                        // requests with non-replayable messageBody
-                        Single.<Object>succeeded(request).concat(request.messageBody(), true)
-                                .scanWith(HeaderUtils::insertTrailersMapper);
+                if (emptyMessageBody(request, request.messageBody())) {
+                    flatRequest = flatEmptyMessage(connectionContext().protocol(), request, request.messageBody());
+                } else {
+                    // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
+                    // requests with non-replayable messageBody
+                    flatRequest = Single.<Object>succeeded(request).concat(request.messageBody(), true);
+                    if (shouldAppendTrailers(connectionContext().protocol(), request.headers())) {
+                        flatRequest = flatRequest.scanWith(HeaderUtils::appendTrailersMapper);
+                    }
+                }
                 addRequestTransferEncodingIfNecessary(request);
             }
 
