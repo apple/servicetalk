@@ -39,6 +39,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -86,6 +88,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ConnectionCloseHeaderHandlingTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionCloseHeaderHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
     private static final String SERVER_SHOULD_CLOSE = "serverShouldClose";
 
@@ -166,16 +169,17 @@ final class ConnectionCloseHeaderHandlingTest {
                             // Subscribe to the request payload body before response writer closes
                             BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                             // Consume request payload body asynchronously:
-                            ctx.executionContext().executor().execute(() -> {
+                            Future<Void> writeFuture = ctx.executionContext().executor().submit(() -> {
                                 while (iterator.hasNext()) {
                                     Buffer chunk = iterator.next();
                                     assert chunk != null;
                                     requestPayloadSize.addAndGet(chunk.readableBytes());
                                 }
-                                requestPayloadReceived.countDown();
-                            });
+                            }).beforeOnError(cause -> LOGGER.error("failure while reading request", cause))
+                            .afterFinally(requestPayloadReceived::countDown)
+                            .toFuture();
                             if (awaitRequestPayload) {
-                                requestPayloadReceived.await();
+                                writeFuture.get();
                             }
                             if (!noResponseContent) {
                                 // Defer payload body to see how client-side processes "Connection: close" header

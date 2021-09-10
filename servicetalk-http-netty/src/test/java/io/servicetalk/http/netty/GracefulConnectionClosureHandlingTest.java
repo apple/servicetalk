@@ -49,6 +49,8 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -98,7 +100,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GracefulConnectionClosureHandlingTest {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
     @RegisterExtension
@@ -188,7 +190,7 @@ class GracefulConnectionClosureHandlingTest {
                 // Subscribe to the request payload body before response writer closes
                 BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                 // Consume request payload body asynchronously:
-                ctx.executionContext().executor().execute(() -> {
+                ctx.executionContext().executor().submit(() -> {
                     int receivedSize = 0;
                     while (iterator.hasNext()) {
                         Buffer chunk = iterator.next();
@@ -196,7 +198,10 @@ class GracefulConnectionClosureHandlingTest {
                         receivedSize += chunk.readableBytes();
                     }
                     serverReceivedRequestPayload.add(receivedSize);
-                });
+                }).beforeOnError(cause -> {
+                    LOGGER.error("failure while reading request", cause);
+                    serverReceivedRequestPayload.add(-1);
+                }).toFuture();
                 serverSendResponsePayload.await();
                 writer.write(RESPONSE_CONTENT);
             }
