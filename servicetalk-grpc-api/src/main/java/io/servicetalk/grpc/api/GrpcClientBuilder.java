@@ -300,7 +300,7 @@ public abstract class GrpcClientBuilder<U, R> {
      */
     public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
         throw new UnsupportedOperationException("Setting automatic host header fallback using this method" +
-                " is not yet supported.");
+                " is not yet supported by " + getClass().getSimpleName());
     }
 
     /**

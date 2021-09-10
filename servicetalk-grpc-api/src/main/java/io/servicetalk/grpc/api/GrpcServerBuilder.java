@@ -175,7 +175,7 @@ public abstract class GrpcServerBuilder {
      */
     public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
         throw new UnsupportedOperationException("Setting automatic request draining using this method is not yet " +
-                "supported.");
+                "supported by " + getClass().getSimpleName());
     }
 
     /**
