@@ -281,8 +281,27 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
+     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
      */
-    public abstract GrpcClientBuilder<U, R> disableHostHeaderFallback();
+    @Deprecated
+    public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
+
+    /**
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
+     *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
+        throw new UnsupportedOperationException("Setting automatic host header fallback using this method" +
+                " is not yet supported by " + getClass().getSimpleName());
+    }
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
