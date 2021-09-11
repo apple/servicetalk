@@ -186,6 +186,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         if (lifecycleObserver != null) {
             service = new HttpLifecycleObserverServiceFilter(lifecycleObserver).create(service);
         }
+        // TODO: apply ClearAsyncContextHttpServiceFilter here when it's moved to http-netty module by
+        //  https://github.com/apple/servicetalk/pull/1820
         return service;
     }
 

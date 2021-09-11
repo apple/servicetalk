@@ -345,7 +345,7 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request.method();
                 // Don't expect any exceptions from service because it's already wrapped with
-                // ExceptionMapperServiceFilterFactory
+                // ExceptionMapperServiceFilter
                 Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
                             final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
