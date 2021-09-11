@@ -21,5 +21,6 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-logging-slf4j-internal")
+  implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }

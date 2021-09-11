@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
+import static io.servicetalk.utils.internal.ThrowableUtils.combine;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -173,7 +174,7 @@ public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver
                         requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
                         responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
                         responseTrailers, grpcStatus, unwrapResult(responseResult),
-                        NANOSECONDS.toMillis(nanoTime() - startTime), merge(responseResult, requestResult));
+                        NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             } else {
                 logger.log("connection={} request=\"{} {} {}\" requestHeaders={} requestSize={} requestTrailers={} " +
                                 "requestResult={} responseResult={} duration={}ms",
@@ -181,24 +182,7 @@ public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver
                         requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
                         requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
                         unwrapResult(responseResult),
-                        NANOSECONDS.toMillis(nanoTime() - startTime), merge(responseResult, requestResult));
-            }
-        }
-
-        @Nullable
-        private static Throwable merge(@Nullable final Object response, @Nullable final Object request) {
-            if (response instanceof Throwable) {
-                if (request instanceof Throwable) {
-                    final Throwable result = (Throwable) response;
-                    result.addSuppressed((Throwable) request);
-                    return result;
-                } else {
-                    return (Throwable) response;
-                }
-            } else if (request instanceof Throwable) {
-                return (Throwable) request;
-            } else {
-                return null;
+                        NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             }
         }
 
