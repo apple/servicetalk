@@ -27,6 +27,7 @@ import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -133,8 +134,34 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
-    @Override
-    public abstract GrpcClientBuilder<U, R> disableHostHeaderFallback();
+    /**
+     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     *
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
+     */
+    @Deprecated
+    public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
+
+    /**
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
+     *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
+        throw new UnsupportedOperationException("Setting automatic host header fallback using this method" +
+                " is not yet supported by " + getClass().getSimpleName());
+    }
 
     @Override
     public abstract GrpcClientBuilder<U, R> serviceDiscoverer(
