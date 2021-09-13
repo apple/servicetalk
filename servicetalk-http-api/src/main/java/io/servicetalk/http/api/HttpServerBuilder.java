@@ -161,7 +161,7 @@ public interface HttpServerBuilder {
     HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
-     * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * Configure automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
      * consumed by the service.
      * <p>
      * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
@@ -172,9 +172,11 @@ public interface HttpServerBuilder {
      * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
      * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
      *
+     * @param enable When {@code false} it will disable the automatic consumption of request
+     * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
      */
-    HttpServerBuilder disableDrainingRequestPayloadBody();
+    HttpServerBuilder drainRequestPayloadBody(boolean enable);
 
     /**
      * Provide a hint if request <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed to

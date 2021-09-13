@@ -24,7 +24,6 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.oio.api.internal.PayloadWriterUtils;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -69,8 +68,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
-import static io.servicetalk.http.netty.ContentLengthAndTrailersTest.addFixedLengthFramingOverhead;
+import static io.servicetalk.http.netty.GracefulConnectionClosureHandlingTest.RAW_STRING_SERIALIZER;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -160,8 +158,7 @@ final class ConnectionCloseHeaderHandlingTest {
                         requestReceived.countDown();
                         boolean noResponseContent = request.hasQueryParameter("noResponseContent", "true");
                         String content = noResponseContent ? "" : "server_content";
-                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO :
-                                valueOf(addFixedLengthFramingOverhead(content.length())));
+                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO : valueOf(content.length()));
 
                         // Add the "connection: close" header only when requested:
                         if (request.hasQueryParameter(SERVER_SHOULD_CLOSE)) {
@@ -169,7 +166,7 @@ final class ConnectionCloseHeaderHandlingTest {
                         }
 
                         sendResponse.await();
-                        try (HttpPayloadWriter<String> writer = response.sendMetaData(appSerializerUtf8FixLen())) {
+                        try (HttpPayloadWriter<String> writer = response.sendMetaData(RAW_STRING_SERIALIZER)) {
                             // Subscribe to the request payload body before response writer closes
                             BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                             // Consume request payload body asynchronously:
@@ -179,10 +176,7 @@ final class ConnectionCloseHeaderHandlingTest {
                                     assert chunk != null;
                                     requestPayloadSize.addAndGet(chunk.readableBytes());
                                 }
-                            }).beforeOnError(cause -> {
-                                LOGGER.error("failure while writing response", cause);
-                                PayloadWriterUtils.safeClose(writer, cause);
-                            })
+                            }).beforeOnError(cause -> LOGGER.error("failure while reading request", cause))
                             .afterFinally(requestPayloadReceived::countDown)
                             .toFuture();
                             if (awaitRequestPayload) {
@@ -309,7 +303,7 @@ final class ConnectionCloseHeaderHandlingTest {
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
-                }).concat(from(content)), appSerializerUtf8FixLen());
+                }).concat(from(content)), RAW_STRING_SERIALIZER);
             }
             if (requestInitiatesClosure) {
                 request.addHeader(CONNECTION, CLOSE);
@@ -396,7 +390,7 @@ final class ConnectionCloseHeaderHandlingTest {
             String content = "request_content";
             connection.request(connection.get("/second")
                     .addHeader(CONTENT_LENGTH, valueOf(content.length()))
-                    .payloadBody(from(content).concat(never()), appSerializerUtf8FixLen()))
+                    .payloadBody(from(content).concat(never()), RAW_STRING_SERIALIZER))
                     .whenOnError(secondRequestError::set)
                     .whenFinally(secondResponseReceived::countDown)
                     .subscribe(second -> { });

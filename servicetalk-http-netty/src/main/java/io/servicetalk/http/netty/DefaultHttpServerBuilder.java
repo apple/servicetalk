@@ -79,8 +79,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder disableDrainingRequestPayloadBody() {
-        this.drainRequestPayloadBody = false;
+    public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
+        this.drainRequestPayloadBody = enable;
         return this;
     }
 
