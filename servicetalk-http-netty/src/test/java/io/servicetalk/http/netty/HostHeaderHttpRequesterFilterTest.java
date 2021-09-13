@@ -129,7 +129,7 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .disableHostHeaderFallback() // turn off the default
+                     .hostHeaderFallback(false) // turn off the default
                      .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, null, "foo.bar:-1");
@@ -143,7 +143,7 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .disableHostHeaderFallback() // turn off the default
+                     .hostHeaderFallback(false) // turn off the default
                      .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, null, "foo.bar:-1");
@@ -157,7 +157,7 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .disableHostHeaderFallback() // turn off the default
+                     .hostHeaderFallback(false) // turn off the default
                      .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking();
              ReservedBlockingHttpConnection conn = client.reserveConnection(client.get("/"))) {
@@ -173,7 +173,7 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .disableHostHeaderFallback() // turn off the default
+                     .hostHeaderFallback(false) // turn off the default
                      .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, "bar.only:-1", "bar.only:-1");

@@ -87,14 +87,16 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
      * <p>
-     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
      *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
      * @return {@code this}
-     * @see SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)
+     * @see #unresolvedAddressToHost(Function)
      */
-    SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+    SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed

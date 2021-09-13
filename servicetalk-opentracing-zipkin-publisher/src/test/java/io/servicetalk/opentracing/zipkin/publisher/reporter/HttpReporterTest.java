@@ -87,7 +87,7 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void disableBatching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(false));
         reporter.report(newSpan("1"));
         List<Span> spans = verifyRequest(codec, receivedRequests.take(), false);
         assertThat("Unexpected spans received.", spans, hasSize(1));
@@ -114,7 +114,7 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void reportAfterClose(final Codec codec) {
-        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(false));
         assertThat("Unexpected check state.", reporter.check(), is(OK));
         reporter.close();
         assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
@@ -125,7 +125,7 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void non200ResponsesAreOkWithoutBatching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(false));
         verifyNon200ResponsesAreOk(codec, reporter, false);
     }
 
@@ -146,7 +146,7 @@ class HttpReporterTest {
     @ParameterizedTest(name = "codec: {0}")
     @EnumSource(Codec.class)
     void reportFailuresAreRecoveredWithoutBatching(final Codec codec) throws Exception {
-        HttpReporter reporter = initReporter(codec, Builder::disableSpanBatching);
+        HttpReporter reporter = initReporter(codec, builder -> builder.spansBatchingEnabled(false));
         verifySpanSendFailuresAreRecovered(codec, reporter, false);
     }
 
