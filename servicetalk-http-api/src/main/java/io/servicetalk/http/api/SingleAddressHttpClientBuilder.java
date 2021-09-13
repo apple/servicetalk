@@ -96,26 +96,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
                 " yet supported by " + getClass().getSimpleName());
     }
 
-    /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
-     * builder.
-     * <p>
-     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
-     * processing
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.appendConnectionFilter(filter1).appendConnectionFilter(filter2).appendConnectionFilter(filter3)
-     * </pre>
-     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
-     * </pre>
-     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
-     * purpose of filtering.
-     * @return {@code this}
-     */
+    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
 
@@ -134,6 +115,9 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
+
+    @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
