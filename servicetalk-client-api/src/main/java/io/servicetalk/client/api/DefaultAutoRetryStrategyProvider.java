@@ -67,12 +67,12 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         /**
          * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready before triggering a
          * retry for requests. This behavior may add latency to requests till the time the load balancer is ready
-         * instead of failing fast. This method disables the default behavior.
-         *
+         * instead of failing fast. This method allows controlling that behavior.
+         * @param waitForLb Whether to wait for the {@link LoadBalancer} to be ready before retrying requests.
          * @return {@code this}.
          */
-        public Builder disableWaitForLoadBalancer() {
-            waitForLb = false;
+        public Builder waitForLoadBalancer(final boolean waitForLb) {
+            this.waitForLb = waitForLb;
             return this;
         }
 
@@ -92,12 +92,12 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          * possible for a {@link LoadBalancer} to select a connection which is already closed (concurrently) but the
          * close signal has not yet been seen by the {@link LoadBalancer}. In such cases, requests fail with a
          * {@link RetryableException}. By default, automatic retries always retries these {@link RetryableException}s.
-         * This method disables the default behavior.
-         *
+         * This method allows controlling that behaviour.
+         * @param retryAllRetryableExceptions Whether to retry all {@link RetryableException}s.
          * @return {@code this}.
          */
-        public Builder disableRetryAllRetryableExceptions() {
-            retryAllRetryableExceptions = false;
+        public Builder retryAllRetryableExceptions(final boolean retryAllRetryableExceptions) {
+            this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             return this;
         }
 

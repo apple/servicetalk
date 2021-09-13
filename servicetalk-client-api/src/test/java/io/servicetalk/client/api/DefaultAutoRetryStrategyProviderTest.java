@@ -57,7 +57,7 @@ class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     void disableWaitForLb() {
-        AutoRetryStrategy strategy = newStrategy(Builder::disableWaitForLoadBalancer);
+        AutoRetryStrategy strategy = newStrategy(b -> b.waitForLoadBalancer(false));
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
@@ -65,7 +65,7 @@ class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     void disableRetryAllRetryableExWithRetryable() {
-        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        AutoRetryStrategy strategy = newStrategy(b -> b.retryAllRetryableExceptions(false));
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
@@ -73,7 +73,7 @@ class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     void disableRetryAllRetryableExWithNoAvailableHost() {
-        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        AutoRetryStrategy strategy = newStrategy(b -> b.retryAllRetryableExceptions(false));
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -83,7 +83,7 @@ class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
-        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        AutoRetryStrategy strategy = newStrategy(b -> b.retryAllRetryableExceptions(false));
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -94,8 +94,7 @@ class DefaultAutoRetryStrategyProviderTest {
     @Test
     void disableAll() {
         AutoRetryStrategy strategy = newStrategy(builder ->
-                builder.disableWaitForLoadBalancer()
-                        .disableRetryAllRetryableExceptions());
+                builder.waitForLoadBalancer(false).retryAllRetryableExceptions(false));
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
