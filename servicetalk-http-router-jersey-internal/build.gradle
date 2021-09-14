@@ -17,6 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+
   api project(":servicetalk-http-api")
   api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
 
@@ -25,5 +27,5 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-http-utils")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
+  implementation "org.glassfish.jersey.core:jersey-common"
 }

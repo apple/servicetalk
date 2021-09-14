@@ -17,6 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform("io.netty:netty-bom:$nettyVersion")
+
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-transport-api")
 
@@ -24,6 +26,5 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation(platform("io.netty:netty-bom:$nettyVersion"))
   implementation "io.netty:netty-common"
 }
