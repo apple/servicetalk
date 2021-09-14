@@ -71,9 +71,7 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
     PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    default PartitionedHttpClientBuilder<U, R> executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    PartitionedHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

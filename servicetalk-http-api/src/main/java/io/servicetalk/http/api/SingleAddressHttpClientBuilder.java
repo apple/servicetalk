@@ -72,8 +72,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}.
      */
     SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
-                                                                                LogLevel logLevel,
-                                                                                BooleanSupplier logUserData);
+                                                           LogLevel logLevel, BooleanSupplier logUserData);
 
     /**
      * Configurations of various HTTP protocol versions.
@@ -130,8 +129,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * purpose of filtering.
      * @return {@code this}
      */
-    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
-            StreamingHttpConnectionFilterFactory factory);
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -165,9 +163,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     @Override
     SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
-    default SingleAddressHttpClientBuilder<U, R> executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
@@ -243,7 +239,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}
      */
     default SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                        StreamingHttpClientFilterFactory factory) {
+                                                                    StreamingHttpClientFilterFactory factory) {
         return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
     }
 
@@ -271,8 +267,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}
      * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
      */
-    SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
-            AutoRetryStrategyProvider autoRetryStrategyProvider);
+    SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(AutoRetryStrategyProvider autoRetryStrategyProvider);
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -302,8 +297,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @param loadBalancerFactory {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
      * @return {@code this}.
      */
-    SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            HttpLoadBalancerFactory<R> loadBalancerFactory);
+    SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
     /**
      * Set the SSL/TLS configuration.

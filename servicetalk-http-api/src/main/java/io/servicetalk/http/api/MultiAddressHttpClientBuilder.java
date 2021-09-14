@@ -66,9 +66,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     @Override
     MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
-    default MultiAddressHttpClientBuilder<U, R> executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
