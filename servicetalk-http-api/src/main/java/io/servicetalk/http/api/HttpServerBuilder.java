@@ -500,7 +500,11 @@ public abstract class HttpServerBuilder {
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpServerBuilder#doListen(ConnectionAcceptor, StreamingHttpService, HttpExecutionStrategy,
+     * boolean)}
      */
+    @Deprecated
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service,
                                                       HttpExecutionStrategy strategy,
@@ -511,7 +515,10 @@ public abstract class HttpServerBuilder {
      *
      * @param strategy The execution strategy to be used for the context
      * @return the configured and built HTTP execution context.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpServerBuilder#buildExecutionContext(HttpExecutionStrategy)}
      */
+    @Deprecated
     protected abstract HttpExecutionContext buildExecutionContext(HttpExecutionStrategy strategy);
 
     /**
@@ -526,7 +533,11 @@ public abstract class HttpServerBuilder {
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpServerBuilder#doListen(ConnectionAcceptor, HttpExecutionContext, StreamingHttpService,
+     * boolean)}
      */
+    @Deprecated
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       HttpExecutionContext context,
                                                       StreamingHttpService service,
