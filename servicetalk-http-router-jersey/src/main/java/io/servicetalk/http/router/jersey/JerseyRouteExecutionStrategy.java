@@ -16,8 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import static java.util.Objects.requireNonNull;
@@ -77,26 +75,6 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
         return delegate.merge(other);
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return delegate.offloadSend(executor(fallback), original);
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return delegate.offloadReceive(executor(fallback), original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return delegate.offloadSend(executor(fallback), original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return delegate.offloadReceive(executor(fallback), original);
     }
 
     public Executor executor() {

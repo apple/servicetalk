@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -57,26 +53,6 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
         // Since any methods can be overridden to change behavior, we leverage the other strategy to also account for
         // the overridden methods here.
         return other.merge(this);
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-        return delegate.offloadSend(executor, original);
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-        return delegate.offloadReceive(executor, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-        return delegate.offloadSend(executor, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-        return delegate.offloadReceive(executor, original);
     }
 
     @Override

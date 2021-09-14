@@ -494,8 +494,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        addHostHeaderFallbackFilter = false;
+    public DefaultSingleAddressHttpClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
+        addHostHeaderFallbackFilter = enable;
         return this;
     }
 

@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -235,8 +236,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         if (content != null && !isHeadRequest()) {
             final HttpExecutionStrategy executionStrategy = getResponseExecutionStrategy(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
-            final Publisher<Buffer> payloadBody = (executionStrategy != null ?
-                    executionStrategy.offloadSend(serviceCtx.executionContext().executor(), content) : content)
+            final Publisher<Buffer> payloadBody = (executionStrategy != null && executionStrategy.isSendOffloaded() ?
+                    content.subscribeOn(serviceCtx.executionContext().executor(),
+                            IoThreadFactory.IoThread::currentThreadIsIoThread) : content)
                     .beforeCancel(this::cancelResponse);  // Cleanup internal state if server cancels response body
 
             response = responseFactory.newResponse(status)

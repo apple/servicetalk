@@ -27,11 +27,11 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }
 
 test {

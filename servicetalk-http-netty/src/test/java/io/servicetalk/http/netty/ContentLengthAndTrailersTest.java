@@ -404,7 +404,7 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
         return sb;
     }
 
-    static int addFixedLengthFramingOverhead(int length) {
+    private static int addFixedLengthFramingOverhead(int length) {
         return length == 0 ? 0 : length + Integer.BYTES;
     }
 

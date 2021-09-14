@@ -281,8 +281,27 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
+     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
      */
-    public abstract GrpcClientBuilder<U, R> disableHostHeaderFallback();
+    @Deprecated
+    public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
+        return hostHeaderFallback(false);
+    }
+
+    /**
+     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
+     * manipulated.
+     *
+     * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
+        throw new UnsupportedOperationException("Setting automatic host header fallback using this method" +
+                " is not yet supported by " + getClass().getSimpleName());
+    }
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -387,35 +406,6 @@ public abstract class GrpcClientBuilder<U, R> {
     }
 
     /**
-     * Returns a {@link MultiClientBuilder} to be used to create multiple clients sharing the same underlying transport
-     * instance.
-     *
-     * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
-     */
-    public final MultiClientBuilder buildMulti() {
-
-        GrpcClientCallFactory callFactory = newGrpcClientCallFactory();
-        return new MultiClientBuilder() {
-            @Override
-            public <Client extends GrpcClient<?>,
-                    Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
-                    FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
-            build(final GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory) {
-                return clientFactory.newClient(callFactory);
-            }
-
-            @Override
-            public <BlockingClient extends BlockingGrpcClient<?>,
-                    Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
-                    FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
-            buildBlocking(
-                    final GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory) {
-                return clientFactory.newBlockingClient(callFactory);
-            }
-        };
-    }
-
-    /**
      * Create a new {@link GrpcClientCallFactory}.
      *
      * @return A new {@link GrpcClientCallFactory}.
@@ -479,46 +469,5 @@ public abstract class GrpcClientBuilder<U, R> {
 
     private static GrpcStatusException toGrpcException(Throwable cause) {
         return fromThrowable(cause).asException();
-    }
-
-    /**
-     * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients sharing the
-     * same underlying transport instance.
-     */
-    public interface MultiClientBuilder {
-
-        /**
-         * Builds a <a href="https://www.grpc.io">gRPC</a> client.
-         *
-         * @param clientFactory {@link GrpcClientFactory} to use.
-         * @param <Client> <a href="https://www.grpc.io">gRPC</a> service that any client built
-         * from this factory represents.
-         * @param <Filter> Type for client filter
-         * @param <FilterableClient> Type of filterable client.
-         * @param <FilterFactory> Type of {@link GrpcClientFilterFactory}
-         *
-         * @return A <a href="https://www.grpc.io">gRPC</a> client.
-         */
-        <Client extends GrpcClient<?>,
-                Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
-                FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
-        build(GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory);
-
-        /**
-         * Builds a blocking <a href="https://www.grpc.io">gRPC</a> client.
-         *
-         * @param clientFactory {@link GrpcClientFactory} to use.
-         * @param <BlockingClient> Blocking <a href="https://www.grpc.io">gRPC</a> service that
-         * any client built from this builder represents.
-         * @param <Filter> Type for client filter
-         * @param <FilterableClient> Type of filterable client.
-         * @param <FilterFactory> Type of {@link GrpcClientFilterFactory}
-         *
-         * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
-         */
-        <BlockingClient extends BlockingGrpcClient<?>,
-                Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
-                FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
-        buildBlocking(GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory);
     }
 }

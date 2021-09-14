@@ -71,9 +71,7 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
     public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    public abstract PartitionedHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

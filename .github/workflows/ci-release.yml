@@ -20,18 +20,11 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
+          cache: 'gradle'
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
-      - name: Cache Gradle packages
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
       - name: Build with Gradle
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}

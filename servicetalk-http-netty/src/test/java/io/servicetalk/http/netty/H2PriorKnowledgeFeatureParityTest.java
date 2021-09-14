@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -51,6 +52,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
@@ -618,7 +620,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 request.trailers().set("mytrailer", "myvalue");
             }
             if (h2PriorKnowledge) {
-                assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
+                assertThrows(H2StreamResetException.class, () -> client.request(request));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     assertThrows(IOException.class, () -> {

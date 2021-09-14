@@ -39,6 +39,6 @@ dependencies {
   testImplementation "commons-lang:commons-lang:$commonsLangVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

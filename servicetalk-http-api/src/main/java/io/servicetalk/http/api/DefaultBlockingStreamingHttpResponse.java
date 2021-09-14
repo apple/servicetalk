@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
 
@@ -67,12 +66,6 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     }
 
     @Override
-    public BlockingStreamingHttpResponse payloadBody(final CloseableIterable<Buffer> payloadBody) {
-        original.payloadBody(fromIterable(payloadBody));
-        return this;
-    }
-
-    @Override
     public BlockingStreamingHttpResponse payloadBody(final InputStream payloadBody) {
         original.payloadBody(fromInputStream(payloadBody)
                 .map(bytes -> original.payloadHolder().allocator().wrap(bytes)));
@@ -113,14 +106,6 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     @Override
     public <T> BlockingStreamingHttpResponse payloadBody(final Iterable<T> payloadBody,
                                                          final HttpStreamingSerializer<T> serializer) {
-        original.payloadBody(fromIterable(payloadBody), serializer);
-        return this;
-    }
-
-    @Deprecated
-    @Override
-    public <T> BlockingStreamingHttpResponse payloadBody(final CloseableIterable<T> payloadBody,
-                                                         final HttpSerializer<T> serializer) {
         original.payloadBody(fromIterable(payloadBody), serializer);
         return this;
     }

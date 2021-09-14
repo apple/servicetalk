@@ -92,6 +92,7 @@ final class BlockingStreamingHttpMessageBodyUtils {
         }
 
         @Nullable
+        @Override
         public HttpHeaders trailers() {
             return trailers;
         }

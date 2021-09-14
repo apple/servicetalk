@@ -15,9 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import static java.util.Objects.requireNonNull;
@@ -48,26 +45,6 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
         return delegate.merge(other);
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor executor, final Single<T> original) {
-        return delegate.offloadSend(executor, original);
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor executor, final Single<T> original) {
-        return delegate.offloadReceive(executor, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor executor, final Publisher<T> original) {
-        return delegate.offloadSend(executor, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor executor, final Publisher<T> original) {
-        return delegate.offloadReceive(executor, original);
     }
 
     @Override

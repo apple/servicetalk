@@ -39,7 +39,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class WriteStreamSubscriberTest extends AbstractWriteTest {
@@ -67,7 +67,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
@@ -79,7 +79,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello1", "Hello2", "Hello3");
         verifyWrite(info1, info2, info3);
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
@@ -96,7 +96,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     void testOnCompleteNoWrite() {
         subscriber.onComplete();
         verify(this.completableSubscriber).onComplete();
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
@@ -117,14 +117,14 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
         verify(subscription).cancel();
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
     void testCancelAfterOnSubscribe() {
         subscriber.cancel();
         verify(subscription).cancel();
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
@@ -140,7 +140,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     @Test
@@ -187,7 +187,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         subscriber.onComplete();
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
-        verifyZeroInteractions(closeHandler);
+        verifyNoInteractions(closeHandler);
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {

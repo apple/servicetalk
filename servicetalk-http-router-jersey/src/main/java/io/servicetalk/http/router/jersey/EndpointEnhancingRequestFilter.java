@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
@@ -66,6 +67,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRe
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutionStrategy;
 import static java.lang.Integer.MAX_VALUE;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.noContent;
 
@@ -84,15 +86,17 @@ import static javax.ws.rs.core.Response.noContent;
 final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     private final EnhancedEndpointCache enhancedEndpointCache = new EnhancedEndpointCache();
+    private final Provider<Ref<ConnectionContext>> ctxRefProvider;
+    private final Provider<RouteStrategiesConfig> routeStrategiesConfigProvider;
+    private final RequestScope requestScope;
 
-    @Context
-    private Provider<Ref<ConnectionContext>> ctxRefProvider;
-
-    @Context
-    private Provider<RouteStrategiesConfig> routeStrategiesConfigProvider;
-
-    @Context
-    private RequestScope requestScope;
+    EndpointEnhancingRequestFilter(@Context final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                   @Context final Provider<RouteStrategiesConfig> routeStrategiesConfigProvider,
+                                   @Context final RequestScope requestScope) {
+        this.ctxRefProvider = requireNonNull(ctxRefProvider);
+        this.routeStrategiesConfigProvider = requireNonNull(routeStrategiesConfigProvider);
+        this.requestScope = requireNonNull(requestScope);
+    }
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
@@ -256,8 +260,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             final Cancellable cancellable;
             if (effectiveRouteStrategy != null) {
                 assert executor != null;
-                cancellable = effectiveRouteStrategy
-                        .offloadSend(executor, responseSingle)
+                cancellable = (effectiveRouteStrategy.isSendOffloaded() ?
+                        responseSingle.subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread) :
+                        responseSingle)
                         .subscribe(asyncContext::resume);
             } else {
                 cancellable = responseSingle.subscribe(asyncContext::resume);

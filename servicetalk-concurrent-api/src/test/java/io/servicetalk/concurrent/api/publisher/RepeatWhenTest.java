@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class RepeatWhenTest {
@@ -85,7 +85,7 @@ class RepeatWhenTest {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        verifyZeroInteractions(shouldRepeat);
+        verifyNoInteractions(shouldRepeat);
     }
 
     @Test
