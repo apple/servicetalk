@@ -20,6 +20,9 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.CUSTOM_HEADER;
@@ -30,8 +33,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION
 import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
- * Async "Hello World" example that demonstrates how redirects can be handled manually when single-address clients are
- * used with possibilities to:
+ * Async "Hello World" example that demonstrates how redirects can be handled manually when
+ * {@link HttpClients#forSingleAddress(HostAndPort) single-address} clients are used with possibilities to:
  * <ol>
  *     <li>Change the target server or perform a relative redirect.</li>
  *     <li>Preserve headers while redirecting.</li>
@@ -99,7 +102,8 @@ public final class ManualRedirectClient {
         }
     }
 
-    private static HttpClient lookupClient(CharSequence location, HttpClient sameClient, HttpClient secureClient) {
+    private static HttpClient lookupClient(@Nullable CharSequence location, HttpClient sameClient,
+                                           HttpClient secureClient) {
         if (location == null || location.length() < 1) {
             throw new IllegalArgumentException("Response does not contain redirect location");
         }

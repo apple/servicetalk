@@ -19,7 +19,9 @@ apply from: "../../gradle/idea.gradle"
 
 dependencies {
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-http-utils") // gives access to RedirectingHttpRequesterFilter
   implementation project(":servicetalk-http-netty")
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   // This dependency brings self-signed TLS certificates for demonstration purposes.
   // Users have to use their own certificates instead.

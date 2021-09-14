@@ -102,6 +102,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     /**
      * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> and gives access to
      * the detailed {@link RedirectConfiguration} options.
+     * <p>
+     * {@link RedirectConfiguration} helps to tune what requests should follow redirects and which parts of the original
+     * request (headers/payload body/trailers) should be redirected to non-relative locations.
      *
      * @param initializer {@link Consumer} to customize the default {@link RedirectConfiguration}.
      * @return {@code this}.

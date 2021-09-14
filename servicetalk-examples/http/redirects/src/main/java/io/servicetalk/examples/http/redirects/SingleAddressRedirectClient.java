@@ -16,35 +16,32 @@
 package io.servicetalk.examples.http.redirects;
 
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.RedirectConfiguration;
 import io.servicetalk.http.netty.HttpClients;
-import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 
+import static io.servicetalk.examples.http.redirects.RedirectingServer.CUSTOM_HEADER;
+import static io.servicetalk.examples.http.redirects.RedirectingServer.NON_SECURE_SERVER_PORT;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
- * Async `Hello World` example that demonstrates how redirects can be handled automatically by a
- * {@link HttpClients#forMultiAddressUrl() multi-address} client.
+ * Async `Hello World` example that demonstrates how <b>relative</b> redirects can be handled automatically by a
+ * {@link HttpClients#forSingleAddress(String, int) single-address} client.
  * <p>
- * Automatic non-relative redirects have limitations. See {@link RedirectConfiguration} and
- * {@link RedirectWithStateUrlClient} for more information.
+ * Because single-address client can communicate with only one target server it can follow only relative redirects.
  */
-public final class SimpleRedirectUrlClient {
+public final class SingleAddressRedirectClient {
     public static void main(String... args) throws Exception {
-        try (HttpClient client = HttpClients.forMultiAddressUrl()
+        try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT)
                 // Enables redirection:
-                .followRedirects(redirectConfiguration -> { /* noop */ })
-                .initializer((scheme, address, builder) -> {
-                    // The custom SSL configuration here is necessary only because this example uses self-signed
-                    // certificates. For cases when it's enough to use the local trust store, MultiAddressUrl client
-                    // already provides default SSL configuration and this step may be skipped.
-                    if ("https".equalsIgnoreCase(scheme)) {
-                        builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
-                    }
-                })
+                .appendClientFilter(new RedirectingHttpRequesterFilter.Builder()
+                        .allowedMethods(GET, POST)  // by default, POST requests don't follow redirects:
+                        .build())
                 .build()) {
-            client.request(client.get("http://localhost:8080/relative"))
+
+            // Simple GET request:
+            client.request(client.get("/relative"))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textSerializerAscii()));
@@ -55,10 +52,14 @@ public final class SimpleRedirectUrlClient {
                     // but is useful for demonstration purposes.
                     .toFuture().get();
 
-            client.request(client.get("http://localhost:8080/non-relative"))
+            // POST request with headers and payload body:
+            client.request(client.post("/relative")
+                    .addHeader(CUSTOM_HEADER, "value")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content")))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textSerializerAscii()));
+                        System.out.println();
                     })
                     // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
                     // exiting before the response has been processed. This isn't typical usage for an asynchronous API
