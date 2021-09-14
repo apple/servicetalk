@@ -29,64 +29,16 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
  */
 public interface HttpServerBuilder {
-
-    static StreamingHttpServiceFilterFactory buildFactory(List<StreamingHttpServiceFilterFactory> filters) {
-        return filters.stream()
-                .reduce((prev, filter) -> strategy -> prev.create(filter.create(strategy)))
-                .orElse(StreamingHttpServiceFilter::new); // unfortunate that we need extra layer
-    }
-
-    static StreamingHttpService buildService(Stream<StreamingHttpServiceFilterFactory> filters,
-                                                     StreamingHttpService service) {
-        return filters
-                .reduce((prev, filter) -> svc -> prev.create(filter.create(svc)))
-                .map(factory -> (StreamingHttpService) factory.create(service))
-                .orElse(service);
-    }
-
-    static HttpExecutionStrategyInfluencer buildInfluencer(List<StreamingHttpServiceFilterFactory> filters,
-                                                                   HttpExecutionStrategyInfluencer defaultInfluence) {
-        return filters.stream()
-                .map(filter -> filter instanceof HttpExecutionStrategyInfluencer ?
-                        (HttpExecutionStrategyInfluencer) filter :
-                        defaultStreamingInfluencer())
-                .distinct()
-                .reduce(defaultInfluence,
-                        (prev, influencer) -> strategy -> influencer.influenceStrategy(prev.influenceStrategy(strategy))
-                );
-    }
-
-    static HttpExecutionStrategy influenceStrategy(Object anything, HttpExecutionStrategy strategy) {
-        return anything instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
-                strategy;
-    }
-
-    static <T> T checkNonOffloading(String desc, HttpExecutionStrategy assumeStrategy, T obj) {
-        requireNonNull(obj);
-        HttpExecutionStrategy requires = obj instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) obj).influenceStrategy(noOffloadsStrategy()) :
-                assumeStrategy;
-        if (requires.isMetadataReceiveOffloaded() || requires.isDataReceiveOffloaded() || requires.isSendOffloaded()) {
-            throw new IllegalArgumentException(desc + " required offloading : " + requires);
-        }
-        return obj;
-    }
 
     /**
      * Configurations of various HTTP protocol versions.
@@ -149,8 +101,7 @@ public interface HttpServerBuilder {
      * data and log only network events.
      * @return {@code this}.
      */
-    HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel,
-                                                        BooleanSupplier logUserData);
+    HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData);
 
     /**
      * Sets a {@link TransportObserver} that provides visibility into transport events.
@@ -159,6 +110,26 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      */
     HttpServerBuilder transportObserver(TransportObserver transportObserver);
+
+    /**
+     * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * consumed by the service.
+     * <p>
+     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+     * eventually consume the entire request payload to enable reading of the next request. This is required because
+     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+     * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
+     * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
+     *
+     * @return {@code this}.
+     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
+     */
+    @Deprecated
+    default HttpServerBuilder disableDrainingRequestPayloadBody() {
+        return drainRequestPayloadBody(false);
+    }
 
     /**
      * Configure automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
@@ -265,7 +236,7 @@ public interface HttpServerBuilder {
      * @throws IllegalArgumentException if the provided filter or predicate requires offloading.
      */
     HttpServerBuilder appendNonOffloadingServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                    StreamingHttpServiceFilterFactory factory);
+                                                       StreamingHttpServiceFilterFactory factory);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
@@ -309,7 +280,7 @@ public interface HttpServerBuilder {
      * @return {@code this}
      */
     HttpServerBuilder appendServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                       StreamingHttpServiceFilterFactory factory);
+                                          StreamingHttpServiceFilterFactory factory);
 
     /**
      * Sets the {@link IoExecutor} to be used by this server.
@@ -325,9 +296,7 @@ public interface HttpServerBuilder {
      * @param executor {@link Executor} to use.
      * @return {@code this}.
      */
-    default HttpServerBuilder executor(Executor executor) {
-        throw new UnsupportedOperationException("Setting Executor not yet supported by " + getClass().getSimpleName());
-    }
+    HttpServerBuilder executor(Executor executor);
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.
@@ -401,8 +370,7 @@ public interface HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenBlockingStreamingAndAwait(
-            BlockingStreamingHttpService handler) throws Exception {
+    default ServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService handler) throws Exception {
         return blockingInvocation(listenBlockingStreaming(handler));
     }
 
