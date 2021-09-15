@@ -467,7 +467,11 @@ public abstract class HttpServerBuilder {
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @deprecated This method will be removed. If you depend upon it consider copying the implementation from
+     * {@code DefaultHttpServerBuilder#doListen(ConnectionAcceptor, StreamingHttpService, HttpExecutionStrategy,
+     * boolean)}
      */
+    @Deprecated
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service,
                                                       HttpExecutionStrategy strategy,
