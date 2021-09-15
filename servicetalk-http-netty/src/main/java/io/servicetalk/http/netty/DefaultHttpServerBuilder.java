@@ -231,16 +231,17 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
             if (cause instanceof RejectedExecutionException) {
                 status = SERVICE_UNAVAILABLE;
                 LOGGER.error("Task rejected by service processing for connection={}, request='{} {} {}'. Returning: {}",
-                        ctx, request.method(), request.requestTarget(), request.version(), status);
+                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
             } else if (cause instanceof SerializationException) {
                 // It is assumed that a failure occurred when attempting to deserialize the request.
                 status = UNSUPPORTED_MEDIA_TYPE;
                 LOGGER.error("Failed to deserialize or serialize for connection={}, request='{} {} {}'. Returning: {}",
-                        ctx, request.method(), request.requestTarget(), request.version(), status);
+                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
             } else {
                 status = INTERNAL_SERVER_ERROR;
                 LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +
-                            "Returning: {}", ctx, request.method(), request.requestTarget(), request.version(), status);
+                        "Trying to return: {}", ctx, request.method(), request.requestTarget(), request.version(),
+                        status, cause);
             }
             return responseFactory.newResponse(status).setHeader(CONTENT_LENGTH, ZERO);
         }

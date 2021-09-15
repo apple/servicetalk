@@ -48,7 +48,7 @@ public class HttpLifecycleObserverRequesterFilter extends AbstractLifecycleObser
      * @param observer The {@link HttpLifecycleObserver observer} implementation that consumes HTTP lifecycle events.
      */
     public HttpLifecycleObserverRequesterFilter(final HttpLifecycleObserver observer) {
-        super(observer);
+        super(observer, true);
     }
 
     @Override

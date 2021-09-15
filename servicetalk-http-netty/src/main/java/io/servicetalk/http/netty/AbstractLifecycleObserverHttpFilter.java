@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Single;
@@ -56,9 +57,11 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
             newKey("ON_CONNECTION_SELECTED_CONSUMER");
 
     private final HttpLifecycleObserver observer;
+    private final boolean client;
 
-    AbstractLifecycleObserverHttpFilter(final HttpLifecycleObserver observer) {
+    AbstractLifecycleObserverHttpFilter(final HttpLifecycleObserver observer, final boolean client) {
         this.observer = requireNonNull(observer);
+        this.client = client;
     }
 
     /**
@@ -84,40 +87,48 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                 AsyncContext.put(ON_CONNECTION_SELECTED_CONSUMER, selectedConnection -> safeReport(
                         onExchange::onConnectionSelected, selectedConnection, onExchange, "onConnectionSelected"));
             }
-            final ExchangeContext exchangeContext = new ExchangeContext(onExchange);
+            final ExchangeContext exchangeContext = new ExchangeContext(onExchange, client);
             final HttpRequestObserver onRequest = safeReport(onExchange::onRequest, request, onExchange,
                     "onRequest", NoopHttpRequestObserver.INSTANCE);
             final StreamingHttpRequest transformed = request
-                    .transformMessageBody(p -> p.beforeOnNext(item -> {
-                        if (item instanceof Buffer) {
-                            safeReport(onRequest::onRequestData, (Buffer) item, onRequest, "onRequestData");
-                        } else if (item instanceof HttpHeaders) {
-                            safeReport(onRequest::onRequestTrailers, (HttpHeaders) item, onRequest,
-                                    "onRequestTrailers");
-                        } else {
-                            LOGGER.warn(
-                                    "Programming mistake: unexpected message body item is received on the request: {}",
-                                    item.getClass().getName());
+                    .transformMessageBody(p -> {
+                        if (client) {
+                            p = p.beforeSubscriber(() -> {
+                                exchangeContext.requestMessageBodyStarts();
+                                return NoopSubscriber.INSTANCE;
+                            });
                         }
-                    }).beforeFinally(new TerminalSignalConsumer() {
-                        @Override
-                        public void onComplete() {
-                            safeReport(onRequest::onRequestComplete, onRequest, "onRequestComplete");
-                            exchangeContext.decrementRemaining();
-                        }
+                        return p.beforeOnNext(item -> {
+                            if (item instanceof Buffer) {
+                                safeReport(onRequest::onRequestData, (Buffer) item, onRequest, "onRequestData");
+                            } else if (item instanceof HttpHeaders) {
+                                safeReport(onRequest::onRequestTrailers, (HttpHeaders) item, onRequest,
+                                        "onRequestTrailers");
+                            } else {
+                                LOGGER.warn(
+                                        "Programming mistake: unexpected message body item is received on the request: {}",
+                                        item.getClass().getName());
+                            }
+                        }).beforeFinally(new TerminalSignalConsumer() {
+                            @Override
+                            public void onComplete() {
+                                safeReport(onRequest::onRequestComplete, onRequest, "onRequestComplete");
+                                exchangeContext.decrementRemaining();
+                            }
 
-                        @Override
-                        public void onError(final Throwable cause) {
-                            safeReport(onRequest::onRequestError, cause, onRequest, "onRequestError");
-                            exchangeContext.decrementRemaining();
-                        }
+                            @Override
+                            public void onError(final Throwable cause) {
+                                safeReport(onRequest::onRequestError, cause, onRequest, "onRequestError");
+                                exchangeContext.decrementRemaining();
+                            }
 
-                        @Override
-                        public void cancel() {
-                            safeReport(onRequest::onRequestCancel, onRequest, "onRequestCancel");
-                            exchangeContext.decrementRemaining();
-                        }
-                    }));
+                            @Override
+                            public void cancel() {
+                                safeReport(onRequest::onRequestCancel, onRequest, "onRequestCancel");
+                                exchangeContext.decrementRemaining();
+                            }
+                        });
+                    });
             final Single<StreamingHttpResponse> responseSingle;
             try {
                 responseSingle = responseFunction.apply(transformed);
@@ -151,10 +162,12 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         private final HttpExchangeObserver onExchange;
         @Nullable
         private HttpResponseObserver onResponse;
-        private volatile int remaining = 2;
+        private volatile int remaining;
 
-        private ExchangeContext(final HttpExchangeObserver onExchange) {
+        private ExchangeContext(final HttpExchangeObserver onExchange, final boolean client) {
             this.onExchange = onExchange;
+            // server has to always drain request, but client may fail before request message body starts:
+            remaining = client ? 1 : 2;
         }
 
         void onResponse(HttpResponseMetaData responseMetaData) {
@@ -200,6 +213,10 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                 safeReport(onResponse::onResponseCancel, onResponse, "onResponseCancel");
             }
             decrementRemaining();
+        }
+
+        void requestMessageBodyStarts() {
+            remainingUpdater.incrementAndGet(this);
         }
 
         void decrementRemaining() {
@@ -254,6 +271,31 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         } catch (Throwable unexpected) {
             unexpected.addSuppressed(t);
             LOGGER.warn("Unexpected exception from {} while reporting a '{}' event", observer, eventName, unexpected);
+        }
+    }
+
+    private static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
+
+        static final NoopSubscriber INSTANCE = new NoopSubscriber();
+
+        private NoopSubscriber() {
+            // Singleton
+        }
+
+        @Override
+        public void onSubscribe(final PublisherSource.Subscription subscription) {
+        }
+
+        @Override
+        public void onNext(@Nullable final Object o) {
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+        }
+
+        @Override
+        public void onComplete() {
         }
     }
 }
