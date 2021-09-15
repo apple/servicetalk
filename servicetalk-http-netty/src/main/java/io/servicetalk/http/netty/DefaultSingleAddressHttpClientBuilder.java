@@ -323,7 +323,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             }
 
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
-                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents,
+                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
+                            ctx.address().toString(),
+                            sdEvents,
                             connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
