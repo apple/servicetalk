@@ -382,6 +382,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         return eventStream;
     }
 
+    @Override
+    public String toString() {
+        return "RoundRobinLoadBalancer{" +
+                "targetResource='" + targetResource + '\'' +
+                '}';
+    }
+
     private Single<C> selectConnection0(Predicate<C> selector) {
         final List<Host<ResolvedAddress, C>> usedHosts = this.usedHosts;
         if (usedHosts.isEmpty()) {
