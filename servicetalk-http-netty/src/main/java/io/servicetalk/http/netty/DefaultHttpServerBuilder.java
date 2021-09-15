@@ -281,29 +281,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
-     * <p>
-     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
-     *
-     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
-     * @param service {@link StreamingHttpService} to use for the server.
-     * @param strategy the {@link HttpExecutionStrategy} to use for the service.
-     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
-     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
-     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
-     * the server could not be started.
-     */
-    private Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
-                                           final StreamingHttpService service,
-                                           final HttpExecutionStrategy strategy,
-                                           final boolean drainRequestPayloadBody) {
-        executionContextBuilder.executionStrategy(strategy);
-        final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
-
-        return doListen(connectionAcceptor, httpExecutionContext, service, drainRequestPayloadBody);
-    }
-
-    /**
      * Build the execution context for this builder.
      *
      * @param strategy The execution strategy to be used for the context
