@@ -137,11 +137,12 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                 return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
             }
             return responseSingle
-                    .liftSync(new BeforeFinallyHttpOperator(exchangeContext))
+                    .liftSync(new BeforeFinallyHttpOperator(exchangeContext, /* discardEventsAfterCancel */ true))
                     // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
                     // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
-                    // completion of Meta. So in order for downstream operators to get a consistent view of the data
-                    // path map() needs to be applied last.
+                    // completion of Meta. It also transforms the original Publisher<Data> to discard signals after
+                    // cancel. So in order for downstream operators to get a consistent view of the data path map()
+                    // needs to be applied last.
                     .map(resp -> {
                         exchangeContext.onResponse(resp);
                         return resp.transformMessageBody(p -> p.beforeOnNext(exchangeContext::onResponseBody));

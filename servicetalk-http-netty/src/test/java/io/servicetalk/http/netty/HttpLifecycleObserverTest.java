@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -26,11 +27,15 @@ import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpRequestObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpResponseObserver;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,19 +43,26 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
+import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
+import static io.servicetalk.http.netty.TestServiceStreaming.SVC_NEVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_NO_CONTENT;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
@@ -59,9 +71,11 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -196,9 +210,113 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         clientInOrder.verify(clientExchangeObserver).onResponseError(e.getCause());
         clientInOrder.verify(clientExchangeObserver).onExchangeFinally();
 
-        verifyNoMoreInteractions(clientExchangeObserver);
+        verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver);
         verifyNoInteractions(clientRequestObserver, clientResponseObserver,
                 serverLifecycleObserver, serverExchangeObserver, serverRequestObserver, serverResponseObserver);
+    }
+
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void testClientCancelsRequestBeforeResponse(HttpProtocol protocol) throws Exception {
+        CountDownLatch requestReceived = new CountDownLatch(1);
+        serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                        StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                return delegate().handle(ctx,
+                        request.transformMessageBody(mb -> mb.afterOnSubscribe(__ -> requestReceived.countDown())),
+                        responseFactory);
+            }
+        });
+        setUp(protocol);
+
+        StreamingHttpClient client = streamingHttpClient();
+        Future<StreamingHttpResponse> responseFuture = client.request(client.post(SVC_NEVER)
+                .payloadBody(Publisher.never())).toFuture();
+        requestReceived.await();
+        responseFuture.cancel(true);
+
+        // Verify both exchanges terminate before verifying order of events:
+        verify(clientExchangeObserver, await()).onExchangeFinally();
+        verify(serverExchangeObserver, await()).onExchangeFinally();
+
+        clientInOrder.verify(clientLifecycleObserver).onNewExchange();
+        clientInOrder.verify(clientExchangeObserver).onRequest(any(StreamingHttpRequest.class));
+        clientInOrder.verify(clientExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
+        clientInOrder.verify(clientExchangeObserver).onResponseCancel();
+        verify(clientRequestObserver).onRequestCancel();
+        verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver, clientRequestObserver);
+        verifyNoInteractions(clientResponseObserver);
+
+        serverInOrder.verify(serverLifecycleObserver).onNewExchange();
+        serverInOrder.verify(serverExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
+        serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
+        serverInOrder.verify(serverRequestObserver).onRequestError(any(IOException.class));
+        // because of offloading, cancel from the IO-thread may race with an error propagated through request publisher:
+        verify(serverExchangeObserver, atMostOnce()).onResponseCancel();
+        verify(serverExchangeObserver, atMostOnce()).onResponse(any(StreamingHttpResponse.class));
+        verify(serverResponseObserver, atMostOnce()).onResponseComplete();
+        verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
+                serverRequestObserver, serverResponseObserver);
+    }
+
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void testClientCancelsRequestAfterResponse(HttpProtocol protocol) throws Exception {
+        TestPublisher<Buffer> serverResponsePayload = new TestPublisher<>();
+        serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                        StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                return request.payloadBody().ignoreElements()
+                        .concat(succeeded(responseFactory.ok().payloadBody(serverResponsePayload)));
+            }
+        });
+        setUp(protocol);
+
+        StreamingHttpConnection connection = streamingHttpConnection();
+        StreamingHttpRequest request = connection.post("/")
+                .payloadBody(Publisher.from(CONTENT.duplicate()))
+                .transform(new StatelessTrailersTransformer<>());   // adds empty trailers
+        StreamingHttpResponse response = connection.request(request).toFuture().get();
+        assertResponse(response, protocol.version, OK);
+        Future<Collection<Buffer>> payload = response.payloadBody().toFuture();
+        payload.cancel(true);
+        if (protocol == HttpProtocol.HTTP_1) {
+            // wait for cancellation to close the connection:
+            connection.onClose().toFuture().get();
+        }
+        // try to write server content to trigger write failure and close the server-side connection:
+        serverResponsePayload.onNext(CONTENT.duplicate());
+
+        // Verify both exchanges terminate before verifying order of events:
+        verify(clientExchangeObserver, await()).onExchangeFinally();
+        verify(serverExchangeObserver, await()).onExchangeFinally();
+
+        clientInOrder.verify(clientLifecycleObserver).onNewExchange();
+        clientInOrder.verify(clientExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
+        clientInOrder.verify(clientExchangeObserver).onRequest(any(StreamingHttpRequest.class));
+        clientInOrder.verify(clientExchangeObserver).onResponse(any(StreamingHttpResponse.class));
+        clientInOrder.verify(clientResponseObserver).onResponseCancel();
+        clientRequestInOrder.verify(clientRequestObserver).onRequestData(any(Buffer.class));
+        clientRequestInOrder.verify(clientRequestObserver).onRequestTrailers(any(HttpHeaders.class));
+        clientRequestInOrder.verify(clientRequestObserver).onRequestComplete();
+        verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver,
+                clientRequestObserver, clientResponseObserver);
+
+        serverInOrder.verify(serverLifecycleObserver).onNewExchange();
+        serverInOrder.verify(serverExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
+        serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
+        serverInOrder.verify(serverExchangeObserver).onResponse(any(StreamingHttpResponse.class));
+        serverInOrder.verify(serverResponseObserver).onResponseData(any(Buffer.class));
+        serverInOrder.verify(serverResponseObserver).onResponseCancel();
+        serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
+        serverRequestInOrder.verify(serverRequestObserver).onRequestTrailers(any(HttpHeaders.class));
+        serverRequestInOrder.verify(serverRequestObserver).onRequestComplete();
+        verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
+                serverRequestObserver, serverResponseObserver);
     }
 
     private void makeRequestAndAssertResponse(String path, HttpProtocol protocol,
@@ -234,7 +352,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 .onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
-        verifyNoMoreInteractions(request, response, exchange);
+        verifyNoMoreInteractions(request, response, exchange, lifecycle);
     }
 
     private static void verifyError(boolean client, HttpLifecycleObserver lifecycle, HttpExchangeObserver exchange,
@@ -257,6 +375,6 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         }
         requestInOrder.verify(request).onRequestComplete();
 
-        verifyNoMoreInteractions(request, response, exchange);
+        verifyNoMoreInteractions(request, response, exchange, lifecycle);
     }
 }
