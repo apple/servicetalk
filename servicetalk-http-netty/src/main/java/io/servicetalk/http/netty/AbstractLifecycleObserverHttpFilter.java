@@ -106,8 +106,8 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                                         "onRequestTrailers");
                             } else {
                                 LOGGER.warn(
-                                        "Programming mistake: unexpected message body item is received on the request: {}",
-                                        item.getClass().getName());
+                                    "Programming mistake: unexpected message body item is received on the request: {}",
+                                    item.getClass().getName());
                             }
                         }).beforeFinally(new TerminalSignalConsumer() {
                             @Override
