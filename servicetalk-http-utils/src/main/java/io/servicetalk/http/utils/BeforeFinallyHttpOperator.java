@@ -62,6 +62,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 public final class BeforeFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
     private final TerminalSignalConsumer beforeFinally;
+    private final boolean discardEventsAfterCancel;
 
     /**
      * Create a new instance.
@@ -70,7 +71,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
      * across both sources.
      */
     public BeforeFinallyHttpOperator(final TerminalSignalConsumer beforeFinally) {
-        this.beforeFinally = requireNonNull(beforeFinally);
+        this(beforeFinally, false);
     }
 
     /**
@@ -83,6 +84,19 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         this(TerminalSignalConsumer.from(beforeFinally));
     }
 
+    /**
+     * Create a new instance.
+     *
+     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
+     * @param discardEventsAfterCancel if {@code true} further events will be discarded if those arrive after
+     * cancellation. Otherwise, events may be delivered if they race with cancellation.
+     */
+    public BeforeFinallyHttpOperator(final TerminalSignalConsumer beforeFinally, boolean discardEventsAfterCancel) {
+        this.beforeFinally = requireNonNull(beforeFinally);
+        this.discardEventsAfterCancel = discardEventsAfterCancel;
+    }
+
     @Override
     public SingleSource.Subscriber<? super StreamingHttpResponse> apply(
             final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -90,7 +104,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
         // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
         // other Subscriber that will use the payload Publisher.
-        return new ResponseCompletionSubscriber(subscriber, beforeFinally);
+        return new ResponseCompletionSubscriber(subscriber, beforeFinally, discardEventsAfterCancel);
     }
 
     private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
@@ -102,12 +116,15 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
 
         private final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
         private final TerminalSignalConsumer beforeFinally;
+        private final boolean discardEventsAfterCancel;
         private volatile int state;
 
         ResponseCompletionSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> sub,
-                                     final TerminalSignalConsumer beforeFinally) {
+                                     final TerminalSignalConsumer beforeFinally,
+                                     final boolean discardEventsAfterCancel) {
             this.subscriber = sub;
             this.beforeFinally = beforeFinally;
+            this.discardEventsAfterCancel = discardEventsAfterCancel;
         }
 
         @Override
@@ -156,6 +173,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
 
                                     @Override
                                     public void onNext(@Nullable final Object o) {
+                                        if (discardEventsAfterCancel && state == TERMINATED) {
+                                            return;
+                                        }
                                         subscriber.onNext(o);
                                     }
 
@@ -165,10 +185,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                             if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
                                                     PROCESSING_PAYLOAD, TERMINATED)) {
                                                 beforeFinally.onError(t);
+                                            } else if (discardEventsAfterCancel) {
+                                                return;
                                             }
-                                        } finally {
-                                            subscriber.onError(t);
+                                        } catch (Throwable cause) {
+                                            t.addSuppressed(cause);
                                         }
+                                        subscriber.onError(t);
                                     }
 
                                     @Override
@@ -177,10 +200,14 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                             if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
                                                     PROCESSING_PAYLOAD, TERMINATED)) {
                                                 beforeFinally.onComplete();
+                                            } else if (discardEventsAfterCancel) {
+                                                return;
                                             }
-                                        } finally {
-                                            subscriber.onComplete();
+                                        } catch (Throwable cause) {
+                                            subscriber.onError(cause);
+                                            return;
                                         }
+                                        subscriber.onComplete();
                                     }
                                 })
                 ));
@@ -188,6 +215,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
                 assert state == TERMINATED;
+                if (discardEventsAfterCancel) {
+                    return;
+                }
                 subscriber.onSuccess(response.transformMessageBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
@@ -202,10 +232,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             try {
                 if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                     beforeFinally.onError(t);
+                } else if (discardEventsAfterCancel) {
+                    return;
                 }
-            } finally {
-                subscriber.onError(t);
+            } catch (Throwable cause) {
+                t.addSuppressed(cause);
             }
+            subscriber.onError(t);
         }
 
         private void sendNullResponse() {
@@ -213,6 +246,8 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
                 if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                     beforeFinally.onComplete();
+                } else if (discardEventsAfterCancel) {
+                    return;
                 }
             } catch (Throwable cause) {
                 subscriber.onError(cause);

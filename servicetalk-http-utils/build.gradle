@@ -32,6 +32,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-http-api"))
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-concurrent-api-test")
+  testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
