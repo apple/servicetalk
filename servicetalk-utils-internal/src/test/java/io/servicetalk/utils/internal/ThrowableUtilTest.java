@@ -49,9 +49,9 @@ class ThrowableUtilTest {
     }
 
     private static void testCombineTwo(Throwable first, Throwable second) {
-        Throwable firstSecond = combine(first, second);
-        assertThat(firstSecond, is(notNullValue()));
-        assertThat(firstSecond, sameInstance(first));
-        assertThat(firstSecond.getSuppressed(), arrayContaining(second));
+        Throwable combined = combine(first, second);
+        assertThat(combined, is(notNullValue()));
+        assertThat(combined, sameInstance(first));
+        assertThat(combined.getSuppressed(), arrayContaining(second));
     }
 }

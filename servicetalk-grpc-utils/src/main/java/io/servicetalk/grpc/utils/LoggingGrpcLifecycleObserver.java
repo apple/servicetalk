@@ -166,23 +166,24 @@ public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver
             final HttpResponseMetaData responseMetaData = this.responseMetaData;
             if (responseMetaData != null) {
                 logger.log("connection={} " +
-                        "request=\"{} {} {}\" requestHeaders={} requestSize={} requestTrailers={} requestResult={} " +
-                        "responseCode={} responseHeaders={} responseSize={} responseTrailers={} grpcStatus={} " +
-                        "responseResult={} duration={}ms",
-                        connInfo == null ? "unknown" : connInfo,
-                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                        requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
-                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                        responseTrailers, grpcStatus, unwrapResult(responseResult),
-                        NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailers={} requestResult={} " +
+                    "responseCode={} responseHeadersCount={} responseSize={} responseTrailers={} grpcStatus={} " +
+                    "responseResult={} duration={}ms",
+                    connInfo == null ? "unknown" : connInfo,
+                    requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                    requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
+                    responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                    responseTrailers, grpcStatus, unwrapResult(responseResult),
+                    NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             } else {
-                logger.log("connection={} request=\"{} {} {}\" requestHeaders={} requestSize={} requestTrailers={} " +
-                                "requestResult={} responseResult={} duration={}ms",
-                        connInfo == null ? "unknown" : connInfo,
-                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                        requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
-                        unwrapResult(responseResult),
-                        NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                logger.log("connection={} " +
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailers={} requestResult={} " +
+                    "responseResult={} duration={}ms",
+                    connInfo == null ? "unknown" : connInfo,
+                    requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                    requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
+                    unwrapResult(responseResult),
+                    NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             }
         }
 
