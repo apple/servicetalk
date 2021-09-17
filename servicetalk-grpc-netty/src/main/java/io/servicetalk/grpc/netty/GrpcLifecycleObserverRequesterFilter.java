@@ -15,17 +15,26 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 
 /**
  * An HTTP requester filter that tracks events during gRPC request/response lifecycle.
  * <p>
  * This filter is recommended to be appended as the first filter at the
  * {@link GrpcClientBuilder#appendHttpClientFilter(StreamingHttpClientFilterFactory) client builder} to account
- * for all work done by other filters.
+ * for all work done by other filters. If it's preferred to get visibility in all retried or redirected requests,
+ * consider adding it after {@link RetryingHttpRequesterFilter} or {@link RedirectingHttpRequesterFilter}.
+ * Alternatively, it can be applied as the first filter at
+ * {@link GrpcClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory) connection level}
+ * to also get visibility into
+ * {@link GrpcClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider) automatic retries}.
  */
 public final class GrpcLifecycleObserverRequesterFilter extends HttpLifecycleObserverRequesterFilter {
 

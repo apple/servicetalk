@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -31,13 +32,20 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 
 /**
  * An HTTP requester filter that tracks events during request/response lifecycle.
  * <p>
  * This filter is recommended to be appended as the first filter at the
  * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory) client builder} to account
- * for all work done by other filters.
+ * for all work done by other filters. If it's preferred to get visibility in all retried or redirected requests,
+ * consider adding it after {@link RetryingHttpRequesterFilter} or {@link RedirectingHttpRequesterFilter}.
+ * Alternatively, it can be applied as the first filter at
+ * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory) connection level}
+ * to also get visibility into
+ * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider) automatic retries}.
  */
 public class HttpLifecycleObserverRequesterFilter extends AbstractLifecycleObserverHttpFilter implements
         StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
