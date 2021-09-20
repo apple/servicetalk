@@ -119,13 +119,17 @@ class HttpMultiProxyTest {
     void testRequest() throws Exception {
         assert client != null;
 
-        final HttpResponse proxiedHttpResponse = client.request(client.get("http://" + serverBehindProxyAddress + "/path"));
+        final HttpResponse proxiedHttpResponse =
+                client.request(client.get("http://" + serverBehindProxyAddress + "/path"));
         assertThat(proxiedHttpResponse.status(), is(OK));
-        assertThat(proxiedHttpResponse.payloadBody().toString(US_ASCII), is("host: " + serverBehindProxyAddress));
+        assertThat(proxiedHttpResponse.payloadBody().toString(US_ASCII),
+                is("host: " + serverBehindProxyAddress));
 
-        final HttpResponse rawHttpResponse = client.request(client.get("http://" + serverWithoutProxyAddress + "/path"));
+        final HttpResponse rawHttpResponse =
+                client.request(client.get("http://" + serverWithoutProxyAddress + "/path"));
         assertThat(rawHttpResponse.status(), is(OK));
-        assertThat(rawHttpResponse.payloadBody().toString(US_ASCII), is("host: " + serverWithoutProxyAddress));
+        assertThat(rawHttpResponse.payloadBody().toString(US_ASCII),
+                is("host: " + serverWithoutProxyAddress));
 
         assertThat(proxyRequestCount.get(), is(1));
     }
