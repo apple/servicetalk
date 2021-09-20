@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package io.servicetalk.http.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
@@ -32,15 +34,19 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -58,11 +64,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -76,7 +84,8 @@ class BeforeFinallyHttpOperatorTest {
     @Mock
     private TerminalSignalConsumer beforeFinally;
 
-    private static Stream<Arguments> discardTerminate() {
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> booleanTerminalNotification() {
         return Stream.of(Arguments.of(false, TerminalNotification.complete()),
                 Arguments.of(false, TerminalNotification.error(DELIBERATE_EXCEPTION)),
                 Arguments.of(true, TerminalNotification.complete()),
@@ -151,8 +160,7 @@ class BeforeFinallyHttpOperatorTest {
         verify(beforeFinally).cancel();
         responseSingle.verifyCancelled();
 
-        final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
-        responseSingle.onSuccess(response);
+        responseSingle.onSuccess(reqRespFactory.newResponse(OK));
         if (discardEventsAfterCancel) {
             subscriber.verifyNoResponseReceived();
         } else {
@@ -220,8 +228,7 @@ class BeforeFinallyHttpOperatorTest {
                 .subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
-        responseSingle.onSuccess(response);
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(never()));
 
         verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
@@ -254,9 +261,9 @@ class BeforeFinallyHttpOperatorTest {
         responseSingle.verifyCancelled();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
-    @MethodSource("discardTerminate")
-    void cancelBeforeOnNextThenTerminate(boolean discardEventsAfterCancel, TerminalNotification terminalNotification) {
+    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadTerminal={1}")
+    @MethodSource("booleanTerminalNotification")
+    void cancelBeforeOnNextThenTerminate(boolean discardEventsAfterCancel, TerminalNotification payloadTerminal) {
         TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
         TestSubscription payloadSubscription = new TestSubscription();
         TestPublisherSubscriber<Buffer> payloadSubscriber = new TestPublisherSubscriber<>();
@@ -268,8 +275,7 @@ class BeforeFinallyHttpOperatorTest {
                 .subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);
-        responseSingle.onSuccess(response);
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
 
         verifyNoInteractions(beforeFinally);
         responseSingle.verifyNotCancelled();
@@ -284,13 +290,16 @@ class BeforeFinallyHttpOperatorTest {
         toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
         payload.onSubscribe(payloadSubscription);
         payloadSubscriber.awaitSubscription().request(MAX_VALUE);
+
+        assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
         payloadSubscriber.awaitSubscription().cancel();
         assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
+
         payload.onNext(EMPTY_BUFFER);
-        if (terminalNotification.cause() == null) {
+        if (payloadTerminal.cause() == null) {
             payload.onComplete();
         } else {
-            payload.onError(terminalNotification.cause());
+            payload.onError(payloadTerminal.cause());
         }
         if (discardEventsAfterCancel) {
             assertThat("Unexpected payload body items", payloadSubscriber.pollAllOnNext(), empty());
@@ -299,12 +308,213 @@ class BeforeFinallyHttpOperatorTest {
         } else {
             assertThat("Unexpected payload body items",
                     payloadSubscriber.pollAllOnNext(), contains(EMPTY_BUFFER));
-            if (terminalNotification.cause() == null) {
+            if (payloadTerminal.cause() == null) {
                 payloadSubscriber.awaitOnComplete();
             } else {
                 assertThat(payloadSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
             }
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadTerminal={1}")
+    @MethodSource("booleanTerminalNotification")
+    void cancelAfterOnNextThenTerminate(boolean discardEventsAfterCancel, TerminalNotification payloadTerminal) {
+        TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
+        TestSubscription payloadSubscription = new TestSubscription();
+        TestPublisherSubscriber<Buffer> payloadSubscriber = new TestPublisherSubscriber<>();
+
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, discardEventsAfterCancel)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
+
+        verifyNoInteractions(beforeFinally);
+        responseSingle.verifyNotCancelled();
+        subscriber.verifyResponseReceived();
+
+        assert subscriber.response != null;
+        toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
+        payload.onSubscribe(payloadSubscription);
+        payloadSubscriber.awaitSubscription().request(MAX_VALUE);
+
+        payload.onNext(EMPTY_BUFFER);
+        if (payloadTerminal.cause() == null) {
+            payload.onComplete();
+        } else {
+            payload.onError(payloadTerminal.cause());
+        }
+
+        assertThat("Unexpected payload body items",
+                payloadSubscriber.pollAllOnNext(), contains(EMPTY_BUFFER));
+        if (payloadTerminal.cause() == null) {
+            payloadSubscriber.awaitOnComplete();
+        } else {
+            assertThat(payloadSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        }
+
+        assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
+        payloadSubscriber.awaitSubscription().cancel();
+        assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
+    }
+
+    @Test
+    void cancelWhileDeliveringPayload() {
+        TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
+        Subscription payloadSubscription = mock(Subscription.class);
+
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, true)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
+
+        verifyNoInteractions(beforeFinally);
+        responseSingle.verifyNotCancelled();
+        subscriber.verifyResponseReceived();
+
+        assert subscriber.response != null;
+        BlockingQueue<Buffer> receivedPayload = new LinkedBlockingDeque<>();
+        AtomicReference<TerminalNotification> subscriberTerminal = new AtomicReference<>();
+        toSource(subscriber.response.payloadBody()).subscribe(new PublisherSource.Subscriber<Buffer>() {
+
+            @Nullable
+            private Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(@Nullable final Buffer buffer) {
+                assert buffer != null;
+                receivedPayload.add(buffer);
+                if (receivedPayload.size() == 1) {
+                    assert subscription != null;
+                    subscription.cancel();
+                    subscription.cancel();  // intentionally cancel two times to make sure it's idempotent
+                    verify(payloadSubscription, Mockito.never()).cancel();
+                    verifyNoMoreInteractions(beforeFinally);
+
+                    payload.onNext(EMPTY_BUFFER);
+                }
+                verify(payloadSubscription, Mockito.never()).cancel();
+                verifyNoMoreInteractions(beforeFinally);
+                // Cancel will be propagated after this method returns
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                subscriberTerminal.set(TerminalNotification.error(t));
+            }
+
+            @Override
+            public void onComplete() {
+                subscriberTerminal.set(TerminalNotification.complete());
+            }
+        });
+        payload.onSubscribe(payloadSubscription);
+
+        verify(payloadSubscription, Mockito.never()).cancel();
+        payload.onNext(EMPTY_BUFFER);
+        verify(payloadSubscription).cancel();
+        verify(beforeFinally).cancel();
+
+        assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER, EMPTY_BUFFER));
+        assertThat("Unexpected payload body termination", subscriberTerminal.get(), is(nullValue()));
+
+        verifyNoMoreInteractions(beforeFinally);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] fromOnNext={0} payloadTerminal={1}")
+    @MethodSource("booleanTerminalNotification")
+    void cancelWhileDeliveringPayloadThenTerminate(boolean fromOnNext, TerminalNotification payloadTerminal) {
+        TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
+        TestSubscription payloadSubscription = new TestSubscription();
+
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, true)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
+
+        verifyNoInteractions(beforeFinally);
+        responseSingle.verifyNotCancelled();
+        subscriber.verifyResponseReceived();
+
+        assert subscriber.response != null;
+        BlockingQueue<Buffer> receivedPayload = new LinkedBlockingDeque<>();
+        AtomicReference<TerminalNotification> subscriberTerminal = new AtomicReference<>();
+        toSource(subscriber.response.payloadBody()).subscribe(new PublisherSource.Subscriber<Buffer>() {
+
+            @Nullable
+            private Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1L);
+            }
+
+            @Override
+            public void onNext(@Nullable final Buffer buffer) {
+                assert buffer != null;
+                receivedPayload.add(buffer);
+                if (fromOnNext) {
+                    assert subscription != null;
+                    subscription.cancel();
+                }
+                if (payloadTerminal.cause() == null) {
+                    payload.onComplete();
+                } else {
+                    payload.onError(payloadTerminal.cause());
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                subscriberTerminal.set(TerminalNotification.error(t));
+                cancelFromTerminal();
+            }
+
+            @Override
+            public void onComplete() {
+                subscriberTerminal.set(TerminalNotification.complete());
+                cancelFromTerminal();
+            }
+
+            private void cancelFromTerminal() {
+                if (!fromOnNext) {
+                    assert subscription != null;
+                    subscription.cancel();
+                }
+            }
+        });
+        payload.onSubscribe(payloadSubscription);
+
+        assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
+        payload.onNext(EMPTY_BUFFER);
+        assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
+
+        assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER));
+        assertThat("Unexpected payload body termination", subscriberTerminal.get(), equalTo(payloadTerminal));
+        if (payloadTerminal.cause() == null) {
+            verify(beforeFinally).onComplete();
+        } else {
+            verify(beforeFinally).onError(payloadTerminal.cause());
+        }
+        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -336,6 +546,7 @@ class BeforeFinallyHttpOperatorTest {
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
 
+        @Nullable
         Cancellable cancellable;
         @Nullable
         private StreamingHttpResponse response;
