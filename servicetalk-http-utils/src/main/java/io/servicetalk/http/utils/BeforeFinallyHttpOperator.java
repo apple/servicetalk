@@ -287,29 +287,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                             return;
                                         }
 
-                                        boolean propagateCancel = false;
-                                        for (;;) {
-                                            final int state = ResponseCompletionSubscriber.this.state;
-                                            assert state != IDLE;
-                                            if (state == TERMINATED) {
-                                                // We already cancelled and have to discard further events
-                                                return;
-                                            }
-                                            if (state == PROCESSING_PAYLOAD) {
-                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                                    break;
-                                                }
-                                            } else {
-                                                // re-entry, but we can terminate because this is a final event:
-                                                if (state == AWAITING_CANCEL) {
-                                                    // Propagate original cancel to let Subscription observe it
-                                                    propagateCancel = true;
-                                                }
-                                                stateUpdater.set(ResponseCompletionSubscriber.this, TERMINATED);
-                                                break;
-                                            }
+                                        final int prevState = setTerminalState();
+                                        if (prevState == TERMINATED) {
+                                            // We already cancelled and have to discard further events
+                                            return;
                                         }
+                                        // Propagate original cancel to let Subscription observe it
+                                        final boolean propagateCancel = prevState == AWAITING_CANCEL;
 
                                         try {
                                             beforeFinally.onError(t);
@@ -319,10 +303,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                         try {
                                             subscriber.onError(t);
                                         } finally {
-                                            if (propagateCancel) {
-                                                assert subscription != null;
-                                                subscription.cancel();
-                                            }
+                                            cancel0(propagateCancel);
                                         }
                                     }
 
@@ -342,29 +323,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                             return;
                                         }
 
-                                        boolean propagateCancel = false;
-                                        for (;;) {
-                                            final int state = ResponseCompletionSubscriber.this.state;
-                                            assert state != IDLE;
-                                            if (state == TERMINATED) {
-                                                // We already cancelled and have to discard further events
-                                                return;
-                                            }
-                                            if (state == PROCESSING_PAYLOAD) {
-                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                                    break;
-                                                }
-                                            } else {
-                                                // re-entry, but we can terminate because this is a final event:
-                                                if (state == AWAITING_CANCEL) {
-                                                    // Propagate original cancel to let Subscription observe it
-                                                    propagateCancel = true;
-                                                }
-                                                stateUpdater.set(ResponseCompletionSubscriber.this, TERMINATED);
-                                                break;
-                                            }
+                                        final int prevState = setTerminalState();
+                                        if (prevState == TERMINATED) {
+                                            // We already cancelled and have to discard further events
+                                            return;
                                         }
+                                        // Propagate original cancel to let Subscription observe it
+                                        final boolean propagateCancel = prevState == AWAITING_CANCEL;
 
                                         try {
                                             try {
@@ -375,10 +340,35 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                             }
                                             subscriber.onComplete();
                                         } finally {
-                                            if (propagateCancel) {
-                                                assert subscription != null;
-                                                subscription.cancel();
+                                            cancel0(propagateCancel);
+                                        }
+                                    }
+
+                                    private int setTerminalState() {
+                                        for (;;) {
+                                            final int state = ResponseCompletionSubscriber.this.state;
+                                            assert state != IDLE;
+                                            if (state == TERMINATED) {
+                                                // We already cancelled and have to discard further events
+                                                return state;
                                             }
+                                            if (state == PROCESSING_PAYLOAD) {
+                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
+                                                        PROCESSING_PAYLOAD, TERMINATED)) {
+                                                    return state;
+                                                }
+                                            } else {
+                                                // re-entry, but we can terminate because this is a final event:
+                                                stateUpdater.set(ResponseCompletionSubscriber.this, TERMINATED);
+                                                return state;
+                                            }
+                                        }
+                                    }
+
+                                    private void cancel0(final boolean propagateCancel) {
+                                        if (propagateCancel) {
+                                            assert subscription != null;
+                                            subscription.cancel();
                                         }
                                     }
                                 })
