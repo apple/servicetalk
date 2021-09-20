@@ -50,7 +50,7 @@ public interface HttpLifecycleObserver {
      * An exchange is represented by a {@link HttpRequestObserver request} and a {@link HttpResponseObserver response}.
      * Both can be observed independently and may publish their events concurrently because connections are full-duplex.
      * The {@link #onExchangeFinally() terminal event} for the exchange is signaled only when nested observers signal
-     * terminal events. It's safe to consume the entire state from {@link #onExchangeFinally()}.
+     * terminal events. Cancellation is the best effort, more events may be signaled after cancel.
      */
     interface HttpExchangeObserver {
 
@@ -86,6 +86,8 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback if the response meta-data was cancelled.
+         * <p>
+         * Cancellation is the best effort, more events may be signaled after cancel.
          */
         void onResponseCancel();
 
@@ -143,6 +145,7 @@ public interface HttpLifecycleObserver {
          * Callback if the request is cancelled.
          * <p>
          * This is one of the possible terminal events.
+         * Cancellation is the best effort, more events may be signaled after cancel.
          */
         void onRequestCancel();
     }
@@ -191,6 +194,7 @@ public interface HttpLifecycleObserver {
          * Callback when the response is cancelled.
          * <p>
          * This is one of the possible terminal events.
+         * Cancellation is the best effort, more events may be signaled after cancel.
          */
         void onResponseCancel();
     }

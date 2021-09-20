@@ -54,7 +54,7 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
      * An exchange is represented by a {@link GrpcRequestObserver request} and a {@link GrpcResponseObserver response}.
      * Both can be observed independently and may publish their events concurrently because connections are full-duplex.
      * The {@link #onExchangeFinally() terminal event} for the exchange is signaled only when nested observers signal
-     * terminal events. It's safe to consume the entire state from {@link #onExchangeFinally()}.
+     * terminal events. Cancellation is the best effort, more events may be signaled after cancel.
      */
     interface GrpcExchangeObserver extends HttpExchangeObserver {
 
