@@ -126,7 +126,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(CACHED, CACHED_SERVER);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testCompleteEmptyMessageBody(HttpProtocol protocol) throws Exception {
         setUp(protocol);
@@ -138,7 +138,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverResponseObserver, serverInOrder, serverRequestInOrder, false);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testCompleteWithPayloadBodyAndTrailers(HttpProtocol protocol) throws Exception {
         setUp(protocol);
@@ -150,7 +150,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverResponseObserver, serverInOrder, serverRequestInOrder, true);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testServerThrows(HttpProtocol protocol) throws Exception {
         setUp(protocol);
@@ -162,7 +162,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverResponseObserver, serverInOrder, serverRequestInOrder, false);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testServerSingleFailed(HttpProtocol protocol) throws Exception {
         setUp(protocol);
@@ -174,7 +174,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverResponseObserver, serverInOrder, serverRequestInOrder, false);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testServerPayloadBodyFailure(HttpProtocol protocol) {
         setUp(protocol);
@@ -189,7 +189,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverResponseObserver, serverInOrder, serverRequestInOrder);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testConnectionFailsRequestBeforeWrite(HttpProtocol protocol) {
         connectionFilterFactory(client -> new StreamingHttpConnectionFilter(client) {
@@ -215,7 +215,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverLifecycleObserver, serverExchangeObserver, serverRequestObserver, serverResponseObserver);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testClientCancelsRequestBeforeResponse(HttpProtocol protocol) throws Exception {
         CountDownLatch requestReceived = new CountDownLatch(1);
@@ -261,7 +261,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverRequestObserver, serverResponseObserver);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void testClientCancelsRequestAfterResponse(HttpProtocol protocol) throws Exception {
         TestPublisher<Buffer> serverResponsePayload = new TestPublisher<>();
