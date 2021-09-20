@@ -42,9 +42,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
@@ -53,6 +53,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -61,6 +62,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.stream;
@@ -76,7 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Deprecated
 class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
-    private static final BiFunction<Scenario, List<Throwable>, StreamingHttpServiceFilterFactory> REQ_FILTER =
+    private static final BiFunction<Scenario, Queue<Throwable>, StreamingHttpServiceFilterFactory> REQ_FILTER =
             (scenario, errors) -> new StreamingHttpServiceFilterFactory() {
         @Override
         public StreamingHttpServiceFilter create(final StreamingHttpService service) {
@@ -128,7 +130,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         }
     };
 
-    private static final BiFunction<Scenario, List<Throwable>, StreamingHttpClientFilterFactory> RESP_FILTER =
+    private static final BiFunction<Scenario, Queue<Throwable>, StreamingHttpClientFilterFactory> RESP_FILTER =
             (scenario, errors) -> new StreamingHttpClientFilterFactory() {
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -170,7 +172,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     private ServerContext serverContext;
     private BlockingHttpClient client;
-    final List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+    final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
     void start() throws Exception {
         serverContext = newServiceTalkServer(scenario, errors);
@@ -205,13 +207,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
             assertNotSupported(scenario.requestEncoding);
         }
 
-        verifyNoErrors();
-    }
-
-    void verifyNoErrors() throws Throwable {
-        if (!errors.isEmpty()) {
-            throw errors.get(0);
-        }
+        assertNoAsyncErrors(errors);
     }
 
     protected void assertSuccessful(final ContentCodec encoding) throws Throwable {
@@ -234,7 +230,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     }
 
     void assertResponse(final StreamingHttpResponse response) throws Throwable {
-        verifyNoErrors();
+        assertNoAsyncErrors(errors);
 
         assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
 
@@ -281,7 +277,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         }
     }
 
-    private ServerContext newServiceTalkServer(final Scenario scenario, final List<Throwable> errors)
+    private ServerContext newServiceTalkServer(final Scenario scenario, final Queue<Throwable> errors)
             throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
 
@@ -290,6 +286,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         StreamingHttpServiceFilterFactory filterFactory = REQ_FILTER.apply(scenario, errors);
 
         return httpServerBuilder
+                .executionStrategy(defaultStrategy())
                 .protocols(scenario.protocol.config)
                 .appendServiceFilter(new ContentCodingHttpServiceFilter(scenario.serverSupported,
                         scenario.serverSupported))
@@ -302,7 +299,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     }
 
     static BlockingHttpClient newServiceTalkClient(final HostAndPort hostAndPort, final Scenario scenario,
-                                                   final List<Throwable> errors) {
+                                                   final Queue<Throwable> errors) {
         return HttpClients
                 .forSingleAddress(hostAndPort)
                 .appendClientFilter(RESP_FILTER.apply(scenario, errors))

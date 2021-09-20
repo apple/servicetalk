@@ -49,11 +49,11 @@ public final class HeaderUtils {
      * If no accepted encodings are present in the request then the result is always {@code null}
      * In all other cases, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * otherwise {@code null} is returned.
-     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      * @param acceptEncodingHeaderValue The accept encoding header value.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
      * null if none found or matched to {@link Identity#identity()}
+     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      */
     @Deprecated
     @Nullable
@@ -148,11 +148,11 @@ public final class HeaderUtils {
      * If no supported encodings are passed then the result is always {@code null}
      * Otherwise, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * or {@code null} is returned.
-     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      * @param clientSupportedEncodings The client supported codings as found in the HTTP header.
      * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
      * null if none found or matched to {@link Identity#identity()}
+     * @deprecated Use {@link #negotiateAcceptedEncodingRaw(CharSequence, List, Function)}.
      */
     @Deprecated
     @Nullable
@@ -198,10 +198,10 @@ public final class HeaderUtils {
      * if {@code name} is {@code null} or empty it results in {@code null} .
      * If {@code name} is {@code 'identity'} this will always result in
      * {@link Identity#identity()} regardless of its presence in the {@code allowedList}.
-     * @deprecated Use {@link #encodingForRaw(List, Function, CharSequence)}.
      * @param allowedList the source list to find a matching codec from.
      * @param name the codec name used for the equality predicate.
      * @return a codec from the allowed-list that name matches the {@code name}.
+     * @deprecated Use {@link #encodingForRaw(List, Function, CharSequence)}.
      */
     @Deprecated
     @Nullable

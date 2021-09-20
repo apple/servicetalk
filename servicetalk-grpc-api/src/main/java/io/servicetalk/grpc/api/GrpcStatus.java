@@ -17,14 +17,11 @@ package io.servicetalk.grpc.api;
 
 import com.google.rpc.Status;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static java.lang.Integer.parseInt;
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -33,17 +30,13 @@ import static java.util.Objects.requireNonNull;
  * @see GrpcStatusCode
  */
 public final class GrpcStatus {
-    static final Map<Integer, GrpcStatus> CACHED_INSTANCES;
+    private static final GrpcStatus[] INT_TO_GRPC_STATUS_MAP;
     static {
-        final Map<Integer, GrpcStatus> cachedInstances = new HashMap<>(GrpcStatusCode.values().length, 1f);
-        for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatus replaced = cachedInstances.put(code.value(), new GrpcStatus(code));
-            if (replaced != null) {
-                throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
-                        code.value(), replaced.code, code));
-            }
+        final GrpcStatusCode[] statusCodes = GrpcStatusCode.values();
+        INT_TO_GRPC_STATUS_MAP = new GrpcStatus[statusCodes.length];
+        for (GrpcStatusCode code : statusCodes) {
+            INT_TO_GRPC_STATUS_MAP[code.value()] = new GrpcStatus(code);
         }
-        CACHED_INSTANCES = unmodifiableMap(cachedInstances);
     }
 
     private final GrpcStatusCode code;
@@ -106,8 +99,8 @@ public final class GrpcStatus {
      * @return status associated with the code value, or {@link GrpcStatusCode#UNKNOWN}.
      */
     public static GrpcStatus fromCodeValue(int codeValue) {
-        GrpcStatus status = CACHED_INSTANCES.get(codeValue); // avoid getOrDefault to save some work
-        return status != null ? status : UNKNOWN.status();
+        return codeValue < 0 || codeValue >= INT_TO_GRPC_STATUS_MAP.length ?
+                UNKNOWN.status() : INT_TO_GRPC_STATUS_MAP[codeValue];
     }
 
     /**
@@ -185,23 +178,6 @@ public final class GrpcStatus {
         return description;
     }
 
-    /**
-     * Unwraps the given {@link Throwable} until a {@link GrpcStatusException} was found and return it. If none could be
-     * found it will return {@code null}.
-     *
-     * @param error the error.
-     * @return unwrapped {@link GrpcStatusException}.
-     */
-    @Nullable
-    static GrpcStatusException unwrapGrpcStatusException(Throwable error) {
-        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-            if (cause instanceof GrpcStatusException) {
-                return (GrpcStatusException) cause;
-            }
-        }
-        return null;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -237,5 +213,22 @@ public final class GrpcStatus {
                 ", cause=" + cause +
                 ", description='" + description + '\'' +
                 '}';
+    }
+
+    /**
+     * Unwraps the given {@link Throwable} until a {@link GrpcStatusException} was found and return it. If none could be
+     * found it will return {@code null}.
+     *
+     * @param error the error.
+     * @return unwrapped {@link GrpcStatusException}.
+     */
+    @Nullable
+    static GrpcStatusException unwrapGrpcStatusException(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof GrpcStatusException) {
+                return (GrpcStatusException) cause;
+            }
+        }
+        return null;
     }
 }

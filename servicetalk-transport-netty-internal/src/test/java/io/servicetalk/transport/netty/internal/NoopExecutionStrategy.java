@@ -15,12 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
-
-import javax.annotation.Nullable;
 
 final class NoopExecutionStrategy implements ExecutionStrategy {
 
@@ -28,31 +23,5 @@ final class NoopExecutionStrategy implements ExecutionStrategy {
 
     private NoopExecutionStrategy() {
         // Singleton
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return original;
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return original;
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return original;
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return original;
-    }
-
-    @Nullable
-    @Override
-    public Executor executor() {
-        return null;
     }
 }

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -95,6 +96,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
@@ -111,20 +118,34 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                                              final StreamingHttpService service,
                                              final HttpExecutionStrategy strategy,
                                              final boolean drainRequestPayloadBody) {
-        final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
         final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
+
+        return doListen(connectionAcceptor, httpExecutionContext, service, drainRequestPayloadBody);
+    }
+
+    @Override
+    protected HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
+        executionContextBuilder.executionStrategy(strategy);
+        return executionContextBuilder.build();
+    }
+
+    @Override
+    protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
+                                             final HttpExecutionContext context,
+                                             final StreamingHttpService service,
+                                             final boolean drainRequestPayloadBody) {
+        final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         if (roConfig.tcpConfig().isAlpnConfigured()) {
-            return DeferredServerChannelBinder.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+            return DeferredServerChannelBinder.bind(context, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody, false);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
-            return DeferredServerChannelBinder.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+            return DeferredServerChannelBinder.bind(context, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody, true);
         } else if (roConfig.isH2PriorKnowledge()) {
-            return H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+            return H2ServerParentConnectionContext.bind(context, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody);
         }
-        return NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
-                drainRequestPayloadBody);
+        return NettyHttpServer.bind(context, roConfig, address, connectionAcceptor, service, drainRequestPayloadBody);
     }
 }

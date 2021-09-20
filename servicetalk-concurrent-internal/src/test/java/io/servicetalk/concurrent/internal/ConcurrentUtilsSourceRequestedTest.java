@@ -15,9 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +33,11 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.calculateSourceRequested;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConcurrentUtilsSourceRequestedTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(2, MINUTES);
-
+@Timeout(value = 2, unit = MINUTES)
+class ConcurrentUtilsSourceRequestedTest {
     private static final AtomicLongFieldUpdater<ConcurrentUtilsSourceRequestedTest> requestNUpdater =
             AtomicLongFieldUpdater.newUpdater(ConcurrentUtilsSourceRequestedTest.class, "requestN");
     private static final AtomicLongFieldUpdater<ConcurrentUtilsSourceRequestedTest> sourceRequestedUpdater =
@@ -52,7 +49,7 @@ public class ConcurrentUtilsSourceRequestedTest {
     private volatile long emitted;
 
     @Test
-    public void calculateSourceRequestedSteadyState() {
+    void calculateSourceRequestedSteadyState() {
         emitted = 9;
         requestN = 9;
         sourceRequested = 9;
@@ -63,7 +60,7 @@ public class ConcurrentUtilsSourceRequestedTest {
     }
 
     @Test
-    public void calculateSourceRequestedOutstandingAgainstLimit() {
+    void calculateSourceRequestedOutstandingAgainstLimit() {
         emitted = 1;
         requestN = 15;
         sourceRequested = 11;
@@ -74,7 +71,7 @@ public class ConcurrentUtilsSourceRequestedTest {
     }
 
     @Test
-    public void calculateSourceRequestedOutstandingNotAgainstLimit() {
+    void calculateSourceRequestedOutstandingNotAgainstLimit() {
         emitted = 3;
         requestN = 15;
         sourceRequested = 11;
@@ -85,7 +82,7 @@ public class ConcurrentUtilsSourceRequestedTest {
     }
 
     @Test
-    public void calculateSourceRequestedDemandDoesNotExceedLimit() {
+    void calculateSourceRequestedDemandDoesNotExceedLimit() {
         emitted = 13;
         requestN = 91;
         sourceRequested = 13;
@@ -96,51 +93,51 @@ public class ConcurrentUtilsSourceRequestedTest {
     }
 
     @Test
-    public void calculateSourceRequestedWithLargerValuesDoesNotOverflow() {
+    void calculateSourceRequestedWithLargerValuesDoesNotOverflow() {
         emitted = Long.MAX_VALUE - 4;
         requestN = Long.MAX_VALUE;
         sourceRequested = Long.MAX_VALUE - 3;
         assertEquals(3, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
-                Integer.MAX_VALUE, this));
+                                                            Integer.MAX_VALUE, this));
         assertEquals(Long.MAX_VALUE - 4, emitted);
         assertEquals(Long.MAX_VALUE, requestN);
         assertEquals(Long.MAX_VALUE, sourceRequested);
     }
 
     @Test
-    public void calculateSourceRequestedWithLargerValuesCanDemandIntMax() {
+    void calculateSourceRequestedWithLargerValuesCanDemandIntMax() {
         emitted = Long.MAX_VALUE - Integer.MAX_VALUE;
         requestN = Long.MAX_VALUE;
         sourceRequested = Long.MAX_VALUE - Integer.MAX_VALUE;
         assertEquals(Integer.MAX_VALUE, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater,
-                emittedUpdater, Integer.MAX_VALUE, this));
+                                                                            emittedUpdater, Integer.MAX_VALUE, this));
         assertEquals(Long.MAX_VALUE - Integer.MAX_VALUE, emitted);
         assertEquals(Long.MAX_VALUE, requestN);
         assertEquals(Long.MAX_VALUE, sourceRequested);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentA() throws Exception {
+    void calculateSourceRequestedConcurrentA() throws Exception {
         calculateSourceRequestedConcurrentLoop(5, 1, 3, 10, 10);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentB() throws Exception {
+    void calculateSourceRequestedConcurrentB() throws Exception {
         calculateSourceRequestedConcurrentLoop(5, 5, 6, 100, 123456);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentC() throws Exception {
+    void calculateSourceRequestedConcurrentC() throws Exception {
         calculateSourceRequestedConcurrentLoop(5, 1, 3, 2, 900103);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentD() throws Exception {
+    void calculateSourceRequestedConcurrentD() throws Exception {
         calculateSourceRequestedConcurrentLoop(5, 1, 5635, 483, 800026);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentE() throws Exception {
+    void calculateSourceRequestedConcurrentE() throws Exception {
         calculateSourceRequestedConcurrentLoop(5, 6, 512, Integer.MAX_VALUE, 1000001);
     }
 
@@ -185,7 +182,7 @@ public class ConcurrentUtilsSourceRequestedTest {
                     requestNUpdater.addAndGet(this, localProduced);
                     long amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
                             limit, this);
-                    assertTrue("invalid increment: " + amount, amount <= limit && amount >= 0);
+                    assertTrue(amount <= limit && amount >= 0, () -> "invalid increment: " + amount);
                     totalCount.addAndGet(amount);
                     totalCountNotConsumed.addAndGet(amount);
                 }
@@ -220,7 +217,7 @@ public class ConcurrentUtilsSourceRequestedTest {
                         emittedUpdater.addAndGet(this, localConsumed);
                         long amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
                                 limit, this);
-                        assertTrue("invalid decrement: " + amount, amount <= limit && amount >= 0);
+                        assertTrue(amount <= limit && amount >= 0, () -> "invalid decrement: " + amount);
                         totalCount.addAndGet(amount);
                         totalCountNotConsumed.addAndGet(amount);
                     }

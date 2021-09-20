@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.RetryableException;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -200,15 +199,24 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     @Override
     public void channelClosed(Throwable closedException) {
+        discard(closedException, true);
+    }
+
+    @Override
+    public void listenerDiscard(final Throwable cause) {
+        discard(cause, false);
+    }
+
+    private void discard(final Throwable cause, boolean closeOutboundIfIdle) {
         Subscription oldVal = subscriptionUpdater.getAndSet(this, CANCELLED);
         if (eventLoop.inEventLoop()) {
-            close0(oldVal, closedException);
+            close0(oldVal, cause, closeOutboundIfIdle);
         } else {
-            eventLoop.execute(() -> close0(oldVal, closedException));
+            eventLoop.execute(() -> close0(oldVal, cause, closeOutboundIfIdle));
         }
     }
 
-    private void close0(@Nullable Subscription oldVal, Throwable closedException) {
+    private void close0(@Nullable Subscription oldVal, Throwable closedException, boolean closeOutboundIfIdle) {
         assert eventLoop.inEventLoop();
         if (oldVal == null) {
             // If there was no subscriber when the channel closed, we need to call onSubscribe before we terminate.
@@ -216,7 +224,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         } else {
             oldVal.cancel();
         }
-        promise.close(closedException);
+        promise.close(closedException, closeOutboundIfIdle);
     }
 
     @Override
@@ -376,16 +384,18 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
         }
 
-        void close(Throwable cause) {
+        void close(Throwable cause, boolean closeOutboundIfIdle) {
             assert eventLoop.inEventLoop();
             if (hasFlag(CHANNEL_CLOSED)) {
                 return;
             }
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 setFlag(CHANNEL_CLOSED);
-                // We have already terminated the subscriber (all writes have finished (one has failed)) then we
-                // just close the channel now.
-                closeHandler.closeChannelOutbound(channel);
+                if (closeOutboundIfIdle) {
+                    // We have already terminated the subscriber (all writes have finished (one has failed)) then we
+                    // just close the channel now.
+                    closeHandler.closeChannelOutbound(channel);
+                }
             } else if (activeWrites > 0) {
                 // Writes are pending, we will close the channel once writes are done.
                 setFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
@@ -394,6 +404,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 // subscriber has not terminated, no writes are pending and channel has closed so terminate the
                 // subscriber with a failure.
                 tryFailure(cause);
+
+                if (closeOutboundIfIdle) {
+                    // Make sure the channel is closed. If this is from a timeout or non-transport error related
+                    // cancellation the transport may not yet have been closed.
+                    closeHandler.closeChannelOutbound(channel);
+                }
             }
         }
 

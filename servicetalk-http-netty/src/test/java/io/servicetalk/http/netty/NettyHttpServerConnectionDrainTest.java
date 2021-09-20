@@ -154,7 +154,7 @@ class NettyHttpServerConnectionDrainTest {
     private static ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
         if (!autoDrain) {
-            httpServerBuilder = httpServerBuilder.disableDrainingRequestPayloadBody();
+            httpServerBuilder = httpServerBuilder.drainRequestPayloadBody(false);
         }
         ServerContext serverContext = httpServerBuilder
                 .listenStreamingAndAwait(handler);
@@ -167,6 +167,11 @@ class NettyHttpServerConnectionDrainTest {
             @Override
             public ExecutionContext executionContext() {
                 return serverContext.executionContext();
+            }
+
+            @Override
+            public void acceptConnections(final boolean accept) {
+                serverContext.acceptConnections(accept);
             }
 
             @Override

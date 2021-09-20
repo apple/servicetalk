@@ -22,6 +22,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
 /**
@@ -68,6 +69,9 @@ public abstract class PartitionedHttpClientBuilder<U, R> implements HttpClientBu
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

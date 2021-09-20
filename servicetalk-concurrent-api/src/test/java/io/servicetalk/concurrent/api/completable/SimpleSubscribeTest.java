@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class SimpleSubscribeTest {
 
@@ -61,7 +61,7 @@ class SimpleSubscribeTest {
         CountDownLatch latch = new CountDownLatch(1);
         failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete);
         latch.await();
-        verifyZeroInteractions(onComplete);
+        verifyNoInteractions(onComplete);
     }
 
     @Test
@@ -70,6 +70,6 @@ class SimpleSubscribeTest {
         CountDownLatch latch = new CountDownLatch(1);
         failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete).cancel();
         latch.await();
-        verifyZeroInteractions(onComplete);
+        verifyNoInteractions(onComplete);
     }
 }

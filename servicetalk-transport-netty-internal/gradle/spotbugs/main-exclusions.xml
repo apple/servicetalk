@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<FindBugsFilter>
+  <!-- For legacy compatibility class is not renamed in 0.41 branch -->
+  <Match>
+    <Source name="~IoThreadFactory\.java"/>
+    <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.DefaultNettyConnection"/>
+    <Method name="sslSession"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyIoThreadFactory$NettyIoThread"/>
+    <Method name="asyncContextMap"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.SplittingFlushStrategy"/>
+    <Method name="apply"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ByteToMessageDecoder"/>
+    <Method name="channelRead"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

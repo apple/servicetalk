@@ -77,7 +77,8 @@ class HttpConnectionEmptyPayloadTest {
             StreamingHttpClient client = closeable.merge(forResolvedAddress(serverHostAndPort(serverContext))
                     .ioExecutor(executionContextRule.ioExecutor())
                     .protocols(h1().maxPipelinedRequests(3).build())
-                    .executionStrategy(defaultStrategy(executionContextRule.executor()))
+                    .executor(executionContextRule.executor())
+                    .executionStrategy(defaultStrategy())
                     .buildStreaming());
             StreamingHttpConnection connection = closeable.merge(
                     client.reserveConnection(client.get("/")).toFuture().get());

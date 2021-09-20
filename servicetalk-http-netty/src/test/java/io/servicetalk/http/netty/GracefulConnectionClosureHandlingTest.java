@@ -25,11 +25,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpStreamingSerializer;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.oio.api.internal.PayloadWriterUtils;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -74,8 +74,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
-import static io.servicetalk.http.netty.ContentLengthAndTrailersTest.addFixedLengthFramingOverhead;
+import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
@@ -92,6 +91,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GR
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -104,6 +104,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
+
+    static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER = stringStreamingSerializer(UTF_8, hdr -> { });
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -157,7 +159,8 @@ class GracefulConnectionClosureHandlingTest {
                 forAddress(localAddress(0)))
                 .protocols(protocol.config)
                 .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                .executor(SERVER_CTX.executor())
+                .executionStrategy(defaultStrategy())
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
@@ -185,10 +188,10 @@ class GracefulConnectionClosureHandlingTest {
 
         serverContext = serverBuilder.listenBlockingStreamingAndAwait((ctx, request, response) -> {
             serverReceivedRequest.countDown();
-            response.addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(RESPONSE_CONTENT.length())));
+            response.addHeader(CONTENT_LENGTH, valueOf(RESPONSE_CONTENT.length()));
 
             serverSendResponse.await();
-            try (HttpPayloadWriter<String> writer = response.sendMetaData(appSerializerUtf8FixLen())) {
+            try (HttpPayloadWriter<String> writer = response.sendMetaData(RAW_STRING_SERIALIZER)) {
                 // Subscribe to the request payload body before response writer closes
                 BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
                 // Consume request payload body asynchronously:
@@ -201,9 +204,8 @@ class GracefulConnectionClosureHandlingTest {
                     }
                     serverReceivedRequestPayload.add(receivedSize);
                 }).beforeOnError(cause -> {
-                    LOGGER.error("failure while writing response", cause);
+                    LOGGER.error("failure while reading request", cause);
                     serverReceivedRequestPayload.add(-1);
-                    PayloadWriterUtils.safeClose(writer, cause);
                 }).toFuture();
                 serverSendResponsePayload.await();
                 writer.write(RESPONSE_CONTENT);
@@ -216,8 +218,9 @@ class GracefulConnectionClosureHandlingTest {
                         .peerHost(serverPemHostname()).build()) :
                 forResolvedAddress(serverContext.listenAddress()))
                 .protocols(protocol.config)
+                .executor(CLIENT_CTX.executor())
                 .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                .executionStrategy(defaultStrategy())
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
                         new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)
@@ -483,20 +486,20 @@ class GracefulConnectionClosureHandlingTest {
 
     private StreamingHttpRequest newRequest(String path) {
         return connection.post(path)
-                .addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(REQUEST_CONTENT.length())))
-                .payloadBody(from(REQUEST_CONTENT), appSerializerUtf8FixLen());
+                .addHeader(CONTENT_LENGTH, valueOf(REQUEST_CONTENT.length()))
+                .payloadBody(from(REQUEST_CONTENT), RAW_STRING_SERIALIZER);
     }
 
     private StreamingHttpRequest newRequest(String path, CountDownLatch payloadBodyLatch) {
         return connection.post(path)
-                .addHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(REQUEST_CONTENT.length())))
+                .addHeader(CONTENT_LENGTH, valueOf(REQUEST_CONTENT.length()))
                 .payloadBody(connection.connectionContext().executionContext().executor().submit(() -> {
                     try {
                         payloadBodyLatch.await();
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
-                }).concat(from(REQUEST_CONTENT)), appSerializerUtf8FixLen());
+                }).concat(from(REQUEST_CONTENT)), RAW_STRING_SERIALIZER);
     }
 
     private static void assertResponse(StreamingHttpResponse response) {

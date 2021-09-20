@@ -15,14 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
@@ -64,14 +61,18 @@ import static java.util.Objects.requireNonNull;
 final class H2ServerParentConnectionContext extends H2ParentConnectionContext implements ServerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ServerParentConnectionContext.class);
     private final SocketAddress listenAddress;
-    private H2ServerParentConnectionContext(final Channel channel, final BufferAllocator allocator,
-                                            final Executor executor, final FlushStrategy flushStrategy,
+    private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
+                                            final FlushStrategy flushStrategy,
                                             @Nullable final Long idleTimeoutMs,
-                                            final HttpExecutionStrategy executionStrategy,
                                             final SocketAddress listenAddress,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy, keepAliveManager);
+        super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
+    }
+
+    @Override
+    public void acceptConnections(final boolean accept) {
+        channel().parent().config().setAutoRead(accept);
     }
 
     @Override
@@ -126,12 +127,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     delayedCancellable = new DelayedCancellable();
                     KeepAliveManager keepAliveManager = new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy());
                     final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
-                    final BufferAllocator allocator = httpExecutionContext.bufferAllocator();
-                    final Executor executor = httpExecutionContext.executor();
-                    final HttpExecutionStrategy executionStrategy = httpExecutionContext.executionStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
-                            executionStrategy, listenAddress, keepAliveManager);
+                            httpExecutionContext, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
+                            listenAddress, keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -162,21 +160,20 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =
                                         DefaultNettyConnection.initChildChannel(streamChannel,
-                                                connection.executionContext().bufferAllocator(),
-                                                connection.executionContext().executor(), LAST_CHUNK_PREDICATE,
+                                                connection.executionContext(),
+                                                LAST_CHUNK_PREDICATE,
                                                 closeHandler,
                                                 // TODO(scott): after flushStrategy is no longer on the connection
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
                                                 connection.flushStrategyHolder.currentStrategy(),
                                                 connection.idleTimeoutMs,
-                                                connection.executionContext().executionStrategy(),
                                                 HTTP_2_0,
                                                 connection.sslSession(),
                                                 channel.config(),
                                                 streamObserver,
                                                 false,
-                                                Http2Exception::wrapIfNecessary);
+                                                NettyHttp2ExceptionUtils::wrapIfNecessary);
 
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,

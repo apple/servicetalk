@@ -26,7 +26,7 @@ import java.net.InetSocketAddress;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
 import static java.net.InetAddress.getLoopbackAddress;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A utility class to work with addresses.

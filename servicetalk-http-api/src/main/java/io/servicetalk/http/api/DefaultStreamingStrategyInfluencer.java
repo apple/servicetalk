@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
+
 final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyInfluencer {
 
     static final HttpExecutionStrategyInfluencer DEFAULT_STREAMING_STRATEGY_INFLUENCER =
@@ -26,6 +28,6 @@ final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyI
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategy.merge(HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY);
+        return strategy.merge(OFFLOAD_ALL_STRATEGY);
     }
 }

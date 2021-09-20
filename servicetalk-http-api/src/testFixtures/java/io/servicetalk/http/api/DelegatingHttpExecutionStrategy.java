@@ -15,13 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
-import java.util.function.Function;
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,23 +31,6 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
      */
     public DelegatingHttpExecutionStrategy(final HttpExecutionStrategy delegate) {
         this.delegate = requireNonNull(delegate);
-    }
-
-    @Override
-    public <FS> Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
-            final ClientInvoker<FS> client) {
-        return delegate.invokeClient(fallback, flattenedRequest, flushStrategy, client);
-    }
-
-    @Override
-    public <T> Single<T> invokeService(final Executor fallback, final Function<Executor, T> service) {
-        return delegate.invokeService(fallback, service);
-    }
-
-    @Override
-    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService handler) {
-        return delegate.offloadService(fallback, handler);
     }
 
     @Override
@@ -77,32 +53,6 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
         // Since any methods can be overridden to change behavior, we leverage the other strategy to also account for
         // the overridden methods here.
         return other.merge(this);
-    }
-
-    @Override
-    public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return delegate.offloadSend(fallback, original);
-    }
-
-    @Override
-    public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return delegate.offloadReceive(fallback, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return delegate.offloadSend(fallback, original);
-    }
-
-    @Override
-    public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return delegate.offloadReceive(fallback, original);
-    }
-
-    @Override
-    @Nullable
-    public Executor executor() {
-        return delegate.executor();
     }
 
     @Override

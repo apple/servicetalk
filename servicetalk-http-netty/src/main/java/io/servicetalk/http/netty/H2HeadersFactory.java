@@ -27,23 +27,52 @@ import java.util.function.BiPredicate;
  */
 public final class H2HeadersFactory implements HttpHeadersFactory {
 
-    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true);
+    private static final boolean DEFAULT_VALIDATE_VALUES = false;
+    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
 
     static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
 
     private final boolean validateNames;
     private final boolean validateCookies;
+    private final boolean validateValues;
     private final int headersArraySizeHint;
     private final int trailersArraySizeHint;
+
+    /**
+     * Create an instance of the factory with the default array size hint.
+     * @param validateNames {@code true} to validate header/trailer names.
+     * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @deprecated Use {@link #H2HeadersFactory(boolean, boolean, boolean)}.
+     */
+    @Deprecated
+    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies) {
+        this(validateNames, validateCookies, DEFAULT_VALIDATE_VALUES);
+    }
 
     /**
      * Create an instance of the factory with the default array size hint.
      *
      * @param validateNames {@code true} to validate header/trailer names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @param validateValues {@code true} to validate header values.
      */
-    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies) {
-        this(validateNames, validateCookies, 16, 4);
+    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
+                            final boolean validateValues) {
+        this(validateNames, validateCookies, validateValues, 16, 4);
+    }
+
+    /**
+     * Create an instance of the factory.
+     * @param validateNames {@code true} to validate header/trailer names.
+     * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
+     * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
+     * @deprecated Use {@link #H2HeadersFactory(boolean, boolean, boolean, int, int)}.
+     */
+    @Deprecated
+    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
+                            final int headersArraySizeHint, final int trailersArraySizeHint) {
+        this(validateNames, validateCookies, DEFAULT_VALIDATE_VALUES, headersArraySizeHint, trailersArraySizeHint);
     }
 
     /**
@@ -51,13 +80,16 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
      *
      * @param validateNames {@code true} to validate header/trailer names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
+     * @param validateValues {@code true} to validate header values.
      * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
      * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
      */
     public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
+                            final boolean validateValues,
                             final int headersArraySizeHint, final int trailersArraySizeHint) {
         this.validateNames = validateNames;
         this.validateCookies = validateCookies;
+        this.validateValues = validateValues;
         this.headersArraySizeHint = headersArraySizeHint;
         this.trailersArraySizeHint = trailersArraySizeHint;
     }
@@ -65,22 +97,28 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     @Override
     public HttpHeaders newHeaders() {
         return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, headersArraySizeHint),
-                validateCookies);
+                validateCookies, validateValues);
     }
 
     @Override
     public HttpHeaders newTrailers() {
         return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, trailersArraySizeHint),
-                validateCookies);
+                validateCookies, validateValues);
     }
 
     @Override
     public HttpHeaders newEmptyTrailers() {
-        return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, 0), validateCookies);
+        return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, 0),
+                validateCookies, validateValues);
     }
 
     @Override
     public boolean validateCookies() {
         return validateCookies;
+    }
+
+    @Override
+    public boolean validateValues() {
+        return validateValues;
     }
 }

@@ -172,6 +172,22 @@ Using the following classes:
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.
 
+[#OpenTracing]
+== OpenTracing
+
+This example demonstrates the following:
+
+- automatically generate and propagate distributed tracing metadata
+- make span IDs available in log statements via MDC
+- publish span IDs via Zipkin's HTTP API and to a local console logger
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/OpenTracingServer.java[OpenTracingServer] - A server that generates/propagates span IDs, makes spans available in logs via MDC, publishes spans via Zipkin's HTTP API.
+- link:{source-root}/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/OpenTracingClient.java[OpenTracingClient] - A client that generates/propagates span IDs, makes spans available in logs via MDC, publishes spans via local console logger.
+- link:{source-root}/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/ZipkinServerSimulator.java[ZipkinServerSimulator] - A server that simulates/mocks a Zipkin server, and logs requests to the console.
+- link:{source-root}/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/BraveTracingServer.java[BraveTracingServer] - A server that uses link:https://github.com/openzipkin-contrib/brave-opentracing[Brave OpenTracing] implementation.
+
 [#Redirects]
 == Redirects
 

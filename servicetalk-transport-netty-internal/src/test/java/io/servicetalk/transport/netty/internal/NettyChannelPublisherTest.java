@@ -90,7 +90,8 @@ class NettyChannelPublisherTest {
         channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection =
                 DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-            immediate(), terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
+                immediate(), null,
+                terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
                                 channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                 @Override
                 public void read(ChannelHandlerContext ctx) throws Exception {
@@ -115,7 +116,7 @@ class NettyChannelPublisherTest {
         }
         channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), (Integer obj) -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                immediate(), null, (Integer obj) -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                 defaultFlushStrategy(), null, channel -> {
                     channel.pipeline().addLast(new ChannelDuplexHandler() {
                         @Override

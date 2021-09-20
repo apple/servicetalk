@@ -26,9 +26,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -67,12 +67,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -446,24 +444,19 @@ class ErrorHandlingTest {
 
     static Collection<Arguments> data() {
         GrpcExecutionStrategy noopStrategy = noOffloadsStrategy();
-        GrpcExecutionStrategy immediateStrategy = customStrategyBuilder().executor(immediate()).build();
         GrpcExecutionStrategy[] strategies =
-                new GrpcExecutionStrategy[]{noopStrategy, immediateStrategy, defaultStrategy()};
+                new GrpcExecutionStrategy[]{noopStrategy, defaultStrategy()};
         List<Arguments> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
         for (GrpcExecutionStrategy serverStrategy : strategies) {
             for (GrpcExecutionStrategy clientStrategy : strategies) {
                 for (TestMode mode : TestMode.values()) {
-                    if (mode.isSafeNoOffload() || isOffloadSafe(serverStrategy)) {
+                    if (mode.isSafeNoOffload()) {
                         data.add(Arguments.of(mode, serverStrategy, clientStrategy));
                     }
                 }
             }
         }
         return data;
-    }
-
-    private static boolean isOffloadSafe(GrpcExecutionStrategy strategy) {
-        return strategy.executor() != immediate() && strategy.executor() != null;
     }
 
     @AfterEach

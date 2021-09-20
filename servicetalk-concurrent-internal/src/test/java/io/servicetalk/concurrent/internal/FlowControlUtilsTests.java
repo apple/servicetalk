@@ -15,60 +15,60 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtectionIfPositive;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithUnderOverflowProtection;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FlowControlUtilsTests {
+class FlowControlUtilsTests {
     @Test
-    public void addWithOverflowIfPositiveRespectsZero() {
+    void addWithOverflowIfPositiveRespectsZero() {
         assertEquals(0, addWithOverflowProtectionIfPositive(0, -1));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionPositiveNoOverflow() {
+    void addWithUnderOverflowProtectionPositiveNoOverflow() {
         assertEquals(3, addWithUnderOverflowProtection(1, 2));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionNegativeNoOverflow() {
+    void addWithUnderOverflowProtectionNegativeNoOverflow() {
         assertEquals(-3, addWithUnderOverflowProtection(-1, -2));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionPositivePlusNegative() {
+    void addWithUnderOverflowProtectionPositivePlusNegative() {
         assertEquals(1, addWithUnderOverflowProtection(-1, 2));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionZeroToMin() {
+    void addWithUnderOverflowProtectionZeroToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(0, Long.MIN_VALUE));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionNegativeOneToMin() {
+    void addWithUnderOverflowProtectionNegativeOneToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(-1, Long.MIN_VALUE));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionMinToMin() {
+    void addWithUnderOverflowProtectionMinToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(Long.MIN_VALUE, Long.MIN_VALUE));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionZeroToMax() {
+    void addWithUnderOverflowProtectionZeroToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(0, Long.MAX_VALUE));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionOneToMax() {
+    void addWithUnderOverflowProtectionOneToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(1, Long.MAX_VALUE));
     }
 
     @Test
-    public void addWithUnderOverflowProtectionMaxToMax() {
+    void addWithUnderOverflowProtectionMaxToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(Long.MAX_VALUE, Long.MAX_VALUE));
     }
 }

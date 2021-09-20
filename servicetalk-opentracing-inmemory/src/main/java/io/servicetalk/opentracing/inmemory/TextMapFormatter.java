@@ -16,9 +16,11 @@
 package io.servicetalk.opentracing.inmemory;
 
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
-import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextExtractor;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextInjector;
 
-import io.opentracing.propagation.TextMap;
+import io.opentracing.propagation.TextMapExtract;
+import io.opentracing.propagation.TextMapInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +36,9 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 /**
  * Zipkin-styled header serialization format.
  */
-final class TextMapFormatter implements InMemorySpanContextFormat<TextMap> {
-    public static final TextMapFormatter INSTANCE = new TextMapFormatter();
+final class TextMapFormatter implements InMemorySpanContextInjector<TextMapInject>,
+                                        InMemorySpanContextExtractor<TextMapExtract> {
+    static final TextMapFormatter INSTANCE = new TextMapFormatter();
     private static final Logger logger = LoggerFactory.getLogger(TextMapFormatter.class);
 
     private TextMapFormatter() {
@@ -43,7 +46,7 @@ final class TextMapFormatter implements InMemorySpanContextFormat<TextMap> {
     }
 
     @Override
-    public void inject(final InMemorySpanContext context, final TextMap carrier) {
+    public void inject(final InMemorySpanContext context, final TextMapInject carrier) {
         carrier.put(TRACE_ID, context.toTraceId());
         carrier.put(SPAN_ID, context.toSpanId());
         if (context.parentSpanId() != null) {
@@ -57,7 +60,7 @@ final class TextMapFormatter implements InMemorySpanContextFormat<TextMap> {
 
     @Nullable
     @Override
-    public InMemorySpanContext extract(TextMap carrier) {
+    public InMemorySpanContext extract(TextMapExtract carrier) {
         String traceId = null;
         String spanId = null;
         String parentSpanId = null;

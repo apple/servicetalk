@@ -16,8 +16,6 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.CompletableSource.Processor;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -39,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -51,42 +48,38 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
 
     private final IoExecutor ioExecutor;
-    private final Executor executor;
     private final OffloadingTesterService service1;
     private final OffloadingTesterService service2;
     private final HttpClient client;
     private final ServerContext server;
 
     HttpServerOverrideOffloadingTest() throws Exception {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
-                NORM_PRIORITY));
-        executor = newCachedThreadExecutor();
-        service1 = new OffloadingTesterService(th -> !isInServerEventLoop(th));
-        service2 = new OffloadingTesterService(HttpServerOverrideOffloadingTest::isInServerEventLoop);
+        ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
+        Predicate<Thread> isIOThread = HttpServerOverrideOffloadingTest::isInServerEventLoop;
+        service1 = new OffloadingTesterService(isIOThread.negate());
+        service2 = new OffloadingTesterService(isIOThread);
         server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                         .whenPathStartsWith("/service1").executionStrategy(noOffloadsStrategy())
                         .thenRouteTo(service1)
-                        .whenPathStartsWith("/service2").executionStrategy(defaultStrategy(executor))
+                        .whenPathStartsWith("/service2").executionStrategy(defaultStrategy())
                         .thenRouteTo(service2).buildStreaming());
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(client, server, ioExecutor).closeAsync().toFuture().get();
     }
 
     private static boolean isInServerEventLoop(Thread thread) {
@@ -94,10 +87,14 @@ class HttpServerOverrideOffloadingTest {
     }
 
     @Test
-    void offloadDifferentRoutes() throws Exception {
+    void notOffloaded() throws Exception {
         client.request(client.get("/service1")).toFuture().get();
         assertThat("Service-1 unexpected invocation count.", service1.invoked.get(), is(1));
-        assertThat("Service-1, unexpected errors: " + service1.errors, service1.errors, hasSize(0));
+        assertNoAsyncErrors("Service-1, unexpected errors: " + service1.errors, service1.errors);
+    }
+
+    @Test
+    void offloaded() throws Exception {
         client.request(client.get("/service2")).toFuture().get();
         assertThat("Service-2 unexpected invocation count.", service2.invoked.get(), is(1));
         assertNoAsyncErrors("Service-2, unexpected errors: " + service2.errors, service2.errors);

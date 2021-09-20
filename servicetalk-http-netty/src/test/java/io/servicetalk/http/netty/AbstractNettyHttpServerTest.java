@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -46,7 +47,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.jupiter.api.AfterAll;
@@ -129,6 +129,8 @@ abstract class AbstractNettyHttpServerTest {
     private StreamingHttpServiceFilterFactory serviceFilterFactory;
     @Nullable
     private ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter;
+    @Nullable
+    private StreamingHttpClientFilterFactory clientFilterFactory;
     private HttpProtocolConfig protocol = h1Default();
     private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
     private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
@@ -147,8 +149,8 @@ abstract class AbstractNettyHttpServerTest {
 
     @BeforeAll
     static void createIoExecutors() {
-        clientIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io-executor"));
-        serverIoExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("server-io-executor"));
+        clientIoExecutor = NettyIoExecutors.createIoExecutor("client-io-executor");
+        serverIoExecutor = NettyIoExecutors.createIoExecutor("server-io-executor");
     }
 
     private void startServer() throws Exception {
@@ -159,11 +161,13 @@ abstract class AbstractNettyHttpServerTest {
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
-                .executionStrategy(defaultStrategy(serverExecutor))
+                .executor(serverExecutor)
+                .executionStrategy(defaultStrategy())
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
+        configureServerBuilder(serverBuilder);
         if (sslEnabled) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
@@ -191,15 +195,22 @@ abstract class AbstractNettyHttpServerTest {
             clientBuilder.appendConnectionFactoryFilter(
                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
         }
+        if (clientFilterFactory != null) {
+            clientBuilder.appendClientFilter(clientFilterFactory);
+        }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
-                .executionStrategy(defaultStrategy(clientExecutor))
+                .executor(clientExecutor)
+                .executionStrategy(defaultStrategy())
                 .protocols(protocol)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
 
-    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+    protected void configureServerBuilder(final HttpServerBuilder serverBuilder) {
+    }
+
+    protected SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         return HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
     }
 
@@ -229,6 +240,10 @@ abstract class AbstractNettyHttpServerTest {
     void connectionFactoryFilter(
             ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         this.connectionFactoryFilter = connectionFactoryFilter;
+    }
+
+    void clientFilterFactory(StreamingHttpClientFilterFactory clientFilterFactory) {
+        this.clientFilterFactory = clientFilterFactory;
     }
 
     @AfterEach
@@ -275,8 +290,7 @@ abstract class AbstractNettyHttpServerTest {
         this.serverTransportObserver = requireNonNull(server);
     }
 
-    StreamingHttpResponse makeRequest(final StreamingHttpRequest request)
-            throws Exception {
+    StreamingHttpResponse makeRequest(final StreamingHttpRequest request) throws Exception {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 

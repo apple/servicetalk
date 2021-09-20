@@ -28,8 +28,8 @@ public final class Identity {
 
     /**
      * Returns the default, always supported NOOP 'identity' {@link ContentCodec}.
-     * @deprecated Use {@link #identityEncoder()}.
      * @return the default, always supported NOOP 'identity' {@link ContentCodec}.
+     * @deprecated Use {@link #identityEncoder()}.
      */
     @Deprecated
     public static ContentCodec identity() {

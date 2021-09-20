@@ -458,26 +458,24 @@ class BlockingStreamingToStreamingServiceTest {
 
     private static Publisher<Object> invokeService(
             HttpExecutionStrategy strategy,
-            final Executor fallback, StreamingHttpRequest request,
+            final Executor executor, StreamingHttpRequest request,
             final Function<StreamingHttpRequest, Publisher<Object>> service,
             final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        final Executor se = strategy.executor();
-        final Executor e = null == se ? fallback : se;
         if (strategy.isDataReceiveOffloaded()) {
-            request = request.transformMessageBody(payload -> payload.publishOn(e));
+            request = request.transformMessageBody(payload -> payload.publishOn(executor));
         }
         Publisher<Object> resp;
         if (strategy.isMetadataReceiveOffloaded()) {
             final StreamingHttpRequest r = request;
-            resp = e.submit(() -> service.apply(r).subscribeShareContext())
-                    .onErrorReturn(cause -> errorHandler.apply(cause, e))
+            resp = executor.submit(() -> service.apply(r).subscribeShareContext())
+                    .onErrorReturn(cause -> errorHandler.apply(cause, executor))
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());
         } else {
             resp = service.apply(request);
         }
         if (strategy.isSendOffloaded()) {
-            resp = resp.subscribeOn(e);
+            resp = resp.subscribeOn(executor);
         }
         return resp;
     }

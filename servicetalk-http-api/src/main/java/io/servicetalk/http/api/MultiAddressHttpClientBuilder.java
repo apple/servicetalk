@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
 /**
@@ -65,6 +66,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

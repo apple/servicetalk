@@ -17,6 +17,7 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -31,6 +32,8 @@ import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMap;
 
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -58,8 +61,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingHttpServiceFilter(Tracer tracer,
-                                    String componentName) {
+    public TracingHttpServiceFilter(Tracer tracer, String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -69,10 +71,28 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingHttpServiceFilter(Tracer tracer,
-                                    String componentName,
-                                    boolean validateTraceKeyFormat) {
+    public TracingHttpServiceFilter(Tracer tracer, String componentName, boolean validateTraceKeyFormat) {
         super(tracer, componentName, validateTraceKeyFormat);
+    }
+
+    /**
+     * Create a new instance.
+     * @param tracer The {@link Tracer}.
+     * @param componentName The component name used during building new spans.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link HttpHeaders}.
+     */
+    public TracingHttpServiceFilter(final Tracer tracer, final String componentName, final Format<HttpHeaders> format) {
+        super(tracer, componentName, format);
+    }
+
+    /**
+     * Create a new instance.
+     * @param tracer The {@link Tracer}.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link TextMap}.
+     * @param componentName The component name used during building new spans.
+     */
+    public TracingHttpServiceFilter(final Tracer tracer, final Format<TextMap> format, final String componentName) {
+        super(tracer, format, componentName);
     }
 
     @Override
@@ -107,7 +127,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
                 .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
                 .withTag(HTTP_METHOD.getKey(), request.method().name())
                 .withTag(HTTP_URL.getKey(), request.path());
-        SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
+        SpanContext parentSpanContext = extractor.apply(request.headers());
         if (parentSpanContext != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpanContext);
         }
@@ -119,7 +139,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
     private final class ServiceScopeTracker extends ScopeTracker {
 
         @Nullable
-        private SpanContext parentSpanContext;
+        private final SpanContext parentSpanContext;
 
         ServiceScopeTracker(Scope scope, final Span span, @Nullable final SpanContext parentSpanContext) {
             super(scope, span);
@@ -130,7 +150,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
-                tracer.inject(getSpan().context(), formatter, metaData.headers());
+                injector.accept(getSpan().context(), metaData.headers());
             }
         }
     }

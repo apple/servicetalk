@@ -17,6 +17,7 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -132,14 +133,21 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder disableDrainingRequestPayloadBody() {
-        httpServerBuilder.disableDrainingRequestPayloadBody();
+    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
+        httpServerBuilder.drainRequestPayloadBody(enable);
         return this;
     }
 
     @Override
     public GrpcServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
         httpServerBuilder.appendConnectionAcceptorFilter(factory);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder executor(final Executor executor) {
+        contextBuilder.executor(executor);
+        httpServerBuilder.executor(executor);
         return this;
     }
 

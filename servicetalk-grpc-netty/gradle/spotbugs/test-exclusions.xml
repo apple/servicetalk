@@ -26,6 +26,8 @@
       <Source name="~TesterProto\.java"/>
       <Source name="~HelloReply\.java"/>
       <Source name="~HelloRequest\.java"/>
+      <Source name="~Greeter\.java"/>
+      <Source name="~HelloWorldProto\.java"/>
     </Or>
   </Match>
   <Match>

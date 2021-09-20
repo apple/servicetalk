@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -87,7 +86,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedR
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -110,11 +108,11 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     @RegisterExtension
     static final ExecutionContextExtension SEC =
             new ExecutionContextExtension(() -> allocator,
-                    () -> createIoExecutor(new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
+                    () -> createIoExecutor("server-io"),
                     Executors::immediate);
     @RegisterExtension
     static final ExecutionContextExtension CEC = new ExecutionContextExtension(() -> allocator,
-            () -> createIoExecutor(new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
+            () -> createIoExecutor("client-io"),
             Executors::newCachedThreadExecutor);
 
     @Override
@@ -164,7 +162,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
         Buffer buffer = allocator.wrap(content);
 
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
-                new DefaultHttpHeadersFactory(false, false).newHeaders());
+                new DefaultHttpHeadersFactory(false, false, false).newHeaders());
         request.headers()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")
@@ -406,7 +404,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                     TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
                             (channel, observer) -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
-                                    SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                                    SEC.executor(), SEC.ioExecutor(),
+                                    LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                                     defaultFlushStrategy(), null,
                                     new TcpServerChannelInitializer(sConfig, observer).andThen(
                                             channel2 -> {
@@ -423,7 +422,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                 CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
                                 closeHandlerRef.compareAndSet(null, closeHandler);
                                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
-                                        CEC.executor(), LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
+                                        CEC.executor(), CEC.ioExecutor(),
+                                        LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
                                         null, new TcpClientChannelInitializer(cConfig.tcpConfig(),
                                                 connectionObserver)
                                                 .andThen(new HttpClientChannelInitializer(

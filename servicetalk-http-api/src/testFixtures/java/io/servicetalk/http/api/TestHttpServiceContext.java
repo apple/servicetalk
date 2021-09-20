@@ -102,4 +102,9 @@ public class TestHttpServiceContext extends HttpServiceContext {
     public Completable closeAsync() {
         return completed();
     }
+
+    @Override
+    public void acceptConnections(final boolean accept) {
+        throw new UnsupportedOperationException();
+    }
 }

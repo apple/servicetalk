@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingHttpConnection {

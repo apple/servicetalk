@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
@@ -430,6 +431,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
     public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return this;
@@ -492,8 +499,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        addHostHeaderFallbackFilter = false;
+    public DefaultSingleAddressHttpClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
+        addHostHeaderFallbackFilter = enable;
         return this;
     }
 

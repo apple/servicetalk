@@ -46,8 +46,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 class RetryWhenTest {
@@ -100,7 +100,7 @@ class RetryWhenTest {
     void testComplete() {
         source.onSuccess(1);
         assertThat(subscriberRule.awaitOnSuccess(), is(1));
-        verifyZeroInteractions(shouldRetry);
+        verifyNoInteractions(shouldRetry);
     }
 
     @Test
@@ -155,7 +155,7 @@ class RetryWhenTest {
     void testCancelBeforeRetry() {
         subscriberRule.awaitSubscription().cancel();
         source.onSuccess(1);
-        verifyZeroInteractions(shouldRetry);
+        verifyNoInteractions(shouldRetry);
     }
 
     @Test

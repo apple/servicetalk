@@ -199,11 +199,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       dependencies {
-        testRuntimeOnly("org.junit.vintage:junit-vintage-engine:$junit5Version") {
-          because 'allows JUnit 3 and JUnit 4 tests to run'
-        }
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
       }
-
     }
   }
 

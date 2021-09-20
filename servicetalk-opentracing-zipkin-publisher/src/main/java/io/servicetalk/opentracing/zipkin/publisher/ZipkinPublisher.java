@@ -156,16 +156,12 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      */
     @Override
     public void onSpanFinished(final InMemorySpan span, long durationMicros) {
-        final long begin = span.startEpochMicros();
-        final long end = begin + durationMicros;
-
         Span.Builder builder = Span.newBuilder()
                 .name(span.operationName())
                 .traceId(span.context().toTraceId())
                 .id(span.context().toSpanId())
                 .parentId(span.context().parentSpanId())
-                .timestamp(begin)
-                .addAnnotation(end, "end")
+                .timestamp(span.startEpochMicros())
                 .localEndpoint(endpoint)
                 .duration(durationMicros);
         span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
@@ -174,6 +170,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
             logs.forEach(log -> builder.addAnnotation(log.epochMicros(), log.eventName()));
         }
         Object type = span.tags().get(Tags.SPAN_KIND.getKey());
+        boolean removeKindTag = true;
         if (Tags.SPAN_KIND_SERVER.equals(type)) {
             builder.kind(Span.Kind.SERVER);
         } else if (Tags.SPAN_KIND_CLIENT.equals(type)) {
@@ -182,9 +179,14 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
             builder.kind(Span.Kind.PRODUCER);
         } else if (Tags.SPAN_KIND_CONSUMER.equals(type)) {
             builder.kind(Span.Kind.CONSUMER);
+        } else {
+            removeKindTag = false;
         }
 
         Span s = builder.build();
+        if (removeKindTag) {
+            s.tags().remove(Tags.SPAN_KIND.getKey());
+        }
         try {
             reporter.report(s);
         } catch (Throwable t) {

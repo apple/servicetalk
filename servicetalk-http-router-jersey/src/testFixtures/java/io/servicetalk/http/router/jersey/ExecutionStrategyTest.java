@@ -25,7 +25,9 @@ import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.Re
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -62,8 +64,8 @@ import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
@@ -98,7 +100,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         EXEC {
             @Override
             void configureRouterBuilder(final HttpServerBuilder builder, final Executor executor) {
-                builder.executionStrategy(defaultStrategy(executor));
+                builder.executor(executor).executionStrategy(defaultStrategy());
             }
         },
         NO_OFFLOADS {
@@ -225,7 +227,8 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         routerExecutionStrategy.configureRouterBuilder(serverBuilder, ROUTER_EXEC.executor());
 
         jerseyRouterBuilder.routeExecutionStrategyFactory(
-                asFactory(singletonMap("test", defaultStrategy(ROUTE_EXEC.executor()))));
+                asFactory(singletonMap("test",
+                        new JerseyRouteExecutionStrategy(defaultStrategy(), ROUTE_EXEC.executor()))));
     }
 
     @Override
@@ -270,14 +273,14 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
                                 assertGlobalExecutor(testMode, context, threadingInfo);
                                 return;
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                         }
                     case EXEC:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                             case NO_OFFLOADS:
                                 assertGlobalExecutor(testMode, context, threadingInfo);
@@ -295,14 +298,14 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
                                 assertRouterExecutor(testMode, context, threadingInfo);
                                 return;
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                         }
                     case EXEC:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
                             case EXEC:
-                                assertRouteExecutor(testMode, context, threadingInfo);
+                                assertOffloaded(testMode, context, threadingInfo);
                                 return;
                             case NO_OFFLOADS:
                                 assertRouterExecutor(testMode, context, threadingInfo);
@@ -349,8 +352,8 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
 
     private void assertGlobalExecutor(final TestMode testMode, final String context,
                                       final Map<String, String> threadingInfo) {
-        assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isGlobalExecutorThread());
+        assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         if (testMode.rs) {
             if (testMode == POST_RS && api == BLOCKING_STREAMING) {
                 assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
@@ -360,10 +363,19 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         }
     }
 
+    private void assertOffloaded(final TestMode testMode, final String context,
+                                      final Map<String, String> threadingInfo) {
+        assertThat(context, threadingInfo.get(THREAD_NAME), not(isIoExecutorThread()));
+        assertThat(context, threadingInfo.get(EXEC_NAME), not(isIoExecutor()));
+        if (testMode.rs) {
+            assertThat(context, threadingInfo.get(RS_THREAD_NAME), not(isIoExecutorThread()));
+        }
+    }
+
     private static void assertRouteExecutor(final TestMode testMode, final String context,
                                             final Map<String, String> threadingInfo) {
-        assertThat(context, threadingInfo.get(EXEC_NAME), isRouteExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isRouteExecutorThread());
+        assertThat(context, threadingInfo.get(EXEC_NAME), isRouteExecutor());
         if (testMode.rs) {
             assertThat(context, threadingInfo.get(RS_THREAD_NAME), isRouteExecutorThread());
         }
@@ -371,8 +383,8 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
 
     private void assertRouterExecutor(final TestMode testMode, final String context,
                                       final Map<String, String> threadingInfo) {
-        assertThat(context, threadingInfo.get(EXEC_NAME), isRouterExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isRouterExecutorThread());
+        assertThat(context, threadingInfo.get(EXEC_NAME), isRouterExecutor());
         if (testMode.rs) {
             if (testMode == POST_RS && api == BLOCKING_STREAMING) {
                 assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
@@ -384,15 +396,19 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
 
     private static void assertDefaultNoOffloadsExecutor(final TestMode testMode, final String context,
                                                         final Map<String, String> threadingInfo) {
-        assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isIoExecutorThread());
+        assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         if (testMode.rs) {
             assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
         }
     }
 
     private static Matcher<String> isGlobalExecutor() {
-        return is(globalExecutionContext().executor().toString());
+        return new ExecutorMatcher(globalExecutionContext().executor(), "st-executor");
+    }
+
+    private static Matcher<String> isIoExecutor() {
+        return new ExecutorMatcher(globalExecutionContext().ioExecutor(), "st-stserverio");
     }
 
     private static Matcher<String> isGlobalExecutorThread() {
@@ -404,7 +420,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     }
 
     private static Matcher<String> isRouteExecutor() {
-        return is(ROUTE_EXEC.executor().toString());
+        return new ExecutorMatcher(ROUTE_EXEC.executor(), "route-executor");
     }
 
     private static Matcher<String> isRouteExecutorThread() {
@@ -412,10 +428,37 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     }
 
     private static Matcher<String> isRouterExecutor() {
-        return is(ROUTER_EXEC.executor().toString());
+        return new ExecutorMatcher(ROUTER_EXEC.executor(), "router-executor");
     }
 
     private static Matcher<String> isRouterExecutorThread() {
         return startsWith("router-");
+    }
+
+    private static class ExecutorMatcher extends TypeSafeMatcher<String> {
+        final String match;
+        final String name;
+        ExecutorMatcher(Object instance, String name) {
+            match = instance.toString();
+            this.name = name;
+        }
+
+        @Override
+        public void describeTo(final Description description) {
+            description.appendText("a " + name + " Executor of ")
+                    .appendValue(match);
+        }
+
+        @Override
+        public void describeMismatchSafely(String item, Description mismatchDescription) {
+            mismatchDescription
+                    .appendText("was ")
+                    .appendValue(item);
+        }
+
+        @Override
+        protected boolean matchesSafely(final String item) {
+            return item.equals(match);
+        }
     }
 }

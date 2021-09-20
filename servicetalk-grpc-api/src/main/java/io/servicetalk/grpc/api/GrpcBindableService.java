@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import java.util.Collection;
+
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service that can generate {@link GrpcServiceFactory factory} instances bound
  * to itself.
@@ -32,4 +34,10 @@ public interface GrpcBindableService<F extends S, S extends GrpcService,
      * @return A service factory bound to this service with other appropriate configuration.
      */
     GrpcServiceFactory<F, S, FF> bindService();
+
+    /**
+     * Get a {@link Collection} of all {@link MethodDescriptor}s for this service.
+     * @return a {@link Collection} of all {@link MethodDescriptor}s for this service.
+     */
+    Collection<MethodDescriptor<?, ?>> methodDescriptors();
 }

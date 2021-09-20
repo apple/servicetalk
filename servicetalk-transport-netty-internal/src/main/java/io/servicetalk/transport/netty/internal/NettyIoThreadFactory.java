@@ -16,11 +16,10 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.concurrent.api.AsyncContextMapHolder;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -28,21 +27,21 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default {@link ThreadFactory} to create IO {@link Thread}s.
+ * Default {@link IoThreadFactory} to create IO {@link NettyIoThread}s.
  */
-public final class IoThreadFactory implements ThreadFactory {
+public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThreadFactory.NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
     private final boolean daemon;
-    private final int priority;
+    @Nullable
     private final ThreadGroup threadGroup;
 
     /**
      * Create a new instance.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      */
-    public IoThreadFactory(String threadNamePrefix) {
+    public NettyIoThreadFactory(String threadNamePrefix) {
         this(threadNamePrefix, true);
     }
 
@@ -52,32 +51,43 @@ public final class IoThreadFactory implements ThreadFactory {
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      */
     @SuppressWarnings("PMD.AvoidThreadGroup")
-    public IoThreadFactory(String threadNamePrefix, boolean daemon) {
+    public NettyIoThreadFactory(String threadNamePrefix, boolean daemon) {
+        this(threadNamePrefix, daemon,
+                System.getSecurityManager() == null ?
+                        Thread.currentThread().getThreadGroup() : System.getSecurityManager().getThreadGroup()
+        );
+    }
+
+    /**
+     * Create a new instance.
+     * @param threadNamePrefix the name prefix used for the created {@link IoThread}s.
+     * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
+     * @param threadGroup the {@link ThreadGroup} to which all created threads will belong, or null for default group
+     */
+    @SuppressWarnings("PMD.AvoidThreadGroup")
+    NettyIoThreadFactory(String threadNamePrefix, boolean daemon, @Nullable ThreadGroup threadGroup) {
         this.namePrefix = requireNonNull(threadNamePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;
-        this.threadGroup = System.getSecurityManager() == null ?
-                Thread.currentThread().getThreadGroup() : System.getSecurityManager().getThreadGroup();
-        this.priority = NORM_PRIORITY;
+        this.threadGroup = threadGroup;
     }
 
     @Override
-    public Thread newThread(Runnable r) {
-        Thread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
+    public NettyIoThread newThread(Runnable r) {
+        NettyIoThread t = new NettyIoThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
         if (t.isDaemon() != daemon) {
             t.setDaemon(daemon);
         }
-        if (t.getPriority() != priority) {
-            t.setPriority(priority);
+        if (t.getPriority() != NORM_PRIORITY) {
+            t.setPriority(NORM_PRIORITY);
         }
         return t;
     }
 
-    private static final class AsyncContextHolderNettyThread extends FastThreadLocalThread
-            implements AsyncContextMapHolder {
+    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
         @Nullable
         private AsyncContextMap asyncContextMap;
 
-        AsyncContextHolderNettyThread(ThreadGroup group, Runnable target, String name) {
+        NettyIoThread(@Nullable ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
         }
 

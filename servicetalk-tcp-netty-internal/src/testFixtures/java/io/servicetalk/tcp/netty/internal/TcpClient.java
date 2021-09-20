@@ -92,7 +92,8 @@ final class TcpClient {
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 (channel, connectionObserver) -> initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
+                        buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                         new TcpClientChannelInitializer(config, connectionObserver).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
@@ -111,7 +112,7 @@ final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext,
                                                                  SocketAddress address)
-            throws ExecutionException, InterruptedException {
+            throws Exception {
         assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
@@ -136,10 +137,10 @@ final class TcpClient {
                     }
                 })
                 .connect(address)
-                .syncUninterruptibly().channel();
+                .sync().channel();
 
         // Unregister it from the netty EventLoop as we want to to handle it via ST.
-        channel.deregister().syncUninterruptibly();
+        channel.deregister().sync();
         FileDescriptorSocketAddress fd = new FileDescriptorSocketAddress(channel.fd().intValue());
         NettyConnection<Buffer, Buffer> connection = connectBlocking(executionContext, fd);
         assertThat("Data read on the FileDescriptor from netty pipeline.",

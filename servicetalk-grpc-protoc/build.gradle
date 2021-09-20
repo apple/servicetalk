@@ -16,7 +16,7 @@
 
 buildscript {
   dependencies {
-    classpath "com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
+    classpath "gradle.plugin.com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
     classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
   }
 }
@@ -38,9 +38,7 @@ dependencies {
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }
 
 jar {
@@ -52,8 +50,8 @@ jar {
 }
 
 shadowJar {
-  archiveBaseName = project.name + "-all"
-  classifier = ''
+  archiveBaseName = project.name
+  classifier = 'all'
 }
 
 def grpcPluginUberJarName = project.name + "-" + project.version + "-all.jar"
@@ -68,17 +66,6 @@ task buildExecutable(type: Copy) {
   }
 }
 tasks.compileJava.finalizedBy(buildExecutable)
-
-publishing {
-  publications {
-    mavenJava {
-      artifact(shadowJar.outputs.files.singleFile) {
-        classifier = "all"
-        extension = "jar"
-      }
-    }
-  }
-}
 
 protobuf {
   protoc {

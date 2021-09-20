@@ -54,8 +54,8 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata()}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata()}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path) {
@@ -65,10 +65,10 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder)}
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder)}
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
@@ -94,11 +94,11 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder, Duration)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
      * @param timeout A timeout after which the response is no longer wanted.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder, Duration)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -119,10 +119,10 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -133,12 +133,12 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
      * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -161,9 +161,9 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder, Duration)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param timeout A timeout after which the response is no longer wanted.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(BufferEncoder, Duration)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -174,11 +174,11 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     /**
      * Creates a new instance using provided parameters and defaults for
      * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
      * @param timeout A timeout after which the response is no longer wanted.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -189,13 +189,13 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
 
     /**
      * Creates a new instance which uses the provided path, execution strategy, content codec, and timeout.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
      * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
      * method.
      * @param timeout A timeout after which the response is no longer wanted.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
@@ -214,9 +214,9 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
 
     /**
      * Create a new instance.
-     * @deprecated Use {@link #DefaultGrpcClientMetadata(DefaultGrpcClientMetadata)}.
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param rhs Copy everything except the path from this object.
+     * @deprecated Use {@link #DefaultGrpcClientMetadata(DefaultGrpcClientMetadata)}.
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,

@@ -19,4 +19,11 @@
     <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancer$Host"/>
     <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
   </Match>
+
+  <!-- Duration isn't mutable -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory$Builder"/>
+    <Method name="healthCheckInterval"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

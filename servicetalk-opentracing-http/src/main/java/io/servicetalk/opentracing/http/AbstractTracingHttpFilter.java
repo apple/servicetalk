@@ -26,8 +26,16 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMap;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.opentracing.tag.Tags.ERROR;
@@ -37,31 +45,57 @@ import static io.servicetalk.opentracing.http.AbstractTracingHttpFilter.HttpHead
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractTracingHttpFilter {
-
-    protected final Tracer tracer;
-    protected final String componentName;
-    protected final InMemorySpanContextFormat<HttpHeaders> formatter;
+    final Tracer tracer;
+    final String componentName;
+    final BiConsumer<SpanContext, HttpHeaders> injector;
+    final Function<HttpHeaders, SpanContext> extractor;
 
     /**
      * Create a new instance.
      *
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
-     * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
+     * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids while formatting.
      */
-    AbstractTracingHttpFilter(final Tracer tracer,
-                              final String componentName,
-                              final boolean validateTraceKeyFormat) {
+    AbstractTracingHttpFilter(final Tracer tracer, final String componentName, final boolean validateTraceKeyFormat) {
+        this(tracer, componentName, traceStateFormatter(validateTraceKeyFormat));
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param tracer The {@link Tracer}.
+     * @param componentName The component name used during building new spans.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link HttpHeaders}.
+     */
+    AbstractTracingHttpFilter(final Tracer tracer, final String componentName, final Format<HttpHeaders> format) {
+        requireNonNull(format);
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
-        this.formatter = traceStateFormatter(validateTraceKeyFormat);
+        this.injector = (spanContext, headers) -> tracer.inject(spanContext, format, headers);
+        this.extractor = headers -> tracer.extract(format, headers);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param tracer The {@link Tracer}.
+     * @param format the {@link Format} to use to inject/extract trace info to/from {@link TextMap}.
+     * @param componentName The component name used during building new spans.
+     */
+    AbstractTracingHttpFilter(final Tracer tracer, final Format<TextMap> format, final String componentName) {
+        requireNonNull(format);
+        this.tracer = requireNonNull(tracer);
+        this.componentName = requireNonNull(componentName);
+        this.injector = (spanContext, headers) -> tracer.inject(spanContext, format, new HttpHeadersToTextMap(headers));
+        this.extractor = headers -> tracer.extract(format, new HttpHeadersToTextMap(headers));
     }
 
     static final class HttpHeadersB3KeyValueFormatter extends B3KeyValueFormatter<HttpHeaders> {
 
-        static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_VALIDATION =
+        private static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_VALIDATION =
                 new HttpHeadersB3KeyValueFormatter(true);
-        static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
+        private static final InMemorySpanContextFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
                 new HttpHeadersB3KeyValueFormatter(false);
 
         HttpHeadersB3KeyValueFormatter(boolean verifyExtractedValues) {
@@ -157,6 +191,57 @@ abstract class AbstractTracingHttpFilter {
 
         final Span getSpan() {
             return span;
+        }
+    }
+
+    private static final class HttpHeadersToTextMap implements TextMap {
+        private final HttpHeaders headers;
+
+        private HttpHeadersToTextMap(final HttpHeaders headers) {
+            this.headers = requireNonNull(headers);
+        }
+
+        @Override
+        public Iterator<Map.Entry<String, String>> iterator() {
+            return new Iterator<Map.Entry<String, String>>() {
+                private final Iterator<Map.Entry<CharSequence, CharSequence>> itr = headers.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return itr.hasNext();
+                }
+
+                @Override
+                public Map.Entry<String, String> next() {
+                    return new Map.Entry<String, String>() {
+                        private final Map.Entry<CharSequence, CharSequence> next = itr.next();
+                        @Override
+                        public String getKey() {
+                            return Objects.toString(next.getKey());
+                        }
+
+                        @Override
+                        public String getValue() {
+                            return Objects.toString(next.getValue());
+                        }
+
+                        @Override
+                        public String setValue(final String value) {
+                            return Objects.toString(next.setValue(value));
+                        }
+                    };
+                }
+
+                @Override
+                public void remove() {
+                    itr.remove();
+                }
+            };
+        }
+
+        @Override
+        public void put(final String s, final String s1) {
+            headers.set(s, s1);
         }
     }
 }

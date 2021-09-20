@@ -26,13 +26,14 @@ import static java.nio.charset.StandardCharsets.UTF_16BE;
 import static java.nio.charset.StandardCharsets.UTF_16LE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * {@link Charset} utilities.
  */
 public final class CharsetUtils {
     private static final Collection<Charset> STANDARD_CHARSETS =
-            asList(US_ASCII, ISO_8859_1, UTF_8, UTF_16BE, UTF_16LE, UTF_16);
+            unmodifiableList(asList(US_ASCII, ISO_8859_1, UTF_8, UTF_16BE, UTF_16LE, UTF_16));
 
     private CharsetUtils() {
     }

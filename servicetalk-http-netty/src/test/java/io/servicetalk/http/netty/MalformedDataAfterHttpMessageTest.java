@@ -98,7 +98,7 @@ class MalformedDataAfterHttpMessageTest {
             assertThrows(DecoderException.class, () -> connection.request(connection.get("/")));
             connectionClosedLatch.await();
         } finally {
-            server.close().syncUninterruptibly();
+            server.close().sync();
         }
     }
 
@@ -126,7 +126,7 @@ class MalformedDataAfterHttpMessageTest {
         }
     }
 
-    private static ServerSocketChannel nettyServer(String response) {
+    private static ServerSocketChannel nettyServer(String response) throws Exception {
         EventLoopGroup eventLoopGroup = toEventLoopAwareNettyIoExecutor(SERVER_CTX.ioExecutor()).eventLoopGroup();
         ServerBootstrap bs = new ServerBootstrap();
         bs.group(eventLoopGroup);
@@ -147,15 +147,16 @@ class MalformedDataAfterHttpMessageTest {
                 });
             }
         });
-        return (ServerSocketChannel) bs.bind(localAddress(0)).syncUninterruptibly().channel();
+        return (ServerSocketChannel) bs.bind(localAddress(0)).sync().channel();
     }
 
     private static ServerContext stServer() throws Exception {
         return forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .executor(SERVER_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .bufferAllocator(SERVER_CTX.bufferAllocator())
-            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
             .listenBlockingAndAwait((ctx, request, responseFactory) ->
                                         responseFactory.ok().payloadBody(request.payloadBody(textSerializerUtf8()),
                                                 textSerializerUtf8()));
@@ -164,9 +165,10 @@ class MalformedDataAfterHttpMessageTest {
     private static BlockingHttpClient stClient(SocketAddress serverAddress) {
         return forSingleAddress(of((InetSocketAddress) serverAddress))
             .ioExecutor(CLIENT_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+            .executor(CLIENT_CTX.executor())
+            .executionStrategy(defaultStrategy())
             .bufferAllocator(CLIENT_CTX.bufferAllocator())
-            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
             .buildBlocking();
     }
 }

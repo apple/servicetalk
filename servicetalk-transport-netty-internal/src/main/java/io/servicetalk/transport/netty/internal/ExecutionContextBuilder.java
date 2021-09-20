@@ -117,9 +117,6 @@ public final class ExecutionContextBuilder {
         if (ioExecutor == null && executor == null && allocator == null && strategy == null) {
             return globalExecutionContext();
         }
-        Executor executor = this.executor == null ?
-                strategy != null ? strategy.executor() : null :
-                this.executor;
         return new DefaultExecutionContext(allocator == null ? globalExecutionContext().bufferAllocator() : allocator,
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
                 executor == null ? globalExecutionContext().executor() : executor,

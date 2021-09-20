@@ -17,7 +17,6 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
@@ -45,7 +44,7 @@ class GrpcUdsTest {
 
     @BeforeAll
     static void beforeClass() {
-        ioExecutor = createIoExecutor(new IoThreadFactory("io-executor"));
+        ioExecutor = createIoExecutor("io-executor");
     }
 
     @AfterAll

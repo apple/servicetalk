@@ -55,14 +55,12 @@ dependencies {
   testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
   testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
-  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
-  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }
