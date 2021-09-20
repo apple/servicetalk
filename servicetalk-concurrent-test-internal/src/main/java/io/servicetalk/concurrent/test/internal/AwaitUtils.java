@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -31,9 +32,24 @@ public final class AwaitUtils {
     }
 
     /**
-     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down.
+     * Await a {@link CountDownLatch} until the latch is counted down, throws unchecked InterruptedException.
      * @param latch the {@link CountDownLatch} to await.
      */
+    public static void await(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+        }
+    }
+
+    /**
+     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down.
+     * @param latch the {@link CountDownLatch} to await.
+     * @deprecated use {@link #await(CountDownLatch)} instead
+     */
+    @Deprecated
     public static void awaitUninterruptibly(CountDownLatch latch) {
         boolean interrupted = false;
         try {
@@ -53,13 +69,36 @@ public final class AwaitUtils {
     }
 
     /**
+     * Await a {@link CountDownLatch} until the latch is counted down or the given time duration expires,
+     * throws unchecked InterruptedException.
+     * @param latch the {@link CountDownLatch} to await.
+     * @param timeout the timeout duration to await for.
+     * @param unit the units applied to {@code timeout}.
+     * @return true if the count reached zero and false if the waiting time elapsed before the count reached zero
+     */
+    public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit) {
+        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
+
+        try {
+            return latch.await(timeoutNanos, NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+        }
+
+        return false;
+    }
+
+    /**
      * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down or
      * the given time duration expires.
      * @param latch the {@link CountDownLatch} to await.
      * @param timeout the timeout duration to await for.
      * @param unit the units applied to {@code timeout}.
      * @return see {@link CountDownLatch#await(long, TimeUnit)}.
+     * @deprecated use {@link #await(CountDownLatch, long, TimeUnit)} instead
      */
+    @Deprecated
     public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
         final long startTime = System.nanoTime();
         final long timeoutNanos = NANOSECONDS.convert(timeout, unit);

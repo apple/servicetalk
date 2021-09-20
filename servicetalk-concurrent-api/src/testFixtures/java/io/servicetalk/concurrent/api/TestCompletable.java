@@ -82,7 +82,7 @@ public final class TestCompletable extends Completable implements CompletableSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.await(subscriberLatch);
     }
 
     @Override
