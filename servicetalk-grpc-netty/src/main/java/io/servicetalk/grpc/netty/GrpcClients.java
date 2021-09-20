@@ -109,7 +109,7 @@ public final class GrpcClients {
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link GrpcClientBuilder#unresolvedAddressToHost(Function)}
-     * if you want to override that value or {@link GrpcClientBuilder#disableHostHeaderFallback()} if you
+     * if you want to override that value or {@link GrpcClientBuilder#hostHeaderFallback(boolean)} if you
      * want to disable this behavior.
      * @param <T> The type of {@link SocketAddress}.
      * @return new builder for the address
