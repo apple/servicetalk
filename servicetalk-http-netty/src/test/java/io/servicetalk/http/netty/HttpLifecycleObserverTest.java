@@ -72,6 +72,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atMostOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -83,6 +84,9 @@ import static org.mockito.Mockito.when;
 class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     private static final Buffer CONTENT = DEFAULT_RO_ALLOCATOR.fromAscii("content");
+
+    // To avoid flaky behavior await for both exchanges to terminate before starting verification:
+    private final CountDownLatch bothTerminate = new CountDownLatch(2);
 
     @Mock
     private HttpLifecycleObserver clientLifecycleObserver;
@@ -112,12 +116,20 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         when(clientLifecycleObserver.onNewExchange()).thenReturn(clientExchangeObserver);
         when(clientExchangeObserver.onRequest(any())).thenReturn(clientRequestObserver);
         when(clientExchangeObserver.onResponse(any())).thenReturn(clientResponseObserver);
+        doAnswer(__ -> {
+            bothTerminate.countDown();
+            return null;
+        }).when(clientExchangeObserver).onExchangeFinally();
         clientInOrder = inOrder(clientLifecycleObserver, clientExchangeObserver, clientResponseObserver);
         clientRequestInOrder = inOrder(clientRequestObserver);
 
         when(serverLifecycleObserver.onNewExchange()).thenReturn(serverExchangeObserver);
         when(serverExchangeObserver.onRequest(any())).thenReturn(serverRequestObserver);
         when(serverExchangeObserver.onResponse(any())).thenReturn(serverResponseObserver);
+        doAnswer(__ -> {
+            bothTerminate.countDown();
+            return null;
+        }).when(serverExchangeObserver).onExchangeFinally();
         serverInOrder = inOrder(serverLifecycleObserver, serverExchangeObserver, serverResponseObserver);
         serverRequestInOrder = inOrder(serverRequestObserver);
 
@@ -131,6 +143,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_NO_CONTENT, protocol, NO_CONTENT, 0);
 
+        bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
                 clientResponseObserver, clientInOrder, clientRequestInOrder, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
@@ -143,6 +156,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_ECHO, protocol, OK, CONTENT.readableBytes());
 
+        bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
                 clientResponseObserver, clientInOrder, clientRequestInOrder, true);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
@@ -155,6 +169,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_THROW_ERROR, protocol, INTERNAL_SERVER_ERROR, 0);
 
+        bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
                 clientResponseObserver, clientInOrder, clientRequestInOrder, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
@@ -167,6 +182,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_SINGLE_ERROR, protocol, INTERNAL_SERVER_ERROR, 0);
 
+        bothTerminate.await();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
                 clientResponseObserver, clientInOrder, clientRequestInOrder, false);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
@@ -175,13 +191,14 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
-    void testServerPayloadBodyFailure(HttpProtocol protocol) {
+    void testServerPayloadBodyFailure(HttpProtocol protocol) throws Exception {
         setUp(protocol);
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> makeRequestAndAssertResponse(SVC_ERROR_DURING_READ, protocol, OK, 0));
         assertThat(e.getCause(), instanceOf(protocol == HttpProtocol.HTTP_2 ?
                 Http2Exception.class : ClosedChannelException.class));
 
+        bothTerminate.await();
         verifyError(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
                 clientResponseObserver, clientInOrder, clientRequestInOrder);
         verifyError(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
@@ -190,7 +207,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
-    void testConnectionFailsRequestBeforeWrite(HttpProtocol protocol) {
+    void testConnectionFailsRequestBeforeWrite(HttpProtocol protocol) throws Exception {
         connectionFilterFactory(client -> new StreamingHttpConnectionFilter(client) {
             @Override
             public Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request) {
@@ -202,6 +219,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> makeRequestAndAssertResponse(SVC_ECHO, protocol, OK, CONTENT.readableBytes()));
         assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+
+        bothTerminate.countDown();  // server is not involved in this test, count down manually
+        bothTerminate.await();
 
         clientInOrder.verify(clientLifecycleObserver).onNewExchange();
         clientInOrder.verify(clientExchangeObserver).onRequest(any(StreamingHttpRequest.class));
@@ -236,8 +256,8 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         requestReceived.await();
         responseFuture.cancel(true);
 
-        // Verify both exchanges terminate before verifying order of events:
-        verify(clientExchangeObserver, await()).onExchangeFinally();
+        bothTerminate.await();
+
         verify(serverExchangeObserver, await()).onExchangeFinally();
 
         clientInOrder.verify(clientLifecycleObserver).onNewExchange();
@@ -246,6 +266,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         clientInOrder.verify(clientExchangeObserver).onResponseCancel();
         clientRequestInOrder.verify(clientRequestObserver).onRequestData(any(Buffer.class));
         clientRequestInOrder.verify(clientRequestObserver).onRequestCancel();
+        clientInOrder.verify(clientExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver, clientRequestObserver);
         verifyNoInteractions(clientResponseObserver);
 
@@ -258,6 +279,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         verify(serverExchangeObserver, atMostOnce()).onResponseCancel();
         verify(serverExchangeObserver, atMostOnce()).onResponse(any(StreamingHttpResponse.class));
         verify(serverResponseObserver, atMostOnce()).onResponseComplete();
+        serverInOrder.verify(serverExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
                 serverRequestObserver, serverResponseObserver);
     }
@@ -292,9 +314,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         // try to write server content to trigger write failure and close the server-side connection:
         serverResponsePayload.onNext(CONTENT.duplicate());
 
-        // Verify both exchanges terminate before verifying order of events:
-        verify(clientExchangeObserver, await()).onExchangeFinally();
-        verify(serverExchangeObserver, await()).onExchangeFinally();
+        bothTerminate.await();
 
         clientInOrder.verify(clientLifecycleObserver).onNewExchange();
         clientInOrder.verify(clientExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
@@ -304,6 +324,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         clientRequestInOrder.verify(clientRequestObserver).onRequestData(any(Buffer.class));
         clientRequestInOrder.verify(clientRequestObserver).onRequestTrailers(any(HttpHeaders.class));
         clientRequestInOrder.verify(clientRequestObserver).onRequestComplete();
+        clientInOrder.verify(clientExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver,
                 clientRequestObserver, clientResponseObserver);
 
@@ -316,6 +337,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
         serverRequestInOrder.verify(serverRequestObserver).onRequestTrailers(any(HttpHeaders.class));
         serverRequestInOrder.verify(serverRequestObserver).onRequestComplete();
+        serverInOrder.verify(serverExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
                 serverRequestObserver, serverResponseObserver);
     }
@@ -346,13 +368,13 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         inOrder.verify(response, hasMessageBody || client ? times(1) : never())
                 .onResponseTrailers(any(HttpHeaders.class));
         inOrder.verify(response).onResponseComplete();
-        inOrder.verify(exchange).onExchangeFinally();
 
         requestInOrder.verify(request, hasMessageBody ? times(1) : never()).onRequestData(any(Buffer.class));
         requestInOrder.verify(request, hasMessageBody || !client ? times(1) : never())
                 .onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
+        inOrder.verify(exchange).onExchangeFinally();
         verifyNoMoreInteractions(request, response, exchange, lifecycle);
     }
 
@@ -369,13 +391,13 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         }
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
         inOrder.verify(response).onResponseError(!client ? DELIBERATE_EXCEPTION : any());
-        inOrder.verify(exchange).onExchangeFinally();
 
         if (!client) {
             requestInOrder.verify(request).onRequestTrailers(any(HttpHeaders.class));
         }
         requestInOrder.verify(request).onRequestComplete();
 
+        inOrder.verify(exchange).onExchangeFinally();
         verifyNoMoreInteractions(request, response, exchange, lifecycle);
     }
 }
