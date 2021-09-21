@@ -18,6 +18,7 @@ package io.servicetalk.grpc.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcStatus;
+import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -66,7 +67,7 @@ public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver
         private long responseSize;
         private int responseTrailers;
         @Nullable
-        private GrpcStatus grpcStatus;
+        private GrpcStatusCode grpcStatus;
         @Nullable
         private Object responseResult;
 
@@ -136,7 +137,7 @@ public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver
         @Override
         public void onGrpcStatus(final GrpcStatus status) {
             assert this.grpcStatus == null;
-            this.grpcStatus = status;
+            this.grpcStatus = status.code();
         }
 
         @Override
