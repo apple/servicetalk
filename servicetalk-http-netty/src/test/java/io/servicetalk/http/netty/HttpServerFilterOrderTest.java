@@ -16,6 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
@@ -35,6 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class HttpServerFilterOrderTest {
@@ -57,6 +60,87 @@ class HttpServerFilterOrderTest {
         verifier.verify(filter2).handle(any(), any(), any());
     }
 
+    @Test
+    void conditional() throws Exception {
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
+        StreamingHttpService filter3 = newMockService();
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(req -> true, addFilter(filter1))
+                .appendServiceFilter(req -> false, addFilter(filter2))
+                .appendServiceFilter(req -> true, addFilter(filter3))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                .buildBlocking();
+        HttpResponse resp = client.request(client.get("/"));
+        assertThat("Unexpected response.", resp.status(), is(OK));
+
+        InOrder verifier = inOrder(filter1, filter2, filter3);
+        verifier.verify(filter1).handle(any(), any(), any());
+        verifier.verify(filter2, never()).handle(any(), any(), any());
+        verifier.verify(filter3).handle(any(), any(), any());
+    }
+
+    @Test
+    void nonOffloadOrder() throws Exception {
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendNonOffloadingServiceFilter(addFilter(filter1))
+                .appendNonOffloadingServiceFilter(addFilter(filter2))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                .buildBlocking();
+        HttpResponse resp = client.request(client.get("/"));
+        assertThat("Unexpected response.", resp.status(), is(OK));
+
+        InOrder verifier = inOrder(filter1, filter2);
+        verifier.verify(filter1).handle(any(), any(), any());
+        verifier.verify(filter2).handle(any(), any(), any());
+    }
+
+    @Test
+    void conditionalNonOffload() throws Exception {
+        StreamingHttpService filter0 = newMockService();
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
+        StreamingHttpService filter3 = newMockService();
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(addFilter(filter0))
+                .appendNonOffloadingServiceFilter(req -> true, addFilter(filter1))
+                .appendNonOffloadingServiceFilter(req -> false, addFilter(filter2))
+                .appendNonOffloadingServiceFilter(req -> true, addFilter(filter3))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                .buildBlocking();
+        HttpResponse resp = client.request(client.get("/"));
+        assertThat("Unexpected response.", resp.status(), is(OK));
+
+        InOrder verifier = inOrder(filter1, filter2, filter3, filter0);
+        verifier.verify(filter1).handle(any(), any(), any());
+        verifier.verify(filter2, never()).handle(any(), any(), any());
+        verifier.verify(filter3).handle(any(), any(), any());
+        verifier.verify(filter0).handle(any(), any(), any());
+    }
+
+    @Test
+    void mixedFiltersOrder() throws Exception {
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(addFilter(filter2))
+                .appendNonOffloadingServiceFilter(addFilter(filter1))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                .buildBlocking();
+        HttpResponse resp = client.request(client.get("/"));
+        assertThat("Unexpected response.", resp.status(), is(OK));
+
+        InOrder verifier = inOrder(filter1, filter2);
+        verifier.verify(filter1).handle(any(), any(), any());
+        verifier.verify(filter2).handle(any(), any(), any());
+    }
+
     private static StreamingHttpService newMockService() {
         StreamingHttpService service = mock(StreamingHttpService.class);
         when(service.closeAsync()).thenReturn(completed());
@@ -64,11 +148,29 @@ class HttpServerFilterOrderTest {
         return service;
     }
 
-    private static StreamingHttpServiceFilterFactory addFilter(StreamingHttpService filter) {
-        return orig -> {
+    private static NonOffloadingFilterFactory addFilter(StreamingHttpService filter) {
+        return new NonOffloadingFilterFactory(filter);
+    }
+
+    private static class NonOffloadingFilterFactory implements StreamingHttpServiceFilterFactory,
+                                                               HttpExecutionStrategyInfluencer {
+
+        private final StreamingHttpService filter;
+
+        NonOffloadingFilterFactory(StreamingHttpService filter) {
+            this.filter = filter;
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
             when(filter.handle(any(), any(), any()))
-                    .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));
+                    .thenAnswer(i -> service.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));
             return new StreamingHttpServiceFilter(filter);
-        };
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            return strategy;
+        }
     }
 }
