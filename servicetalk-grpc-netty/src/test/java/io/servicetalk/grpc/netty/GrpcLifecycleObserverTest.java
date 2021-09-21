@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.Callable;
@@ -207,6 +208,9 @@ class GrpcLifecycleObserverTest {
                                         GrpcLifecycleObserver lifecycle, GrpcExchangeObserver exchange,
                                         GrpcRequestObserver request, GrpcResponseObserver response,
                                         InOrder inOrder, InOrder requestInOrder) {
+        if (!client && !aggregated) {
+            System.err.println(Mockito.mockingDetails(response).printInvocations());
+        }
         inOrder.verify(lifecycle).onNewExchange();
         if (client) {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
