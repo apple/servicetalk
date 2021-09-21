@@ -336,7 +336,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverInOrder.verify(serverExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
         serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
         serverInOrder.verify(serverExchangeObserver).onResponse(any(StreamingHttpResponse.class));
-        serverInOrder.verify(serverResponseObserver).onResponseData(any(Buffer.class));
+        verify(serverResponseObserver, atMostOnce()).onResponseData(any(Buffer.class));
         serverInOrder.verify(serverResponseObserver).onResponseCancel();
         serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
         serverRequestInOrder.verify(serverRequestObserver).onRequestTrailers(any(HttpHeaders.class));
