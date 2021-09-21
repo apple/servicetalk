@@ -34,17 +34,17 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Logging implementation of {@link HttpLifecycleObserver}.
  */
-public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
+final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
     private final FixedLevelLogger logger;
 
     /**
      * Create a new instance.
      *
-     * @param loggerName The name of the logger to use.
-     * @param logLevel The level to log at.
+     * @param loggerName The name of the logger to use
+     * @param logLevel The level to log at
      */
-    public LoggingHttpLifecycleObserver(final String loggerName, final LogLevel logLevel) {
+    LoggingHttpLifecycleObserver(final String loggerName, final LogLevel logLevel) {
         this.logger = newLogger(loggerName, logLevel);
     }
 

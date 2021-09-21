@@ -66,6 +66,9 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_NEVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_NO_CONTENT;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
+import static io.servicetalk.http.utils.HttpLifecycleObservers.combine;
+import static io.servicetalk.http.utils.HttpLifecycleObservers.logging;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
@@ -87,6 +90,8 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     // To avoid flaky behavior await for both exchanges to terminate before starting verification:
     private final CountDownLatch bothTerminate = new CountDownLatch(2);
+
+    private final HttpLifecycleObserver LOGGING = logging("servicetalk-tests-http-lifecycle-logger", TRACE);
 
     @Mock
     private HttpLifecycleObserver clientLifecycleObserver;
@@ -133,7 +138,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverInOrder = inOrder(serverLifecycleObserver, serverExchangeObserver, serverResponseObserver);
         serverRequestInOrder = inOrder(serverRequestObserver);
 
-        lifecycleObserver(clientLifecycleObserver, serverLifecycleObserver);
+        lifecycleObserver(combine(clientLifecycleObserver, LOGGING), combine(serverLifecycleObserver, LOGGING));
         setUp(CACHED, CACHED_SERVER);
     }
 

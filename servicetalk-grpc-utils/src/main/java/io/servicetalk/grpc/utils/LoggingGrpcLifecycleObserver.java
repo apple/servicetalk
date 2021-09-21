@@ -36,11 +36,17 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Logging implementation of {@link GrpcLifecycleObserver}.
  */
-public final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
+final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
     private final FixedLevelLogger logger;
 
-    public LoggingGrpcLifecycleObserver(final String loggerName, final LogLevel logLevel) {
+    /**
+     * Create a new instance.
+     *
+     * @param loggerName The name of the logger to use
+     * @param logLevel The level to log at
+     */
+    LoggingGrpcLifecycleObserver(final String loggerName, final LogLevel logLevel) {
         this.logger = newLogger(loggerName, logLevel);
     }
 
