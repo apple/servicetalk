@@ -579,11 +579,12 @@ class RedirectingHttpRequesterFilterTest {
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter.Builder()
                 .allowNonRelativeRedirects(true)
-                .prepareRequest((original, response, redirect) -> {
+                .prepareRequest((relative, original, response, redirect) -> {
                     redirect.setHeaders(original.headers());
                     redirect.transformMessageBody(p -> p.ignoreElements().concat(original.messageBody()));
                     // Use `transform` to update PayloadInfo, assuming trailers may be included in the message body
                     redirect.transform(new StatelessTrailersTransformer<>());
+                    return redirect;
                 }));
 
         verifyRedirected(client, newRequest(client, GET), true, true);
@@ -593,7 +594,7 @@ class RedirectingHttpRequesterFilterTest {
     void prepareRequestThrows() {
         when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter.Builder()
-                .prepareRequest((original, response, redirect) -> {
+                .prepareRequest((relative, original, response, redirect) -> {
                     throw DELIBERATE_EXCEPTION;
                 }));
 

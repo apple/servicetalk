@@ -67,9 +67,10 @@ public final class MultiAddressRedirectClient {
                         // explicitly specify that payload body should be redirected to non-relative locations:
                         .redirectPayloadBody(true)
                         // custom modifications for a redirected request:
-                        .prepareRequest((prevRequest, redirectResponse, redirectedRequest) -> {
+                        .prepareRequest((relative, prevRequest, redirectResponse, redirectedRequest) -> {
                             // if necessary, apply addition modifications for redirectedRequest based on the context of
                             // prevRequest and redirectResponse: check/copy other headers, modify request method, etc.
+                            return redirectedRequest;
                         }))
                 .initializer((scheme, address, builder) -> {
                     // The custom SSL configuration here is necessary only because this example uses self-signed

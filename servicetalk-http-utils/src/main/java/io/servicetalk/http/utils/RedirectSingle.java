@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TriConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -27,6 +26,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.RedirectConfiguration.RedirectRequestTransformer;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -171,7 +171,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
 
             final String newScheme = newRequest.scheme();
-            if (isRelative(request, scheme, newRequest)) {
+            final boolean relative = isRelative(request, scheme, newRequest);
+            if (relative) {
                 if (redirectSingle.allowNonRelativeRedirects && newScheme == null && scheme != null) {
                     // Rewrite origin-form location to absolute-form request-target for multi-address client:
                     newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
@@ -195,7 +196,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
 
             try {
-                redirectSingle.config.prepareRequest.accept(request, response, newRequest);
+                redirectSingle.config.requestTransformer.apply(relative, request, response, newRequest);
             } catch (final Throwable cause) {
                 target.onError(cause);
                 return;
@@ -405,13 +406,13 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         final CharSequence[] headersToRedirect;
         final boolean redirectPayloadBody;
         final CharSequence[] trailersToRedirect;
-        final TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest> prepareRequest;
+        final RedirectRequestTransformer requestTransformer;
 
         Config(final int maxRedirects, final String[] allowedMethods,
                final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect,
                final boolean changePostToGet, final CharSequence[] headersToRedirect,
                final boolean redirectPayloadBody, final CharSequence[] trailersToRedirect,
-               final TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest> prepareRequest) {
+               final RedirectRequestTransformer requestTransformer) {
             this.maxRedirects = maxRedirects;
             this.allowedMethods = allowedMethods;
             this.shouldRedirect = shouldRedirect;
@@ -419,7 +420,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             this.headersToRedirect = headersToRedirect;
             this.redirectPayloadBody = redirectPayloadBody;
             this.trailersToRedirect = trailersToRedirect;
-            this.prepareRequest = prepareRequest;
+            this.requestTransformer = requestTransformer;
         }
     }
 }

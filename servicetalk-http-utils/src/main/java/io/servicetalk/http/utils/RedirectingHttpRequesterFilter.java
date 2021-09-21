@@ -17,7 +17,6 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TriConsumer;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -80,8 +79,8 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     private static final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> DEFAULT_SHOULD_REDIRECT =
             (req, resp) -> true;
     private static final CharSequence[] EMPTY_CHAR_SEQUENCE_ARRAY = {};
-    private static final TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest>
-            DEFAULT_PREPARE_REQUEST = (original, response, redirect) -> { };
+    private static final RedirectConfiguration.RedirectRequestTransformer DEFAULT_REQUEST_TRANSFORMER =
+            (isRelative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
 
     private final boolean allowNonRelativeRedirects;
     private final Config config;
@@ -93,7 +92,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      */
     @Deprecated
     public RedirectingHttpRequesterFilter() {
-        this(DEFAULT_MAX_REDIRECTS, true);
+        this(DEFAULT_MAX_REDIRECTS);
     }
 
     /**
@@ -104,7 +103,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final int maxRedirects) {
-        this(maxRedirects, true);
+        this(true, maxRedirects);
     }
 
     /**
@@ -115,7 +114,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient) {
-        this(DEFAULT_MAX_REDIRECTS, onlyRelativeClient);
+        this(onlyRelativeClient, DEFAULT_MAX_REDIRECTS);
     }
 
     /**
@@ -128,7 +127,13 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final int maxRedirects) {
-        this(maxRedirects, onlyRelativeClient);
+        this(!onlyRelativeClient, new Config(maxRedirects, toSortedNames(DEFAULT_ALLOWED_METHODS),
+                DEFAULT_SHOULD_REDIRECT,
+                /* changePostToGet */ true,  // use "true" for backward compatibility
+                /* headersToRedirect */ EMPTY_CHAR_SEQUENCE_ARRAY,
+                /* redirectPayloadBody */ false,
+                /* trailersToRedirect */ EMPTY_CHAR_SEQUENCE_ARRAY,
+                DEFAULT_REQUEST_TRANSFORMER));
     }
 
     /**
@@ -141,7 +146,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final boolean onlyRelativeConnection) {
-        this(DEFAULT_MAX_REDIRECTS, onlyRelativeClient);
+        this(onlyRelativeClient, DEFAULT_MAX_REDIRECTS);
     }
 
     /**
@@ -156,18 +161,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final boolean onlyRelativeConnection,
                                           final int maxRedirects) {
-        this(maxRedirects, onlyRelativeClient);
-    }
-
-    private RedirectingHttpRequesterFilter(final int maxRedirects,
-                                           final boolean onlyRelativeClient) {
-        this(!onlyRelativeClient, new Config(maxRedirects, toSortedNames(DEFAULT_ALLOWED_METHODS),
-                DEFAULT_SHOULD_REDIRECT,
-                /* changePostToGet */ true,  // use "true" for backward compatibility
-                /* headersToRedirect */ EMPTY_CHAR_SEQUENCE_ARRAY,
-                /* redirectPayloadBody */ false,
-                /* trailersToRedirect */ EMPTY_CHAR_SEQUENCE_ARRAY,
-                DEFAULT_PREPARE_REQUEST));
+        this(onlyRelativeClient, maxRedirects);
     }
 
     private RedirectingHttpRequesterFilter(final boolean allowNonRelativeRedirects,
@@ -255,8 +249,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         private boolean redirectPayloadBody;
         @Nullable
         private CharSequence[] trailersToRedirect;
-        private TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest> prepareRequest =
-                DEFAULT_PREPARE_REQUEST;
+        private RedirectRequestTransformer requestTransformer = DEFAULT_REQUEST_TRANSFORMER;
 
         @Override
         public Builder maxRedirects(final int maxRedirects) {
@@ -310,9 +303,8 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         }
 
         @Override
-        public Builder prepareRequest(
-                final TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest> prepareRequest) {
-            this.prepareRequest = requireNonNull(prepareRequest);
+        public Builder prepareRequest(final RedirectRequestTransformer requestTransformer) {
+            this.requestTransformer = requireNonNull(requestTransformer);
             return this;
         }
 
@@ -327,7 +319,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                     headersToRedirect == null ? EMPTY_CHAR_SEQUENCE_ARRAY : headersToRedirect.clone(),
                     redirectPayloadBody,
                     trailersToRedirect == null ? EMPTY_CHAR_SEQUENCE_ARRAY : trailersToRedirect.clone(),
-                    prepareRequest));
+                    requestTransformer));
         }
     }
 

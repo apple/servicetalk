@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TriConsumer;
 
 import java.util.function.BiPredicate;
 
@@ -39,12 +38,13 @@ public interface RedirectConfiguration {
      * Notes:
      * <ol>
      *     <li>This option has effect only when redirections is performed by a client that is capable to communicate
-     *     with multiple target hosts or schemes, like the one is produced by {@link MultiAddressHttpClientBuilder}. If
-     *     a client is limited to only one target host/port/scheme, it may follow only relative redirects.</li>
+     *     with multiple target hosts or schemes, like the one which is produced by
+     *     {@link MultiAddressHttpClientBuilder}. If a client is limited to only one target host/port/scheme, it may
+     *     follow only relative redirects.</li>
      *     <li>For security reasons, redirection should not automatically copy headers nor message body of the original
      *     request for non-relative locations. Use {@link #headersToRedirect(CharSequence...)},
      *     {@link #redirectPayloadBody(boolean)}, {@link #trailersToRedirect(CharSequence...)}, or
-     *     {@link #prepareRequest(TriConsumer)} if headers or message body should be preserved.</li>
+     *     {@link #prepareRequest(RedirectRequestTransformer)} if headers or message body should be preserved.</li>
      * </ol>
      *
      * @param allowNonRelativeRedirects If {@code true}, redirection will follow non-relative locations (if supported by
@@ -55,7 +55,7 @@ public interface RedirectConfiguration {
      * @see #headersToRedirect(CharSequence...)
      * @see #redirectPayloadBody(boolean)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #prepareRequest(TriConsumer)
+     * @see #prepareRequest(RedirectRequestTransformer)
      */
     RedirectConfiguration allowNonRelativeRedirects(boolean allowNonRelativeRedirects);
 
@@ -112,7 +112,7 @@ public interface RedirectConfiguration {
      * @see #allowNonRelativeRedirects(boolean)
      * @see #redirectPayloadBody(boolean)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #prepareRequest(TriConsumer)
+     * @see #prepareRequest(RedirectRequestTransformer)
      */
     RedirectConfiguration headersToRedirect(CharSequence... headerNames);
 
@@ -134,7 +134,7 @@ public interface RedirectConfiguration {
      * @see #allowNonRelativeRedirects(boolean)
      * @see #headersToRedirect(CharSequence...)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #prepareRequest(TriConsumer)
+     * @see #prepareRequest(RedirectRequestTransformer)
      */
     RedirectConfiguration redirectPayloadBody(boolean redirectPayloadBody);
 
@@ -149,21 +149,40 @@ public interface RedirectConfiguration {
      * @see #allowNonRelativeRedirects(boolean)
      * @see #headersToRedirect(CharSequence...)
      * @see #redirectPayloadBody(boolean)
-     * @see #prepareRequest(TriConsumer)
+     * @see #prepareRequest(RedirectRequestTransformer)
      */
     RedirectConfiguration trailersToRedirect(CharSequence... trailerNames);
 
     /**
      * Applies further modifications for the redirect request after it was initialized.
      *
-     * @param prepareRequest {@link TriConsumer} that modifies a request for redirect. First argument is the previous
-     * request, the second argument is the received response, the third argument is an initialized request for redirect
+     * @param requestTransformer {@link RedirectRequestTransformer} that modifies a request for redirect
      * @return {@code this}
      * @see #allowNonRelativeRedirects(boolean)
      * @see #headersToRedirect(CharSequence...)
      * @see #redirectPayloadBody(boolean)
      * @see #trailersToRedirect(CharSequence...)
      */
-    RedirectConfiguration prepareRequest(
-            TriConsumer<StreamingHttpRequest, StreamingHttpResponse, StreamingHttpRequest> prepareRequest);
+    RedirectConfiguration prepareRequest(RedirectRequestTransformer requestTransformer);
+
+    /**
+     * Provides access to the full context of the redirect to apply transformations for the pre-initialized redirect
+     * request. It can be used to add or remove headers/payload body/trailers.
+     */
+    @FunctionalInterface
+    interface RedirectRequestTransformer {
+
+        /**
+         * Applies transformations for the pre-initialized redirect request.
+         *
+         * @param relative if {@code true}, the redirect location was identified as a relative to the previous request
+         * @param previousRequest previous request that was redirected
+         * @param redirectResponse response to redirect
+         * @param redirectRequest pre-initialized request to follow the redirect
+         * @return the final {@link StreamingHttpRequest} that will be send to follow the redirect after all
+         * transformations applied
+         */
+        StreamingHttpRequest apply(boolean relative, StreamingHttpRequest previousRequest,
+                                   StreamingHttpResponse redirectResponse, StreamingHttpRequest redirectRequest);
+    }
 }
