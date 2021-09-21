@@ -161,6 +161,11 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
             final HttpRequestMetaData requestMetaData = this.requestMetaData;
             assert requestMetaData != null;
             final HttpResponseMetaData responseMetaData = this.responseMetaData;
+            Object requestResult = unwrapResult(this.requestResult);
+            if (requestResult == null) {
+                // It's possible that request can be cancelled before transport subscribed to its payload body
+                requestResult = Result.cancelled;
+            }
             if (responseMetaData != null) {
                 logger.log("connection={} " +
                     "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailers={} requestResult={} " +
@@ -168,7 +173,7 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
                     "duration={}ms",
                     connInfo == null ? "unknown" : connInfo,
                     requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                    requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
+                    requestMetaData.headers().size(), requestSize, requestTrailers, requestResult,
                     responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
                     responseTrailers, unwrapResult(responseResult),
                     NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
@@ -178,7 +183,7 @@ public final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver
                     "responseResult={} duration={}ms",
                     connInfo == null ? "unknown" : connInfo,
                     requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                    requestMetaData.headers().size(), requestSize, requestTrailers, unwrapResult(requestResult),
+                    requestMetaData.headers().size(), requestSize, requestTrailers, requestResult,
                     unwrapResult(responseResult),
                     NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             }

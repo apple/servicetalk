@@ -118,8 +118,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         when(serverLifecycleObserver.onNewExchange()).thenReturn(serverExchangeObserver);
         when(serverExchangeObserver.onRequest(any())).thenReturn(serverRequestObserver);
         when(serverExchangeObserver.onResponse(any())).thenReturn(serverResponseObserver);
-        serverInOrder = inOrder(serverLifecycleObserver, serverExchangeObserver,
-                serverRequestObserver, serverResponseObserver);
+        serverInOrder = inOrder(serverLifecycleObserver, serverExchangeObserver, serverResponseObserver);
         serverRequestInOrder = inOrder(serverRequestObserver);
 
         lifecycleObserver(clientLifecycleObserver, serverLifecycleObserver);
@@ -225,7 +224,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                                                         StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 return delegate().handle(ctx,
-                        request.transformMessageBody(mb -> mb.afterOnSubscribe(__ -> requestReceived.countDown())),
+                        request.transformMessageBody(mb -> mb.afterOnNext(__ -> requestReceived.countDown())),
                         responseFactory);
             }
         });
@@ -233,7 +232,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
         StreamingHttpClient client = streamingHttpClient();
         Future<StreamingHttpResponse> responseFuture = client.request(client.post(SVC_NEVER)
-                .payloadBody(Publisher.never())).toFuture();
+                .payloadBody(Publisher.from(CONTENT.duplicate()).concat(Publisher.never()))).toFuture();
         requestReceived.await();
         responseFuture.cancel(true);
 
@@ -245,14 +244,16 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         clientInOrder.verify(clientExchangeObserver).onRequest(any(StreamingHttpRequest.class));
         clientInOrder.verify(clientExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
         clientInOrder.verify(clientExchangeObserver).onResponseCancel();
-        verify(clientRequestObserver).onRequestCancel();
+        clientRequestInOrder.verify(clientRequestObserver).onRequestData(any(Buffer.class));
+        clientRequestInOrder.verify(clientRequestObserver).onRequestCancel();
         verifyNoMoreInteractions(clientLifecycleObserver, clientExchangeObserver, clientRequestObserver);
         verifyNoInteractions(clientResponseObserver);
 
         serverInOrder.verify(serverLifecycleObserver).onNewExchange();
         serverInOrder.verify(serverExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
         serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
-        serverInOrder.verify(serverRequestObserver).onRequestError(any(IOException.class));
+        serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
+        serverRequestInOrder.verify(serverRequestObserver).onRequestError(any(IOException.class));
         // because of offloading, cancel from the IO-thread may race with an error propagated through request publisher:
         verify(serverExchangeObserver, atMostOnce()).onResponseCancel();
         verify(serverExchangeObserver, atMostOnce()).onResponse(any(StreamingHttpResponse.class));
