@@ -17,7 +17,6 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -68,9 +67,7 @@ final class InOrderRouter implements StreamingHttpService {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
                 if (strategy != null) {
-                    Executor se = strategy.executor();
-                    Executor executor = null == se ? ctx.executionContext().executor() : se;
-                    service = strategy.offloadService(executor, service);
+                    service = strategy.offloadService(ctx.executionContext().executor(), service);
                 }
                 return service.handle(ctx, request, factory);
             }
