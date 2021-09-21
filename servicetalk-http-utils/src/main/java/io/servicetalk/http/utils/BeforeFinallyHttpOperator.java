@@ -357,9 +357,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                                         PROCESSING_PAYLOAD, TERMINATED)) {
                                                     return state;
                                                 }
-                                            } else {
+                                            } else if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
+                                                    state, TERMINATED)) {
                                                 // re-entry, but we can terminate because this is a final event:
-                                                stateUpdater.set(ResponseCompletionSubscriber.this, TERMINATED);
                                                 return state;
                                             }
                                         }
