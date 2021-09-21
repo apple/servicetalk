@@ -65,13 +65,13 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
         @Nullable
         private HttpRequestMetaData requestMetaData;
         private long requestSize;
-        private int requestTrailers;
+        private int requestTrailersCount;
         @Nullable
         private Object requestResult;
         @Nullable
         private HttpResponseMetaData responseMetaData;
         private long responseSize;
-        private int responseTrailers;
+        private int responseTrailersCount;
         @Nullable
         private GrpcStatusCode grpcStatus;
         @Nullable
@@ -101,7 +101,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onRequestTrailers(final HttpHeaders trailers) {
-            requestTrailers = trailers.size();
+            requestTrailersCount = trailers.size();
         }
 
         @Override
@@ -137,7 +137,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onResponseTrailers(final HttpHeaders trailers) {
-            responseTrailers = trailers.size();
+            responseTrailersCount = trailers.size();
         }
 
         @Override
@@ -178,24 +178,24 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
             }
             if (responseMetaData != null) {
                 logger.log("connection={} " +
-                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailers={} requestResult={} " +
-                    "responseCode={} responseHeadersCount={} responseSize={} responseTrailers={} grpcStatus={} " +
-                    "responseResult={} duration={}ms",
-                    connInfo == null ? "unknown" : connInfo,
-                    requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                    requestMetaData.headers().size(), requestSize, requestTrailers, requestResult,
-                    responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                    responseTrailers, grpcStatus, unwrapResult(responseResult),
-                    NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
+                "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} grpcStatus={} " +
+                "responseResult={} duration={}ms",
+                connInfo == null ? "unknown" : connInfo,
+                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
+                responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                    responseTrailersCount, grpcStatus, unwrapResult(responseResult),
+                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             } else {
                 logger.log("connection={} " +
-                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailers={} requestResult={} " +
-                    "responseResult={} duration={}ms",
-                    connInfo == null ? "unknown" : connInfo,
-                    requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                    requestMetaData.headers().size(), requestSize, requestTrailers, requestResult,
-                    unwrapResult(responseResult),
-                    NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
+                "responseResult={} duration={}ms",
+                connInfo == null ? "unknown" : connInfo,
+                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
+                unwrapResult(responseResult),
+                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
             }
         }
 
