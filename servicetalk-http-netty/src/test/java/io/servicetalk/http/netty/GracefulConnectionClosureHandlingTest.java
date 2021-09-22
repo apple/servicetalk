@@ -21,6 +21,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -76,6 +77,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpProtocol.values;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -98,6 +100,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
@@ -146,9 +149,9 @@ class GracefulConnectionClosureHandlingTest {
             Assumptions.assumeTrue(
                     CLIENT_CTX.ioExecutor().isUnixDomainSocketSupported(),
                     "Client's IoExecutor does not support UnixDomainSocket");
-            Assumptions.assumeFalse(viaProxy, "UDS cannot be used via proxy");
+            assumeFalse(viaProxy, "UDS cannot be used via proxy");
         }
-        Assumptions.assumeFalse(protocol == HTTP_2 && viaProxy, "Proxy is not supported with HTTP/2");
+        assumeFalse(protocol == HTTP_2 && viaProxy, "Proxy is not supported with HTTP/2");
 
         HttpServerBuilder serverBuilder = (useUds ?
                 forAddress(newSocketAddress()) :
@@ -249,7 +252,17 @@ class GracefulConnectionClosureHandlingTest {
     @AfterEach
     void tearDown() throws Exception {
         try {
-            newCompositeCloseable().appendAll(connection, client, serverContext).close();
+            CompositeCloseable compositeCloseable = newCompositeCloseable();
+            if (connection != null) {
+                compositeCloseable.append(connection);
+            }
+            if (client != null) {
+                compositeCloseable.append(client);
+            }
+            if (serverContext != null) {
+                compositeCloseable.append(serverContext);
+            }
+            compositeCloseable.close();
         } finally {
             if (proxyTunnel != null) {
                 safeClose(proxyTunnel);
@@ -288,6 +301,7 @@ class GracefulConnectionClosureHandlingTest {
                                                          boolean initiateClosureFromClient,
                                                          boolean useUds,
                                                          boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -313,6 +327,7 @@ class GracefulConnectionClosureHandlingTest {
     @MethodSource("data")
     void closeAfterFullRequestSentNoResponseReceived(HttpProtocol protocol, boolean initiateClosureFromClient,
                                                      boolean useUds, boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest request = newRequest("/first");
         Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
@@ -338,6 +353,7 @@ class GracefulConnectionClosureHandlingTest {
                                                                boolean initiateClosureFromClient,
                                                                boolean useUds,
                                                                boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -364,6 +380,7 @@ class GracefulConnectionClosureHandlingTest {
                                                            boolean initiateClosureFromClient,
                                                            boolean useUds,
                                                            boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest request = newRequest("/first");
         Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
@@ -388,6 +405,7 @@ class GracefulConnectionClosureHandlingTest {
                                                            boolean initiateClosureFromClient,
                                                            boolean useUds,
                                                            boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
@@ -427,6 +445,7 @@ class GracefulConnectionClosureHandlingTest {
                                                                      boolean initiateClosureFromClient,
                                                                      boolean useUds,
                                                                      boolean viaProxy) throws Exception {
+        assumeNonFlaky(protocol, initiateClosureFromClient, viaProxy);
         setUp(protocol, initiateClosureFromClient, useUds, viaProxy);
         StreamingHttpRequest firstRequest = newRequest("/first");
         Future<StreamingHttpResponse> firstResponseFuture = connection.request(firstRequest).toFuture();
@@ -476,6 +495,11 @@ class GracefulConnectionClosureHandlingTest {
 
         awaitConnectionClosed();
         assertNextRequestFails();
+    }
+
+    private static void assumeNonFlaky(HttpProtocol protocol, boolean initiateClosureFromClient, boolean viaProxy) {
+        assumeFalse(protocol == HTTP_1 && !initiateClosureFromClient && viaProxy,
+                "https://github.com/apple/servicetalk/issues/1507");
     }
 
     private StreamingHttpRequest newRequest(String path) {
