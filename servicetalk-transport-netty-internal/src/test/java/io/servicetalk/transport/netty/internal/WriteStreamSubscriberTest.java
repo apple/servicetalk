@@ -193,21 +193,22 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    void channelClosedDoesNotCancelAfterOutboundEnd() {
+    void channelClosedDoesNotCancelAfterOutboundEnd() throws Exception {
         WriteInfo info = writeAndFlush("Hello");
         subscriber.channelOutboundClosed();
-        verify(subscription, never()).cancel();
 
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
 
-        subscriber.channelClosed(DELIBERATE_EXCEPTION); // simulate channelInactive event
+        channel.finishAndReleaseAll();
+        subscriber.channelClosed(DELIBERATE_EXCEPTION); // simulate channelInactive event from DefaultNettyConnection
         verify(closeHandler).closeChannelOutbound(any(Channel.class));
-        verify(subscription, never()).cancel();
 
-        subscriber.onComplete();
+        subscriber.onComplete();    // signal completion after "channelInactive"
+        verify(subscription, never()).cancel();
         verifyNoMoreInteractions(closeHandler);
+        assertChannelClose();
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
