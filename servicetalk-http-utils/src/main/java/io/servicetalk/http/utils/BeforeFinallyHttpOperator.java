@@ -197,9 +197,6 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                                         if (stateUpdater.compareAndSet(
                                                                 ResponseCompletionSubscriber.this,
                                                                 DELIVERING_PAYLOAD, AWAITING_CANCEL)) {
-                                                            if (Thread.currentThread().getName().startsWith("server-")) {
-                                                                Thread.dumpStack();
-                                                            }
                                                             break;
                                                         }
                                                     } else if (state == TERMINATED) {
@@ -263,9 +260,6 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                                             ResponseCompletionSubscriber.this,
                                                             AWAITING_CANCEL, TERMINATED)) {
                                                         try {
-                                                            if (Thread.currentThread().getName().startsWith("server-")) {
-                                                                System.err.println("Cancelled while delivering: " + o);
-                                                            }
                                                             beforeFinally.cancel();
                                                         } finally {
                                                             assert subscription != null;
