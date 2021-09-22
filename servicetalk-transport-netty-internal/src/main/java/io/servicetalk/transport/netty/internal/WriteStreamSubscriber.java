@@ -366,6 +366,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
             this.failureCause = cause;
             setFlag(SOURCE_TERMINATED);
+            // Mark the subscription as CANCELLED to prevent propagating cancel from channelClosed
+            subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
             if (activeWrites == 0) {
                 try {
                     setFlag(SUBSCRIBER_TERMINATED);
