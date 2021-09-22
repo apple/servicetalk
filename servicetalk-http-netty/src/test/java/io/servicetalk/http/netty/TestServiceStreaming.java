@@ -35,6 +35,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -56,6 +57,7 @@ final class TestServiceStreaming implements StreamingHttpService {
     static final String SVC_NO_CONTENT = "/noContent";
     static final String SVC_NO_CONTENT_AFTER_READ = "/noContentAfterRead";
     static final String SVC_ROT13 = "/rot13";
+    static final String SVC_NEVER = "/never";
     static final String SVC_THROW_ERROR = "/throwError";
     static final String SVC_SINGLE_ERROR = "/singleError";
     static final String SVC_ERROR_BEFORE_READ = "/errorBeforeRead";
@@ -102,6 +104,8 @@ final class TestServiceStreaming implements StreamingHttpService {
             case SVC_ROT13:
                 response = newRot13Response(req, factory);
                 break;
+            case SVC_NEVER:
+                return req.payloadBody().ignoreElements().concat(never());
             case SVC_THROW_ERROR:
                 response = throwErrorSynchronously();
                 break;

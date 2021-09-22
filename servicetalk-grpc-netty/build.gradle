@@ -25,6 +25,7 @@ apply plugin: "com.google.protobuf"
 
 dependencies {
   api project(":servicetalk-grpc-api")
+  api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
 
   implementation project(":servicetalk-http-utils")
@@ -62,6 +63,7 @@ dependencies {
   testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
   testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

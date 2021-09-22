@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -145,6 +146,12 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Override
     public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
         httpServerBuilder.transportObserver(transportObserver);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
+        httpServerBuilder.lifecycleObserver(new GrpcToHttpLifecycleObserverBridge(lifecycleObserver));
         return this;
     }
 

@@ -39,6 +39,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -89,6 +90,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -98,6 +102,7 @@ import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.HttpKeepAlive.responseKeepAlive;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
@@ -287,7 +292,7 @@ final class NettyHttpServer {
                                             meta.headers(), executionContext().bufferAllocator(), payload,
                                             requireTrailerHeader, headersFactory)));
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
-                    .subscribe(new ErrorLoggingHttpSubscriber());
+                    .subscribe(new ErrorLoggingHttpSubscriber(connection));
         }
 
         @Override
@@ -345,32 +350,24 @@ final class NettyHttpServer {
                         }));
 
                 final HttpRequestMethod requestMethod = request.method();
-                final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
                 Publisher<Object> responsePublisher = strategy
                         .invokeService(executionContext().executor(), request, req -> {
-                                    Single<StreamingHttpResponse> respSingle;
-                                    try {
-                                        respSingle = service.handle(this, req, streamingResponseFactory());
-                                    } catch (Throwable cause) {
-                                        respSingle = failed(cause);
-                                    }
-                                    return respSingle.onErrorReturn(cause -> newErrorResponse(cause,
-                                                    executionContext.executor(), req.version(), keepAlive))
+                                    // Don't expect any exceptions from service because it's already wrapped with
+                                    // ExceptionMapperServiceFilter
+                                    return service.handle(this, req, streamingResponseFactory())
                                             .flatMapPublisher(response -> {
-                                                keepAlive.addConnectionHeaderIfNecessary(response);
                                                 final FlushStrategy flushStrategy =
                                                         determineFlushStrategyForApi(response);
                                                 if (flushStrategy != null) {
                                                     splittingFlushStrategy.updateFlushStrategy(
-                                                            (prev, isOriginal) -> isOriginal ? flushStrategy : prev,
-                                                            1);
+                                                            (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
                                                 }
                                                 return handleResponse(protocol(), requestMethod, response);
                                             });
                                 },
                                 (cause, executor) -> {
                                     final StreamingHttpResponse errorResponse = newErrorResponse(cause, executor,
-                                            request.version(), keepAlive);
+                                            request);
                                     return flatEmptyMessage(protocol(), errorResponse, errorResponse.messageBody());
                                 });
 
@@ -408,20 +405,23 @@ final class NettyHttpServer {
         }
 
         private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,
-                                                       final HttpProtocolVersion version,
-                                                       final HttpKeepAlive keepAlive) {
-            final StreamingHttpResponse response;
+                                                       final StreamingHttpRequest request) {
+            final HttpResponseStatus status;
             if (cause instanceof RejectedExecutionException) {
-                LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
-                        cause);
-                response = streamingResponseFactory().serviceUnavailable();
+                status = SERVICE_UNAVAILABLE;
+                LOGGER.error("Task rejected by Executor {} for connection={}, request='{} {} {}'. Returning: {}",
+                        executor, this, request.method(), request.requestTarget(), request.version(), status, cause);
             } else {
+                status = INTERNAL_SERVER_ERROR;
                 LOGGER.error("Internal server error service={} connection={}", service, this, cause);
-                response = streamingResponseFactory().internalServerError();
+                LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +
+                        "Trying to return: {}", this, request.method(), request.requestTarget(), request.version(),
+                        status, cause);
             }
-            response.version(version)
+            final StreamingHttpResponse response = streamingResponseFactory().newResponse(status)
+                    .version(request.version())
                     .setHeader(CONTENT_LENGTH, ZERO);
-            keepAlive.addConnectionHeaderIfNecessary(response);
+            responseKeepAlive(request).addConnectionHeaderIfNecessary(response);
             return response;
         }
 
@@ -557,6 +557,12 @@ final class NettyHttpServer {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLoggingHttpSubscriber.class);
 
+        private final NettyConnection<Object, Object> connection;
+
+        ErrorLoggingHttpSubscriber(final NettyConnection<Object, Object> connection) {
+            this.connection = connection;
+        }
+
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             // We never cancel from this Subscriber
@@ -572,23 +578,27 @@ final class NettyHttpServer {
             if (t instanceof CloseEventObservedException) {
                 final CloseEventObservedException ceoe = (CloseEventObservedException) t;
                 if (ceoe.event() == CHANNEL_CLOSED_INBOUND && t.getCause() instanceof ClosedChannelException) {
-                    LOGGER.trace("Client closed the connection without sending 'Connection: close' header", t);
+                    LOGGER.trace("{} Client closed the {} connection without sending {}.",
+                            connection, connection.protocol(),
+                            HTTP_2_0.equals(connection.protocol()) ? "GO_AWAY" : "'Connection: close' header", t);
                     return;
                 }
                 if (t.getCause() instanceof DecoderException) {
-                    logDecoderException((DecoderException) t.getCause());
+                    logDecoderException((DecoderException) t.getCause(), connection);
                     return;
                 }
             } else if (t instanceof DecoderException) {
-                logDecoderException((DecoderException) t);
+                logDecoderException((DecoderException) t, connection);
                 return;
             }
-            LOGGER.debug("Unexpected error received while processing connection, {}",
-                    "no more requests will be received on this connection.", t);
+            LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
+                    HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
         }
 
-        private static void logDecoderException(final DecoderException e) {
-            LOGGER.warn("Can not decode HTTP message, no more requests will be received on this connection.", e);
+        private static void logDecoderException(final DecoderException e,
+                                                final NettyConnection<Object, Object> connection) {
+            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}.", connection,
+                    connection.protocol(), HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", e);
         }
     }
 }
