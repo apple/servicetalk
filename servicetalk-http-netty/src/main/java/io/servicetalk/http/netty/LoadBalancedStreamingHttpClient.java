@@ -76,7 +76,6 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                 final Consumer<ConnectionInfo> onConnectionSelected = AsyncContext.get(ON_CONNECTION_SELECTED_CONSUMER);
                 if (onConnectionSelected != null) {
                     onConnectionSelected.accept(c.connectionContext());
-                    AsyncContext.remove(ON_CONNECTION_SELECTED_CONSUMER);
                 }
                 final OwnedRunnable ownedRunnable = c.connectionContext().protocol().major() <= 1 ? null :
                         new OwnedRunnable(c::requestFinished);
