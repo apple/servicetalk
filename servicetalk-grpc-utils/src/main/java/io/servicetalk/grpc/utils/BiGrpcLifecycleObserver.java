@@ -231,9 +231,6 @@ final class BiGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onResponseCancel() {
-            if (Thread.currentThread().getName().startsWith("server-")) {
-                Thread.dumpStack();
-            }
             try {
                 first.onResponseCancel();
             } finally {
