@@ -209,8 +209,7 @@ class GrpcLifecycleObserverTest {
                                         GrpcRequestObserver request, GrpcResponseObserver response,
                                         InOrder inOrder, InOrder requestInOrder) {
         if (!client && !aggregated) {
-
-            System.out.println(Mockito.mockingDetails(response).printInvocations());
+            System.err.println(Mockito.mockingDetails(response).printInvocations());
         }
         inOrder.verify(lifecycle).onNewExchange();
         if (client) {
