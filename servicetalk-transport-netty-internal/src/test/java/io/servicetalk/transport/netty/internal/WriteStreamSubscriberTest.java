@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
+import io.netty.channel.Channel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class WriteStreamSubscriberTest extends AbstractWriteTest {
@@ -188,6 +190,25 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyNoInteractions(closeHandler);
+    }
+
+    @Test
+    void channelClosedDoesNotCancelAfterOutboundEnd() throws Exception {
+        WriteInfo info = writeAndFlush("Hello");
+        subscriber.channelOutboundClosed();
+
+        verifyListenerSuccessful();
+        verifyWriteSuccessful("Hello");
+        verifyWrite(info);
+
+        channel.finishAndReleaseAll();
+        subscriber.channelClosed(DELIBERATE_EXCEPTION); // simulate channelInactive event from DefaultNettyConnection
+        verify(closeHandler).closeChannelOutbound(any(Channel.class));
+
+        subscriber.onComplete();    // signal completion after "channelInactive"
+        verify(subscription, never()).cancel();
+        verifyNoMoreInteractions(closeHandler);
+        assertChannelClose();
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
