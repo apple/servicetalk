@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 import io.servicetalk.transport.api.ServerSslConfig;
 
@@ -24,10 +25,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 final class HttpServerConfig {
 
     private final TcpServerConfig tcpConfig;
     private final HttpConfig httpConfig;
+    @Nullable
+    private HttpLifecycleObserver lifecycleObserver;
 
     HttpServerConfig() {
         tcpConfig = new TcpServerConfig();
@@ -40,6 +45,16 @@ final class HttpServerConfig {
 
     HttpConfig httpConfig() {
         return httpConfig;
+    }
+
+    @Nullable
+    HttpLifecycleObserver lifecycleObserver() {
+        return lifecycleObserver;
+    }
+
+    HttpServerConfig lifecycleObserver(final HttpLifecycleObserver observer) {
+        this.lifecycleObserver = requireNonNull(observer);
+        return this;
     }
 
     ReadOnlyHttpServerConfig asReadOnly() {
