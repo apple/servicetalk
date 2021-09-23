@@ -19,6 +19,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
@@ -78,11 +81,20 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * the server could not be started.
      */
     public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
-        if (filterFactory == null) {
-            return routes.bind(binder, executionContext);
+        if (filterFactory != null) {
+            applyFilterToRoutes(filterFactory);
         }
-        applyFilterToRoutes(filterFactory);
-        return routes.bind(binder, executionContext);
+
+        GrpcExecutionContext useContext = executionContext instanceof GrpcExecutionContext ?
+                (GrpcExecutionContext) executionContext :
+                new DefaultGrpcExecutionContext(executionContext instanceof HttpExecutionContext ?
+                        (HttpExecutionContext) executionContext :
+                        new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
+                                executionContext.ioExecutor(),
+                                executionContext.executor(),
+                                HttpExecutionStrategies.defaultStrategy()));
+
+        return routes.bind(binder, useContext);
     }
 
     /**

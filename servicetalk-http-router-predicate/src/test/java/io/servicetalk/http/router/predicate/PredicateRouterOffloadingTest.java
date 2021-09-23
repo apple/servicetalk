@@ -153,7 +153,7 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        assertRouteOffloadedAndNotPredicate(EXECUTOR_NAME_PREFIX);
+        assertRouteAndPredicateNotOffloaded();
     }
 
     @ParameterizedTest
@@ -168,7 +168,7 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        assertRouteOffloadedAndNotPredicate(GLOBAL_EXECUTOR_NAME_PREFIX);
+        assertRouteAndPredicateNotOffloaded();
     }
 
     @ParameterizedTest

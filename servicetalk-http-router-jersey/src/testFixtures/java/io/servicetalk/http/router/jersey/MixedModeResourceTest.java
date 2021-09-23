@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -69,6 +70,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
+                .executionStrategy(defaultStrategy())
                 .thenRouteTo(router)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
@@ -84,6 +86,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
+                .executionStrategy(defaultStrategy())
                 .thenRouteTo(router)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
@@ -99,6 +102,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
+                .executionStrategy(defaultStrategy())
                 .thenRouteTo(router)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
@@ -114,6 +118,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
+                .executionStrategy(defaultStrategy())
                 .thenRouteTo(router)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())

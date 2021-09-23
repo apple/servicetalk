@@ -31,11 +31,11 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 /**
- * An {@link StreamingHttpService} implementation which routes requests to a number of other
+ * A {@link StreamingHttpService} implementation which routes requests to a number of other
  * {@link StreamingHttpService}s based on predicates.
  * <p>
  * The predicates from the specified {@link Route}s are evaluated in order, and the service from the
@@ -58,7 +58,7 @@ final class InOrderRouter implements StreamingHttpService {
         this.routes = routes.toArray(new Route[0]);
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
-                .mergeAll(routes.stream().map(Route::service).collect(toList()));
+                .mergeAll(routes.stream().map(Route::service).toArray(StreamingHttpService[]::new));
     }
 
     @Override
@@ -69,10 +69,13 @@ final class InOrderRouter implements StreamingHttpService {
             if (pair.predicate().test(ctx, request)) {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
-                if (strategy != null) {
+                if (strategy != null && // extra offloading
+                        strategy != noOffloadsStrategy() && // ineffective
+                        noOffloadsStrategy() != ctx.executionContext().executionStrategy()) {
+                    HttpExecutionStrategy offloadStrategy = ctx.executionContext().executionStrategy().merge(strategy);
                     Executor executor = ctx.executionContext().executor();
-                    service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(strategy,
-                            executor, IoThreadFactory.IoThread::currentThreadIsIoThread, service);
+                    service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
+                            offloadStrategy, executor, IoThreadFactory.IoThread::currentThreadIsIoThread, service);
                 }
                 return service.handle(ctx, request, factory);
             }

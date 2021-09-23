@@ -34,7 +34,8 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * The default {@link HttpExecutionStrategy}.
+     * The default {@link HttpExecutionStrategy} that when merged with other strategies defers to those strategies.
+     * The intention of this strategy is to provide a safe default if no strategy is specified.
      *
      * @return Default {@link HttpExecutionStrategy}.
      */

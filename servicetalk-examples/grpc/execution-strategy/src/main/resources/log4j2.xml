@@ -15,22 +15,20 @@
   ~ limitations under the License.
   -->
 <Configuration status="info">
-  <Properties>
-    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-DEBUG}</Property>
-    <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
-    <Property name="h2FrameLogLevel">${sys:servicetalk.logger.h2FrameLogLevel:-OFF}</Property>
-    <Property name="lifecycleObserverLogLevel">${sys:servicetalk.logger.lifecycleObserverLogLevel:-OFF}</Property>
-  </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d %30t [%-5level] %-30logger{1} - %msg%n"/>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="servicetalk-tests-wire-logger" level="${wireLogLevel}"/>
-    <Logger name="servicetalk-tests-h2-frame-logger" level="${h2FrameLogLevel}"/>
-    <Logger name="servicetalk-tests-lifecycle-observer-logger" level="${lifecycleObserverLogLevel}"/>
-    <Root level="${rootLevel}">
+    <!-- Prints server start and shutdown -->
+    <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
+
+    <!-- Prints default subscriber errors-->
+    <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
+
+    <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
+    <Root level="${sys:servicetalk.logger.level:-INFO}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>

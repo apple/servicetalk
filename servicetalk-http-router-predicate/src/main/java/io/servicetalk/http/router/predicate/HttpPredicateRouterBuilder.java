@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -53,7 +54,7 @@ import static io.servicetalk.http.router.predicate.Predicates.regex;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
+ * Builds a {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
  * on user specified criteria.
  * <p>
  * eg.
@@ -66,6 +67,8 @@ import static java.util.Objects.requireNonNull;
  * }</pre>
  * <p>
  * If no routes match, a default service is used, which returns a 404 response.
+ *
+ * @see InOrderRouter
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
     private final List<Route> routes = new ArrayList<>();
@@ -249,7 +252,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteContinuation executionStrategy(final HttpExecutionStrategy routeStrategy) {
-            strategy = routeStrategy;
+            strategy = Objects.requireNonNull(routeStrategy);
             return this;
         }
 
