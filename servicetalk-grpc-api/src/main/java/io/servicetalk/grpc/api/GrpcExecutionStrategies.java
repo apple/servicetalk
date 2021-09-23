@@ -23,8 +23,41 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
  */
 public final class GrpcExecutionStrategies {
 
-    private static final DefaultGrpcExecutionStrategy NO_OFFLOADS =
-            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY = new GrpcExecutionStrategy() {
+
+        @Override
+        public String toString() {
+            return "NEVER_OFFLOAD_STRATEGY";
+        }
+
+        @Override
+        public boolean hasOffloads() {
+            return false;
+        }
+
+        @Override
+        public boolean isMetadataReceiveOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isDataReceiveOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isSendOffloaded() {
+            return false;
+        }
+
+        @Override
+        public GrpcExecutionStrategy merge(final HttpExecutionStrategy other) {
+            return this;
+        }
+    };
+
+    static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
 
     private GrpcExecutionStrategies() {
         // No instances
@@ -36,7 +69,7 @@ public final class GrpcExecutionStrategies {
      * @return Default {@link GrpcExecutionStrategy}.
      */
     public static GrpcExecutionStrategy defaultStrategy() {
-        return Builder.DEFAULT;
+        return DEFAULT_GRPC_EXECUTION_STRATEGY;
     }
 
     /**
@@ -45,7 +78,7 @@ public final class GrpcExecutionStrategies {
      * @return {@link GrpcExecutionStrategy} that disables all offloads.
      */
     public static GrpcExecutionStrategy noOffloadsStrategy() {
-        return NO_OFFLOADS;
+        return NEVER_OFFLOAD_STRATEGY;
     }
 
     /**
@@ -61,9 +94,6 @@ public final class GrpcExecutionStrategies {
      * A builder to build an {@link HttpExecutionStrategy}.
      */
     public static final class Builder {
-
-        static final GrpcExecutionStrategy DEFAULT =
-                new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
 
         private final HttpExecutionStrategies.Builder httpBuilder = HttpExecutionStrategies.customStrategyBuilder();
 

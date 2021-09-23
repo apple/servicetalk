@@ -302,7 +302,11 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    },
+                            strategy -> {
+                                return executionContext.executionStrategy().merge(executionStrategy == null ? strategy : executionStrategy);
+                            }
+                    ),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -374,8 +378,8 @@ final class GrpcRouter {
 
                             @Override
                             public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionStrategy == null ?
-                                        executionContext.executionStrategy() : executionStrategy;
+                                return executionContext.executionStrategy().merge(executionStrategy == null ?
+                                        executionContext.executionStrategy() : executionStrategy);
                             }
                         };
                     }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
@@ -505,7 +509,8 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, strategy -> executionContext.executionStrategy().merge(
+                            executionStrategy == null ? strategy : executionStrategy)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -575,7 +580,8 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, strategy -> executionContext.executionStrategy().merge(
+                            executionStrategy == null ? strategy : executionStrategy)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between

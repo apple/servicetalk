@@ -18,7 +18,6 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -30,9 +29,7 @@ final class DefaultGrpcExecutionContext implements GrpcExecutionContext {
 
     DefaultGrpcExecutionContext(HttpExecutionContext httpExecutionContext) {
         delegate = requireNonNull(httpExecutionContext);
-        HttpExecutionStrategy httpExecutionStrategy = httpExecutionContext.executionStrategy();
-        strategy = httpExecutionStrategy instanceof GrpcExecutionStrategy ?
-                (GrpcExecutionStrategy) httpExecutionStrategy : new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
+        strategy = GrpcExecutionStrategy.from(httpExecutionContext.executionStrategy());
     }
 
     @Override

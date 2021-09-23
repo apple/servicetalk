@@ -44,7 +44,7 @@ public final class ExecutionStrategyClient {
             }
         }
     }
-    public static void main(String... args) throws Exception {
-        IntStream.rangeClosed(8080,8085).forEach(ExecutionStrategyClient::sayHello);
+    public static void main(String... args) {
+        IntStream.rangeClosed(8080,8087).forEach(ExecutionStrategyClient::sayHello);
     }
 }

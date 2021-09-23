@@ -20,7 +20,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 /**
  * An extension of {@link ExecutionContext} for HTTP.
  */
-public interface HttpExecutionContext extends ExecutionContext {
+public interface HttpExecutionContext extends ExecutionContext<HttpExecutionStrategy> {
 
     /**
      * Returns the {@link HttpExecutionStrategy} associated with this context.

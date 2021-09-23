@@ -30,6 +30,7 @@ import io.grpc.examples.strategies.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 
 /**
@@ -45,16 +46,30 @@ public class ExecutionStrategyServer {
 
         int port = 8080;
 
-        // No offloads server
+        // default config
         ServerContext vanillaServer = GrpcServers.forPort(port)
                 .listenAndAwait((Greeter.GreeterService) (ctx, request) -> getReply(request, "vanilla"));
         allServicesOnClose.merge(vanillaServer.onClose());
 
+        // block config
+        ServerContext blockingServer = GrpcServers.forPort(++port)
+                .executionStrategy(noOffloadsStrategy())
+                .listenAndAwait((Greeter.BlockingGreeterService) (ctx, request) -> getReply(request, "server blocking").toFuture().get());
+        allServicesOnClose.merge(blockingServer.onClose());
+
         // No offloads server
         ServerContext noOffloadsServer = GrpcServers.forPort(++port)
                 .executionStrategy(noOffloadsStrategy())
-                .listenAndAwait((Greeter.GreeterService) (ctx, request) -> getReply(request, "server"));
+                .listenAndAwait((Greeter.GreeterService) (ctx, request) -> getReply(request, "server async"));
         allServicesOnClose.merge(noOffloadsServer.onClose());
+
+        // No offloads server but route offloads
+        Greeter.ServiceFactory.Builder builder = new Greeter.ServiceFactory.Builder()
+                .sayHello(defaultStrategy(), (ctx, request) -> getReply(request, "server, route offloads"));
+        ServerContext noOffloadsServerRouteOffloads = GrpcServers.forPort(++port)
+                .executionStrategy(noOffloadsStrategy())
+                .listenAndAwait(builder.build());
+        allServicesOnClose.merge(noOffloadsServerRouteOffloads.onClose());
 
         // Custom executor
         ServerContext customExecutorServer = GrpcServers.forPort(++port)
@@ -64,7 +79,7 @@ public class ExecutionStrategyServer {
         allServicesOnClose.merge(customExecutorServer.onClose());
 
         // No offloads route
-        Greeter.ServiceFactory.Builder builder = new Greeter.ServiceFactory.Builder()
+        builder = new Greeter.ServiceFactory.Builder()
                 .sayHello(noOffloadsStrategy(),
                         (ctx, request) -> getReply(request, "route"));
         ServerContext noOffloadsRoute = GrpcServers.forPort(++port)

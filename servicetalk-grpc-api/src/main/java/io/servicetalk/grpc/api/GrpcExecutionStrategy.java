@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
 /**
@@ -30,6 +31,12 @@ public interface GrpcExecutionStrategy extends HttpExecutionStrategy {
      * @return New {@link GrpcExecutionStrategy} using the passed {@link HttpExecutionStrategy}.
      */
     static GrpcExecutionStrategy from(HttpExecutionStrategy httpExecutionStrategy) {
-        return new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
+        return httpExecutionStrategy instanceof GrpcExecutionStrategy ?
+                (GrpcExecutionStrategy) httpExecutionStrategy :
+                HttpExecutionStrategies.noOffloadsStrategy().equals(httpExecutionStrategy) ?
+                        GrpcExecutionStrategies.noOffloadsStrategy() :
+                        HttpExecutionStrategies.defaultStrategy().equals(httpExecutionStrategy) ?
+                                GrpcExecutionStrategies.defaultStrategy() :
+                                new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
     }
 }

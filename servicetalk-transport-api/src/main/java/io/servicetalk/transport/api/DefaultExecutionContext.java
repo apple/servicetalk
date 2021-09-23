@@ -23,12 +23,12 @@ import static java.util.Objects.requireNonNull;
 /**
  * A default implementation of {@link ExecutionContext}.
  */
-public final class DefaultExecutionContext implements ExecutionContext {
+public final class DefaultExecutionContext<ES extends ExecutionStrategy> implements ExecutionContext<ES> {
 
     private final BufferAllocator bufferAllocator;
     private final IoExecutor ioExecutor;
     private final Executor executor;
-    private final ExecutionStrategy executionStrategy;
+    private final ES executionStrategy;
 
     /**
      * Create a new instance.
@@ -41,7 +41,7 @@ public final class DefaultExecutionContext implements ExecutionContext {
     public DefaultExecutionContext(final BufferAllocator bufferAllocator,
                                    final IoExecutor ioExecutor,
                                    final Executor executor,
-                                   final ExecutionStrategy executionStrategy) {
+                                   final ES executionStrategy) {
         this.bufferAllocator = requireNonNull(bufferAllocator);
         this.ioExecutor = requireNonNull(ioExecutor);
         this.executor = requireNonNull(executor);
@@ -64,7 +64,7 @@ public final class DefaultExecutionContext implements ExecutionContext {
     }
 
     @Override
-    public ExecutionStrategy executionStrategy() {
+    public ES executionStrategy() {
         return executionStrategy;
     }
 
