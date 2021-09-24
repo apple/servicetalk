@@ -79,7 +79,7 @@ class FlushStrategyOverrideTest {
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
-                .disableHostHeaderFallback()
+                .hostHeaderFallback(false)
                 .ioExecutor(ctx.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())
                 .unresolvedAddressToHost(InetSocketAddress::getHostString)
