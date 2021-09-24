@@ -70,6 +70,7 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
         private HttpResponseMetaData responseMetaData;
         private long responseSize;
         private int responseTrailersCount;
+        private long responseTimeMs;
         @Nullable
         private Object responseResult;
 
@@ -140,18 +141,21 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
         public void onResponseComplete() {
             assert responseResult == null;
             assert responseMetaData != null;
+            responseTimeMs = durationMs(startTime);
             responseResult = Result.complete;
         }
 
         @Override
         public void onResponseError(final Throwable cause) {
             assert responseResult == null;
+            responseTimeMs = durationMs(startTime);
             responseResult = cause;
         }
 
         @Override
         public void onResponseCancel() {
             assert responseResult == null;
+            responseTimeMs = durationMs(startTime);
             responseResult = Result.cancelled;
         }
 
@@ -166,32 +170,37 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
                 // It's possible that request can be cancelled before transport subscribed to its payload body
                 requestResult = Result.cancelled;
             }
+            assert responseResult != null;
             if (responseMetaData != null) {
                 logger.log("connection={} " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} responseResult={} " +
-                "duration={}ms",
+                "responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
                 requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
                 responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                    responseTrailersCount, unwrapResult(responseResult),
-                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                combine(responseResult, requestResult));
             } else {
                 logger.log("connection={} " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseResult={} duration={}ms",
+                "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
                 requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
-                unwrapResult(responseResult),
-                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                combine(responseResult, requestResult));
             }
         }
 
         @Nullable
         private static Object unwrapResult(@Nullable Object result) {
             return result instanceof Throwable ? Result.error : result;
+        }
+
+        private static long durationMs(final long startTime) {
+            return NANOSECONDS.toMillis(nanoTime() - startTime);
         }
 
         private enum Result {
