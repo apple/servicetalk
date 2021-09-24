@@ -153,7 +153,7 @@ public abstract class GrpcServerBuilder {
 
     /**
      * Enable wire-logging for this server.
-     * <p>
+     *
      * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
