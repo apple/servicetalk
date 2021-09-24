@@ -304,7 +304,8 @@ final class GrpcRouter {
                         }
                     },
                             strategy -> {
-                                return executionContext.executionStrategy().merge(executionStrategy == null ? strategy : executionStrategy);
+                                return executionContext.executionStrategy().merge(
+                                        executionStrategy == null ? strategy : executionStrategy);
                             }
                     ),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),

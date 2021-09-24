@@ -22,6 +22,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A default implementation of {@link ExecutionContext}.
+ *
+ * @param <ES> The specific type of {@link ExecutionStrategy} used by this context
  */
 public final class DefaultExecutionContext<ES extends ExecutionStrategy> implements ExecutionContext<ES> {
 

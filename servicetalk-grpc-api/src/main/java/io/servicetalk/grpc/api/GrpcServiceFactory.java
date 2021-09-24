@@ -94,7 +94,8 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
                                 executionContext.ioExecutor(),
                                 executionContext.executor(),
                                 executionContext.executionStrategy() instanceof HttpExecutionStrategy ?
-                                        GrpcExecutionStrategy.from((HttpExecutionStrategy) executionContext.executionStrategy()) :
+                                        GrpcExecutionStrategy.from(
+                                                (HttpExecutionStrategy) executionContext.executionStrategy()) :
                                         HttpExecutionStrategies.defaultStrategy()
                         )
                 );

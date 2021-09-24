@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Executor;
 
 /**
  * Context related to execution and allocation.
+ *
+ * @param <ES> The specific type of {@link ExecutionStrategy} used by this context
  */
 public interface ExecutionContext<ES extends ExecutionStrategy> {
     /**
