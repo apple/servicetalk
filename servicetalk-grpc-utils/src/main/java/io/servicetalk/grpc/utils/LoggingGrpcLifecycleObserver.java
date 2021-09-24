@@ -74,6 +74,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
         private int responseTrailersCount;
         @Nullable
         private GrpcStatusCode grpcStatus;
+        private long responseTimeMs;
         @Nullable
         private Object responseResult;
 
@@ -150,18 +151,21 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
         public void onResponseComplete() {
             assert responseResult == null;
             assert responseMetaData != null;
+            responseTimeMs = durationMs(startTime);
             responseResult = Result.complete;
         }
 
         @Override
         public void onResponseError(final Throwable cause) {
             assert responseResult == null;
+            responseTimeMs = durationMs(startTime);
             responseResult = cause;
         }
 
         @Override
         public void onResponseCancel() {
             assert responseResult == null;
+            responseTimeMs = durationMs(startTime);
             responseResult = Result.cancelled;
         }
 
@@ -180,28 +184,32 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 logger.log("connection={} " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} grpcStatus={} " +
-                "responseResult={} duration={}ms",
+                "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
                 requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
                 responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                    responseTrailersCount, grpcStatus, unwrapResult(responseResult),
-                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                combine(responseResult, requestResult));
             } else {
                 logger.log("connection={} " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseResult={} duration={}ms",
+                "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
                 requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
-                unwrapResult(responseResult),
-                NANOSECONDS.toMillis(nanoTime() - startTime), combine(responseResult, requestResult));
+                unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                combine(responseResult, requestResult));
             }
         }
 
         @Nullable
         private static Object unwrapResult(@Nullable Object result) {
             return result instanceof Throwable ? Result.error : result;
+        }
+
+        private static long durationMs(final long startTime) {
+            return NANOSECONDS.toMillis(nanoTime() - startTime);
         }
 
         private enum Result {
