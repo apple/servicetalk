@@ -50,7 +50,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * in a future release the other deprecated {@link #newLoadBalancer(Publisher, ConnectionFactory) method}
      * will be removed and this method will become the functional interface.
      * @param targetResource A {@link String} representation of the target resource for which the created instance
-     * will perform load balancing. Bear in mind load balancing is performed over the a collection of hosts provided
+     * will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
      * via the {@code eventPublisher} which may not correspond directly to a single unresolved address, but potentially
      * a merged collection.
      * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
