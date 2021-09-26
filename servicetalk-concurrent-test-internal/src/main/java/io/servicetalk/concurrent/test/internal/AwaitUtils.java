@@ -84,9 +84,8 @@ public final class AwaitUtils {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throwException(e);
+            return false;
         }
-
-        return false;
     }
 
     /**
