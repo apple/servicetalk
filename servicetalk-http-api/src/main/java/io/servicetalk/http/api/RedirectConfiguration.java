@@ -17,19 +17,25 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import java.util.function.BiPredicate;
-
 /**
  * Configuration options for <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
  */
 public interface RedirectConfiguration {
     /**
-     * Sets the maximum number of follow up redirects.
+     * Sets the maximum number of redirects to follow.
      *
-     * @param maxRedirects The maximum number of follow up redirects
+     * @param maxRedirects The maximum number of redirects to follow
      * @return {@code this}
      */
     RedirectConfiguration maxRedirects(int maxRedirects);
+
+    /**
+     * Sets {@link HttpRequestMethod}s that are allowed to follow redirects.
+     *
+     * @param methods {@link HttpRequestMethod}s that are allowed to follow redirects
+     * @return {@code this}
+     */
+    RedirectConfiguration allowedMethods(HttpRequestMethod... methods);
 
     /**
      * Allows non-relative redirects. Non-relative redirects are redirects to either a different target host/port or a
@@ -39,7 +45,7 @@ public interface RedirectConfiguration {
      * <ol>
      *     <li>This option has effect only when redirections is performed by a client that is capable to communicate
      *     with multiple target hosts or schemes, like the one which is produced by
-     *     {@link MultiAddressHttpClientBuilder}. If a client is limited to only one target host/port/scheme, it may
+     *     {@link MultiAddressHttpClientBuilder}. If a client is limited to only one target host/port/scheme, it will
      *     follow only relative redirects.</li>
      *     <li>For security reasons, redirection should not automatically copy headers nor message body of the original
      *     request for non-relative locations. Use {@link #headersToRedirect(CharSequence...)},
@@ -60,25 +66,16 @@ public interface RedirectConfiguration {
     RedirectConfiguration allowNonRelativeRedirects(boolean allowNonRelativeRedirects);
 
     /**
-     * Sets {@link HttpRequestMethod}s that are allowed to follow redirects.
+     * Defines an additional check to decide if the redirect should be performed or not based on the given context.
      *
-     * @param methods {@link HttpRequestMethod}s that are allowed to follow redirects
+     * @param shouldRedirect {@link ShouldRedirectPredicate} to decide if the request should follow redirect or not
+     * based on the given context
      * @return {@code this}
+     * @see #maxRedirects(int)
+     * @see #allowedMethods(HttpRequestMethod...)
+     * @see #allowNonRelativeRedirects(boolean)
      */
-    RedirectConfiguration allowedMethods(HttpRequestMethod... methods);
-
-    /**
-     * Defines an additional check to decide if the redirect should be performed or not.
-     * <p>
-     * This predicate runs as the last check, after validation of the {@link HttpResponseStatus},
-     * {@link #maxRedirects(int)}, {@link #allowedMethods(HttpRequestMethod...)}, and
-     * {@link HttpHeaderNames#LOCATION Location} header.
-     *
-     * @param shouldRedirect {@link BiPredicate} to decide if the request should follow redirect or not given the
-     * original request and received response meta-data
-     * @return {@code this}
-     */
-    RedirectConfiguration shouldRedirect(BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect);
+    RedirectConfiguration shouldRedirect(ShouldRedirectPredicate shouldRedirect);
 
     /**
      * Enforces change from {@link HttpRequestMethod#POST POST} to {@link HttpRequestMethod#GET GET} for subsequent
@@ -166,8 +163,31 @@ public interface RedirectConfiguration {
     RedirectConfiguration prepareRequest(RedirectRequestTransformer requestTransformer);
 
     /**
+     * Predicate to make the final decision if redirect should be performed or not based on the given context.
+     * <p>
+     * Implementations should prefer running this predicate as the last check, after validation of the
+     * {@link HttpResponseStatus}, {@link #maxRedirects(int)}, {@link #allowedMethods(HttpRequestMethod...)}, presence
+     * of the {@link HttpHeaderNames#LOCATION Location} header, and {@link #allowNonRelativeRedirects(boolean)}.
+     */
+    @FunctionalInterface
+    interface ShouldRedirectPredicate {
+
+        /**
+         * Decides if a redirect should be performed or not based on the given context.
+         *
+         * @param relative if {@code true}, the redirect location was identified as relative to the previous request
+         * @param redirectCount sequential counter of already processed redirects (starts from {@code 0})
+         * @param previousRequest previous request that was redirected
+         * @param redirectResponse response to redirect
+         * @return {@code true} if the redirect should be processed based on the given context
+         */
+        boolean test(boolean relative, int redirectCount,
+                     HttpRequestMetaData previousRequest, HttpResponseMetaData redirectResponse);
+    }
+
+    /**
      * Provides access to the full context of the redirect to apply transformations for the pre-initialized redirect
-     * request. It can be used to add or remove headers/payload body/trailers.
+     * request. It can be used to add/remove headers, payload body, or trailers.
      */
     @FunctionalInterface
     interface RedirectRequestTransformer {
@@ -175,7 +195,7 @@ public interface RedirectConfiguration {
         /**
          * Applies transformations for the pre-initialized redirect request.
          *
-         * @param relative if {@code true}, the redirect location was identified as a relative to the previous request
+         * @param relative if {@code true}, the redirect location was identified as relative to the previous request
          * @param previousRequest previous request that was redirected
          * @param redirectResponse response to redirect
          * @param redirectRequest pre-initialized request to follow the redirect

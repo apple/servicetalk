@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.RedirectConfiguration.RedirectRequestTransformer;
+import io.servicetalk.http.api.RedirectConfiguration.ShouldRedirectPredicate;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -42,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
@@ -146,71 +146,73 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 return;
             }
 
-            final boolean shouldRedirect;
+            boolean terminalDelivered = false;
             try {
-                shouldRedirect = shouldRedirect(redirectCount + 1, request, response);
-            } catch (final Throwable cause) {
-                target.onError(cause);
-                return;
-            }
-            if (!shouldRedirect) {
-                target.onSuccess(response);
-                return;
-            }
-
-            final StreamingHttpRequest newRequest;
-            try {
-                newRequest = prepareRedirectRequest(request, response, redirectSingle.requester);
-            } catch (final Throwable cause) {
-                target.onError(cause);
-                return;
-            }
-            if (newRequest == null) {
-                target.onSuccess(response);
-                return;
-            }
-
-            final String newScheme = newRequest.scheme();
-            final boolean relative = isRelative(request, scheme, newRequest);
-            if (relative) {
-                if (redirectSingle.allowNonRelativeRedirects && newScheme == null && scheme != null) {
-                    // Rewrite origin-form location to absolute-form request-target for multi-address client:
-                    newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
-                            newRequest.requestTarget());
+                if (!shouldRedirect(redirectCount, request.method(), response)) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
                 }
-                if (!redirectSingle.allowNonRelativeRedirects && newScheme != null) {
-                    // Rewrite absolute-form location to origin-form request-target in case only relative redirects
-                    // are supported:
-                    newRequest.requestTarget(
-                            absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
+
+                final StreamingHttpRequest newRequest = prepareRedirectRequest(request, response,
+                        redirectSingle.requester);
+                if (newRequest == null) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
                 }
-                copyAll(request, newRequest);
-            } else if (redirectSingle.allowNonRelativeRedirects) {
-                copySome(request, newRequest);
-            } else {
-                LOGGER.debug(
+
+                final String newScheme = newRequest.scheme();
+                final boolean relative = isRelative(request, scheme, newRequest);
+                if (!relative && !redirectSingle.allowNonRelativeRedirects) {
+                    LOGGER.debug(
                         "Ignoring non-relative redirect to '{}' for request '{}': Only relative redirects are allowed",
                         newRequest.requestTarget(), request);
-                target.onSuccess(response);
-                return;
-            }
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
+                }
 
-            try {
+                if (!redirectSingle.config.shouldRedirect.test(relative, redirectCount, request, response)) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
+                }
+
+                if (relative) {
+                    if (redirectSingle.allowNonRelativeRedirects && newScheme == null && scheme != null) {
+                        // Rewrite origin-form location to absolute-form request-target for multi-address client:
+                        newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
+                                newRequest.requestTarget());
+                    }
+                    if (!redirectSingle.allowNonRelativeRedirects && newScheme != null) {
+                        // Rewrite absolute-form location to origin-form request-target in case only relative redirects
+                        // are supported:
+                        newRequest.requestTarget(
+                                absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
+                    }
+                    copyAll(request, newRequest);
+                } else {
+                    copySome(request, newRequest);
+                }
+
                 redirectSingle.config.requestTransformer.apply(relative, request, response, newRequest);
-            } catch (final Throwable cause) {
-                target.onError(cause);
-                return;
-            }
 
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("Execute redirect to '{}' for request '{}'", response.headers().get(LOCATION), request);
-            }
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Executing redirect to '{}' for request '{}'", response.headers().get(LOCATION),
+                            request);
+                }
 
-            // Consume any payload of the redirect response
-            toSource(response.messageBody().ignoreElements().concat(
-                    redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
-                        .subscribe(new RedirectSubscriber(
-                            target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
+                terminalDelivered = true;   // Mark as "delivered" because we do not own `target` from this point
+                toSource(response.messageBody().ignoreElements()    // Consume any payload of the redirect response
+                        .concat(redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
+                        .subscribe(new RedirectSubscriber(target, redirectSingle, newRequest, redirectCount + 1,
+                                sequentialCancellable));
+            } catch (Throwable cause) {
+                if (!terminalDelivered) {
+                    target.onError(cause);
+                }
+            }
         }
 
         // This code is similar to
@@ -228,7 +230,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             target.onError(t);
         }
 
-        private boolean shouldRedirect(final int redirectCount, final HttpRequestMetaData requestMetaData,
+        private boolean shouldRedirect(final int redirectCount, final HttpRequestMethod requestMethod,
                                        final HttpResponseMetaData responseMetaData) {
             final int statusCode = responseMetaData.status().code();
 
@@ -252,14 +254,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return false;
                 default:
                     final Config config = redirectSingle.config;
-                    if (redirectCount > config.maxRedirects) {
+                    if (redirectCount >= config.maxRedirects) {
                         LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
                                 config.maxRedirects, redirectSingle.originalRequest);
                         return false;
                     }
 
-                    if (binarySearch(config.allowedMethods, requestMetaData.method().name()) < 0) {
-                        LOGGER.debug("Configuration does not allow redirect of method: {}", requestMetaData.method());
+                    if (binarySearch(config.allowedMethods, requestMethod.name()) < 0) {
+                        LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
                         return false;
                     }
 
@@ -269,8 +271,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         return false;
                     }
 
-                    // Final decision is made by a user's predicate:
-                    return config.shouldRedirect.test(requestMetaData, responseMetaData);
+                    return true;
             }
         }
 
@@ -401,15 +402,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
     static final class Config {
         final int maxRedirects;
         final String[] allowedMethods;
-        final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect;
+        final ShouldRedirectPredicate shouldRedirect;
         final boolean changePostToGet;
         final CharSequence[] headersToRedirect;
         final boolean redirectPayloadBody;
         final CharSequence[] trailersToRedirect;
         final RedirectRequestTransformer requestTransformer;
 
-        Config(final int maxRedirects, final String[] allowedMethods,
-               final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect,
+        Config(final int maxRedirects, final String[] allowedMethods, final ShouldRedirectPredicate shouldRedirect,
                final boolean changePostToGet, final CharSequence[] headersToRedirect,
                final boolean redirectPayloadBody, final CharSequence[] trailersToRedirect,
                final RedirectRequestTransformer requestTransformer) {

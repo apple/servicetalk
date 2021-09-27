@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatus.StatusClass;
 import io.servicetalk.http.api.RedirectConfiguration;
+import io.servicetalk.http.api.RedirectConfiguration.ShouldRedirectPredicate;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -42,7 +43,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectSingle.Config;
 
 import java.util.Arrays;
-import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -76,11 +76,11 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
     private static final HttpRequestMethod[] DEFAULT_ALLOWED_METHODS = {GET, HEAD};
-    private static final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> DEFAULT_SHOULD_REDIRECT =
-            (req, resp) -> true;
+    private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
+            (relative, redirectCnt, previousRequest, redirectResponse) -> true;
     private static final CharSequence[] EMPTY_CHAR_SEQUENCE_ARRAY = {};
     private static final RedirectConfiguration.RedirectRequestTransformer DEFAULT_REQUEST_TRANSFORMER =
-            (isRelative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
+            (relative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
 
     private final boolean allowNonRelativeRedirects;
     private final Config config;
@@ -128,7 +128,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final int maxRedirects) {
         this(!onlyRelativeClient, new Config(maxRedirects, toSortedNames(DEFAULT_ALLOWED_METHODS),
-                DEFAULT_SHOULD_REDIRECT,
+                DEFAULT_SHOULD_REDIRECT_PREDICATE,
                 /* changePostToGet */ true,  // use "true" for backward compatibility
                 /* headersToRedirect */ EMPTY_CHAR_SEQUENCE_ARRAY,
                 /* redirectPayloadBody */ false,
@@ -242,7 +242,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         private int maxRedirects = DEFAULT_MAX_REDIRECTS;
         private boolean allowNonRelativeRedirects;
         private HttpRequestMethod[] allowedMethods = DEFAULT_ALLOWED_METHODS;
-        private BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect = DEFAULT_SHOULD_REDIRECT;
+        private ShouldRedirectPredicate shouldRedirect = DEFAULT_SHOULD_REDIRECT_PREDICATE;
         private boolean changePostToGet;
         @Nullable
         private CharSequence[] headersToRedirect;
@@ -273,7 +273,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         }
 
         @Override
-        public Builder shouldRedirect(final BiPredicate<HttpRequestMetaData, HttpResponseMetaData> shouldRedirect) {
+        public Builder shouldRedirect(final ShouldRedirectPredicate shouldRedirect) {
             this.shouldRedirect = requireNonNull(shouldRedirect);
             return this;
         }

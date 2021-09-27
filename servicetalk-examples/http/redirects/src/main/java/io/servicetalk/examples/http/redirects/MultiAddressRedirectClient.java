@@ -55,10 +55,10 @@ public final class MultiAddressRedirectClient {
                         // by default, POST requests don't follow redirects:
                         .allowedMethods(GET, POST)
                         // apply additional restrictions which redirects to follow:
-                        .shouldRedirect((request, response) -> {
-                            String location = response.headers().get(LOCATION).toString();
+                        .shouldRedirect((relative, redirectCount, prevRequest, redirectResponse) -> {
+                            String location = redirectResponse.headers().get(LOCATION).toString();
                             // allow only:
-                            return location.startsWith("/") // relative redirects
+                            return relative // relative redirects
                                     // OR non-relative redirects to a trusted server:
                                     || location.startsWith("https://localhost:" + SECURE_SERVER_PORT);
                         })
@@ -83,7 +83,7 @@ public final class MultiAddressRedirectClient {
                 .build()) {
 
             final String serverThatRedirects = "http://localhost:" + NON_SECURE_SERVER_PORT;
-            // Simple GET request:
+            System.out.println("- Simple GET request:");
             client.request(client.get(serverThatRedirects + "/relative"))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
@@ -95,7 +95,7 @@ public final class MultiAddressRedirectClient {
                     // but is useful for demonstration purposes.
                     .toFuture().get();
 
-            // Relative redirect for POST request with headers and payload body:
+            System.out.println("- Relative redirect for POST request with headers and payload body:");
             client.request(client.post(serverThatRedirects + "/relative")
                     .addHeader(CUSTOM_HEADER, "value")
                     .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content")))
@@ -109,7 +109,7 @@ public final class MultiAddressRedirectClient {
                     // but is useful for demonstration purposes.
                     .toFuture().get();
 
-            // Non-relative redirect for POST request with headers and payload body:
+            System.out.println("- Non-relative redirect for POST request with headers and payload body:");
             client.request(client.post(serverThatRedirects + "/non-relative")
                     .addHeader(CUSTOM_HEADER, "value")
                     .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content")))

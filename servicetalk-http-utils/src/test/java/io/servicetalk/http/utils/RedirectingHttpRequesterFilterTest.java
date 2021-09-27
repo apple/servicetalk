@@ -497,7 +497,7 @@ class RedirectingHttpRequesterFilterTest {
     @Test
     void shouldRedirectReturnsFalse() throws Exception {
         RedirectingHttpRequesterFilter.Builder builder = new RedirectingHttpRequesterFilter.Builder()
-                .shouldRedirect((req, resp) -> false);
+                .shouldRedirect((relative, cnt, req, resp) -> false);
         testNoRedirectWasDone(GET, MOVED_PERMANENTLY, builder);
     }
 
@@ -607,7 +607,7 @@ class RedirectingHttpRequesterFilterTest {
     void shouldRedirectThrows() {
         when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter.Builder()
-                .shouldRedirect((request, response) -> {
+                .shouldRedirect((relative, count, request, response) -> {
                     throw DELIBERATE_EXCEPTION;
                 }));
 
