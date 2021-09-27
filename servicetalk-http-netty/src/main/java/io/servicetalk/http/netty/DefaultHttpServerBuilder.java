@@ -24,14 +24,21 @@ import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
@@ -39,20 +46,30 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
@@ -231,6 +248,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
+        config.lifecycleObserver(lifecycleObserver);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
         config.httpConfig().allowDropTrailersReadFromTransport(allowDrop);
         return this;
@@ -280,35 +303,18 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
     }
 
-    /**
-     * Build the execution context for this builder.
-     *
-     * @param strategy The execution strategy to be used for the context
-     * @return the configured and built HTTP execution context.
-     */
     private HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return executionContextBuilder.build();
     }
 
-    /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
-     * <p>
-     * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
-     *
-     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
-     * @param context the {@link HttpExecutionContext} to use for the service.
-     * @param service {@link StreamingHttpService} to use for the server.
-     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
-     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
-     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
-     * the server could not be started.
-     */
     private Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
                                            final HttpExecutionContext context,
-                                           final StreamingHttpService service,
+                                           StreamingHttpService service,
                                            final boolean drainRequestPayloadBody) {
         final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
+        service = applyInternalFilters(service, roConfig.lifecycleObserver());
+
         if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(context, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody, false);
@@ -381,5 +387,115 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         HttpExecutionStrategy useStrategy = influencer.influenceStrategy(strategy);
 
         return s -> s.merge(useStrategy);
+    }
+
+    private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
+                                                             @Nullable final HttpLifecycleObserver lifecycleObserver) {
+        service = ExceptionMapperServiceFilter.INSTANCE.create(service);
+        service = KeepAliveServiceFilter.INSTANCE.create(service);
+        if (lifecycleObserver != null) {
+            service = new HttpLifecycleObserverServiceFilter(lifecycleObserver).create(service);
+        }
+        // TODO: apply ClearAsyncContextHttpServiceFilter here when it's moved to http-netty module by
+        //  https://github.com/apple/servicetalk/pull/1820
+        return service;
+    }
+
+    /**
+     * Internal filter that makes sure we handle all exceptions from user-defined service and filters.
+     */
+    private static final class ExceptionMapperServiceFilter
+            implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+
+        static final StreamingHttpServiceFilterFactory INSTANCE = new ExceptionMapperServiceFilter();
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapperServiceFilter.class);
+
+        private ExceptionMapperServiceFilter() {
+            // Singleton
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    Single<StreamingHttpResponse> respSingle;
+                    try {
+                        respSingle = delegate().handle(ctx, request, responseFactory);
+                    } catch (Throwable cause) {
+                        respSingle = failed(cause);
+                    }
+                    return respSingle.onErrorReturn(cause -> newErrorResponse(cause, ctx, request, responseFactory));
+                }
+            };
+        }
+
+        private static StreamingHttpResponse newErrorResponse(final Throwable cause,
+                                                              final HttpServiceContext ctx,
+                                                              final StreamingHttpRequest request,
+                                                              final StreamingHttpResponseFactory responseFactory) {
+            final HttpResponseStatus status;
+            if (cause instanceof RejectedExecutionException) {
+                status = SERVICE_UNAVAILABLE;
+                LOGGER.error("Task rejected by service processing for connection={}, request='{} {} {}'. Returning: {}",
+                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
+            } else if (cause instanceof SerializationException) {
+                // It is assumed that a failure occurred when attempting to deserialize the request.
+                status = UNSUPPORTED_MEDIA_TYPE;
+                LOGGER.error("Failed to deserialize or serialize for connection={}, request='{} {} {}'. Returning: {}",
+                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
+            } else {
+                status = INTERNAL_SERVER_ERROR;
+                LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +
+                        "Trying to return: {}", ctx, request.method(), request.requestTarget(), request.version(),
+                        status, cause);
+            }
+            return responseFactory.newResponse(status).setHeader(CONTENT_LENGTH, ZERO);
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            return strategy;    // no influence since we do not block
+        }
+    }
+
+    /**
+     * Internal filter that correctly sets {@link HttpHeaderNames#CONNECTION} header value based on the requested
+     * keep-alive policy.
+     */
+    private static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory,
+                                                                 HttpExecutionStrategyInfluencer {
+
+        static final StreamingHttpServiceFilterFactory INSTANCE = new KeepAliveServiceFilter();
+
+        private KeepAliveServiceFilter() {
+            // Singleton
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
+                    // Don't expect any exceptions from delegate because it's already wrapped with
+                    // ExceptionMapperServiceFilterFactory
+                    return delegate().handle(ctx, request, responseFactory).map(response -> {
+                        keepAlive.addConnectionHeaderIfNecessary(response);
+                        return response;
+                    });
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            return strategy;    // no influence since we do not block
+        }
     }
 }

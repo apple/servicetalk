@@ -112,24 +112,12 @@ public interface HttpServerBuilder {
     HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
-     * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
-     * consumed by the service.
-     * <p>
-     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
-     * eventually consume the entire request payload to enable reading of the next request. This is required because
-     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
-     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
-     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
-     * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
-     * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
+     * Sets a {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
      *
+     * @param lifecycleObserver A {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
      * @return {@code this}.
-     * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      */
-    @Deprecated
-    default HttpServerBuilder disableDrainingRequestPayloadBody() {
-        return drainRequestPayloadBody(false);
-    }
+    HttpServerBuilder lifecycleObserver(HttpLifecycleObserver lifecycleObserver);
 
     /**
      * Configure automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not

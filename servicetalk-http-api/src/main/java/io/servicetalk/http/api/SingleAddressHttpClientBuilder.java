@@ -88,20 +88,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
-     * <p>
-     * This setting disables the default filter such that no {@code Host} header will be manipulated.
-     *
-     * @return {@code this}
-     * @see #unresolvedAddressToHost(Function)
-     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
-     */
-    @Deprecated
-    public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        return hostHeaderFallback(false);
-    }
-
-    /**
      * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
      * <p>
      * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
@@ -111,10 +97,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
      */
-    public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable) {
-        throw new UnsupportedOperationException("Setting automatic host header fallback using this method is not" +
-                " yet supported by " + getClass().getSimpleName());
-    }
+    public abstract SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed
