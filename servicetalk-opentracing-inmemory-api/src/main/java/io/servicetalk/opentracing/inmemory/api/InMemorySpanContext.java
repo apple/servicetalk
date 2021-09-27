@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 public interface InMemorySpanContext extends SpanContext {
     /**
      * Returns whether the span should be sampled or {@code null} if the sampling was not decided.
-     * <p>
+     *
      * @return whether the span should be sampled
      */
     @Nullable

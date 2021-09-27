@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        java: [ 8, 11, 16 ]
+        java: [ 8, 11, 17 ]
         os: [ ubuntu-latest ]
     steps:
       - name: Checkout Code
@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'adopt'
+          distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
