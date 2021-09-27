@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.pollUninterruptibly;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.takeUninterruptibly;
 import static java.util.Objects.requireNonNull;
@@ -156,7 +156,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      * @return The {@link Subscription} from {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
      */
     public Subscription awaitSubscription() {
-        awaitUninterruptibly(onSubscribeLatch);
+        await(onSubscribeLatch);
         assert subscription != null;
         return subscription;
     }
@@ -248,7 +248,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      * @return the exception received by {@link #onError(Throwable)}.
      */
     Throwable awaitOnError(boolean verifyOnNextConsumed) {
-        awaitUninterruptibly(onTerminalLatch);
+        await(onTerminalLatch);
         assert onTerminal != null;
         if (onTerminal == complete()) {
             throw new IllegalStateException("wanted onError but Subscriber terminated with onComplete");
@@ -276,7 +276,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      * and throw if not. {@code false} to ignore if {@link #onNext(Object)} signals have been consumed or not.
      */
     void awaitOnComplete(boolean verifyOnNextConsumed) {
-        awaitUninterruptibly(onTerminalLatch);
+        await(onTerminalLatch);
         assert onTerminal != null;
         if (onTerminal != complete()) {
             throw new IllegalStateException("wanted onComplete but Subscriber terminated with onError",
@@ -298,7 +298,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      */
     @Nullable
     public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
-        if (awaitUninterruptibly(onTerminalLatch, timeout, unit)) {
+        if (await(onTerminalLatch, timeout, unit)) {
             assert onTerminal != null;
             return onTerminal == complete() ? () -> null : onTerminal::cause;
         }
