@@ -85,6 +85,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                 eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
+    @Override
+    public <T extends C> LoadBalancer<T> newLoadBalancer(
+            final String targetResource,
+            final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return new RoundRobinLoadBalancer<>(
+                targetResource, eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+    }
+
     /**
      * Builder for {@link RoundRobinLoadBalancerFactory}.
      *

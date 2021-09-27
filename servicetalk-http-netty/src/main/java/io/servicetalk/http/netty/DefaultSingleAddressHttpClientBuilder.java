@@ -323,7 +323,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
 
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
-                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents,
+                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
+                            targetAddress(ctx),
+                            sdEvents,
                             connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
@@ -381,6 +383,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             assert h1Config != null;
             return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
         }
+    }
+
+    private static <U, R> String targetAddress(final HttpClientBuildContext<U, R> ctx) {
+        return ctx.proxyAddress == null ?
+                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
     }
 
     private static StreamingHttpClientFilterFactory appendFilter(
