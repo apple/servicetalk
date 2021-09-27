@@ -76,7 +76,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpProtocol.values;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -213,7 +213,8 @@ class GracefulConnectionClosureHandlingTest {
         });
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
 
-        client = (viaProxy ? forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
+        client = (viaProxy ? forSingleAddress(serverHostAndPort(serverContext))
+                .proxyAddress(proxyAddress)
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build()) :
                 forResolvedAddress(serverContext.listenAddress()))

@@ -200,7 +200,8 @@ final class ConnectionCloseHeaderHandlingTest {
                         }
                     });
 
-            client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
+            client = (viaProxy ? HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .proxyAddress(proxyAddress)
                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                             .peerHost(serverPemHostname()).build()) :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))

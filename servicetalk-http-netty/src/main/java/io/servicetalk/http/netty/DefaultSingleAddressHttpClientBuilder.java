@@ -119,14 +119,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final U proxyAddress,
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        this(address, serviceDiscoverer);
-        this.proxyAddress = proxyAddress;
-        config.connectAddress(hostToCharSequenceFunction.apply(address));
-    }
-
-    DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
@@ -182,30 +174,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
-            final HostAndPort address, final HostAndPort proxyAddress) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress, globalDnsServiceDiscoverer());
-    }
-
     static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
             final U u, final R address) {
         ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
                 new NoopServiceDiscoverer<>(u, address);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
-            final HostAndPort u, final InetSocketAddress address, final HostAndPort proxyAddress) {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
-            final InetSocketAddress u, final InetSocketAddress address, final InetSocketAddress proxyAddress) {
-        ServiceDiscoverer<InetSocketAddress, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {

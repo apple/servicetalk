@@ -56,7 +56,10 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param proxyAddress Unresolved address of the proxy.
      * @return {@code this}.
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress);
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
+        throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
+                + getClass().getSimpleName());
+    }
 
     /**
      * Adds a {@link SocketOption} for all connections created by this builder.

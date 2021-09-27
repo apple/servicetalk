@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -89,13 +91,41 @@ class HttpProxyTest {
 
     void createClient() {
         assert serverAddress != null && proxyAddress != null;
-        client = HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
+        client = HttpClients.forSingleAddress(serverAddress).proxyAddress(proxyAddress)
                 .buildBlocking();
     }
 
     @Test
     void testRequest() throws Exception {
         assert client != null;
+        final HttpResponse httpResponse = client.request(client.get("/path"));
+        assertThat(httpResponse.status(), is(OK));
+        assertThat(proxyRequestCount.get(), is(1));
+        assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+    }
+
+    @Test
+    void testBuilderReuseEachClientUsesOwnProxy() throws Exception {
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress(serverAddress);
+        final BlockingHttpClient client = builder.proxyAddress(proxyAddress).buildBlocking();
+
+        final HttpClient otherProxyClient = HttpClients.forMultiAddressUrl().build();
+        final AtomicInteger otherProxyRequestCount = new AtomicInteger();
+        try (ServerContext otherProxyContext = HttpServers.forAddress(localAddress(0))
+                .listenAndAwait((ctx, request, responseFactory) -> {
+                    otherProxyRequestCount.incrementAndGet();
+                    return otherProxyClient.request(request);
+                });
+             BlockingHttpClient otherClient = builder.proxyAddress(serverHostAndPort(otherProxyContext))
+                     .buildBlocking()) {
+
+            final HttpResponse httpResponse = otherClient.request(client.get("/path"));
+            assertThat(httpResponse.status(), is(OK));
+            assertThat(otherProxyRequestCount.get(), is(1));
+            assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        }
+
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));

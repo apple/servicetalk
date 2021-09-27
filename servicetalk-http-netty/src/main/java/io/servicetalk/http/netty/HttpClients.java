@@ -115,7 +115,10 @@ public final class HttpClients {
      * @param proxyHost the proxy host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
      * @param proxyPort The proxy port to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forSingleAddress(String, int)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
             final String host, final int port, final String proxyHost, final int proxyPort) {
         return forSingleAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
@@ -160,10 +163,13 @@ public final class HttpClients {
      * @param proxyAddress the proxy {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forSingleAddress(HostAndPort)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forHostAndPortViaProxy(address, proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder.forHostAndPort(address).proxyAddress(proxyAddress);
     }
 
     /**
@@ -193,7 +199,10 @@ public final class HttpClients {
      * @param proxyHost The proxy resolved host address to connect.
      * @param proxyPort The proxy port to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(String, int)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
             final String host, final int port, final String proxyHost, final int proxyPort) {
         return forResolvedAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
@@ -222,11 +231,15 @@ public final class HttpClients {
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(HostAndPort)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address,
-                toResolvedInetSocketAddress(address), proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder
+                .forResolvedAddress(address, toResolvedInetSocketAddress(address))
+                .proxyAddress(proxyAddress);
     }
 
     /**
@@ -252,10 +265,13 @@ public final class HttpClients {
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(SocketAddress)}
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
             final InetSocketAddress address, final InetSocketAddress proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address, address, proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, address).proxyAddress(proxyAddress);
     }
 
     /**
