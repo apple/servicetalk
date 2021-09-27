@@ -463,8 +463,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     }
                     return newCnx.closeAsync().concat(this.usedHosts == CLOSED_LIST ? failedLBClosed(targetResource) :
                             failed(new ConnectionRejectedException(
-                                    "Failed to add newly created connection for " + targetResource
-                                            + " for host: " + host)));
+                                    "Failed to add newly created connection " + newCnx + " for " + targetResource
+                                            + " for " + host)));
                 });
     }
 
