@@ -121,7 +121,7 @@ public final class ContentCodingHttpServiceFilter
                     } catch (UnsupportedContentEncodingException cause) {
                         LOGGER.error("Request failed for service={}, connection={}", service, this, cause);
                         // see https://tools.ietf.org/html/rfc7231#section-3.1.2.2
-                        return succeeded(responseFactory.unsupportedMediaType());
+                        return succeeded(responseFactory.unsupportedMediaType()).subscribeShareContext();
                     }
                 });
             }

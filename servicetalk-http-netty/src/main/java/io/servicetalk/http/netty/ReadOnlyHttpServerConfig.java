@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 
 import javax.annotation.Nullable;
@@ -27,6 +28,8 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     private final boolean allowDropTrailers;
+    @Nullable
+    private final HttpLifecycleObserver lifecycleObserver;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         final HttpConfig configs = from.httpConfig();
@@ -34,6 +37,7 @@ final class ReadOnlyHttpServerConfig {
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
+        lifecycleObserver = from.lifecycleObserver();
     }
 
     ReadOnlyTcpServerConfig tcpConfig() {
@@ -56,5 +60,10 @@ final class ReadOnlyHttpServerConfig {
 
     boolean isH2PriorKnowledge() {
         return h2Config != null && h1Config == null && !tcpConfig.isAlpnConfigured();
+    }
+
+    @Nullable
+    HttpLifecycleObserver lifecycleObserver() {
+        return lifecycleObserver;
     }
 }
