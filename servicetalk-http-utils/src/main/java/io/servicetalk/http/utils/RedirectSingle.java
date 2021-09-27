@@ -15,37 +15,29 @@
  */
 package io.servicetalk.http.utils;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.RedirectConfiguration.RedirectRequestTransformer;
 import io.servicetalk.http.api.RedirectConfiguration.ShouldRedirectPredicate;
-import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -101,8 +93,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
     private static final class RedirectSubscriber implements Subscriber<StreamingHttpResponse> {
 
-        private static final TrailersTransformer<Object, Buffer> NOOP_TRAILERS_TRANSFORMER =
-                new StatelessTrailersTransformer<>();
         private final Subscriber<? super StreamingHttpResponse> target;
         private final RedirectSingle redirectSingle;
         private final StreamingHttpRequest request;
@@ -154,7 +144,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return;
                 }
 
-                final StreamingHttpRequest newRequest = prepareRedirectRequest(request, response,
+                StreamingHttpRequest newRequest = prepareRedirectRequest(request, response,
                         redirectSingle.requester);
                 if (newRequest == null) {
                     terminalDelivered = true;
@@ -191,12 +181,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         newRequest.requestTarget(
                                 absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
                     }
-                    copyAll(request, newRequest);
-                } else {
-                    copySome(request, newRequest);
                 }
 
-                redirectSingle.config.requestTransformer.apply(relative, request, response, newRequest);
+                newRequest = redirectSingle.config.requestTransformer.apply(relative, request, response, newRequest);
 
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("Executing redirect to '{}' for request '{}'", response.headers().get(LOCATION),
@@ -343,60 +330,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
             return "https".equalsIgnoreCase(scheme) ? 443 : 80;
         }
-
-        private static void copyAll(final StreamingHttpRequest originalRequest,
-                                    final StreamingHttpRequest redirectRequest) {
-            redirectRequest.setHeaders(originalRequest.headers());
-            redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(originalRequest.messageBody()));
-            // Use `transform` to update PayloadInfo flags, assuming trailers may be included in the message body
-            redirectRequest.transform(NOOP_TRAILERS_TRANSFORMER);
-            // FIXME: instead of `transform`, preserve original PayloadInfo/FlushStrategy when it's API is available
-        }
-
-        private void copySome(final StreamingHttpRequest request, final StreamingHttpRequest redirectRequest) {
-            // NOTE: for security reasons we do not copy any headers or payload body from the original request by
-            // default for non-relative redirects.
-            for (CharSequence headerName : redirectSingle.config.headersToRedirect) {
-                for (CharSequence headerValue : request.headers().values(headerName)) {
-                    redirectRequest.addHeader(headerName, headerValue);
-                }
-            }
-
-            final Config config = redirectSingle.config;
-            if (config.redirectPayloadBody) {
-                if (config.trailersToRedirect.length == 0) {
-                    redirectRequest.payloadBody(request.payloadBody());
-                } else {
-                    redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()))
-                            .transform(new StatelessTrailersTransformer<Buffer>() {
-                                @Override
-                                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                    return filterTrailers(trailers, config.trailersToRedirect);
-                                }
-                            });
-                }
-            } else if (config.trailersToRedirect.length != 0) {
-                redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()
-                        .filter(item -> item instanceof HttpHeaders)))
-                        .transform(new StatelessTrailersTransformer<Buffer>() {
-                            @Override
-                            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                return filterTrailers(trailers, config.trailersToRedirect);
-                            }
-                        });
-            }
-        }
-
-        private static HttpHeaders filterTrailers(final HttpHeaders trailers, final CharSequence[] keepOnly) {
-            Iterator<Map.Entry<CharSequence, CharSequence>> it = trailers.iterator();
-            while (it.hasNext()) {
-                Map.Entry<CharSequence, CharSequence> entry = it.next();
-                if (Arrays.stream(keepOnly).noneMatch(name -> contentEqualsIgnoreCase(entry.getKey(), name))) {
-                    it.remove();
-                }
-            }
-            return trailers;
-        }
     }
 
     static final class Config {
@@ -404,22 +337,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         final String[] allowedMethods;
         final ShouldRedirectPredicate shouldRedirect;
         final boolean changePostToGet;
-        final CharSequence[] headersToRedirect;
-        final boolean redirectPayloadBody;
-        final CharSequence[] trailersToRedirect;
         final RedirectRequestTransformer requestTransformer;
 
         Config(final int maxRedirects, final String[] allowedMethods, final ShouldRedirectPredicate shouldRedirect,
-               final boolean changePostToGet, final CharSequence[] headersToRedirect,
-               final boolean redirectPayloadBody, final CharSequence[] trailersToRedirect,
-               final RedirectRequestTransformer requestTransformer) {
+               final boolean changePostToGet, final RedirectRequestTransformer requestTransformer) {
             this.maxRedirects = maxRedirects;
             this.allowedMethods = allowedMethods;
             this.shouldRedirect = shouldRedirect;
             this.changePostToGet = changePostToGet;
-            this.headersToRedirect = headersToRedirect;
-            this.redirectPayloadBody = redirectPayloadBody;
-            this.trailersToRedirect = trailersToRedirect;
             this.requestTransformer = requestTransformer;
         }
     }
