@@ -284,10 +284,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
      */
-    public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
-        throw new UnsupportedOperationException("Setting automatic host header fallback using this method" +
-                " is not yet supported by " + getClass().getSimpleName());
-    }
+    public abstract GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.

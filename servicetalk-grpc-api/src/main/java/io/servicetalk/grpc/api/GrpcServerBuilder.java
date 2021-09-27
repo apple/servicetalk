@@ -143,10 +143,7 @@ public abstract class GrpcServerBuilder {
      * @param lifecycleObserver A {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
      * @return {@code this}.
      */
-    public GrpcServerBuilder lifecycleObserver(GrpcLifecycleObserver lifecycleObserver) {
-        throw new UnsupportedOperationException(
-                "Setting GrpcLifecycleObserver using this method is not yet supported by " + getClass().getName());
-    }
+    public abstract GrpcServerBuilder lifecycleObserver(GrpcLifecycleObserver lifecycleObserver);
 
     /**
      * Configures automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is
@@ -164,10 +161,7 @@ public abstract class GrpcServerBuilder {
      * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
      */
-    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
-        throw new UnsupportedOperationException("Setting automatic request draining using this method is not yet " +
-                "supported by " + getClass().getSimpleName());
-    }
+    public abstract GrpcServerBuilder drainRequestPayloadBody(boolean enable);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.

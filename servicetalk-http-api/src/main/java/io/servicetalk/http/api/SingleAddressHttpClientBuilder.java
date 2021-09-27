@@ -97,10 +97,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
      */
-    public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable) {
-        throw new UnsupportedOperationException("Setting automatic host header fallback using this method is not" +
-                " yet supported by " + getClass().getSimpleName());
-    }
+    public abstract SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed

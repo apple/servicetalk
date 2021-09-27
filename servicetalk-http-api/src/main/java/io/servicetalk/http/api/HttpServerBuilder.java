@@ -145,10 +145,7 @@ public abstract class HttpServerBuilder {
      * @param lifecycleObserver A {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
      * @return {@code this}.
      */
-    public HttpServerBuilder lifecycleObserver(HttpLifecycleObserver lifecycleObserver) {
-        throw new UnsupportedOperationException(
-                "Setting HttpLifecycleObserver using this method is not yet supported by " + getClass().getName());
-    }
+    public abstract HttpServerBuilder lifecycleObserver(HttpLifecycleObserver lifecycleObserver);
 
     /**
      * Configure automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
