@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -33,6 +34,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -130,10 +132,14 @@ abstract class AbstractNettyHttpServerTest {
     @Nullable
     private ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter;
     @Nullable
+    private StreamingHttpConnectionFilterFactory connectionFilterFactory;
+    @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     private HttpProtocolConfig protocol = h1Default();
     private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
     private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
+    private HttpLifecycleObserver clientLifecycleObserver = NoopHttpLifecycleObserver.INSTANCE;
+    private HttpLifecycleObserver serverLifecycleObserver = NoopHttpLifecycleObserver.INSTANCE;
 
     void setUp(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
@@ -178,6 +184,9 @@ abstract class AbstractNettyHttpServerTest {
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);
         }
+        if (serverLifecycleObserver != NoopHttpLifecycleObserver.INSTANCE) {
+            serverBuilder.lifecycleObserver(serverLifecycleObserver);
+        }
         serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
                 .beforeOnSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
@@ -191,9 +200,15 @@ abstract class AbstractNettyHttpServerTest {
         if (connectionFactoryFilter != null) {
             clientBuilder.appendConnectionFactoryFilter(connectionFactoryFilter);
         }
+        if (connectionFilterFactory != null) {
+            clientBuilder.appendConnectionFilter(connectionFilterFactory);
+        }
         if (clientTransportObserver != NoopTransportObserver.INSTANCE) {
             clientBuilder.appendConnectionFactoryFilter(
                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
+        }
+        if (clientLifecycleObserver != NoopHttpLifecycleObserver.INSTANCE) {
+            clientBuilder.appendClientFilter(new HttpLifecycleObserverRequesterFilter(clientLifecycleObserver));
         }
         if (clientFilterFactory != null) {
             clientBuilder.appendClientFilter(clientFilterFactory);
@@ -242,6 +257,10 @@ abstract class AbstractNettyHttpServerTest {
         this.connectionFactoryFilter = connectionFactoryFilter;
     }
 
+    void connectionFilterFactory(StreamingHttpConnectionFilterFactory connectionFilterFactory) {
+        this.connectionFilterFactory = connectionFilterFactory;
+    }
+
     void clientFilterFactory(StreamingHttpClientFilterFactory clientFilterFactory) {
         this.clientFilterFactory = clientFilterFactory;
     }
@@ -288,6 +307,11 @@ abstract class AbstractNettyHttpServerTest {
     void transportObserver(TransportObserver client, TransportObserver server) {
         this.clientTransportObserver = requireNonNull(client);
         this.serverTransportObserver = requireNonNull(server);
+    }
+
+    void lifecycleObserver(HttpLifecycleObserver client, HttpLifecycleObserver server) {
+        this.clientLifecycleObserver = requireNonNull(client);
+        this.serverLifecycleObserver = requireNonNull(server);
     }
 
     StreamingHttpResponse makeRequest(final StreamingHttpRequest request) throws Exception {

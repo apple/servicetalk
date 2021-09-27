@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.test.internal.AwaitUtils.awaitUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -83,7 +83,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
      * will be set upon return.
      */
     public void awaitSubscribed() {
-        awaitUninterruptibly(subscriberLatch);
+        await(subscriberLatch);
     }
 
     @Override

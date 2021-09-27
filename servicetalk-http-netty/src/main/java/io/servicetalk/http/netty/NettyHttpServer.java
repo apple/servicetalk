@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
@@ -43,7 +42,6 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -73,7 +71,6 @@ import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nonnull;
@@ -87,9 +84,8 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -239,7 +235,6 @@ final class NettyHttpServer {
     }
 
     static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
-        private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
         private final StreamingHttpService service;
         private final NettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
@@ -291,7 +286,7 @@ final class NettyHttpServer {
                                             meta.headers(), executionContext().bufferAllocator(), payload,
                                             requireTrailerHeader, headersFactory)));
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
-                    .subscribe(new ErrorLoggingHttpSubscriber());
+                    .subscribe(new ErrorLoggingHttpSubscriber(connection));
         }
 
         @Override
@@ -349,19 +344,10 @@ final class NettyHttpServer {
                         }));
 
                 final HttpRequestMethod requestMethod = request.method();
-                final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
-                Single<StreamingHttpResponse> respSingle;
-                try {
-                    respSingle = service.handle(this, request, streamingResponseFactory());
-                } catch (Throwable cause) {
-                    respSingle = failed(cause);
-                }
-                Publisher<Object> respPublisher = respSingle
-                        .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
-                                request.version(), keepAlive))
+                // Don't expect any exceptions from service because it's already wrapped with
+                // ExceptionMapperServiceFilter
+                Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
-                            keepAlive.addConnectionHeaderIfNecessary(response);
-
                             final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
                             if (flushStrategy != null) {
                                 splittingFlushStrategy.updateFlushStrategy(
@@ -401,27 +387,6 @@ final class NettyHttpServer {
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }
-        }
-
-        private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,
-                                                       final HttpProtocolVersion version,
-                                                       final HttpKeepAlive keepAlive) {
-            final StreamingHttpResponse response;
-            if (cause instanceof RejectedExecutionException) {
-                LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
-                        cause);
-                response = streamingResponseFactory().serviceUnavailable();
-            } else if (cause instanceof SerializationException) {
-                // It is assumed that a failure occurred when attempting to deserialize the request.
-                response = streamingResponseFactory().unsupportedMediaType();
-            } else {
-                LOGGER.error("Internal server error service={} connection={}", service, this, cause);
-                response = streamingResponseFactory().internalServerError();
-            }
-            response.version(version)
-                    .setHeader(CONTENT_LENGTH, ZERO);
-            keepAlive.addConnectionHeaderIfNecessary(response);
-            return response;
         }
 
         @Override
@@ -562,6 +527,12 @@ final class NettyHttpServer {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLoggingHttpSubscriber.class);
 
+        private final NettyConnection<Object, Object> connection;
+
+        ErrorLoggingHttpSubscriber(final NettyConnection<Object, Object> connection) {
+            this.connection = connection;
+        }
+
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             // We never cancel from this Subscriber
@@ -577,23 +548,27 @@ final class NettyHttpServer {
             if (t instanceof CloseEventObservedException) {
                 final CloseEventObservedException ceoe = (CloseEventObservedException) t;
                 if (ceoe.event() == CHANNEL_CLOSED_INBOUND && t.getCause() instanceof ClosedChannelException) {
-                    LOGGER.trace("Client closed the connection without sending 'Connection: close' header", t);
+                    LOGGER.trace("{} Client closed the {} connection without sending {}.",
+                            connection, connection.protocol(),
+                            HTTP_2_0.equals(connection.protocol()) ? "GO_AWAY" : "'Connection: close' header", t);
                     return;
                 }
                 if (t.getCause() instanceof DecoderException) {
-                    logDecoderException((DecoderException) t.getCause());
+                    logDecoderException((DecoderException) t.getCause(), connection);
                     return;
                 }
             } else if (t instanceof DecoderException) {
-                logDecoderException((DecoderException) t);
+                logDecoderException((DecoderException) t, connection);
                 return;
             }
-            LOGGER.debug("Unexpected error received while processing connection, {}",
-                    "no more requests will be received on this connection.", t);
+            LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
+                    HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
         }
 
-        private static void logDecoderException(final DecoderException e) {
-            LOGGER.warn("Can not decode HTTP message, no more requests will be received on this connection.", e);
+        private static void logDecoderException(final DecoderException e,
+                                                final NettyConnection<Object, Object> connection) {
+            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}.", connection,
+                    connection.protocol(), HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", e);
         }
     }
 }
