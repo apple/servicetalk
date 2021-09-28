@@ -606,7 +606,11 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         } catch (Throwable cause) {
             // The server intentionally triggers an error when it writes, if this happens before all content is read
             // the client may fail to write the request due to premature connection closure.
-            assertThat(cause, instanceOf(ClosedChannelException.class));
+            if (cause instanceof ExecutionException) {
+                assertThat(cause.getCause(), instanceOf(IOException.class));
+            } else {
+                assertThat(cause, instanceOf(IOException.class));
+            }
         } finally {
             assertConnectionClosed();
         }
