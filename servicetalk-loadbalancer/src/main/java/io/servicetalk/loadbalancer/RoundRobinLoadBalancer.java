@@ -187,7 +187,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
      */
     RoundRobinLoadBalancer(
-            String targetResource,
+            final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final boolean eagerConnectionShutdown,

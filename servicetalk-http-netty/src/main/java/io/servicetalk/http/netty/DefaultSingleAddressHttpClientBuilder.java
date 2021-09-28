@@ -277,7 +277,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            // final Publisher<ServiceDiscovererEvent<R>> sdEvents =
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<R>>> sdEvents =
                     ctx.serviceDiscoverer(executionContext).discover(ctx.address());
 
