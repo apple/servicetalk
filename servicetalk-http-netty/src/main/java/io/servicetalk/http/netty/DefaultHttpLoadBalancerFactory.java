@@ -37,6 +37,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
+import java.util.Collection;
+
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
@@ -68,7 +70,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     @Override
     public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
             final String targetResource,
-            final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return rawFactory.newLoadBalancer(targetResource, eventPublisher, connectionFactory);
     }

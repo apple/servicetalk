@@ -17,6 +17,10 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.util.Collection;
+
+import static java.util.function.Function.identity;
+
 /**
  * A factory for creating {@link LoadBalancer} instances.
  *
@@ -53,8 +57,9 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
      * via the {@code eventPublisher} which may not correspond directly to a single unresolved address, but potentially
      * a merged collection.
-     * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
-     * connect to physical hosts. Typically generated from a {@link ServiceDiscoverer}.
+     * @param eventPublisher A stream of {@link Collection}&lt;{@link ServiceDiscovererEvent}&gt;
+     * which the {@link LoadBalancer} can use to connect to physical hosts. Typically generated
+     * from a {@link ServiceDiscoverer}.
      * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
      * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
@@ -63,8 +68,8 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      */
     default <T extends C> LoadBalancer<T> newLoadBalancer(
             String targetResource,
-            Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+            Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return newLoadBalancer(eventPublisher, connectionFactory);
+        return newLoadBalancer(eventPublisher.flatMapConcatIterable(identity()), connectionFactory);
     }
 }

@@ -82,7 +82,6 @@ import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided address.
@@ -278,8 +277,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final Publisher<ServiceDiscovererEvent<R>> sdEvents =
-                    ctx.serviceDiscoverer(executionContext).discover(ctx.address()).flatMapConcatIterable(identity());
+            // final Publisher<ServiceDiscovererEvent<R>> sdEvents =
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<R>>> sdEvents =
+                    ctx.serviceDiscoverer(executionContext).discover(ctx.address());
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
