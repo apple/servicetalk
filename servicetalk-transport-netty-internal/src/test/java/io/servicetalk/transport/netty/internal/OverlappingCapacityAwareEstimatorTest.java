@@ -45,16 +45,16 @@ class OverlappingCapacityAwareEstimatorTest {
     void testSupplyLessThanDemandNoCapacityChange() {
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> 100L);
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 100L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         requestNAndVerify(supplier, 10, 0L);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
@@ -62,18 +62,18 @@ class OverlappingCapacityAwareEstimatorTest {
         AtomicLong toRequest = new AtomicLong(2);
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 2L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 15, 1L);
         verify(longFunc).apply(5);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
@@ -81,17 +81,17 @@ class OverlappingCapacityAwareEstimatorTest {
         AtomicLong toRequest = new AtomicLong(2);
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 2L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 5, 0L);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
@@ -99,18 +99,18 @@ class OverlappingCapacityAwareEstimatorTest {
         AtomicLong toRequest = new AtomicLong(1);
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 15, 1L);
         verify(longFunc).apply(15);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
@@ -118,35 +118,35 @@ class OverlappingCapacityAwareEstimatorTest {
         AtomicLong toRequest = new AtomicLong(1);
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 5, 1L);
         verify(longFunc).apply(5);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyEqualsDemandNoCapacityChange() {
         LongFunc longFunc = mock(LongFunc.class);
         @SuppressWarnings("unchecked")
-        ObjLongConsumer<Object> longConsume = mock(ObjLongConsumer.class);
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
         when(longFunc.apply(anyLong())).thenAnswer(invocation -> 1L);
-        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsume);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
         verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(longConsume).accept(1, 5);
+        verify(longConsumer).accept(1, 5);
         requestNAndVerify(supplier, 10, 1L);
         verify(longFunc, times(2)).apply(10);
         verifyNoMoreInteractions(longFunc);
-        verifyNoMoreInteractions(longConsume);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
