@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -83,6 +84,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(
                 eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+    }
+
+    @Override
+    public <T extends C> LoadBalancer<T> newLoadBalancer(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return new RoundRobinLoadBalancer<>(
+                targetResource, eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**

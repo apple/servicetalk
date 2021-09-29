@@ -49,14 +49,13 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public abstract class SingleAddressHttpClientBuilder<U, R>
-        implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Configure proxy to serve as an intermediary for requests.
      * @param proxyAddress Unresolved address of the proxy.
      * @return {@code this}.
      */
-    public SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
         throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
                 + getClass().getName());
     }
@@ -71,7 +70,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
      */
-    public abstract <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     /**
      * Enables wire-logging for connections created by this builder.
@@ -82,9 +81,8 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * data and log only network events.
      * @return {@code this}.
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
-                                                                                LogLevel logLevel,
-                                                                                BooleanSupplier logUserData);
+    SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
+                                                           LogLevel logLevel, BooleanSupplier logUserData);
 
     /**
      * Configurations of various HTTP protocol versions.
@@ -95,21 +93,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
-
-    /**
-     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
-     * <p>
-     * This setting disables the default filter such that no {@code Host} header will be manipulated.
-     *
-     * @return {@code this}
-     * @see #unresolvedAddressToHost(Function)
-     * @deprecated Use {@link #hostHeaderFallback(boolean)}.
-     */
-    @Deprecated
-    public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        return hostHeaderFallback(false);
-    }
+    SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
      * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
@@ -121,10 +105,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
      */
-    public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable) {
-        throw new UnsupportedOperationException("Setting automatic host header fallback using this method is not" +
-                " yet supported by " + getClass().getSimpleName());
-    }
+    SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
      * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed
@@ -136,7 +117,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed to be dropped.
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
+    SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -158,8 +139,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * purpose of filtering.
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
-            StreamingHttpConnectionFilterFactory factory);
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -185,22 +165,21 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * purpose of filtering.
      * @return {@code this}
      */
-    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+    default SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
         return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
     }
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
+    SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
@@ -224,7 +203,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     /**
@@ -246,7 +225,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * filtering.
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
+    SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -269,8 +248,8 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * filtering.
      * @return {@code this}
      */
-    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                        StreamingHttpClientFilterFactory factory) {
+    default SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                    StreamingHttpClientFilterFactory factory) {
         return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
     }
 
@@ -283,7 +262,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
+    SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     /**
@@ -298,8 +277,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}
      * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
-            AutoRetryStrategyProvider autoRetryStrategyProvider);
+    SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(AutoRetryStrategyProvider autoRetryStrategyProvider);
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -310,7 +288,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+    SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
@@ -320,7 +298,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+    SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
 
     /**
@@ -329,8 +307,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param loadBalancerFactory {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
      * @return {@code this}.
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            HttpLoadBalancerFactory<R> loadBalancerFactory);
+    SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
     /**
      * Set the SSL/TLS configuration.
@@ -338,7 +315,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @return {@code this}.
      * @see io.servicetalk.transport.api.ClientSslConfigBuilder
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
+    SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     /**
      * Toggle inference of value to use instead of {@link ClientSslConfig#peerHost()}
@@ -346,7 +323,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
+    SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
 
     /**
      * Toggle inference of value to use instead of {@link ClientSslConfig#peerPort()}
@@ -354,7 +331,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
+    SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
 
     /**
      * Toggle <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">SNI</a>
@@ -363,5 +340,5 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
      */
-    public abstract SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
+    SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
 }

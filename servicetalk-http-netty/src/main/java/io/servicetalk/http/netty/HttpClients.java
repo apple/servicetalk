@@ -96,7 +96,7 @@ public final class HttpClients {
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
      * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use
      * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
-     * or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)}} if you want to disable this behavior.
+     * or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
      */
@@ -311,7 +311,7 @@ public final class HttpClients {
      * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion.
      * Use {@link PartitionedHttpClientBuilder#initializer(PartitionedHttpClientBuilder.SingleAddressInitializer)}
      * and {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
-     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
      * @param partitionAttributesBuilderFactory The factory {@link Function} used to build {@link PartitionAttributes}
      * from {@link HttpRequestMetaData}.
      * @param <U> the type of address before resolution (unresolved address)

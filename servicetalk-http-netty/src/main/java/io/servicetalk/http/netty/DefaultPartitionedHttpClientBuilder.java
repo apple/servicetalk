@@ -63,7 +63,7 @@ import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.de
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
-final class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
+final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
 
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
