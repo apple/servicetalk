@@ -33,7 +33,8 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
     /**
      * Create a new {@link LoadBalancer}.
      * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
-     * connect to physical hosts. Typically generated from a {@link ServiceDiscoverer}.
+     * connect to physical hosts. Typically generated from a
+     * {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}.
      * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
      * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
@@ -59,7 +60,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * a merged collection.
      * @param eventPublisher A stream of {@link Collection}&lt;{@link ServiceDiscovererEvent}&gt;
      * which the {@link LoadBalancer} can use to connect to physical hosts. Typically generated
-     * from a {@link ServiceDiscoverer}.
+     * from {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}.
      * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
      * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
