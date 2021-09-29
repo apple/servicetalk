@@ -36,7 +36,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.AbstractResourceTest.assumeSafeToDisableOffloading;
 import static java.util.Collections.singleton;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
 class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
@@ -64,66 +63,70 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final HttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final HttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
                 .executionStrategy(defaultStrategy())
-                .thenRouteTo(router)
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final StreamingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final StreamingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
                 .executionStrategy(defaultStrategy())
-                .thenRouteTo(router)
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final BlockingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final BlockingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
                 .executionStrategy(defaultStrategy())
-                .thenRouteTo(router)
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final BlockingStreamingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final BlockingStreamingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
                 .executionStrategy(defaultStrategy())
-                .thenRouteTo(router)
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
@@ -142,14 +145,5 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
             sendAndAssertResponse(get("/single-string"), OK, TEXT_PLAIN,
                     stringContainsInOrder(singleton("stserverio")), String::length);
         });
-    }
-
-    @ParameterizedTest
-    @EnumSource(RouterApi.class)
-    void noOffloadsOverrideIsSupported(RouterApi api) throws Exception {
-        setUp(api);
-        runTwiceToEnsureEndpointCache(
-                () -> sendAndAssertResponse(get("/cs-string"), OK, TEXT_PLAIN,
-                        not(stringContainsInOrder(singleton("stserverio"))), String::length));
     }
 }
