@@ -583,12 +583,6 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     void testErrorBeforeRead(ExecutorSupplier clientExecutorSupplier,
                              ExecutorSupplier serverExecutorSupplier) throws Exception {
         setUp(clientExecutorSupplier, serverExecutorSupplier);
-        // Flaky test: https://github.com/apple/servicetalk/issues/245
-        ignoreTestWhen(IMMEDIATE, IMMEDIATE);
-        ignoreTestWhen(IMMEDIATE, CACHED);
-        ignoreTestWhen(CACHED, IMMEDIATE);
-        ignoreTestWhen(CACHED, CACHED);
-
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_BEFORE_READ).payloadBody(
             getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
 
@@ -600,7 +594,7 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
             final BlockingIterator<Buffer> httpPayloadChunks = response.payloadBody().toIterable().iterator();
 
-            Exception e = assertThrows(Exception.class, () -> httpPayloadChunks.next());
+            Exception e = assertThrows(Exception.class, httpPayloadChunks::next);
             assertThat(e, either(instanceOf(RuntimeException.class)).or(instanceOf(ExecutionException.class)));
             // Due to a race condition, the exception cause here can vary.
             // If the socket closure is delayed slightly
@@ -608,6 +602,14 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
             // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
             // the client throws NativeIoException (KQueue) or IOException (NIO).
             assertThat(e.getCause(), instanceOf(IOException.class));
+        } catch (Throwable cause) {
+            // The server intentionally triggers an error when it writes, if this happens before all content is read
+            // the client may fail to write the request due to premature connection closure.
+            if (cause instanceof ExecutionException) {
+                assertThat(cause.getCause(), instanceOf(IOException.class));
+            } else {
+                assertThat(cause, instanceOf(IOException.class));
+            }
         } finally {
             assertConnectionClosed();
         }
