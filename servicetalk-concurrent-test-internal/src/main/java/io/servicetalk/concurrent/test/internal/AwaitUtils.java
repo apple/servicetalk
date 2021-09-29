@@ -123,11 +123,33 @@ public final class AwaitUtils {
     }
 
     /**
-     * {@link BlockingQueue#take()} from the queue while suppressing {@link InterruptedException}s.
+     * {@link BlockingQueue#take()} from the queue or throws unchecked exception in the case
+     * of InterruptedException.
      * @param queue The queue to take from.
      * @param <T> The types of objects in the queue.
      * @return see {@link BlockingQueue#take()}.
      */
+    @SuppressWarnings("unchecked")
+    public static <T> T take(BlockingQueue<T> queue) {
+        try {
+            return queue.take();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+            // Returning Object cast to type T is not necessary as the method will either return or throw exception
+            // before even reaching this statement. However, this is necessary to compile successfully.
+            return (T) new Object();
+        }
+    }
+
+    /**
+     * {@link BlockingQueue#take()} from the queue while suppressing {@link InterruptedException}s.
+     * @param queue The queue to take from.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#take()}.
+     * @deprecated use {@link #take(BlockingQueue)} instead.
+     */
+    @Deprecated
     public static <T> T takeUninterruptibly(BlockingQueue<T> queue) {
         boolean interrupted = false;
         try {
