@@ -168,13 +168,35 @@ public final class AwaitUtils {
     }
 
     /**
-     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue while suppressing {@link InterruptedException}s.
+     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue, throws unchecked Exception if
+     * thread is interrupted while waiting.
      * @param queue the queue to poll from.
      * @param timeout the timeout duration to poll for.
      * @param unit the units applied to {@code timeout}.
      * @param <T> The types of objects in the queue.
      * @return see {@link BlockingQueue#poll(long, TimeUnit)}.
      */
+    @Nullable
+    public static <T> T poll(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
+        try {
+            return queue.poll(timeout, NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+            return null;
+        }
+    }
+
+    /**
+     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue while suppressing {@link InterruptedException}s.
+     * @param queue the queue to poll from.
+     * @param timeout the timeout duration to poll for.
+     * @param unit the units applied to {@code timeout}.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#poll(long, TimeUnit)}.
+     * @deprecated use {@link #poll(BlockingQueue, long, TimeUnit)} instead.
+     */
+    @Deprecated
     @Nullable
     public static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
         final long startTime = System.nanoTime();

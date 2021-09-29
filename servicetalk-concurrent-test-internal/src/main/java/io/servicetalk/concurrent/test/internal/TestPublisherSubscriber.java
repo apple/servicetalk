@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
-import static io.servicetalk.concurrent.test.internal.AwaitUtils.pollUninterruptibly;
+import static io.servicetalk.concurrent.test.internal.AwaitUtils.poll;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.take;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -224,7 +224,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      */
     @Nullable
     public Supplier<T> pollOnNext(long timeout, TimeUnit unit) {
-        Object item = pollUninterruptibly(items, timeout, unit);
+        Object item = poll(items, timeout, unit);
         return item == null ? null : () -> unwrapNull(item);
     }
 
