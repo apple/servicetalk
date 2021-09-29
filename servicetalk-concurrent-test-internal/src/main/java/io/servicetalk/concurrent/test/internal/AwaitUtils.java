@@ -129,17 +129,16 @@ public final class AwaitUtils {
      * @param <T> The types of objects in the queue.
      * @return see {@link BlockingQueue#take()}.
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
-            value = "NP_NONNULL_RETURN_VIOLATION",
-            justification = "return null statement is never reached"
-    )
+    @SuppressWarnings("unchecked")
     public static <T> T take(BlockingQueue<T> queue) {
         try {
             return queue.take();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throwException(e);
-            return null;
+            // Returning Object cast to type T is not necessary as the method will either return or throw exception
+            // before even reaching this statement. However, this is necessary to compile successfully.
+            return (T) new Object();
         }
     }
 

@@ -19,9 +19,6 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api project(":servicetalk-concurrent")
 
-  compileOnly 'net.jcip:jcip-annotations:1.0'
-  compileOnly 'com.github.spotbugs:spotbugs-annotations:3.1.3'
-
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-utils-internal")
