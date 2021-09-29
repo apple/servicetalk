@@ -337,15 +337,14 @@ class ExecutionStrategyTest {
     }
 
     private boolean isDeadlockConfig() {
-        if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS) {
+        if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS && routeApi != RouteApi.TEST) {
             switch (routeStrategy) {
+                case BLOCKING_DEFAULT:
+                case BLOCKING_CLASS_EXEC_ID:
                 case BLOCKING_CLASS_NO_OFFLOADS:
                 case BLOCKING_METHOD_NO_OFFLOADS:
                 case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
-                    if (routeApi != RouteApi.TEST) {
-                        return true;
-                    }
-                    break;
+                    return true;
                 default:
                     // noop
             }
@@ -458,21 +457,6 @@ class ExecutionStrategyTest {
                 switch (routeStrategy) {
                     case ASYNC_DEFAULT:
                     case ASYNC_CLASS_EXEC_ID:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
-                                        NULL, NULL, globalThreadName(), globalThreadName());
-                                break;
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
-                                        globalThreadName(), globalThreadName(), globalThreadName(), globalThreadName());
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case ASYNC_CLASS_NO_OFFLOADS:
                     case ASYNC_METHOD_NO_OFFLOADS:
                     case ASYNC_SERVICE_FACTORY_NO_OFFLOADS:
@@ -493,18 +477,6 @@ class ExecutionStrategyTest {
                         break;
                     case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_EXEC_ID:
-                        switch (routeApi) {
-                            case TEST:
-                            case TEST_RESPONSE_STREAM:
-                            case TEST_BI_DI_STREAM:
-                            case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
-                                        NULL, NULL, NULL, NULL);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown route API: " + routeApi);
-                        }
-                        break;
                     case BLOCKING_CLASS_NO_OFFLOADS:
                     case BLOCKING_METHOD_NO_OFFLOADS:
                     case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
