@@ -58,7 +58,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      */
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
         throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
-                + getClass().getSimpleName());
+                + getClass().getName());
     }
 
     /**

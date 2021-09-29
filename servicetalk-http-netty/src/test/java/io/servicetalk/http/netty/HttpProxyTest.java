@@ -25,9 +25,12 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -53,20 +56,16 @@ class HttpProxyTest {
     private ServerContext serverContext;
     @Nullable
     private HostAndPort serverAddress;
-    @Nullable
-    private BlockingHttpClient client;
     private final AtomicInteger proxyRequestCount = new AtomicInteger();
 
     @BeforeEach
     void setup() throws Exception {
         startProxy();
         startServer();
-        createClient();
     }
 
     @AfterEach
     void tearDown() {
-        safeClose(client);
         safeClose(proxyClient);
         safeClose(proxyContext);
         safeClose(serverContext);
@@ -89,19 +88,33 @@ class HttpProxyTest {
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    void createClient() {
-        assert serverAddress != null && proxyAddress != null;
-        client = HttpClients.forSingleAddress(serverAddress).proxyAddress(proxyAddress)
-                .buildBlocking();
+    private enum ClientSource {
+        SINGLE(HttpClients::forSingleAddress),
+        RESOLVED(HttpClients::forResolvedAddress);
+
+        private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                clientBuilderFactory;
+
+        ClientSource(Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                             clientBuilderFactory) {
+            this.clientBuilderFactory = clientBuilderFactory;
+        }
     }
 
-    @Test
-    void testRequest() throws Exception {
-        assert client != null;
+    @ParameterizedTest
+    @EnumSource
+    void testRequest(ClientSource clientSource) throws Exception {
+        assert serverAddress != null && proxyAddress != null;
+
+        final BlockingHttpClient client = clientSource.clientBuilderFactory.apply(serverAddress)
+                .proxyAddress(proxyAddress)
+                .buildBlocking();
+
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        safeClose(client);
     }
 
     @Test

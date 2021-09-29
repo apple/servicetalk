@@ -70,7 +70,6 @@ import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_R
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -175,9 +174,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
-            final U u, final R address) {
-        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
-                new NoopServiceDiscoverer<>(u, address);
+            final U u, final Function<U, R> toResolvedAddressMapper) {
+        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd = new NoopServiceDiscoverer<>(toResolvedAddressMapper);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
     }
 
@@ -615,29 +613,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
-    private static final class NoopServiceDiscoverer<OriginalAddress, ResolvedAddress>
-            implements ServiceDiscoverer<OriginalAddress, ResolvedAddress,
+    private static final class NoopServiceDiscoverer<UnresolvedAddress, ResolvedAddress>
+            implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
             ServiceDiscovererEvent<ResolvedAddress>> {
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private final Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> resolution;
-        private final OriginalAddress originalAddress;
+        private final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper;
 
-        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final ResolvedAddress address) {
-            this.originalAddress = requireNonNull(originalAddress);
-            resolution = Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(
-                    singletonList(new DefaultServiceDiscovererEvent<>(requireNonNull(address), true)))
-                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
-                    .concat(never());
+        private NoopServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper) {
+            this.toResolvedAddressMapper = requireNonNull(toResolvedAddressMapper);
         }
 
         @Override
         public Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> discover(
-                final OriginalAddress address) {
-            if (!this.originalAddress.equals(address)) {
-                return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
-            }
-            return resolution;
+                final UnresolvedAddress address) {
+            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(singletonList(
+                    new DefaultServiceDiscovererEvent<>(requireNonNull(toResolvedAddressMapper.apply(address)), true)))
+                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
+                    .concat(never());
         }
 
         @Override
