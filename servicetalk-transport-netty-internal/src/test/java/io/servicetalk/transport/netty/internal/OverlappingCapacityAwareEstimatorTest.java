@@ -18,137 +18,172 @@ package io.servicetalk.transport.netty.internal;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongSupplier;
+import java.util.function.ObjLongConsumer;
 
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 class OverlappingCapacityAwareEstimatorTest {
-
     @Test
     void testRequestNNoItemWrite() {
-        OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 100);
+        LongFunc longFunc = mock(LongFunc.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> 100L);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc);
         requestNAndVerify(supplier, 10, 100L);
-        verify(supplier).getRequestNForCapacity(10);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc).apply(10);
+        verifyNoMoreInteractions(longFunc);
     }
 
     @Test
     void testSupplyLessThanDemandNoCapacityChange() {
-        OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 100);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> 100L);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 100L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         requestNAndVerify(supplier, 10, 0L);
-        verifyNoMoreInteractions(supplier);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyLessThanDemandCapacityIncrease() {
         AtomicLong toRequest = new AtomicLong(2);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 2L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 15, 1L);
-        verify(supplier).getRequestNForCapacity(5);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc).apply(5);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyLessThanDemandCapacityDecrease() {
         AtomicLong toRequest = new AtomicLong(2);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 2L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 5, 0L);
-        verifyNoMoreInteractions(supplier);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyEqualsThanDemandCapacityIncrease() {
         AtomicLong toRequest = new AtomicLong(1);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 15, 1L);
-        verify(supplier).getRequestNForCapacity(15);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc).apply(15);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyEqualsThanDemandCapacityDecrease() {
         AtomicLong toRequest = new AtomicLong(1);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         toRequest.set(1);
         requestNAndVerify(supplier, 5, 1L);
-        verify(supplier).getRequestNForCapacity(5);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc).apply(5);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testSupplyEqualsDemandNoCapacityChange() {
-        OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 1);
+        LongFunc longFunc = mock(LongFunc.class);
+        @SuppressWarnings("unchecked")
+        ObjLongConsumer<Object> longConsumer = mock(ObjLongConsumer.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> 1L);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc, longConsumer);
         requestNAndVerify(supplier, 10, 1L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 5);
-        verify(supplier).recordSize(1, 5);
+        verify(longConsumer).accept(1, 5);
         requestNAndVerify(supplier, 10, 1L);
-        verify(supplier, times(2)).getRequestNForCapacity(10);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc, times(2)).apply(10);
+        verifyNoMoreInteractions(longFunc);
+        verifyNoMoreInteractions(longConsumer);
     }
 
     @Test
     void testNegativeSize() {
-        OverlappingCapacityAwareEstimator supplier = newSupplier(() -> 2);
+        LongFunc longFunc = mock(LongFunc.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> 2L);
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc);
         requestNAndVerify(supplier, 10, 2L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
         supplier.onItemWrite(1, 10, 11);
-        verifyNoMoreInteractions(supplier);
+        verifyNoMoreInteractions(longFunc);
         requestNAndVerify(supplier, 10, 0L);
     }
 
     @Test
     void testPredictionZeroAndNoOutstanding() {
         AtomicLong toRequest = new AtomicLong(0);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc);
         requestNAndVerify(supplier, 10, 1L);
-        verify(supplier).getRequestNForCapacity(10);
-        verifyNoMoreInteractions(supplier);
+        verify(longFunc).apply(10);
+        verifyNoMoreInteractions(longFunc);
     }
 
     @Test
     void testPredictionZeroAndSomeOutstanding() {
         AtomicLong toRequest = new AtomicLong(5);
-        OverlappingCapacityAwareEstimator supplier = newSupplier(toRequest::get);
+        LongFunc longFunc = mock(LongFunc.class);
+        when(longFunc.apply(anyLong())).thenAnswer(invocation -> toRequest.get());
+        OverlappingCapacityAwareEstimator supplier = new TestOverlappingCapacityAwareEstimator(longFunc);
         requestNAndVerify(supplier, 10, 5L);
-        verify(supplier).getRequestNForCapacity(10);
+        verify(longFunc).apply(10);
 
         toRequest.set(0);
         requestNAndVerify(supplier, 10, 0L);
-        verifyNoMoreInteractions(supplier);
+        verifyNoMoreInteractions(longFunc);
     }
 
     private static void requestNAndVerify(OverlappingCapacityAwareEstimator supplier, int writeBufferCapacityInBytes,
@@ -157,10 +192,33 @@ class OverlappingCapacityAwareEstimatorTest {
         assertThat("Unexpected requestN", requestN, is(expectedRequestN));
     }
 
-    private static OverlappingCapacityAwareEstimator newSupplier(LongSupplier demandEstimator) {
-        OverlappingCapacityAwareEstimator mock = mock(OverlappingCapacityAwareEstimator.class,
-                withSettings().useConstructor(defaultEstimator()).defaultAnswer(CALLS_REAL_METHODS));
-        when(mock.getRequestNForCapacity(anyLong())).thenAnswer(invocation -> demandEstimator.getAsLong());
-        return mock;
+    private interface LongFunc {
+        long apply(long foo);
+    }
+
+    private static final class TestOverlappingCapacityAwareEstimator extends OverlappingCapacityAwareEstimator {
+        private final LongFunc func;
+        private final ObjLongConsumer<Object> recordSize;
+
+        TestOverlappingCapacityAwareEstimator(final LongFunc func) {
+            this(func, (o, s) -> { });
+        }
+
+        TestOverlappingCapacityAwareEstimator(final LongFunc func,
+                                              final ObjLongConsumer<Object> recordSize) {
+            super(defaultEstimator());
+            this.func = func;
+            this.recordSize = recordSize;
+        }
+
+        @Override
+        protected void recordSize(final Object written, final long sizeInBytes) {
+            recordSize.accept(written, sizeInBytes);
+        }
+
+        @Override
+        protected long getRequestNForCapacity(final long capacityToFill) {
+            return func.apply(capacityToFill);
+        }
     }
 }
