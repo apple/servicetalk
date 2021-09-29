@@ -44,6 +44,8 @@ import java.time.Duration;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
@@ -164,7 +166,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                            final boolean eagerConnectionShutdown,
                            @Nullable final HealthCheckConfig healthCheckConfig) {
-        this("unknown", eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+        this("unknown", eventPublisher.map(Collections::singletonList), connectionFactory,
+                eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**
@@ -183,17 +186,19 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * continues being eligible for connecting on the request path).
      * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
      */
-    RoundRobinLoadBalancer(String targetResource,
-                           final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                           final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                           final boolean eagerConnectionShutdown,
-                           @Nullable final HealthCheckConfig healthCheckConfig) {
+    RoundRobinLoadBalancer(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+            final boolean eagerConnectionShutdown,
+            @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResource);
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
 
-        toSource(eventPublisher).subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
+        toSource(eventPublisher).subscribe(
+                new Subscriber<Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>>() {
 
             @Override
             public void onSubscribe(final Subscription s) {
@@ -206,50 +211,53 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
 
             @Override
-            public void onNext(final ServiceDiscovererEvent<ResolvedAddress> event) {
-                LOGGER.debug("Load balancer {}: Received new ServiceDiscoverer event {}.",
-                        RoundRobinLoadBalancer.this, event);
+            public void onNext(final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
+                for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
+                    LOGGER.debug("Load balancer {}: Received new ServiceDiscoverer event {}.",
+                            RoundRobinLoadBalancer.this, event);
 
-                @SuppressWarnings("unchecked")
-                final List<Host<ResolvedAddress, C>> usedAddresses =
-                    usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
-                        if (oldHosts == CLOSED_LIST) {
-                            return oldHosts;
-                        }
-                        final ResolvedAddress addr = requireNonNull(event.address());
-                        @SuppressWarnings("unchecked")
-                        final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
+                    @SuppressWarnings("unchecked")
+                    final List<Host<ResolvedAddress, C>> usedAddresses =
+                            usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
+                                if (oldHosts == CLOSED_LIST) {
+                                    return oldHosts;
+                                }
+                                final ResolvedAddress addr = requireNonNull(event.address());
+                                @SuppressWarnings("unchecked")
+                                final List<Host<ResolvedAddress, C>> oldHostsTyped =
+                                        (List<Host<ResolvedAddress, C>>) oldHosts;
 
-                        if (eagerConnectionShutdown) {
-                            if (event.isAvailable()) {
-                                return addHostToList(oldHostsTyped, addr, false);
-                            } else {
-                                return listWithHostRemoved(oldHostsTyped, host -> {
-                                    boolean match = host.address.equals(addr);
-                                    if (match) {
-                                        host.markClosed();
+                                if (eagerConnectionShutdown) {
+                                    if (event.isAvailable()) {
+                                        return addHostToList(oldHostsTyped, addr, false);
+                                    } else {
+                                        return listWithHostRemoved(oldHostsTyped, host -> {
+                                            boolean match = host.address.equals(addr);
+                                            if (match) {
+                                                host.markClosed();
+                                            }
+                                            return match;
+                                        });
                                     }
-                                    return match;
-                                });
-                            }
-                        } else if (event.isAvailable()) {
-                            return addHostToList(oldHostsTyped, addr, true);
-                        } else if (oldHostsTyped.isEmpty()) {
-                            return emptyList();
-                        } else {
-                            return markHostAsExpired(oldHostsTyped, addr);
+                                } else if (event.isAvailable()) {
+                                    return addHostToList(oldHostsTyped, addr, true);
+                                } else if (oldHostsTyped.isEmpty()) {
+                                    return emptyList();
+                                } else {
+                                    return markHostAsExpired(oldHostsTyped, addr);
+                                }
+                            });
+
+                    LOGGER.debug("Load balancer {}: Now using {} addresses: {}.",
+                            RoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
+
+                    if (event.isAvailable()) {
+                        if (usedAddresses.size() == 1) {
+                            eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                         }
-                    });
-
-                LOGGER.debug("Load balancer {}: Now using {} addresses: {}.",
-                        RoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
-
-                if (event.isAvailable()) {
-                    if (usedAddresses.size() == 1) {
-                        eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
+                    } else if (usedAddresses.isEmpty()) {
+                        eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
                     }
-                } else if (usedAddresses.isEmpty()) {
-                    eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
                 }
             }
 
@@ -512,7 +520,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final String targetResource,
-                final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
             return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
                     EAGER_CONNECTION_SHUTDOWN_ENABLED,
