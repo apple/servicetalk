@@ -83,7 +83,7 @@ class DefaultSingleAddressHttpClientBuilderTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client =
                      forResolvedAddress(hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port),
-                             serverCtx.listenAddress())
+                             u -> serverCtx.listenAddress())
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                      .hostnameVerificationAlgorithm("").build())
                              .buildBlocking()) {

@@ -32,6 +32,7 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.BuilderUtils;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -42,6 +43,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
+import static java.util.function.Function.identity;
 
 /**
  * Factory methods for building {@link HttpClient} (and other API variations) instances.
@@ -115,7 +117,10 @@ public final class HttpClients {
      * @param proxyHost the proxy host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
      * @param proxyPort The proxy port to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forSingleAddress(String, int)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
             final String host, final int port, final String proxyHost, final int proxyPort) {
         return forSingleAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
@@ -160,10 +165,13 @@ public final class HttpClients {
      * @param proxyAddress the proxy {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forSingleAddress(HostAndPort)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forHostAndPortViaProxy(address, proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder.forHostAndPort(address).proxyAddress(proxyAddress);
     }
 
     /**
@@ -173,6 +181,10 @@ public final class HttpClients {
      * together with the {@code port}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)}
      * if you want to disable this behavior.
+     * <p>
+     * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
+     * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
+     * the client is built.
      * @param port port to connect to
      * @return new builder for the address
      */
@@ -193,7 +205,10 @@ public final class HttpClients {
      * @param proxyHost The proxy resolved host address to connect.
      * @param proxyPort The proxy port to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(String, int)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
             final String host, final int port, final String proxyHost, final int proxyPort) {
         return forResolvedAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
@@ -206,11 +221,16 @@ public final class HttpClients {
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you
      * want to disable this behavior.
+     * <p>
+     * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
+     * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
+     * the client is built.
      * @return new builder for the address
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, toResolvedInetSocketAddress(address));
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address,
+                BuilderUtils::toResolvedInetSocketAddress);
     }
 
     /**
@@ -222,11 +242,15 @@ public final class HttpClients {
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(HostAndPort)}.
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address,
-                toResolvedInetSocketAddress(address), proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder
+                .forResolvedAddress(address, BuilderUtils::toResolvedInetSocketAddress)
+                .proxyAddress(proxyAddress);
     }
 
     /**
@@ -240,7 +264,7 @@ public final class HttpClients {
      * @return new builder for the address
      */
     public static <T extends SocketAddress> SingleAddressHttpClientBuilder<T, T> forResolvedAddress(final T address) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, address);
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, identity());
     }
 
     /**
@@ -252,10 +276,13 @@ public final class HttpClients {
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
      * @return new builder for the address
+     * @deprecated Use {@link SingleAddressHttpClientBuilder#proxyAddress(Object)} on the instance returned from
+     * {@link #forResolvedAddress(SocketAddress)}
      */
+    @Deprecated
     public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
             final InetSocketAddress address, final InetSocketAddress proxyAddress) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address, address, proxyAddress);
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, identity()).proxyAddress(proxyAddress);
     }
 
     /**
