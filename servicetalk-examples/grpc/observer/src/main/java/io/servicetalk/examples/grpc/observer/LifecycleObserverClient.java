@@ -33,6 +33,7 @@ public final class LifecycleObserverClient {
     public static void main(String... args) throws Exception {
         try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 // Append this filter first for most cases to maximize visibility!
+                // See javadocs on GrpcLifecycleObserverRequesterFilter for more details on filter ordering.
                 .appendHttpClientFilter(new GrpcLifecycleObserverRequesterFilter(
                         GrpcLifecycleObservers.logging("servicetalk-examples-grpc-observer-logger", TRACE)))
                 .buildBlocking(new ClientFactory())) {

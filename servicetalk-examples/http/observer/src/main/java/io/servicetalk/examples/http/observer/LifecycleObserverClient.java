@@ -32,6 +32,7 @@ public final class LifecycleObserverClient {
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 // Append this filter first for most cases to maximize visibility!
+                // See javadocs on GrpcLifecycleObserverRequesterFilter for more details on filter ordering.
                 .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                         HttpLifecycleObservers.logging("servicetalk-examples-http-observer-logger", TRACE)))
                 .buildBlocking()) {
