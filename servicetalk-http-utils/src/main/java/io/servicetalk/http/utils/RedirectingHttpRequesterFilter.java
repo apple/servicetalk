@@ -25,17 +25,14 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatus.StatusClass;
-import io.servicetalk.http.api.RedirectConfiguration;
-import io.servicetalk.http.api.RedirectConfiguration.RedirectRequestTransformer;
-import io.servicetalk.http.api.RedirectConfiguration.ShouldRedirectPredicate;
+import io.servicetalk.http.api.RedirectConfig;
+import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -43,16 +40,18 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.TrailersTransformer;
-import io.servicetalk.http.utils.RedirectSingle.Config;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static java.util.Arrays.asList;
+import static java.util.Arrays.sort;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -69,7 +68,7 @@ import static java.util.Objects.requireNonNull;
  *     limited to automatically following relative redirects only.</li>
  *     <li>This implementation will automatically redirect headers and message body for relative locations.</li>
  *     <li>For security reasons, this implementation will NOT automatically redirect headers and message body for
- *     non-relative locations. Use {@link RedirectConfiguration} to opt-in for redirect of requires request components.
+ *     non-relative locations. Use {@link RedirectConfig} to opt-in for redirect of requires request components.
  *     </li>
  * </ul>
  */
@@ -77,35 +76,22 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                                                              StreamingHttpConnectionFilterFactory,
                                                              HttpExecutionStrategyInfluencer {
 
-    // https://tools.ietf.org/html/rfc2068#section-10.3 says:
-    // A user agent SHOULD NOT automatically redirect a request more than 5 times,
-    // since such redirects usually indicate an infinite loop.
-    private static final int DEFAULT_MAX_REDIRECTS = 5;
-    private static final HttpRequestMethod[] DEFAULT_ALLOWED_METHODS = {GET, HEAD};
-    private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
-            (relative, redirectCnt, previousRequest, redirectResponse) -> true;
-    private static final CharSequence[] EMPTY_CHAR_SEQUENCE_ARRAY = {};
-    private static final RedirectRequestTransformer DEFAULT_REQUEST_TRANSFORMER =
-            (relative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
+    private static final RedirectConfig DEFAULT_CONFIG = new RedirectConfigBuilder().build();
 
-    private final boolean allowNonRelativeRedirects;
-    private final Config config;
+    private final RedirectConfig config;
 
     /**
      * Create a new instance, only performing relative redirects.
-     *
-     * @deprecated Use {@link Builder}.
      */
-    @Deprecated
     public RedirectingHttpRequesterFilter() {
-        this(DEFAULT_MAX_REDIRECTS);
+        this(DEFAULT_CONFIG);
     }
 
     /**
      * Create a new instance, only performing relative redirects.
      *
      * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link Builder}.
+     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final int maxRedirects) {
@@ -116,11 +102,11 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      * Create a new instance, performing relative redirects only for {@link HttpConnection}.
      *
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @deprecated Use {@link Builder}.
+     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient) {
-        this(onlyRelativeClient, DEFAULT_MAX_REDIRECTS);
+        this(onlyRelativeClient, BackwardCompatibleRedirectConfig.DEFAULT_MAX_REDIRECTS);
     }
 
     /**
@@ -128,15 +114,12 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      *
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link Builder}.
+     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final int maxRedirects) {
-        this(!onlyRelativeClient, new Config(maxRedirects, toSortedNames(DEFAULT_ALLOWED_METHODS),
-                DEFAULT_SHOULD_REDIRECT_PREDICATE,
-                /* changePostToGet */ true,  // use "true" for backward compatibility
-                DEFAULT_REQUEST_TRANSFORMER));
+        this(new BackwardCompatibleRedirectConfig(maxRedirects, !onlyRelativeClient));
     }
 
     /**
@@ -144,12 +127,12 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      *
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
-     * @deprecated Use {@link Builder}.
+     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
                                           final boolean onlyRelativeConnection) {
-        this(onlyRelativeClient, DEFAULT_MAX_REDIRECTS);
+        this(onlyRelativeClient, BackwardCompatibleRedirectConfig.DEFAULT_MAX_REDIRECTS);
     }
 
     /**
@@ -158,7 +141,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link Builder}.
+     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
      */
     @Deprecated
     public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
@@ -167,10 +150,13 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         this(onlyRelativeClient, maxRedirects);
     }
 
-    private RedirectingHttpRequesterFilter(final boolean allowNonRelativeRedirects,
-                                           final Config config) {
-        this.allowNonRelativeRedirects = allowNonRelativeRedirects;
-        this.config = config;
+    /**
+     * Create a new instance.
+     *
+     * @param config {@link RedirectConfig} to customize the behavior.
+     */
+    public RedirectingHttpRequesterFilter(final RedirectConfig config) {
+        this.config = requireNonNull(config);
     }
 
     @Override
@@ -182,7 +168,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
-                        allowNonRelativeRedirects);
+                        config.allowNonRelativeRedirects());
             }
 
             @Override
@@ -225,7 +211,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                     }
                     return item;
                 })));
-        if (config.maxRedirects <= 0) {
+        if (config.maxRedirects() <= 0) {
             return response;
         }
         return new RedirectSingle(delegate, strategy, request, response, allowNonRelativeRedirects, config);
@@ -237,181 +223,61 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         return strategy;
     }
 
-    /**
-     * Builder for {@link RedirectingHttpRequesterFilter}.
-     */
-    public static final class Builder implements RedirectConfiguration {
+    @Deprecated
+    private static final class BackwardCompatibleRedirectConfig implements RedirectConfig {
 
-        private int maxRedirects = DEFAULT_MAX_REDIRECTS;
-        private boolean allowNonRelativeRedirects;
-        private HttpRequestMethod[] allowedMethods = DEFAULT_ALLOWED_METHODS;
-        private ShouldRedirectPredicate shouldRedirect = DEFAULT_SHOULD_REDIRECT_PREDICATE;
-        private boolean changePostToGet;
-        private CharSequence[] headersToRedirect = EMPTY_CHAR_SEQUENCE_ARRAY;
-        private boolean redirectPayloadBody;
-        private CharSequence[] trailersToRedirect = EMPTY_CHAR_SEQUENCE_ARRAY;
-        private RedirectRequestTransformer requestTransformer = DEFAULT_REQUEST_TRANSFORMER;
+        // https://tools.ietf.org/html/rfc2068#section-10.3 says:
+        // A user agent SHOULD NOT automatically redirect a request more than 5 times,
+        // since such redirects usually indicate an infinite loop.
+        static final int DEFAULT_MAX_REDIRECTS = 5;
+        private static final List<HttpRequestMethod> DEFAULT_ALLOWED_METHODS =
+                toSortedList(GET, HEAD, POST, PUT, DELETE, PATCH);
+        private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
+                (relative, redirectCnt, previousRequest, redirectResponse) -> true;
+        private static final RedirectRequestTransformer DEFAULT_REDIRECT_REQUEST_TRANSFORMER =
+                (relative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
 
-        @Override
-        public Builder maxRedirects(final int maxRedirects) {
-            if (maxRedirects < 0) {
-                throw new IllegalArgumentException("maxRedirects: " + maxRedirects + " (expected >= 0)");
-            }
+        private final int maxRedirects;
+        private final boolean allowNonRelativeRedirects;
+
+        BackwardCompatibleRedirectConfig(final int maxRedirects, final boolean allowNonRelativeRedirects) {
             this.maxRedirects = maxRedirects;
-            return this;
-        }
-
-        @Override
-        public Builder allowNonRelativeRedirects(final boolean allowNonRelativeRedirects) {
             this.allowNonRelativeRedirects = allowNonRelativeRedirects;
-            return this;
         }
 
         @Override
-        public Builder allowedMethods(HttpRequestMethod... methods) {
-            this.allowedMethods = requireNonNull(methods);
-            return this;
+        public int maxRedirects() {
+            return maxRedirects;
         }
 
         @Override
-        public Builder shouldRedirect(final ShouldRedirectPredicate shouldRedirect) {
-            this.shouldRedirect = requireNonNull(shouldRedirect);
-            return this;
+        public List<HttpRequestMethod> allowedMethods() {
+            return DEFAULT_ALLOWED_METHODS;
         }
 
         @Override
-        public Builder changePostToGet(final boolean changePostToGet) {
-            this.changePostToGet = changePostToGet;
-            return this;
+        public boolean allowNonRelativeRedirects() {
+            return allowNonRelativeRedirects;
         }
 
         @Override
-        public Builder headersToRedirect(final CharSequence... headerNames) {
-            this.headersToRedirect = requireNonNull(headerNames);
-            return this;
+        public ShouldRedirectPredicate shouldRedirectPredicate() {
+            return DEFAULT_SHOULD_REDIRECT_PREDICATE;
         }
 
         @Override
-        public Builder redirectPayloadBody(final boolean redirectPayloadBody) {
-            this.redirectPayloadBody = redirectPayloadBody;
-            return this;
+        public boolean changePostToGet() {
+            return true;
         }
 
         @Override
-        public Builder trailersToRedirect(final CharSequence... trailerNames) {
-            this.trailersToRedirect = requireNonNull(trailerNames);
-            return this;
+        public RedirectRequestTransformer redirectRequestTransformer() {
+            return DEFAULT_REDIRECT_REQUEST_TRANSFORMER;
         }
 
-        @Override
-        public Builder prepareRequest(final RedirectRequestTransformer requestTransformer) {
-            this.requestTransformer = requireNonNull(requestTransformer);
-            return this;
-        }
-
-        /**
-         * Builds a new instance of {@link RedirectingHttpRequesterFilter}.
-         *
-         * @return a new instance of {@link RedirectingHttpRequesterFilter}
-         */
-        public RedirectingHttpRequesterFilter build() {
-            return new RedirectingHttpRequesterFilter(allowNonRelativeRedirects, new Config(maxRedirects,
-                    toSortedNames(allowedMethods), shouldRedirect, changePostToGet,
-                    new DefaultRedirectRequestTransformer(headersToRedirect, redirectPayloadBody, trailersToRedirect,
-                            requestTransformer)));
-        }
-    }
-
-    private static String[] toSortedNames(final HttpRequestMethod[] allowedMethods) {
-        return Arrays.stream(allowedMethods).map(HttpRequestMethod::name)
-                .sorted()   // Soring is required because RedirectSingle uses Arrays.binarySearch
-                .toArray(String[]::new);
-    }
-
-    private static final class DefaultRedirectRequestTransformer implements RedirectRequestTransformer {
-
-        private static final TrailersTransformer<Object, Buffer> NOOP_TRAILERS_TRANSFORMER =
-                new StatelessTrailersTransformer<>();
-
-        private final CharSequence[] headersToRedirect;
-        private final boolean redirectPayloadBody;
-        private final CharSequence[] trailersToRedirect;
-        private final RedirectRequestTransformer userDefinedTransformer;
-
-        DefaultRedirectRequestTransformer(final CharSequence[] headersToRedirect,
-                                          final boolean redirectPayloadBody,
-                                          final CharSequence[] trailersToRedirect,
-                                          final RedirectRequestTransformer userDefinedTransformer) {
-            this.headersToRedirect = headersToRedirect.clone();
-            this.redirectPayloadBody = redirectPayloadBody;
-            this.trailersToRedirect = trailersToRedirect.clone();
-            this.userDefinedTransformer = userDefinedTransformer;
-        }
-
-        @Override
-        public StreamingHttpRequest apply(final boolean relative,
-                                          final StreamingHttpRequest previousRequest,
-                                          final StreamingHttpResponse redirectResponse,
-                                          final StreamingHttpRequest redirectRequest) {
-            if (relative) {
-                fullCopy(previousRequest, redirectRequest);
-            } else {
-                safeCopy(previousRequest, redirectRequest);
-            }
-            return userDefinedTransformer.apply(relative, previousRequest, redirectResponse, redirectRequest);
-        }
-
-        private static void fullCopy(final StreamingHttpRequest originalRequest,
-                                     final StreamingHttpRequest redirectRequest) {
-            redirectRequest.setHeaders(originalRequest.headers());
-            redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(originalRequest.messageBody()));
-            // Use `transform` to update PayloadInfo flags, assuming trailers may be included in the message body
-            redirectRequest.transform(NOOP_TRAILERS_TRANSFORMER);
-            // FIXME: instead of `transform`, preserve original PayloadInfo/FlushStrategy when it's API is available
-        }
-
-        private void safeCopy(final StreamingHttpRequest request, final StreamingHttpRequest redirectRequest) {
-            // NOTE: for security reasons we do not copy any headers or payload body from the original request by
-            // default for non-relative redirects.
-            for (CharSequence headerName : headersToRedirect) {
-                for (CharSequence headerValue : request.headers().values(headerName)) {
-                    redirectRequest.addHeader(headerName, headerValue);
-                }
-            }
-
-            if (redirectPayloadBody) {
-                if (trailersToRedirect.length == 0) {
-                    redirectRequest.payloadBody(request.payloadBody());
-                } else {
-                    redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()))
-                            .transform(new StatelessTrailersTransformer<Buffer>() {
-                                @Override
-                                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                    return filterTrailers(trailers, trailersToRedirect);
-                                }
-                            });
-                }
-            } else if (trailersToRedirect.length != 0) {
-                redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()
-                                .filter(item -> item instanceof HttpHeaders)))
-                        .transform(new StatelessTrailersTransformer<Buffer>() {
-                            @Override
-                            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                return filterTrailers(trailers, trailersToRedirect);
-                            }
-                        });
-            }
-        }
-
-        private static HttpHeaders filterTrailers(final HttpHeaders trailers, final CharSequence[] keepOnly) {
-            Iterator<Map.Entry<CharSequence, CharSequence>> it = trailers.iterator();
-            while (it.hasNext()) {
-                Map.Entry<CharSequence, CharSequence> entry = it.next();
-                if (Arrays.stream(keepOnly).noneMatch(name -> contentEqualsIgnoreCase(entry.getKey(), name))) {
-                    it.remove();
-                }
-            }
-            return trailers;
+        private static List<HttpRequestMethod> toSortedList(final HttpRequestMethod... allowedMethods) {
+            sort(allowedMethods); // Soring is required because RedirectSingle uses binary search
+            return unmodifiableList(asList(allowedMethods));
         }
     }
 }

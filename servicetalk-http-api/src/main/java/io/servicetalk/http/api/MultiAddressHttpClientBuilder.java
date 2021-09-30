@@ -20,8 +20,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
-import java.util.function.Consumer;
-
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
  * absolute-form URL address information from each {@link StreamingHttpRequest}.
@@ -88,28 +86,31 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     /**
      * Sets a maximum number of redirects to follow.
-     * <p>
-     * If more customization for redirects is required, consider using {@link #initializer(SingleAddressInitializer)}
-     * to apply {@code RedirectingHttpRequesterFilter} with {@code allowNonRelativeRedirects} flag set to {@code true}.
      *
      * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.
-     * @deprecated Use {@link #followRedirects(Consumer)} and {@link RedirectConfiguration#maxRedirects(int)}.
+     * @deprecated Use {@link #followRedirects(RedirectConfig)} with {@link RedirectConfigBuilder#maxRedirects(int)}.
      */
     @Deprecated
-    public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
+    public MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
+        return followRedirects(new RedirectConfigBuilder().maxRedirects(maxRedirects)
+                .allowNonRelativeRedirects(true).build());
+    }
 
     /**
-     * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> and gives access to
-     * the detailed {@link RedirectConfiguration} options.
+     * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
      * <p>
-     * {@link RedirectConfiguration} helps to tune what requests should follow redirects and which parts of the original
-     * request (headers/payload body/trailers) should be redirected to non-relative locations.
+     * Note: For backward compatibility with 0.41.x versions redirects are enabled by default. Starting from version
+     * 0.42, users have to opt-in for redirects using this method. If you rely on redirects, always use this method.
      *
-     * @param initializer {@link Consumer} to customize the default {@link RedirectConfiguration}.
+     * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
+     * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
+     * redirected to non-relative locations.
      * @return {@code this}.
+     * @see RedirectConfigBuilder
      */
-    public MultiAddressHttpClientBuilder<U, R> followRedirects(Consumer<RedirectConfiguration> initializer) {
-        throw new UnsupportedOperationException("followRedirects not yet supported by " + getClass().getSimpleName());
+    public MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config) {
+        throw new UnsupportedOperationException("followRedirects(RedirectConfig) not yet supported by " +
+                getClass().getName());
     }
 }

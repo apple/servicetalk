@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.redirects;
 
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 
@@ -35,12 +36,12 @@ public final class SingleAddressRedirectClient {
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT)
                 // Enables redirection:
-                .appendClientFilter(new RedirectingHttpRequesterFilter.Builder()
+                .appendClientFilter(new RedirectingHttpRequesterFilter(new RedirectConfigBuilder()
                         .allowedMethods(GET, POST)  // by default, POST requests don't follow redirects:
-                        .build())
+                        .build()))
                 .build()) {
 
-            // Simple GET request:
+            System.out.println("- Simple GET request:");
             client.request(client.get("/relative"))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
@@ -52,7 +53,7 @@ public final class SingleAddressRedirectClient {
                     // but is useful for demonstration purposes.
                     .toFuture().get();
 
-            // POST request with headers and payload body:
+            System.out.println("- POST request with headers and payload body:");
             client.request(client.post("/relative")
                     .addHeader(CUSTOM_HEADER, "value")
                     .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content")))

@@ -144,7 +144,7 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
 
     private FilterFactory newFilterFactory() {
         return new ConditionalFilterFactory(request -> request.headers().contains("X-REDIRECT"),
-                FilterFactory.from(new RedirectingHttpRequesterFilter.Builder().build()))
+                FilterFactory.from(new RedirectingHttpRequesterFilter()))
                 .append(FilterFactory.from(
                         new HostHeaderHttpRequesterFilter(HostAndPort.of(remoteAddress()).toString())));
     }

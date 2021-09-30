@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -96,7 +97,7 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
-                .followRedirects(config -> { /* noop */ })
+                .followRedirects(new RedirectConfigBuilder().build())
                 .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 

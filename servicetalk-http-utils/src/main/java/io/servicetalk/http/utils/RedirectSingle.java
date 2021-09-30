@@ -24,8 +24,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.RedirectConfiguration.RedirectRequestTransformer;
-import io.servicetalk.http.api.RedirectConfiguration.ShouldRedirectPredicate;
+import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
@@ -45,7 +44,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
-import static java.util.Arrays.binarySearch;
+import static java.util.Collections.binarySearch;
 
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
@@ -59,7 +58,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
     private final StreamingHttpRequest originalRequest;
     private final StreamingHttpRequester requester;
     private final boolean allowNonRelativeRedirects;
-    private final Config config;
+    private final RedirectConfig config;
 
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
@@ -77,7 +76,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                    final StreamingHttpRequest originalRequest,
                    final Single<StreamingHttpResponse> originalResponse,
                    final boolean allowNonRelativeRedirects,
-                   final Config config) {
+                   final RedirectConfig config) {
         this.requester = requester;
         this.strategy = strategy;
         this.originalRequest = originalRequest;
@@ -163,7 +162,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return;
                 }
 
-                if (!redirectSingle.config.shouldRedirect.test(relative, redirectCount, request, response)) {
+                if (!redirectSingle.config.shouldRedirectPredicate().test(relative, redirectCount, request, response)) {
                     terminalDelivered = true;
                     target.onSuccess(response);
                     return;
@@ -183,7 +182,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     }
                 }
 
-                newRequest = redirectSingle.config.requestTransformer.apply(relative, request, response, newRequest);
+                newRequest = redirectSingle.config.redirectRequestTransformer()
+                        .apply(relative, request, response, newRequest);
 
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("Executing redirect to '{}' for request '{}'", response.headers().get(LOCATION),
@@ -240,14 +240,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     // The 306 (Unused) status code is no longer used, and the code is reserved.
                     return false;
                 default:
-                    final Config config = redirectSingle.config;
-                    if (redirectCount >= config.maxRedirects) {
+                    final RedirectConfig config = redirectSingle.config;
+                    if (redirectCount >= config.maxRedirects()) {
                         LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
-                                config.maxRedirects, redirectSingle.originalRequest);
+                                config.maxRedirects(), redirectSingle.originalRequest);
                         return false;
                     }
 
-                    if (binarySearch(config.allowedMethods, requestMethod.name()) < 0) {
+                    if (binarySearch(config.allowedMethods(), requestMethod) < 0) {
                         LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
                         return false;
                     }
@@ -297,7 +297,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             //     For historical reasons, a user agent MAY change the request method from POST to GET for the
             //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
             //     308 (Permanent Redirect) status codes can be used instead.
-            return redirectSingle.config.changePostToGet &&
+            return redirectSingle.config.changePostToGet() &&
                     (statusCode == MOVED_PERMANENTLY.code() || statusCode == FOUND.code()) &&
                     POST.name().equals(originalMethod.name()) ? GET : originalMethod;
         }
@@ -329,23 +329,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 return fallbackPort;
             }
             return "https".equalsIgnoreCase(scheme) ? 443 : 80;
-        }
-    }
-
-    static final class Config {
-        final int maxRedirects;
-        final String[] allowedMethods;
-        final ShouldRedirectPredicate shouldRedirect;
-        final boolean changePostToGet;
-        final RedirectRequestTransformer requestTransformer;
-
-        Config(final int maxRedirects, final String[] allowedMethods, final ShouldRedirectPredicate shouldRedirect,
-               final boolean changePostToGet, final RedirectRequestTransformer requestTransformer) {
-            this.maxRedirects = maxRedirects;
-            this.allowedMethods = allowedMethods;
-            this.shouldRedirect = shouldRedirect;
-            this.changePostToGet = changePostToGet;
-            this.requestTransformer = requestTransformer;
         }
     }
 }

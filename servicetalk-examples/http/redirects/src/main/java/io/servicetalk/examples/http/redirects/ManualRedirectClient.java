@@ -50,7 +50,7 @@ public final class ManualRedirectClient {
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build()).build()) {
 
             try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT).build()) {
-                // Redirect of a GET request with a custom header:
+                System.out.println("- Redirect of a GET request with a custom header:");
                 HttpRequest originalGet = client.get("/non-relative")
                         .addHeader(CUSTOM_HEADER, "value");
                 client.request(originalGet)
@@ -75,7 +75,7 @@ public final class ManualRedirectClient {
                         // asynchronous API but is useful for demonstration purposes.
                         .toFuture().get();
 
-                // Redirect of a POST request with a payload body:
+                System.out.println("- Redirect of a POST request with a payload body:");
                 HttpRequest originalPost = client.post("/non-relative")
                         .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content"));
                 client.request(originalPost)
