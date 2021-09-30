@@ -104,10 +104,10 @@ link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/Gr
 
 Using the following classes:
 
-- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifeCycleObserverServer.java[LifeCycleObserverServer] - A server that installs a
+- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverServer.java[LifecycleObserverServer] - A server that installs a
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
 on the server builder.
-- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifeCycleObserverClient.java[LifeCycleObserverClient] - A client that installs a
+- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverClient.java[LifecycleObserverClient] - A client that installs a
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
 on via a client filter on the client builder.
 
