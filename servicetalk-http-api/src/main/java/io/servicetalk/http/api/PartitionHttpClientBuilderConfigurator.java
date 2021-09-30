@@ -20,7 +20,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 /**
  * If different clients used by a partitioned client created by a {@link PartitionedHttpClientBuilder} have different
  * builder configuration, this configurator helps to configure them differently.
- * <p>
+ *
  * @deprecated Use {@link PartitionedHttpClientBuilder.SingleAddressInitializer}.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
