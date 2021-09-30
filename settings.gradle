@@ -44,12 +44,14 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:compression",
         "servicetalk-examples:grpc:errors",
         "servicetalk-examples:grpc:deadline",
+        "servicetalk-examples:grpc:observer",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:redirects",
         "servicetalk-examples:http:http2",
         "servicetalk-examples:http:jaxrs",
         "servicetalk-examples:http:metadata",
+        "servicetalk-examples:http:observer",
         "servicetalk-examples:http:serialization",
         "servicetalk-examples:http:service-composition",
         "servicetalk-examples:http:uds",
@@ -100,12 +102,14 @@ project(":servicetalk-examples:grpc:protoc-options").name = "servicetalk-example
 project(":servicetalk-examples:grpc:compression").name = "servicetalk-examples-grpc-compression"
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
 project(":servicetalk-examples:grpc:deadline").name = "servicetalk-examples-grpc-deadline"
+project(":servicetalk-examples:grpc:observer").name = "servicetalk-examples-grpc-observer"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"
 project(":servicetalk-examples:http:timeout").name = "servicetalk-examples-http-timeout"
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
+project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
 project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"

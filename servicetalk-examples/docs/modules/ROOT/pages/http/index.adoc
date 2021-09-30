@@ -172,6 +172,21 @@ Using the following classes:
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.
 
+[#Observer]
+== Observer
+This example demonstrates the following:
+- Use of
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver] to log a summary of each request/response.
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverServer.java[LifecycleObserverServer] - A server that installs a
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
+on the server builder.
+- link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java[LifecycleObserverClient] - A client that installs a
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
+on via a client filter on the client builder.
+
 [#Redirects]
 == Redirects
 
