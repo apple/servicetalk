@@ -179,7 +179,7 @@ public final class AwaitUtils {
     @Nullable
     public static <T> T poll(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
         try {
-            return queue.poll(timeout, NANOSECONDS);
+            return queue.poll(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throwException(e);
