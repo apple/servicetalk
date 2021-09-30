@@ -453,7 +453,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, null);
         if (host.healthCheckConfig != null) {
                 // Schedule health check before returning
-                establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(connectionFactory));
+                establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(t, connectionFactory));
         }
         return establishConnection
                 .flatMap(newCnx -> {
@@ -638,24 +638,26 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             cancelIfHealthCheck(oldState);
         }
 
-        void markUnhealthy(ConnectionFactory<Addr, ? extends C> connectionFactory) {
+        void markUnhealthy(final Throwable cause, final ConnectionFactory<Addr, ? extends C> connectionFactory) {
             assert healthCheckConfig != null;
             for (;;) {
                 ConnState previous = connStateUpdater.get(this);
 
                 if (!ActiveState.class.equals(previous.state.getClass()) || previous.connections.length > 0) {
+                    LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}. {}",
+                            targetResource, address, previous, cause);
                     break;
                 }
 
                 ActiveState previousState = (ActiveState) previous.state;
-                if (previousState.failedConnections + 1 < this.healthCheckConfig.failedThreshold) {
+                if (previousState.failedConnections + 1 < healthCheckConfig.failedThreshold) {
                     final ActiveState nextState = previousState.forNextFailedConnection();
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
-                        LOGGER.debug("Load balancer for {}: Active host for address {} failed to open {} connections" +
-                                        " ({} consecutive failures trigger health check).",
-                                targetResource, address, nextState.failedConnections,
-                                healthCheckConfig.failedThreshold);
+                        LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
+                                        " {} times ({} consecutive failures will trigger health check).",
+                                targetResource, nextState.failedConnections, address,
+                                healthCheckConfig.failedThreshold, cause);
                         break;
                     }
                     // another thread won the race, try again
@@ -665,9 +667,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this);
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
-                    LOGGER.debug("Load balancer for {}: Triggering health check for address {}" +
-                                    " after {} failed attempts to open a new connection.",
-                            targetResource, address, previousState.failedConnections);
+                    LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
+                                    " {} times. Threshold reached, triggering health check for this host.",
+                            targetResource, address, healthCheckConfig.failedThreshold, cause);
                     healthCheck.schedule();
                     break;
                 }
@@ -883,6 +885,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             ConnState(final Object[] connections, final Object state) {
                 this.connections = connections;
                 this.state = state;
+            }
+
+            @Override
+            public String toString() {
+                return "ConnState{" +
+                        "state=" + state +
+                        ", #connections=" + connections.length +
+                        '}';
             }
         }
     }
