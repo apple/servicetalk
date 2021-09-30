@@ -1,0 +1,5 @@
+== ServiceTalk GrpcLifecycleObserver
+
+Extends "Hello World" example of ServiceTalk gRPC to demonstrate use of
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
+for logging.
