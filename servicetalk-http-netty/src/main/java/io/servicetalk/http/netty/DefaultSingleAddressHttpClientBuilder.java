@@ -57,7 +57,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -73,7 +72,6 @@ import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_R
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -106,7 +104,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
+    private Function<U, CharSequence> hostToCharSequenceFunction =
+            DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
     @Nullable
     private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
@@ -118,15 +117,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private AutoRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
-
-    DefaultSingleAddressHttpClientBuilder(
-            final U address, final U proxyAddress, Function<U, CharSequence> hostToCharSequenceFunction,
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        this(address, serviceDiscoverer);
-        this.proxyAddress = proxyAddress;
-        this.hostToCharSequenceFunction = requireNonNull(hostToCharSequenceFunction);
-        config.connectAddress(hostToCharSequenceFunction.apply(address));
-    }
 
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
@@ -184,33 +174,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
-            final HostAndPort address, final HostAndPort proxyAddress) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress,
-                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()),
-                globalDnsServiceDiscoverer());
-    }
-
     static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
-            final U u, final R address) {
-        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
-                new NoopServiceDiscoverer<>(u, address);
+            final U u, final Function<U, R> toResolvedAddressMapper) {
+        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd = new NoopServiceDiscoverer<>(toResolvedAddressMapper);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
-            final HostAndPort u, final InetSocketAddress address, final HostAndPort proxyAddress) {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress,
-                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()), sd);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
-            final InetSocketAddress u, final InetSocketAddress address, final InetSocketAddress proxyAddress) {
-        ServiceDiscoverer<InetSocketAddress, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, NetUtil::toSocketAddressString, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -238,7 +205,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return proxyAddress != null ? proxyAddress : builder.address;
+            return proxyAddress != null ? proxyAddress :
+                    // the builder can be modified post-context creation, therefore proxy can be set
+                    (builder.proxyAddress != null ? builder.proxyAddress : builder.address);
         }
 
         HttpClientConfig httpConfig() {
@@ -417,6 +386,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
         assert address != null : "address should have been set in constructor";
         return new AbsoluteAddressHttpRequesterFilter("http", hostToCharSequenceFunction.apply(address));
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
+        this.proxyAddress = requireNonNull(proxyAddress);
+        config.connectAddress(hostToCharSequenceFunction.apply(address));
+        return this;
     }
 
     @Override
@@ -603,7 +579,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
-    private CharSequence toAuthorityForm(final U address) {
+    private static <U> CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
         }
@@ -658,29 +634,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
-    private static final class NoopServiceDiscoverer<OriginalAddress, ResolvedAddress>
-            implements ServiceDiscoverer<OriginalAddress, ResolvedAddress,
+    private static final class NoopServiceDiscoverer<UnresolvedAddress, ResolvedAddress>
+            implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
             ServiceDiscovererEvent<ResolvedAddress>> {
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private final Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> resolution;
-        private final OriginalAddress originalAddress;
+        private final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper;
 
-        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final ResolvedAddress address) {
-            this.originalAddress = requireNonNull(originalAddress);
-            resolution = Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(
-                    singletonList(new DefaultServiceDiscovererEvent<>(requireNonNull(address), true)))
-                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
-                    .concat(never());
+        private NoopServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper) {
+            this.toResolvedAddressMapper = requireNonNull(toResolvedAddressMapper);
         }
 
         @Override
         public Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> discover(
-                final OriginalAddress address) {
-            if (!this.originalAddress.equals(address)) {
-                return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
-            }
-            return resolution;
+                final UnresolvedAddress address) {
+            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(singletonList(
+                    new DefaultServiceDiscovererEvent<>(requireNonNull(toResolvedAddressMapper.apply(address)), true)))
+                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
+                    .concat(never());
         }
 
         @Override

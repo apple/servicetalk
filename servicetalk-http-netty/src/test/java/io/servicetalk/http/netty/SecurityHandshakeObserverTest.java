@@ -49,7 +49,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -151,7 +150,7 @@ class SecurityHandshakeObserverTest {
         try (ProxyTunnel proxyTunnel = new ProxyTunnel()) {
             HostAndPort proxyAddress = proxyTunnel.startProxy();
             verifyHandshakeObserved(HttpServers::forAddress,
-                                    address -> forSingleAddressViaProxy(address, proxyAddress));
+                                    address -> forSingleAddress(address).proxyAddress(proxyAddress));
         }
     }
 

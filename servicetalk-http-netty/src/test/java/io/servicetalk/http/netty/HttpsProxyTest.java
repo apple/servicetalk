@@ -102,7 +102,8 @@ class HttpsProxyTest {
     void createClient() {
         assert serverAddress != null && proxyAddress != null;
         client = HttpClients
-                .forSingleAddressViaProxy(serverAddress, proxyAddress)
+                .forSingleAddress(serverAddress)
+                .proxyAddress(proxyAddress)
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .buildBlocking();

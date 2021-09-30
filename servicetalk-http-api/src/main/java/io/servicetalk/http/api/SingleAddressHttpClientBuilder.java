@@ -41,6 +41,16 @@ import java.util.function.Predicate;
  */
 public abstract class SingleAddressHttpClientBuilder<U, R>
         extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    /**
+     * Configure proxy to serve as an intermediary for requests.
+     * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
+     * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
+     * @return {@code this}.
+     */
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
+        throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
+                + getClass().getName());
+    }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
