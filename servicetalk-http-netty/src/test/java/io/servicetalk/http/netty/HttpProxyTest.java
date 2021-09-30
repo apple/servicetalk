@@ -18,14 +18,19 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -51,20 +56,16 @@ class HttpProxyTest {
     private ServerContext serverContext;
     @Nullable
     private HostAndPort serverAddress;
-    @Nullable
-    private BlockingHttpClient client;
     private final AtomicInteger proxyRequestCount = new AtomicInteger();
 
     @BeforeEach
     void setup() throws Exception {
         startProxy();
         startServer();
-        createClient();
     }
 
     @AfterEach
     void tearDown() {
-        safeClose(client);
         safeClose(proxyClient);
         safeClose(proxyContext);
         safeClose(serverContext);
@@ -87,15 +88,57 @@ class HttpProxyTest {
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    void createClient() {
+    private enum ClientSource {
+        SINGLE(HttpClients::forSingleAddress),
+        RESOLVED(HttpClients::forResolvedAddress);
+
+        private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                clientBuilderFactory;
+
+        ClientSource(Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                             clientBuilderFactory) {
+            this.clientBuilderFactory = clientBuilderFactory;
+        }
+    }
+
+    @ParameterizedTest(name = "[{index}] client = {0}")
+    @EnumSource
+    void testRequest(ClientSource clientSource) throws Exception {
         assert serverAddress != null && proxyAddress != null;
-        client = HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
+
+        final BlockingHttpClient client = clientSource.clientBuilderFactory.apply(serverAddress)
+                .proxyAddress(proxyAddress)
                 .buildBlocking();
+
+        final HttpResponse httpResponse = client.request(client.get("/path"));
+        assertThat(httpResponse.status(), is(OK));
+        assertThat(proxyRequestCount.get(), is(1));
+        assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        safeClose(client);
     }
 
     @Test
-    void testRequest() throws Exception {
-        assert client != null;
+    void testBuilderReuseEachClientUsesOwnProxy() throws Exception {
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress(serverAddress);
+        final BlockingHttpClient client = builder.proxyAddress(proxyAddress).buildBlocking();
+
+        final HttpClient otherProxyClient = HttpClients.forMultiAddressUrl().build();
+        final AtomicInteger otherProxyRequestCount = new AtomicInteger();
+        try (ServerContext otherProxyContext = HttpServers.forAddress(localAddress(0))
+                .listenAndAwait((ctx, request, responseFactory) -> {
+                    otherProxyRequestCount.incrementAndGet();
+                    return otherProxyClient.request(request);
+                });
+             BlockingHttpClient otherClient = builder.proxyAddress(serverHostAndPort(otherProxyContext))
+                     .buildBlocking()) {
+
+            final HttpResponse httpResponse = otherClient.request(client.get("/path"));
+            assertThat(httpResponse.status(), is(OK));
+            assertThat(otherProxyRequestCount.get(), is(1));
+            assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        }
+
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));

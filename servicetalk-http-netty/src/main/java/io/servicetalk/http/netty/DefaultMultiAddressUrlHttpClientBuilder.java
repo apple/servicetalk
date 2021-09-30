@@ -70,7 +70,7 @@ import static java.util.Objects.requireNonNull;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
-        extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+        implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
     private static final RedirectConfig DEFAULT_REDIRECT_CONFIG = new RedirectConfigBuilder()

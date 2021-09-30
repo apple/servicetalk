@@ -44,4 +44,9 @@
     </Or>
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
+  <!-- Fields are usually initialized in @BeforeAll/@BeforeEach methods instead of constructors for tests -->
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+  </Match>
 </FindBugsFilter>

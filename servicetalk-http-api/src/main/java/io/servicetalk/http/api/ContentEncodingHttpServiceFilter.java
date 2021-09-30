@@ -97,7 +97,7 @@ public final class ContentEncodingHttpServiceFilter
                         BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decoders(),
                                 BufferDecoder::encodingName, contentEncodingItr, request.headers());
                         if (decoder == null) {
-                            return succeeded(responseFactory.unsupportedMediaType());
+                            return succeeded(responseFactory.unsupportedMediaType()).subscribeShareContext();
                         }
 
                         requestDecompressed = request.transformPayloadBody(pub ->

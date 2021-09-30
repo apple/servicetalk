@@ -31,15 +31,14 @@ import io.servicetalk.transport.api.IoExecutor;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public abstract class MultiAddressHttpClientBuilder<U, R>
-        implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> The unresolved address type.
      * @param <R> The resolved address type.
      */
     @FunctionalInterface
-    public interface SingleAddressInitializer<U, R> {
+    interface SingleAddressInitializer<U, R> {
         /**
          * Configures the passed {@link SingleAddressHttpClientBuilder} for the given {@code scheme} and
          * {@code address}.
@@ -65,16 +64,15 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     }
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
+    MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
@@ -82,7 +80,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * {@link StreamingHttpClient}s.
      * @return {@code this}
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
+    MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 
     /**
      * Sets a maximum number of redirects to follow.
@@ -92,7 +90,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @deprecated Use {@link #followRedirects(RedirectConfig)} with {@link RedirectConfigBuilder#maxRedirects(int)}.
      */
     @Deprecated
-    public MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
+    default MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
         return followRedirects(new RedirectConfigBuilder().maxRedirects(maxRedirects)
                 .allowNonRelativeRedirects(true).build());
     }
@@ -109,7 +107,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @return {@code this}.
      * @see RedirectConfigBuilder
      */
-    public MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config) {
+    default MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config) {
         throw new UnsupportedOperationException("followRedirects(RedirectConfig) not yet supported by " +
                 getClass().getName());
     }

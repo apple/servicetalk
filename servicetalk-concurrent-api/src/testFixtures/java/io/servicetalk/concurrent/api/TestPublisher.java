@@ -84,7 +84,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.await(subscriberLatch);
     }
 
     @Override

@@ -119,7 +119,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
             tracker.onError(t);
             return Single.failed(t);
         }
-        return tracker.track(response).subscribeShareContext();
+        return tracker.track(response);
     }
 
     private ScopeTracker newTracker(final StreamingHttpRequest request) {
