@@ -96,6 +96,20 @@ https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines[gRPC deadlines] (aka 
 – Sends hello requests to the server with 1 minute deadline and 3 second deadline and receives a greeting response
 within that time or cancels the request.
 
+[#Observer]
+== Observer
+This example demonstrates the following:
+- Use of
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver] to log a summary of each request/response.
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifeCycleObserverServer.java[LifeCycleObserverServer] - A server that installs a
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
+on the server builder.
+- link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifeCycleObserverClient.java[LifeCycleObserverClient] - A client that installs a
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
+on via a client filter on the client builder.
 
 [#errors]
 == Application Errors
