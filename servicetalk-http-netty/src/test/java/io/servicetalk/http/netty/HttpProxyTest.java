@@ -101,7 +101,7 @@ class HttpProxyTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] client = {0}")
     @EnumSource
     void testRequest(ClientSource clientSource) throws Exception {
         assert serverAddress != null && proxyAddress != null;

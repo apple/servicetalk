@@ -181,6 +181,10 @@ public final class HttpClients {
      * together with the {@code port}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)}
      * if you want to disable this behavior.
+     * <p>
+     * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
+     * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
+     * the client is built.
      * @param port port to connect to
      * @return new builder for the address
      */
