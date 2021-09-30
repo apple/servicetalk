@@ -40,10 +40,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
-import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
-import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
 import static java.util.Collections.binarySearch;
 
 /**
@@ -266,12 +262,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         private StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
                                                             final StreamingHttpResponse response,
                                                             final StreamingHttpRequestFactory requestFactory) {
-            final HttpRequestMethod method = defineRedirectMethod(response.status().code(), request.method());
             final CharSequence locationHeader = response.headers().get(LOCATION);
             assert locationHeader != null;
 
             final StreamingHttpRequest redirectRequest =
-                    requestFactory.newRequest(method, locationHeader.toString()).version(request.version());
+                    requestFactory.newRequest(request.method(), locationHeader.toString()).version(request.version());
 
             String redirectHost = redirectRequest.host();
             if (redirectHost == null && redirectSingle.allowNonRelativeRedirects) {
@@ -288,18 +283,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
             // nothing to do if non-relative redirects are not allowed
             return redirectRequest;
-        }
-
-        private HttpRequestMethod defineRedirectMethod(final int statusCode, final HttpRequestMethod originalMethod) {
-            // https://tools.ietf.org/html/rfc7231#section-6.4.2
-            // https://tools.ietf.org/html/rfc7231#section-6.4.3
-            // Note for 301 (Moved Permanently) and 302 (Found):
-            //     For historical reasons, a user agent MAY change the request method from POST to GET for the
-            //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
-            //     308 (Permanent Redirect) status codes can be used instead.
-            return redirectSingle.config.changePostToGet() &&
-                    (statusCode == MOVED_PERMANENTLY.code() || statusCode == FOUND.code()) &&
-                    POST.name().equals(originalMethod.name()) ? GET : originalMethod;
         }
 
         private static boolean isRelative(final HttpRequestMetaData originalRequest,

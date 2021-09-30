@@ -29,6 +29,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.sort;
 import static java.util.Collections.unmodifiableList;
@@ -242,8 +245,8 @@ public final class RedirectConfigBuilder {
     public RedirectConfig build() {
         return new DefaultRedirectConfig(maxRedirects,
                 allowedMethods == null ? DEFAULT_ALLOWED_METHODS : toSortedList(allowedMethods.clone()),
-                allowNonRelativeRedirects, shouldRedirectPredicate, changePostToGet,
-                new DefaultRedirectRequestTransformer(headersToRedirect.clone(), redirectPayloadBody,
+                allowNonRelativeRedirects, shouldRedirectPredicate,
+                new DefaultRedirectRequestTransformer(changePostToGet, headersToRedirect.clone(), redirectPayloadBody,
                         trailersToRedirect.clone(), redirectRequestTransformer));
     }
 
@@ -258,20 +261,17 @@ public final class RedirectConfigBuilder {
         private final List<HttpRequestMethod> allowedMethods;
         private final boolean allowNonRelativeRedirects;
         private final ShouldRedirectPredicate shouldRedirectPredicate;
-        private final boolean changePostToGet;
         private final RedirectRequestTransformer redirectRequestTransformer;
 
         private DefaultRedirectConfig(final int maxRedirects,
                                       final List<HttpRequestMethod> allowedMethods,
                                       final boolean allowNonRelativeRedirects,
                                       final ShouldRedirectPredicate shouldRedirectPredicate,
-                                      final boolean changePostToGet,
                                       final RedirectRequestTransformer redirectRequestTransformer) {
             this.maxRedirects = maxRedirects;
             this.allowedMethods = allowedMethods;
             this.allowNonRelativeRedirects = allowNonRelativeRedirects;
             this.shouldRedirectPredicate = shouldRedirectPredicate;
-            this.changePostToGet = changePostToGet;
             this.redirectRequestTransformer = redirectRequestTransformer;
         }
 
@@ -296,11 +296,6 @@ public final class RedirectConfigBuilder {
         }
 
         @Override
-        public boolean changePostToGet() {
-            return changePostToGet;
-        }
-
-        @Override
         public RedirectRequestTransformer redirectRequestTransformer() {
             return redirectRequestTransformer;
         }
@@ -311,15 +306,18 @@ public final class RedirectConfigBuilder {
         private static final TrailersTransformer<Object, Buffer> NOOP_TRAILERS_TRANSFORMER =
                 new StatelessTrailersTransformer<>();
 
+        private final boolean changePostToGet;
         private final CharSequence[] headersToRedirect;
         private final boolean redirectPayloadBody;
         private final CharSequence[] trailersToRedirect;
         private final RedirectRequestTransformer userDefinedTransformer;
 
-        DefaultRedirectRequestTransformer(final CharSequence[] headersToRedirect,
+        DefaultRedirectRequestTransformer(final boolean changePostToGet,
+                                          final CharSequence[] headersToRedirect,
                                           final boolean redirectPayloadBody,
                                           final CharSequence[] trailersToRedirect,
                                           final RedirectRequestTransformer userDefinedTransformer) {
+            this.changePostToGet = changePostToGet;
             this.headersToRedirect = headersToRedirect;
             this.redirectPayloadBody = redirectPayloadBody;
             this.trailersToRedirect = trailersToRedirect;
@@ -331,6 +329,18 @@ public final class RedirectConfigBuilder {
                                           final StreamingHttpRequest previousRequest,
                                           final StreamingHttpResponse redirectResponse,
                                           final StreamingHttpRequest redirectRequest) {
+            // https://tools.ietf.org/html/rfc7231#section-6.4.2
+            // https://tools.ietf.org/html/rfc7231#section-6.4.3
+            // Note for 301 (Moved Permanently) and 302 (Found):
+            //     For historical reasons, a user agent MAY change the request method from POST to GET for the
+            //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
+            //     308 (Permanent Redirect) status codes can be used instead.
+            final int statusCode = redirectResponse.status().code();
+            if (changePostToGet && (statusCode == MOVED_PERMANENTLY.code() || statusCode == FOUND.code()) &&
+                    POST.name().equals(previousRequest.method().name())) {
+                redirectRequest.method(GET);
+            }
+
             if (relative) {
                 fullCopy(previousRequest, redirectRequest);
             } else {

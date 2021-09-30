@@ -49,6 +49,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.sort;
 import static java.util.Collections.unmodifiableList;
@@ -235,7 +237,20 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
                 (relative, redirectCnt, previousRequest, redirectResponse) -> true;
         private static final RedirectRequestTransformer DEFAULT_REDIRECT_REQUEST_TRANSFORMER =
-                (relative, previousRequest, redirectResponse, redirectRequest) -> redirectRequest;
+                (relative, previousRequest, redirectResponse, redirectRequest) -> {
+                    // https://tools.ietf.org/html/rfc7231#section-6.4.2
+                    // https://tools.ietf.org/html/rfc7231#section-6.4.3
+                    // Note for 301 (Moved Permanently) and 302 (Found):
+                    //     For historical reasons, a user agent MAY change the request method from POST to GET for the
+                    //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
+                    //     308 (Permanent Redirect) status codes can be used instead.
+                    final int statusCode = redirectResponse.status().code();
+                    if ((statusCode == MOVED_PERMANENTLY.code() || statusCode == FOUND.code()) &&
+                            POST.name().equals(previousRequest.method().name())) {
+                        redirectRequest.method(GET);
+                    }
+                    return redirectRequest;
+                };
 
         private final int maxRedirects;
         private final boolean allowNonRelativeRedirects;
@@ -263,11 +278,6 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         @Override
         public ShouldRedirectPredicate shouldRedirectPredicate() {
             return DEFAULT_SHOULD_REDIRECT_PREDICATE;
-        }
-
-        @Override
-        public boolean changePostToGet() {
-            return true;
         }
 
         @Override

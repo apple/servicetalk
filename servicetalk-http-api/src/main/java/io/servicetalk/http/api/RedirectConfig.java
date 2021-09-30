@@ -114,27 +114,6 @@ public interface RedirectConfig {
     ShouldRedirectPredicate shouldRedirectPredicate();
 
     /**
-     * Tells if the request method should change from {@link HttpRequestMethod#POST POST} to
-     * {@link HttpRequestMethod#GET GET} for subsequent requests for
-     * {@link HttpResponseStatus#MOVED_PERMANENTLY 301 (Moved Permanently)} and
-     * {@link HttpResponseStatus#FOUND 302 (Found)} status codes.
-     * <p>
-     * For historical reasons, RFC7231 sections
-     * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.2">6.4.2</a> and
-     * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3">6.4.3</a> allow user agents to change the
-     * request method from {@link HttpRequestMethod#POST POST} to {@link HttpRequestMethod#GET GET} for the subsequent
-     * request. If this behavior is undesired, this option can be turned off or
-     * {@link HttpResponseStatus#TEMPORARY_REDIRECT 307 (Temporary Redirect)} and
-     * {@link HttpResponseStatus#PERMANENT_REDIRECT 308 (Permanent Redirect)} status codes can be used instead.
-     *
-     * @return {@code true} if the request method should change from {@link HttpRequestMethod#POST POST} to
-     * {@link HttpRequestMethod#GET GET} for subsequent requests for
-     * {@link HttpResponseStatus#MOVED_PERMANENTLY 301 (Moved Permanently)} and
-     * {@link HttpResponseStatus#FOUND 302 (Found)} status codes.
-     */
-    boolean changePostToGet();
-
-    /**
      * {@link RedirectRequestTransformer} to apply further modifications for the redirect request after it was
      * initialized.
      *
