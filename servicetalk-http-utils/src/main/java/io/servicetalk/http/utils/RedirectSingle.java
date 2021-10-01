@@ -183,8 +183,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         .apply(relative, request, response, newRequest);
 
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Executing redirect to '{}' for request '{}'", response.headers().get(LOCATION),
-                            request);
+                    LOGGER.trace("Executing redirect to '{}' for request '{}'", location, request);
                 }
 
                 terminalDelivered = true;   // Mark as "delivered" because we do not own `target` from this point
