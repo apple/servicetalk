@@ -97,7 +97,7 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
-                .followRedirects(new RedirectConfigBuilder().build())
+                .followRedirects(new RedirectConfigBuilder().allowNonRelativeRedirects(true).build())
                 .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 
