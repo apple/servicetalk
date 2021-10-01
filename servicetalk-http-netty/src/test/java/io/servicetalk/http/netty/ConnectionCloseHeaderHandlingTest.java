@@ -189,8 +189,10 @@ final class ConnectionCloseHeaderHandlingTest {
                                     try {
                                         responseReceived.await();
                                         done = true;
-                                    } catch (InterruptedException interruptedException) {
+                                    } catch (InterruptedException e) {
                                         // ignored
+                                        Thread.currentThread().interrupt();
+                                        throw e;
                                     }
                                 } while (!done);
                             }
@@ -302,6 +304,7 @@ final class ConnectionCloseHeaderHandlingTest {
                     try {
                         responseReceived.await();
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         throwException(e);
                     }
                 }).concat(from(content)), RAW_STRING_SERIALIZER);

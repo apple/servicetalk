@@ -46,10 +46,10 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class DefaultHttpExecutionStrategyTest {
 
@@ -161,8 +161,11 @@ class DefaultHttpExecutionStrategyTest {
                 analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                         .flatMapPublisher(StreamingHttpResponse::payloadBody)
                     .toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
-                fail("Unexepected exception", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (ExecutionException e) {
+                throwException(e);
             }
         };
         if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {

@@ -81,6 +81,7 @@ import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -367,8 +368,11 @@ abstract class AbstractNettyHttpServerTest {
     static <T> T awaitSingleIndefinitelyNonNull(Single<T> single) {
         try {
             return requireNonNull(single.toFuture().get());
-        } catch (InterruptedException | ExecutionException e) {
-            throw new AssertionError(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return throwException(e);
+        } catch (ExecutionException e) {
+            return throwException(e);
         }
     }
 

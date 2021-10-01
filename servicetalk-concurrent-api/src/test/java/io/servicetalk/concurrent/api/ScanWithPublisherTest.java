@@ -390,13 +390,14 @@ class ScanWithPublisherTest {
                         }
 
                         @Override
-                        public boolean mapTerminal() {
+                        public boolean mapTerminal() throws InterruptedException {
                             if (interleaveCancellation) {
                                 checkpoint.countDown();
                                 try {
                                     resume.await();
                                 } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                                    Thread.currentThread().interrupt();
+                                    throw e;
                                 }
                             }
                             return true;

@@ -48,6 +48,7 @@ import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.new
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.verifySpan;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -170,7 +171,10 @@ class HttpReporterTest {
         responseGenerator = (httpServiceContext, factory) -> {
             try {
                 httpServiceContext.closeAsync().toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
             return factory.ok();

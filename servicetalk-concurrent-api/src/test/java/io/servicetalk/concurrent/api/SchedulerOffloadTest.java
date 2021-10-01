@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -64,7 +65,7 @@ class SchedulerOffloadTest {
                 invoker.exchange(Thread.currentThread());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new AssertionError("Exchange interrupted.");
+                throwException(e);
             }
         }, 1, TimeUnit.MILLISECONDS);
         Thread taskInvoker = invoker.exchange(Thread.currentThread());

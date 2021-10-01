@@ -114,7 +114,8 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                 try {
                     processRequest.await();
                 } catch (InterruptedException e) {
-                    return throwException(e);
+                    Thread.currentThread().interrupt();
+                    throwException(e);
                 }
                 return delegate().handle(ctx, request, responseFactory);
             }
@@ -333,7 +334,8 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                             try {
                                 requestReceived.await();
                             } catch (InterruptedException interruptedException) {
-                                return throwException(interruptedException);
+                                Thread.currentThread().interrupt();
+                                throwException(interruptedException);
                             }
                             return failed(DELIBERATE_EXCEPTION);
                         }))));

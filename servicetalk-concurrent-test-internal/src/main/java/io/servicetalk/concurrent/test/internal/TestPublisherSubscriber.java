@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.poll;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.take;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -198,6 +199,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         } finally {
             if (interrupted) {
                 Thread.currentThread().interrupt();
+                throwException(new InterruptedException());
             }
         }
         return list;
