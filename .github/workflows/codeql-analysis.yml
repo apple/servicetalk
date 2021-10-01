@@ -24,7 +24,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
       - name: Execute gradle build
-        with:
+        env:
           CI: true
         run: ./gradlew --parallel clean assemble
       - name: Perform CodeQL Analysis
