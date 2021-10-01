@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -38,9 +39,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
-import static java.util.Collections.binarySearch;
 
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
@@ -133,14 +134,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
             boolean terminalDelivered = false;
             try {
-                if (!shouldRedirect(redirectCount, request.method(), response)) {
+                final String location = redirectLocation(redirectCount, request.method(), response);
+                if (location == null) {
                     terminalDelivered = true;
                     target.onSuccess(response);
                     return;
                 }
 
-                StreamingHttpRequest newRequest = prepareRedirectRequest(request, response,
-                        redirectSingle.requester);
+                StreamingHttpRequest newRequest = prepareRedirectRequest(request, redirectSingle.requester, location);
                 if (newRequest == null) {
                     terminalDelivered = true;
                     target.onSuccess(response);
@@ -158,7 +159,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return;
                 }
 
-                if (!redirectSingle.config.shouldRedirectPredicate().test(relative, redirectCount, request, response)) {
+                if (!redirectSingle.config.redirectPredicate().test(relative, redirectCount, request, response)) {
                     terminalDelivered = true;
                     target.onSuccess(response);
                     return;
@@ -193,7 +194,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                                 sequentialCancellable));
             } catch (Throwable cause) {
                 if (!terminalDelivered) {
-                    target.onError(cause);
+                    safeOnError(target, cause);
+                } else {
+                    LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", target, cause);
                 }
             }
         }
@@ -213,60 +216,56 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             target.onError(t);
         }
 
-        private boolean shouldRedirect(final int redirectCount, final HttpRequestMethod requestMethod,
-                                       final HttpResponseMetaData responseMetaData) {
+        /**
+         * Returns a value of {@link HttpHeaderNames#LOCATION} header or {@code null} if we should not redirect.
+         */
+        @Nullable
+        private String redirectLocation(final int redirectCount, final HttpRequestMethod requestMethod,
+                                        final HttpResponseMetaData responseMetaData) {
             final int statusCode = responseMetaData.status().code();
 
-            if (statusCode < 300 || statusCode > 308) {
-                // We start without support for status codes outside of this range
-                // re-visit when we need to support payloads in redirects.
-                return false;
+            if (statusCode < 300 || statusCode > 308 || (statusCode >= 304 && statusCode <= 306)) {
+                // We start without support for status codes outside of the standard range
+
+                // https://tools.ietf.org/html/rfc7232#section-4.1
+                // The 304 (Not Modified) status code indicates that the cache value is still fresh and can be used.
+
+                // https://tools.ietf.org/html/rfc7231#section-6.4.5
+                // The 305 (Use Proxy) status code has been deprecated due to security concerns regarding in-band
+                // configuration of a proxy.
+
+                // https://tools.ietf.org/html/rfc7231#section-6.4.6
+                // The 306 (Unused) status code is no longer used, and the code is reserved.
+                return null;
             }
 
-            switch (statusCode) {
-                case 304:
-                    // https://tools.ietf.org/html/rfc7232#section-4.1
-                    // The 304 (Not Modified) status code indicates that the cache value is still fresh and can be used.
-                case 305:
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.5
-                    // The 305 (Use Proxy) status code has been deprecated due to
-                    // security concerns regarding in-band configuration of a proxy.
-                case 306:
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.6
-                    // The 306 (Unused) status code is no longer used, and the code is reserved.
-                    return false;
-                default:
-                    final RedirectConfig config = redirectSingle.config;
-                    if (redirectCount >= config.maxRedirects()) {
-                        LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
-                                config.maxRedirects(), redirectSingle.originalRequest);
-                        return false;
-                    }
-
-                    if (binarySearch(config.allowedMethods(), requestMethod) < 0) {
-                        LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
-                        return false;
-                    }
-
-                    final CharSequence locationHeader = responseMetaData.headers().get(LOCATION);
-                    if (locationHeader == null || locationHeader.length() == 0) {
-                        LOGGER.debug("No location header in redirect response: {}", responseMetaData);
-                        return false;
-                    }
-
-                    return true;
+            final RedirectConfig config = redirectSingle.config;
+            if (redirectCount >= config.maxRedirects()) {
+                LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
+                        config.maxRedirects(), redirectSingle.originalRequest);
+                return null;
             }
+
+            if (!config.allowedMethods().contains(requestMethod)) {
+                LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
+                return null;
+            }
+
+            final CharSequence locationHeader = responseMetaData.headers().get(LOCATION);
+            if (locationHeader == null || locationHeader.length() == 0) {
+                LOGGER.debug("No location header in redirect response: {}", responseMetaData);
+                return null;
+            }
+
+            return locationHeader.toString();
         }
 
         @Nullable
         private StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
-                                                            final StreamingHttpResponse response,
-                                                            final StreamingHttpRequestFactory requestFactory) {
-            final CharSequence locationHeader = response.headers().get(LOCATION);
-            assert locationHeader != null;
-
+                                                            final StreamingHttpRequestFactory requestFactory,
+                                                            final String redirectLocation) {
             final StreamingHttpRequest redirectRequest =
-                    requestFactory.newRequest(request.method(), locationHeader.toString()).version(request.version());
+                    requestFactory.newRequest(request.method(), redirectLocation).version(request.version());
 
             String redirectHost = redirectRequest.host();
             if (redirectHost == null && redirectSingle.allowNonRelativeRedirects) {

@@ -30,7 +30,9 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
  * Async `Hello World` example that demonstrates how <b>relative</b> redirects can be handled automatically by a
  * {@link HttpClients#forSingleAddress(String, int) single-address} client.
  * <p>
- * Because single-address client can communicate with only one target server it can follow only relative redirects.
+ * Because single-address client can communicate with only one target server it can follow only relative redirects. For
+ * non-relative redirects, consider using {@link HttpClients#forMultiAddressUrl() multi-address} client, demonstrated in
+ * {@link MultiAddressUrlRedirectClient} example.
  */
 public final class SingleAddressRedirectClient {
     public static void main(String... args) throws Exception {

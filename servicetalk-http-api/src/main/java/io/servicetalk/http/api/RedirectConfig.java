@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Configuration options for <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
@@ -31,7 +31,7 @@ public interface RedirectConfig {
      * {@link RedirectConfig#allowNonRelativeRedirects()}.
      */
     @FunctionalInterface
-    interface ShouldRedirectPredicate {
+    interface RedirectPredicate {
 
         /**
          * Decides if a redirect should be performed or not based on the given context.
@@ -62,7 +62,7 @@ public interface RedirectConfig {
          * @param previousRequest previous request that was redirected
          * @param redirectResponse response to redirect
          * @param redirectRequest pre-initialized request to follow the redirect
-         * @return the final {@link StreamingHttpRequest} that will be send to follow the redirect after all
+         * @return the final {@link StreamingHttpRequest} that will be sent to follow the redirect after all
          * transformations applied
          */
         StreamingHttpRequest apply(boolean relative, StreamingHttpRequest previousRequest,
@@ -81,7 +81,7 @@ public interface RedirectConfig {
      *
      * @return {@link HttpRequestMethod}s that are allowed to follow redirects.
      */
-    List<HttpRequestMethod> allowedMethods();
+    Set<HttpRequestMethod> allowedMethods();
 
     /**
      * Tells if redirection should follow non-relative redirects (if supported by the underlying client implementation).
@@ -105,13 +105,13 @@ public interface RedirectConfig {
     boolean allowNonRelativeRedirects();
 
     /**
-     * {@link ShouldRedirectPredicate} to make the final decision if redirect should be performed or not based on the
+     * {@link RedirectPredicate} to make the final decision if redirect should be performed or not based on the
      * given context.
      *
-     * @return {@link ShouldRedirectPredicate} to make the final decision if redirect should be performed or not based
+     * @return {@link RedirectPredicate} to make the final decision if redirect should be performed or not based
      * on the given context.
      */
-    ShouldRedirectPredicate shouldRedirectPredicate();
+    RedirectPredicate redirectPredicate();
 
     /**
      * {@link RedirectRequestTransformer} to apply further modifications for the redirect request after it was

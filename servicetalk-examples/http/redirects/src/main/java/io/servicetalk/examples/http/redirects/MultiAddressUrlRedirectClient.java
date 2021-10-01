@@ -44,7 +44,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
  * information, see {@link MultiAddressHttpClientBuilder#followRedirects(RedirectConfig)} and
  * {@link RedirectConfigBuilder}.
  */
-public final class MultiAddressRedirectClient {
+public final class MultiAddressUrlRedirectClient {
 
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forMultiAddressUrl()
@@ -57,13 +57,11 @@ public final class MultiAddressRedirectClient {
                         // by default, POST requests don't follow redirects:
                         .allowedMethods(GET, POST)
                         // apply additional restrictions which redirects to follow:
-                        .shouldRedirectPredicate((relative, redirectCount, prevRequest, redirectResponse) -> {
-                            String location = redirectResponse.headers().get(LOCATION).toString();
-                            // allow only:
-                            return relative // relative redirects
-                                    // OR non-relative redirects to a trusted server:
-                                    || location.startsWith("https://localhost:" + SECURE_SERVER_PORT);
-                        })
+                        .redirectPredicate((relative, redirectCount, prevRequest, redirectResponse) ->
+                                relative // allow only relative redirects
+                                // OR non-relative redirects to a trusted server:
+                                || redirectResponse.headers().get(LOCATION, "").toString()
+                                        .startsWith("https://localhost:" + SECURE_SERVER_PORT))
                         // explicitly specify what headers should be redirected to non-relative locations:
                         .headersToRedirect(CUSTOM_HEADER)
                         // explicitly specify that payload body should be redirected to non-relative locations:

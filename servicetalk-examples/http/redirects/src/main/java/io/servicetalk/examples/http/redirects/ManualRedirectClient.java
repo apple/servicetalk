@@ -33,13 +33,16 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION
 import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
- * Async "Hello World" example that demonstrates how redirects can be handled manually when
- * {@link HttpClients#forSingleAddress(HostAndPort) single-address} clients are used with possibilities to:
+ * Async "Hello World" example that demonstrates how redirects can be handled manually between multiple
+ * {@link HttpClients#forSingleAddress(HostAndPort) single-address} clients with possibilities to:
  * <ol>
  *     <li>Change the target server or perform a relative redirect.</li>
  *     <li>Preserve headers while redirecting.</li>
  *     <li>Preserve payload body while redirecting.</li>
  * </ol>
+ * This is a specialized use-case. For simplification, consider using one
+ * {@link HttpClients#forMultiAddressUrl() multi-address} client, demonstrated in {@link MultiAddressUrlRedirectClient}
+ * example.
  */
 public final class ManualRedirectClient {
     public static void main(String... args) throws Exception {

@@ -59,7 +59,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -496,7 +498,7 @@ class RedirectingHttpRequesterFilterTest {
     @Test
     void shouldRedirectReturnsFalse() throws Exception {
         testNoRedirectWasDone(GET, MOVED_PERMANENTLY, new RedirectConfigBuilder()
-                .shouldRedirectPredicate((relative, cnt, req, resp) -> false).build());
+                .redirectPredicate((relative, cnt, req, resp) -> false).build());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
@@ -515,14 +517,18 @@ class RedirectingHttpRequesterFilterTest {
         verifyRedirectResponsePayloadsDrained(true);
     }
 
-    @Test
-    void configureRedirectOfHeadersAndMessageBodyForNonRelativeRedirects() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] manyHeaders={0}")
+    @ValueSource(booleans = {false, true})
+    void configureRedirectOfHeadersAndMessageBodyForNonRelativeRedirects(boolean manyHeaders) throws Exception {
         when(httpClient.request(any(), any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
+        final CharSequence[] headersToRedirect = manyHeaders ? new CharSequence[]{CUSTOM_HEADER, TRANSFER_ENCODING,
+                CONTENT_LENGTH, HOST, ACCEPT_ENCODING, CONTENT_TYPE} :
+                new CharSequence[]{CUSTOM_HEADER, TRANSFER_ENCODING};
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .allowNonRelativeRedirects(true)
-                .headersToRedirect(CUSTOM_HEADER, TRANSFER_ENCODING)
+                .headersToRedirect(headersToRedirect)
                 .redirectPayloadBody(true)
                 .trailersToRedirect(CUSTOM_TRAILER)
                 .build());
@@ -608,7 +614,7 @@ class RedirectingHttpRequesterFilterTest {
     void shouldRedirectThrows() {
         when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
-                .shouldRedirectPredicate((relative, count, request, response) -> {
+                .redirectPredicate((relative, count, request, response) -> {
                     throw DELIBERATE_EXCEPTION;
                 }).build());
 

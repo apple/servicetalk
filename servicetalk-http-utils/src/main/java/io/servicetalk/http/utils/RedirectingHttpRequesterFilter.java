@@ -41,7 +41,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -52,8 +53,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
 import static java.util.Arrays.asList;
-import static java.util.Arrays.sort;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -232,9 +232,9 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         // A user agent SHOULD NOT automatically redirect a request more than 5 times,
         // since such redirects usually indicate an infinite loop.
         static final int DEFAULT_MAX_REDIRECTS = 5;
-        private static final List<HttpRequestMethod> DEFAULT_ALLOWED_METHODS =
-                toSortedList(GET, HEAD, POST, PUT, DELETE, PATCH);
-        private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
+        private static final Set<HttpRequestMethod> DEFAULT_ALLOWED_METHODS =
+                toSet(GET, HEAD, POST, PUT, DELETE, PATCH);
+        private static final RedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
                 (relative, redirectCnt, previousRequest, redirectResponse) -> true;
         private static final RedirectRequestTransformer DEFAULT_REDIRECT_REQUEST_TRANSFORMER =
                 (relative, previousRequest, redirectResponse, redirectRequest) -> {
@@ -266,7 +266,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         }
 
         @Override
-        public List<HttpRequestMethod> allowedMethods() {
+        public Set<HttpRequestMethod> allowedMethods() {
             return DEFAULT_ALLOWED_METHODS;
         }
 
@@ -276,7 +276,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         }
 
         @Override
-        public ShouldRedirectPredicate shouldRedirectPredicate() {
+        public RedirectPredicate redirectPredicate() {
             return DEFAULT_SHOULD_REDIRECT_PREDICATE;
         }
 
@@ -285,9 +285,10 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
             return DEFAULT_REDIRECT_REQUEST_TRANSFORMER;
         }
 
-        private static List<HttpRequestMethod> toSortedList(final HttpRequestMethod... allowedMethods) {
-            sort(allowedMethods); // Soring is required because RedirectSingle uses binary search
-            return unmodifiableList(asList(allowedMethods));
+        private static Set<HttpRequestMethod> toSet(final HttpRequestMethod... allowedMethods) {
+            final Set<HttpRequestMethod> set = new HashSet<>((int) (allowedMethods.length / 0.75f) + 1);
+            set.addAll(asList(allowedMethods));
+            return unmodifiableSet(set);
         }
     }
 }

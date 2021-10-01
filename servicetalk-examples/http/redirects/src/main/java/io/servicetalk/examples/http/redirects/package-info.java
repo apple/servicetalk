@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Example to demonstrate how redirects can be handled.
+ */
 @ElementsAreNonnullByDefault
 package io.servicetalk.examples.http.redirects;
 

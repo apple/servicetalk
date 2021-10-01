@@ -17,24 +17,22 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.RedirectConfig.RedirectPredicate;
 import io.servicetalk.http.api.RedirectConfig.RedirectRequestTransformer;
-import io.servicetalk.http.api.RedirectConfig.ShouldRedirectPredicate;
 
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
 import static java.util.Arrays.asList;
-import static java.util.Arrays.sort;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -46,8 +44,8 @@ public final class RedirectConfigBuilder {
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
-    private static final List<HttpRequestMethod> DEFAULT_ALLOWED_METHODS = toSortedList(GET, HEAD);
-    private static final ShouldRedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
+    private static final Set<HttpRequestMethod> DEFAULT_ALLOWED_METHODS = toSet(GET, HEAD);
+    private static final RedirectPredicate DEFAULT_REDIRECT_PREDICATE =
             (relative, redirectCnt, previousRequest, redirectResponse) -> true;
     private static final CharSequence[] EMPTY_CHAR_SEQUENCE_ARRAY = {};
     private static final RedirectRequestTransformer DEFAULT_REDIRECT_REQUEST_TRANSFORMER =
@@ -57,7 +55,7 @@ public final class RedirectConfigBuilder {
     private boolean allowNonRelativeRedirects;
     @Nullable
     private HttpRequestMethod[] allowedMethods;
-    private ShouldRedirectPredicate shouldRedirectPredicate = DEFAULT_SHOULD_REDIRECT_PREDICATE;
+    private RedirectPredicate redirectPredicate = DEFAULT_REDIRECT_PREDICATE;
     private boolean changePostToGet;
     private CharSequence[] headersToRedirect = EMPTY_CHAR_SEQUENCE_ARRAY;
     private boolean redirectPayloadBody;
@@ -102,8 +100,8 @@ public final class RedirectConfigBuilder {
      *     <li>For security reasons, redirection should not automatically copy headers nor message body of the original
      *     request for non-relative locations. Use {@link #headersToRedirect(CharSequence...)},
      *     {@link #redirectPayloadBody(boolean)}, {@link #trailersToRedirect(CharSequence...)}, or
-     *     {@link #redirectRequestTransformer(RedirectRequestTransformer)} if headers or message body should be
-     *     preserved.</li>
+     *     {@link #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)} if headers or message body
+     *     should be preserved.</li>
      * </ol>
      *
      * @param allowNonRelativeRedirects If {@code true}, redirection will follow non-relative locations (if supported by
@@ -114,7 +112,7 @@ public final class RedirectConfigBuilder {
      * @see #headersToRedirect(CharSequence...)
      * @see #redirectPayloadBody(boolean)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #redirectRequestTransformer(RedirectRequestTransformer)
+     * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder allowNonRelativeRedirects(final boolean allowNonRelativeRedirects) {
         this.allowNonRelativeRedirects = allowNonRelativeRedirects;
@@ -125,15 +123,15 @@ public final class RedirectConfigBuilder {
      * Sets a predicate for an additional check to decide if the redirect should be performed or not based on the given
      * context.
      *
-     * @param predicate {@link ShouldRedirectPredicate} for an additional check to decide if the redirect should be
+     * @param predicate {@link RedirectPredicate} for an additional check to decide if the redirect should be
      * performed or not based on the given context
      * @return {@code this}
      * @see #maxRedirects(int)
      * @see #allowedMethods(HttpRequestMethod...)
      * @see #allowNonRelativeRedirects(boolean)
      */
-    public RedirectConfigBuilder shouldRedirectPredicate(final ShouldRedirectPredicate predicate) {
-        this.shouldRedirectPredicate = requireNonNull(predicate);
+    public RedirectConfigBuilder redirectPredicate(final RedirectPredicate predicate) {
+        this.redirectPredicate = requireNonNull(predicate);
         return this;
     }
 
@@ -167,14 +165,14 @@ public final class RedirectConfigBuilder {
      * <p>
      * Note: for security reasons, redirection should not automatically copy any headers from the original request when
      * it performs a non-relative redirect. For relative redirects, everything is copied by default. Use
-     * {@link #redirectRequestTransformer(RedirectRequestTransformer)} if more customization required.
+     * {@link #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)} if more customization required.
      *
      * @param headerNames Names of headers that have to be copied on each non-relative redirect
      * @return {@code this}
      * @see #allowNonRelativeRedirects(boolean)
      * @see #redirectPayloadBody(boolean)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #redirectRequestTransformer(RedirectRequestTransformer)
+     * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder headersToRedirect(final CharSequence... headerNames) {
         this.headersToRedirect = requireNonNull(headerNames);
@@ -186,7 +184,7 @@ public final class RedirectConfigBuilder {
      * <p>
      * Note: for security reasons, redirection should not automatically copy payload body of the original request when
      * it performs a non-relative redirect. For relative redirects, everything is copied by default. Use
-     * {@link #redirectRequestTransformer(RedirectRequestTransformer)} if more customization required.
+     * {@link #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)} if more customization required.
      * <p>
      * <b>Note:</b> This option expects that the redirected {@link StreamingHttpRequest requests} have a
      * {@link StreamingHttpRequest#payloadBody() payload body} that is
@@ -200,7 +198,7 @@ public final class RedirectConfigBuilder {
      * @see #allowNonRelativeRedirects(boolean)
      * @see #headersToRedirect(CharSequence...)
      * @see #trailersToRedirect(CharSequence...)
-     * @see #redirectRequestTransformer(RedirectRequestTransformer)
+     * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder redirectPayloadBody(final boolean redirectPayloadBody) {
         this.redirectPayloadBody = redirectPayloadBody;
@@ -212,14 +210,14 @@ public final class RedirectConfigBuilder {
      * <p>
      * Note: for security reasons, redirection should not automatically copy any trailers from the original request when
      * it performs a non-relative redirect. For relative redirects, everything is copied by default. Use
-     * {@link #redirectRequestTransformer(RedirectRequestTransformer)} if more customization required.
+     * {@link #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)} if more customization required.
      *
      * @param trailerNames Names of trailers that have to be copied on each non-relative redirect
      * @return {@code this}
      * @see #allowNonRelativeRedirects(boolean)
      * @see #headersToRedirect(CharSequence...)
      * @see #redirectPayloadBody(boolean)
-     * @see #redirectRequestTransformer(RedirectRequestTransformer)
+     * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder trailersToRedirect(final CharSequence... trailerNames) {
         this.trailersToRedirect = requireNonNull(trailerNames);
@@ -244,34 +242,35 @@ public final class RedirectConfigBuilder {
 
     public RedirectConfig build() {
         return new DefaultRedirectConfig(maxRedirects,
-                allowedMethods == null ? DEFAULT_ALLOWED_METHODS : toSortedList(allowedMethods.clone()),
-                allowNonRelativeRedirects, shouldRedirectPredicate,
-                new DefaultRedirectRequestTransformer(changePostToGet, headersToRedirect.clone(), redirectPayloadBody,
-                        trailersToRedirect.clone(), redirectRequestTransformer));
+                allowedMethods == null ? DEFAULT_ALLOWED_METHODS : toSet(allowedMethods),
+                allowNonRelativeRedirects, redirectPredicate,
+                new DefaultRedirectRequestTransformer(changePostToGet, headersToRedirect, redirectPayloadBody,
+                        trailersToRedirect, redirectRequestTransformer));
     }
 
-    private static List<HttpRequestMethod> toSortedList(final HttpRequestMethod... allowedMethods) {
-        sort(allowedMethods); // Soring is required because RedirectSingle uses binary search
-        return unmodifiableList(asList(allowedMethods));
+    private static Set<HttpRequestMethod> toSet(final HttpRequestMethod... allowedMethods) {
+        final Set<HttpRequestMethod> set = new HashSet<>((int) (allowedMethods.length / 0.75f) + 1);
+        set.addAll(asList(allowedMethods));
+        return unmodifiableSet(set);
     }
 
     private static final class DefaultRedirectConfig implements RedirectConfig {
 
         private final int maxRedirects;
-        private final List<HttpRequestMethod> allowedMethods;
+        private final Set<HttpRequestMethod> allowedMethods;
         private final boolean allowNonRelativeRedirects;
-        private final ShouldRedirectPredicate shouldRedirectPredicate;
+        private final RedirectPredicate redirectPredicate;
         private final RedirectRequestTransformer redirectRequestTransformer;
 
         private DefaultRedirectConfig(final int maxRedirects,
-                                      final List<HttpRequestMethod> allowedMethods,
+                                      final Set<HttpRequestMethod> allowedMethods,
                                       final boolean allowNonRelativeRedirects,
-                                      final ShouldRedirectPredicate shouldRedirectPredicate,
+                                      final RedirectPredicate redirectPredicate,
                                       final RedirectRequestTransformer redirectRequestTransformer) {
             this.maxRedirects = maxRedirects;
             this.allowedMethods = allowedMethods;
             this.allowNonRelativeRedirects = allowNonRelativeRedirects;
-            this.shouldRedirectPredicate = shouldRedirectPredicate;
+            this.redirectPredicate = redirectPredicate;
             this.redirectRequestTransformer = redirectRequestTransformer;
         }
 
@@ -281,7 +280,7 @@ public final class RedirectConfigBuilder {
         }
 
         @Override
-        public List<HttpRequestMethod> allowedMethods() {
+        public Set<HttpRequestMethod> allowedMethods() {
             return allowedMethods;
         }
 
@@ -291,8 +290,8 @@ public final class RedirectConfigBuilder {
         }
 
         @Override
-        public ShouldRedirectPredicate shouldRedirectPredicate() {
-            return shouldRedirectPredicate;
+        public RedirectPredicate redirectPredicate() {
+            return redirectPredicate;
         }
 
         @Override
@@ -307,9 +306,10 @@ public final class RedirectConfigBuilder {
                 new StatelessTrailersTransformer<>();
 
         private final boolean changePostToGet;
-        private final CharSequence[] headersToRedirect;
+        private final HttpHeaders headersToRedirect;
         private final boolean redirectPayloadBody;
-        private final CharSequence[] trailersToRedirect;
+        @Nullable
+        private final StatelessTrailersTransformer<Buffer> trailersTransformer;
         private final RedirectRequestTransformer userDefinedTransformer;
 
         DefaultRedirectRequestTransformer(final boolean changePostToGet,
@@ -318,9 +318,10 @@ public final class RedirectConfigBuilder {
                                           final CharSequence[] trailersToRedirect,
                                           final RedirectRequestTransformer userDefinedTransformer) {
             this.changePostToGet = changePostToGet;
-            this.headersToRedirect = headersToRedirect;
+            this.headersToRedirect = toHeaders(headersToRedirect);
             this.redirectPayloadBody = redirectPayloadBody;
-            this.trailersToRedirect = trailersToRedirect;
+            this.trailersTransformer = trailersToRedirect.length == 0 ? null :
+                    new FilterTrailersTransformer(toHeaders(trailersToRedirect));
             this.userDefinedTransformer = userDefinedTransformer;
         }
 
@@ -361,45 +362,73 @@ public final class RedirectConfigBuilder {
         private void safeCopy(final StreamingHttpRequest request, final StreamingHttpRequest redirectRequest) {
             // NOTE: for security reasons we do not copy any headers or payload body from the original request by
             // default for non-relative redirects.
-            for (CharSequence headerName : headersToRedirect) {
-                for (CharSequence headerValue : request.headers().values(headerName)) {
-                    redirectRequest.addHeader(headerName, headerValue);
-                }
-            }
+            copyHeaders(request.headers(), redirectRequest.headers());
 
             if (redirectPayloadBody) {
-                if (trailersToRedirect.length == 0) {
+                if (trailersTransformer == null) {
                     redirectRequest.payloadBody(request.payloadBody());
                 } else {
                     redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()))
-                            .transform(new StatelessTrailersTransformer<Buffer>() {
-                                @Override
-                                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                    return filterTrailers(trailers, trailersToRedirect);
-                                }
-                            });
+                            .transform(trailersTransformer);
                 }
-            } else if (trailersToRedirect.length != 0) {
+            } else if (trailersTransformer != null) {
                 redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()
                                 .filter(item -> item instanceof HttpHeaders)))
-                        .transform(new StatelessTrailersTransformer<Buffer>() {
-                            @Override
-                            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                return filterTrailers(trailers, trailersToRedirect);
-                            }
-                        });
+                        .transform(trailersTransformer);
             }
         }
 
-        private static HttpHeaders filterTrailers(final HttpHeaders trailers, final CharSequence[] keepOnly) {
-            Iterator<Map.Entry<CharSequence, CharSequence>> it = trailers.iterator();
-            while (it.hasNext()) {
-                Map.Entry<CharSequence, CharSequence> entry = it.next();
-                if (Arrays.stream(keepOnly).noneMatch(name -> contentEqualsIgnoreCase(entry.getKey(), name))) {
-                    it.remove();
+        private void copyHeaders(final HttpHeaders requestHeaders, final HttpHeaders redirectHeaders) {
+            if (headersToRedirect.size() < requestHeaders.size()) {
+                for (Map.Entry<CharSequence, CharSequence> toRedirect : headersToRedirect) {
+                    final CharSequence headerName = toRedirect.getKey();
+                    for (CharSequence headerValue : requestHeaders.values(headerName)) {
+                        redirectHeaders.add(headerName, headerValue);
+                    }
+                }
+            } else {
+                for (Map.Entry<CharSequence, CharSequence> hdr : requestHeaders) {
+                    if (headersToRedirect.contains(hdr.getKey())) {
+                        redirectHeaders.add(hdr.getKey(), hdr.getValue());
+                    }
                 }
             }
-            return trailers;
+        }
+
+        private static HttpHeaders toHeaders(final CharSequence[] names) {
+            if (names.length == 0) {
+                return EmptyHttpHeaders.INSTANCE;
+            }
+            final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+            for (CharSequence name : names) {
+                headers.add(name, "");
+            }
+            return headers;
+        }
+
+        private static final class FilterTrailersTransformer extends StatelessTrailersTransformer<Buffer> {
+
+            private final HttpHeaders trailersToRedirect;
+
+            private FilterTrailersTransformer(final HttpHeaders trailersToRedirect) {
+                this.trailersToRedirect = trailersToRedirect;
+            }
+
+            @Override
+            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                return filterTrailers(trailers, trailersToRedirect);
+            }
+
+            private static HttpHeaders filterTrailers(final HttpHeaders trailers, final HttpHeaders toRedirect) {
+                final Iterator<Map.Entry<CharSequence, CharSequence>> it = trailers.iterator();
+                while (it.hasNext()) {
+                    final Map.Entry<CharSequence, CharSequence> entry = it.next();
+                    if (!toRedirect.contains(entry.getKey())) {
+                        it.remove();
+                    }
+                }
+                return trailers;
+            }
         }
     }
 }
