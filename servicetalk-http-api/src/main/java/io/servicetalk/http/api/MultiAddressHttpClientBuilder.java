@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -348,6 +348,30 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      *
      * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.
+     * @deprecated Use {@link #followRedirects(RedirectConfig)} with {@link RedirectConfigBuilder#maxRedirects(int)}.
+     * Starting from version 0.42, redirects will be disabled by default and {@link RedirectConfig} will be required to
+     * enable them.
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
+    @Deprecated
+    public MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
+        return followRedirects(new RedirectConfigBuilder().maxRedirects(maxRedirects)
+                .allowNonRelativeRedirects(true).build());
+    }
+
+    /**
+     * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
+     * <p>
+     * Note: For backward compatibility with 0.41.x versions redirects are enabled by default. Starting from version
+     * 0.42, users have to opt-in for redirects using this method. If you rely on redirects, always use this method.
+     *
+     * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
+     * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
+     * redirected to non-relative locations.
+     * @return {@code this}.
+     * @see RedirectConfigBuilder
+     */
+    public MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config) {
+        throw new UnsupportedOperationException("followRedirects(RedirectConfig) not yet supported by " +
+                getClass().getName());
+    }
 }

@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4">Request Methods</a>.
  */
-public final class HttpRequestMethod {
+public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.1">GET</a> method.
@@ -187,6 +187,11 @@ public final class HttpRequestMethod {
     @Override
     public int hashCode() {
         return name.hashCode();
+    }
+
+    @Override
+    public int compareTo(final HttpRequestMethod anotherMethod) {
+        return name.compareTo(anotherMethod.name);
     }
 
     @Override

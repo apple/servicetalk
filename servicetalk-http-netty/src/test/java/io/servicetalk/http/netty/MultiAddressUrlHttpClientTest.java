@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -82,8 +83,6 @@ class MultiAddressUrlHttpClientTest {
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
-
-
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
     private static String serverHost;
@@ -98,7 +97,8 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
-                .serviceDiscoverer(sdThatSupportsInvalidHostname())
+                .followRedirects(new RedirectConfigBuilder().allowNonRelativeRedirects(true).build())
+                .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 
         httpService = (ctx, request, factory) -> {

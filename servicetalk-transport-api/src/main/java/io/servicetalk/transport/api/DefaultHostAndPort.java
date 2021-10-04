@@ -55,7 +55,7 @@ final class DefaultHostAndPort implements HostAndPort {
             return false;
         }
         DefaultHostAndPort rhs = (DefaultHostAndPort) o;
-        return port == rhs.port() && hostName.equals(rhs.hostName());
+        return port == rhs.port() && hostName.equalsIgnoreCase(rhs.hostName());
     }
 
     @Override
