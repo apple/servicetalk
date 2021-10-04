@@ -49,7 +49,7 @@ final class GrpcClientValidatesContentTypeTest {
 
     void setUp(boolean withCharset) throws Exception {
         serverContext = GrpcServers.forAddress(localAddress(0))
-                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                .initializer(builder -> builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
                             final HttpServiceContext ctx, final StreamingHttpRequest request,
@@ -60,7 +60,7 @@ final class GrpcClientValidatesContentTypeTest {
                             return resp;
                         });
                     }
-                })
+                }))
                 .listenAndAwait(new TesterProto.Tester.TesterService() {
                     @Override
                     public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,

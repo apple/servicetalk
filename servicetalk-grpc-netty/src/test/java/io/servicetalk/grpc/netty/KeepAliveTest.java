@@ -84,15 +84,17 @@ class KeepAliveTest {
                        final Duration idleTimeout) throws Exception {
         this.idleTimeoutMillis = idleTimeout.toMillis();
         GrpcServerBuilder serverBuilder = forAddress(localAddress(0))
-            .executor(SERVER_CTX.executor())
-            .ioExecutor(SERVER_CTX.ioExecutor())
-            .executionStrategy(defaultStrategy());
-        if (!keepAlivesFromClient) {
-            serverBuilder.protocols(h2Config(keepAliveIdleFor));
-        } else {
-            serverBuilder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
-                .protocols(h2Config(null));
-        }
+                .executor(SERVER_CTX.executor())
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executionStrategy(defaultStrategy())
+                .initializer(builder -> {
+                    if (!keepAlivesFromClient) {
+                        builder.protocols(h2Config(keepAliveIdleFor));
+                    } else {
+                        builder.socketOption(IDLE_TIMEOUT, idleTimeoutMillis)
+                            .protocols(h2Config(null));
+                    }
+                });
         ctx = serverBuilder.listenAndAwait(new ServiceFactory(new InfiniteStreamsService()));
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
             GrpcClients.forAddress(serverHostAndPort(ctx))

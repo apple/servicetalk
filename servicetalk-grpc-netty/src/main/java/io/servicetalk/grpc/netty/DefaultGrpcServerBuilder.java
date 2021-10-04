@@ -65,6 +65,8 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
 
     private final HttpServerBuilder httpServerBuilder;
+    @Nullable
+    private GrpcServerBuilder.HttpInitializer initializer;
     private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
             // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy which is
             // not compatible with gRPC.
@@ -79,6 +81,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
+        appendCatchAllFilterIfRequired();
+    }
+
+    @Override
+    public GrpcServerBuilder initializer(final GrpcServerBuilder.HttpInitializer initializer) {
+        this.initializer = initializer;
+        return this;
     }
 
     @Override
@@ -197,6 +206,11 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     private HttpServerBuilder preBuild() {
         if (!invokedBuild) {
+            // TODO(dj): Consider logging a warning in every method that changes the state of the builder once it has
+            // been used to build a client.
+            if (initializer != null) {
+                initializer.initialize(httpServerBuilder);
+            }
             doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
         }
         invokedBuild = true;

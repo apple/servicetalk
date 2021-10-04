@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -55,7 +56,14 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  */
 public abstract class GrpcServerBuilder {
 
+    @FunctionalInterface
+    public interface HttpInitializer {
+        void initialize(HttpServerBuilder builder);
+    }
+
     private boolean appendedCatchAllFilter;
+
+    public abstract GrpcServerBuilder initializer(HttpInitializer initializer);
 
     /**
      * Configurations of various underlying protocol versions.
@@ -65,7 +73,12 @@ public abstract class GrpcServerBuilder {
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#protocols(HttpProtocolConfig...)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
@@ -81,7 +94,12 @@ public abstract class GrpcServerBuilder {
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#sslConfig(ServerSslConfig)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder sslConfig(ServerSslConfig config);
 
     /**
@@ -91,7 +109,12 @@ public abstract class GrpcServerBuilder {
      * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
      * to provide the corresponding {@link ServerSslConfig}.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#sslConfig(ServerSslConfig, Map)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
 
     /**
@@ -103,7 +126,12 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#socketOption(SocketOption, Object)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value);
 
     /**
@@ -114,7 +142,12 @@ public abstract class GrpcServerBuilder {
      * @return this.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#listenSocketOption(SocketOption, Object)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
 
     /**
@@ -125,7 +158,12 @@ public abstract class GrpcServerBuilder {
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
      * data and log only network events.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder enableWireLogging(String loggerName, LogLevel logLevel,
                                                         BooleanSupplier logUserData);
 
@@ -134,7 +172,12 @@ public abstract class GrpcServerBuilder {
      *
      * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#transportObserver(TransportObserver)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
@@ -160,7 +203,12 @@ public abstract class GrpcServerBuilder {
      * @param enable When {@code false} it will disable the automatic consumption of request
      * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#drainRequestPayloadBody(boolean)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder drainRequestPayloadBody(boolean enable);
 
     /**
@@ -179,7 +227,12 @@ public abstract class GrpcServerBuilder {
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#appendConnectionAcceptorFilter(ConnectionAcceptorFactory)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public abstract GrpcServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
 
     /**
@@ -195,9 +248,13 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public final GrpcServerBuilder appendHttpServiceFilter(StreamingHttpServiceFilterFactory factory) {
-        appendCatchAllFilterIfRequired();
         doAppendHttpServiceFilter(factory);
         return this;
     }
@@ -217,10 +274,14 @@ public abstract class GrpcServerBuilder {
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
+     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * {@link HttpServerBuilder#appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
+    @Deprecated
     public final GrpcServerBuilder appendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
                                                            StreamingHttpServiceFilterFactory factory) {
-        appendCatchAllFilterIfRequired();
         doAppendHttpServiceFilter(predicate, factory);
         return this;
     }
@@ -361,7 +422,10 @@ public abstract class GrpcServerBuilder {
     protected abstract void doAppendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
                                                       StreamingHttpServiceFilterFactory factory);
 
-    private void appendCatchAllFilterIfRequired() {
+    protected void appendCatchAllFilterIfRequired() {
+        // TODO(dj): Move to DefaultGrpcServerBuilder and remove the check as the call is in the constructor.
+        // This code depends on GrpcUtils which is inaccessible from the servicetalk-grpc-netty module.
+        // When this class is converted to an interface we can also refactor that part.
         if (!appendedCatchAllFilter) {
             doAppendHttpServiceFilter(CatchAllHttpServiceFilter::new);
             appendedCatchAllFilter = true;
