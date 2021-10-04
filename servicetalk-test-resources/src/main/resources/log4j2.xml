@@ -19,7 +19,7 @@
     <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
     <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
     <Property name="h2FrameLogLevel">${sys:servicetalk.logger.h2FrameLogLevel:-OFF}</Property>
-    <Property name="httpLifecycleLogger">${sys:servicetalk.logger.httpLifecycleLogger:-OFF}</Property>
+    <Property name="lifecycleObserverLogLevel">${sys:servicetalk.logger.lifecycleObserverLogLevel:-OFF}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
@@ -29,7 +29,7 @@
   <Loggers>
     <Logger name="servicetalk-tests-wire-logger" level="${wireLogLevel}"/>
     <Logger name="servicetalk-tests-h2-frame-logger" level="${h2FrameLogLevel}"/>
-    <Logger name="servicetalk-tests-http-lifecycle-logger" level="${httpLifecycleLogger}"/>
+    <Logger name="servicetalk-tests-lifecycle-observer-logger" level="${lifecycleObserverLogLevel}"/>
     <Root level="${rootLevel}">
       <AppenderRef ref="Console"/>
     </Root>
