@@ -21,7 +21,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
@@ -35,16 +39,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
-import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
-import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
-import static java.util.Objects.requireNonNull;
 
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
@@ -56,35 +53,33 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
     private final HttpExecutionStrategy strategy;
     private final SingleSource<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
-    private final int maxRedirects;
     private final StreamingHttpRequester requester;
-    private final boolean onlyRelative;
+    private final boolean allowNonRelativeRedirects;
+    private final RedirectConfig config;
 
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
      *
+     * @param requester The {@link StreamingHttpRequester} to send redirected requests.
      * @param strategy Sets the {@link HttpExecutionStrategy} when performing redirects.
+     * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
      * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be
      * applied.
-     * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
-     * {@link StreamingHttpClient}.
-     * @param onlyRelative Limits the automated redirects to relative paths on the same host and port as the {@code
-     * originalRequest}, non-relative redirect responses will be returned as-is.
+     * @param allowNonRelativeRedirects Allows following non-relative redirects to different target hosts.
+     * @param config Other configuration options.
      */
-    RedirectSingle(final HttpExecutionStrategy strategy,
-                   final Single<StreamingHttpResponse> originalResponse,
+    RedirectSingle(final StreamingHttpRequester requester,
+                   final HttpExecutionStrategy strategy,
                    final StreamingHttpRequest originalRequest,
-                   final int maxRedirects,
-                   final StreamingHttpRequester requester,
-                   final boolean onlyRelative) {
+                   final Single<StreamingHttpResponse> originalResponse,
+                   final boolean allowNonRelativeRedirects,
+                   final RedirectConfig config) {
+        this.requester = requester;
         this.strategy = strategy;
+        this.originalRequest = originalRequest;
         this.originalResponse = toSource(originalResponse);
-        this.originalRequest = requireNonNull(originalRequest);
-        this.maxRedirects = maxRedirects;
-        this.requester = requireNonNull(requester);
-        this.onlyRelative = onlyRelative;
+        this.allowNonRelativeRedirects = allowNonRelativeRedirects;
+        this.config = config;
     }
 
     @Override
@@ -116,6 +111,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             this.target = target;
             this.redirectSingle = redirectSingle;
             this.request = request;
+            // Remember scheme here because it can be wiped by multi-address client later as part of processing:
             this.scheme = request.scheme();
             this.redirectCount = redirectCount;
             this.sequentialCancellable = sequentialCancellable;
@@ -130,57 +126,78 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         }
 
         @Override
-        public void onSuccess(@Nullable final StreamingHttpResponse result) {
-            if (result == null || !shouldRedirect(redirectCount + 1, result, request.method())) {
-
-                target.onSuccess(result);
+        public void onSuccess(@Nullable final StreamingHttpResponse response) {
+            if (response == null) {
+                target.onSuccess(null);
                 return;
             }
 
-            final StreamingHttpRequest newRequest;
+            boolean terminalDelivered = false;
             try {
-                newRequest = prepareRedirectRequest(request, result, redirectSingle.requester);
-            } catch (final Throwable cause) {
-                target.onError(cause);
-                return;
-            }
-            if (newRequest == null) {
-                target.onSuccess(result);
-                return;
-            }
-            String newScheme = newRequest.scheme();
-
-            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
-            if (redirectSingle.onlyRelative) {
-                HostAndPort oldEffectiveHostAndPort = request.effectiveHostAndPort();
-                HostAndPort newEffectiveHostAndPort = newRequest.effectiveHostAndPort();
-                if (oldEffectiveHostAndPort == null || !oldEffectiveHostAndPort.equals(newEffectiveHostAndPort)) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Ignoring non-relative redirect to '{}' for original request '{}': {}",
-                                newRequest.requestTarget(), redirectSingle.originalRequest,
-                                "Only relative redirects are allowed");
-                    }
-                    target.onSuccess(result);
+                final String location = redirectLocation(redirectCount, request.method(), response);
+                if (location == null) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
                     return;
-                } else if (newScheme != null) {
-                    // Rewrite absolute-form location to relative-form request-target in case only relative redirects
-                    // are supported and this is a relative redirect
-                    newRequest.requestTarget(
-                            absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
                 }
-            } else if (newScheme == null && scheme != null) {
-                // Rewrite relative-form location to absolute-form request-target for multi-address client
-                newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) + newRequest.requestTarget());
+
+                StreamingHttpRequest newRequest = prepareRedirectRequest(request, redirectSingle.requester, location);
+                if (newRequest == null) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
+                }
+
+                final String newScheme = newRequest.scheme();
+                final boolean relative = isRelative(request, scheme, newRequest);
+                if (!relative && !redirectSingle.allowNonRelativeRedirects) {
+                    LOGGER.debug(
+                        "Ignoring non-relative redirect to '{}' for request '{}': Only relative redirects are allowed",
+                        newRequest.requestTarget(), request);
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
+                }
+
+                if (!redirectSingle.config.redirectPredicate().test(relative, redirectCount, request, response)) {
+                    terminalDelivered = true;
+                    target.onSuccess(response);
+                    return;
+                }
+
+                if (relative) {
+                    if (redirectSingle.allowNonRelativeRedirects && newScheme == null && scheme != null) {
+                        // Rewrite origin-form location to absolute-form request-target for multi-address client:
+                        newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
+                                newRequest.requestTarget());
+                    }
+                    if (!redirectSingle.allowNonRelativeRedirects && newScheme != null) {
+                        // Rewrite absolute-form location to origin-form request-target in case only relative redirects
+                        // are supported:
+                        newRequest.requestTarget(
+                                absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
+                    }
+                }
+
+                newRequest = redirectSingle.config.redirectRequestTransformer()
+                        .apply(relative, request, response, newRequest);
+
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Executing redirect to '{}' for request '{}'", location, request);
+                }
+
+                terminalDelivered = true;   // Mark as "delivered" because we do not own `target` from this point
+                toSource(response.messageBody().ignoreElements()    // Consume any payload of the redirect response
+                        .concat(redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
+                        .subscribe(new RedirectSubscriber(target, redirectSingle, newRequest, redirectCount + 1,
+                                sequentialCancellable));
+            } catch (Throwable cause) {
+                if (!terminalDelivered) {
+                    safeOnError(target, cause);
+                } else {
+                    LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", target, cause);
+                }
             }
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("Execute redirect to '{}' for original request '{}'",
-                        result.headers().get(LOCATION), redirectSingle.originalRequest);
-            }
-            // Consume any payload of the redirect response
-            toSource(result.messageBody().ignoreElements().concat(
-                    redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
-                        .subscribe(new RedirectSubscriber(
-                            target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
         // This code is similar to
@@ -198,104 +215,101 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             target.onError(t);
         }
 
-        private boolean shouldRedirect(final int redirectCount, final StreamingHttpResponse response,
-                                       final HttpRequestMethod originalMethod) {
-            final int statusCode = response.status().code();
+        /**
+         * Returns a value of {@link HttpHeaderNames#LOCATION} header or {@code null} if we should not redirect.
+         */
+        @Nullable
+        private String redirectLocation(final int redirectCount, final HttpRequestMethod requestMethod,
+                                        final HttpResponseMetaData responseMetaData) {
+            final int statusCode = responseMetaData.status().code();
 
-            if (statusCode < 300 || statusCode > 308) {
-                // We start without support for status codes outside of this range
-                // re-visit when we need to support payloads in redirects.
-                return false;
+            if (statusCode < 300 || statusCode > 308 || (statusCode >= 304 && statusCode <= 306)) {
+                // We start without support for status codes outside of the standard range
+
+                // https://tools.ietf.org/html/rfc7232#section-4.1
+                // The 304 (Not Modified) status code indicates that the cache value is still fresh and can be used.
+
+                // https://tools.ietf.org/html/rfc7231#section-6.4.5
+                // The 305 (Use Proxy) status code has been deprecated due to security concerns regarding in-band
+                // configuration of a proxy.
+
+                // https://tools.ietf.org/html/rfc7231#section-6.4.6
+                // The 306 (Unused) status code is no longer used, and the code is reserved.
+                return null;
             }
 
-            if (redirectCount > redirectSingle.maxRedirects) {
-                LOGGER.debug("Maximum number of redirects ({}) reached for original request '{}'",
-                        redirectSingle.maxRedirects, redirectSingle.originalRequest);
-                return false;
+            final RedirectConfig config = redirectSingle.config;
+            if (redirectCount >= config.maxRedirects()) {
+                LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
+                        config.maxRedirects(), redirectSingle.originalRequest);
+                return null;
             }
 
-            switch (statusCode) {
-                case 304:
-                    // https://tools.ietf.org/html/rfc7232#section-4.1
-                    // The 304 (Not Modified) status code indicates that the cache value is still fresh and can be used.
-                case 305:
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.5
-                    // The 305 (Use Proxy) status code has been deprecated due to
-                    // security concerns regarding in-band configuration of a proxy.
-                case 306:
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.6
-                    // The 306 (Unused) status code is no longer used, and the code is reserved.
-                    return false;
-                default:
-                    // Server should return only 200 status code for TRACE.
-                    // We don't see a clear use case for redirect for OPTIONS and CONNECT methods
-                    // and will support them later if necessary.
-                    if (TRACE.name().equals(originalMethod.name())
-                            || OPTIONS.name().equals(originalMethod.name())
-                            || CONNECT.name().equals(originalMethod.name())) {
-                        return false;
-                    }
-
-                    final CharSequence locationHeader = response.headers().get(LOCATION);
-                    if (locationHeader == null || locationHeader.length() == 0) {
-                        LOGGER.debug("No location header for redirect response");
-                        return false;
-                    }
-
-                    if (statusCode == 307 || statusCode == 308) {
-                        // TODO: remove these cases when we will support repeatable payload
-                        return GET.name().equals(originalMethod.name()) || HEAD.name().equals(originalMethod.name());
-                    }
-
-                    return true;
+            if (!config.allowedMethods().contains(requestMethod)) {
+                LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
+                return null;
             }
+
+            final CharSequence locationHeader = responseMetaData.headers().get(LOCATION);
+            if (locationHeader == null || locationHeader.length() == 0) {
+                LOGGER.debug("No location header in redirect response: {}", responseMetaData);
+                return null;
+            }
+
+            return locationHeader.toString();
         }
 
         @Nullable
-        private static StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
-                                                                   final StreamingHttpResponse response,
-                                                                   final StreamingHttpRequestFactory requestFactory) {
-            final HttpRequestMethod method = defineRedirectMethod(request.method());
-            final CharSequence locationHeader = response.headers().get(LOCATION);
-            assert locationHeader != null;
-
+        private StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
+                                                            final StreamingHttpRequestFactory requestFactory,
+                                                            final String redirectLocation) {
             final StreamingHttpRequest redirectRequest =
-                    requestFactory.newRequest(method, locationHeader.toString()).version(request.version());
+                    requestFactory.newRequest(request.method(), redirectLocation).version(request.version());
 
             String redirectHost = redirectRequest.host();
-            if (redirectHost == null) {
-                // origin-form request-target in Location header, extract host & port info from original request
+            if (redirectHost == null && redirectSingle.allowNonRelativeRedirects) {
+                // origin-form request-target in Location header, extract host & port info from the previous request:
                 HostAndPort requestHostAndPort = request.effectiveHostAndPort();
                 if (requestHostAndPort == null) {
-                    // abort, no HOST header found on the original request, this is typical for HTTP/1.0
+                    // abort, no HOST header found on the previous request but required for the multi-address client.
+                    // this is unlikely to happen but still possible for HTTP/1.0
                     return null;
                 }
                 final int redirectPort = requestHostAndPort.port();
                 redirectRequest.setHeader(HOST, redirectPort < 0 ? requestHostAndPort.hostName() :
                         requestHostAndPort.hostName() + ':' + redirectPort);
             }
-
-            // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
-            redirectRequest.setHeader(CONTENT_LENGTH, ZERO);
-
-            // NOTE: for security reasons we do not keep any headers from original request.
-            // If users need to add some custom or authentication headers, they have to apply them via filters.
+            // nothing to do if non-relative redirects are not allowed
             return redirectRequest;
         }
 
-        private static HttpRequestMethod defineRedirectMethod(final HttpRequestMethod originalMethod) {
-            // https://tools.ietf.org/html/rfc7231#section-6.4.2
-            // https://tools.ietf.org/html/rfc7231#section-6.4.3
-            // Note for 301 (Moved Permanently) and 302 (Found):
-            //     For historical reasons, a user agent MAY change the request method from POST to GET for the
-            //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
-            //     308 (Permanent Redirect) status codes can be used instead.
-            // ServiceTalk follows this historical approach.
+        private static boolean isRelative(final HttpRequestMetaData originalRequest,
+                                          @Nullable final String originalScheme,
+                                          final HttpRequestMetaData redirectRequest) {
+            final String toHost = redirectRequest.host();
+            if (toHost == null) {
+                return true;
+            }
+            final HostAndPort original = originalRequest.effectiveHostAndPort();
+            if (original == null) {
+                return false;   // Can not extract host and port from the original request => no guarantee it's relative
+            }
+            if (!toHost.equalsIgnoreCase(original.hostName())) {
+                return false;
+            }
+            return inferPort(redirectRequest.port(), redirectRequest.scheme(), original.port()) ==
+                    inferPort(original.port(), originalScheme, original.port());
+        }
 
-            // For 303 (See Other) user agent should perform only a
-            // GET or HEAD request: https://tools.ietf.org/html/rfc7231#section-6.4.4
-            return HEAD.name().equals(originalMethod.name()) ? HEAD : GET;
-            // TODO: It also could be originalMethod for 307 & 308, when we will support repeatable payloadBody
+        private static int inferPort(final int parsedPort, @Nullable final String scheme,
+                                     final int fallbackPort) {
+            if (parsedPort >= 0) {
+                return parsedPort;
+            }
+            if (scheme == null) {
+                return fallbackPort;
+            }
+            return "https".equalsIgnoreCase(scheme) ? 443 : 80;
         }
     }
 }

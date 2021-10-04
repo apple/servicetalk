@@ -213,13 +213,13 @@ same for all API styles.
 
 * link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/RedirectingServer.java[RedirectingServer] -
 Starts two servers, one of them (HTTP) redirects to another (HTTPS).
+* link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/SingleAddressRedirectClient.java[SingleAddressRedirectClient.java] -
+Async `Hello World` example that demonstrates how relative redirects can be handled automatically by a single-address client.
+* link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/MultiAddressUrlRedirectClient.java[MultiAddressUrlRedirectClient.java] -
+Async `Hello World` example that demonstrates how redirects can be handled automatically by a multi-address client.
+It demonstrates how users can preserve headers and payload body of the original request while redirecting to non-relative locations.
 * link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/ManualRedirectClient.java[ManualRedirectClient.java] -
-Async `Hello World` example that demonstrates how redirects can be handled manually when single-address clients are used.
-* link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/SimpleRedirectUrlClient.java[SimpleRedirectUrlClient.java] -
-Async `Hello World` example that demonstrates how redirects can be handled automatically by a multi-address client.
-* link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/RedirectWithStateUrlClient.java[RedirectWithStateUrlClient.java] -
-Async `Hello World` example that demonstrates how redirects can be handled automatically by a multi-address client.
-It demonstrates how users can preserve headers and payload body of the original request while redirecting.
+Async `Hello World` example that demonstrates how redirects can be handled manually between multiple single-address clients.
 
 [#HTTP2]
 == HTTP/2

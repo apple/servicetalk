@@ -15,7 +15,10 @@
  */
 package io.servicetalk.examples.http.redirects;
 
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerContext;
@@ -23,7 +26,8 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
@@ -43,27 +47,49 @@ public final class RedirectingServer {
         ServerContext finalServer = HttpServers.forPort(SECURE_SERVER_PORT)
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .build())
+                // Wire-logging helps to demonstrate requests and responses that have been sent
                 .enableWireLogging("servicetalk-examples-https-server-wire-logger", TRACE, Boolean.TRUE::booleanValue)
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    HttpResponse response = responseFactory.ok();
-                    CharSequence customHeaderValue = request.headers().get(CUSTOM_HEADER);
-                    if (customHeaderValue != null) {
-                        response.addHeader(CUSTOM_HEADER, customHeaderValue);
-                    }
-                    return response.payloadBody("Redirect complete!" + (request.payloadBody().readableBytes() > 0 ?
-                                    " Request payloadBody received: " + request.payloadBody().toString(US_ASCII) : ""),
-                                    textSerializer());
-                });
+                .listenBlockingAndAwait(RedirectingServer::finalEndpoint);
 
         try {
             HttpServers.forPort(NON_SECURE_SERVER_PORT)
+                    // Wire-logging helps to demonstrate requests and responses that have been sent
                     .enableWireLogging("servicetalk-examples-redirecting-server-wire-logger", TRACE,
                             Boolean.TRUE::booleanValue)
-                    .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.movedPermanently()
-                            .addHeader(LOCATION, "https://localhost:" + SECURE_SERVER_PORT + '/'))
+                    .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                        switch (request.requestTarget()) {
+                            case "/relative":
+                                return responseFactory.seeOther()
+                                        .addHeader(LOCATION, "/final")
+                                        .addHeader(SERVER, ctx.localAddress().toString());
+                            case "/non-relative":
+                                return responseFactory.movedPermanently()
+                                        .addHeader(LOCATION, "https://localhost:" + SECURE_SERVER_PORT + "/final")
+                                        .addHeader(SERVER, ctx.localAddress().toString());
+                            case "/final":
+                                return finalEndpoint(ctx, request, responseFactory);
+                            default:
+                                return responseFactory.notFound()
+                                        .addHeader(SERVER, ctx.localAddress().toString());
+                        }
+                    })
                     .awaitShutdown();
         } finally {
             finalServer.closeAsync().toFuture().get();
         }
+    }
+
+    private static HttpResponse finalEndpoint(HttpServiceContext ctx, HttpRequest request,
+                                              HttpResponseFactory responseFactory) {
+        HttpResponse response = responseFactory.ok()
+                .addHeader(SERVER, ctx.localAddress().toString());
+        CharSequence customHeaderValue = request.headers().get(CUSTOM_HEADER);
+        if (customHeaderValue != null) {
+            response.addHeader(CUSTOM_HEADER, customHeaderValue);
+        }
+        return response.payloadBody("Redirect complete!" + (request.payloadBody().readableBytes() > 0 ?
+                        " Request payloadBody received: " + request.payloadBody().toString(US_ASCII) :
+                        " No request payload body received."),
+                textSerializerAscii());
     }
 }

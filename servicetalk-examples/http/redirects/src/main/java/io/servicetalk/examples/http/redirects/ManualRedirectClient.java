@@ -20,6 +20,9 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.redirects.RedirectingServer.CUSTOM_HEADER;
@@ -27,16 +30,19 @@ import static io.servicetalk.examples.http.redirects.RedirectingServer.NON_SECUR
 import static io.servicetalk.examples.http.redirects.RedirectingServer.SECURE_SERVER_PORT;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
- * Async "Hello World" example that demonstrates how redirects can be handled manually when single-address clients are
- * used with possibilities to:
+ * Async "Hello World" example that demonstrates how redirects can be handled manually between multiple
+ * {@link HttpClients#forSingleAddress(HostAndPort) single-address} clients with possibilities to:
  * <ol>
  *     <li>Change the target server or perform a relative redirect.</li>
  *     <li>Preserve headers while redirecting.</li>
  *     <li>Preserve payload body while redirecting.</li>
  * </ol>
+ * This is a specialized use-case. For simplification, consider using one
+ * {@link HttpClients#forMultiAddressUrl() multi-address} client, demonstrated in {@link MultiAddressUrlRedirectClient}
+ * example.
  */
 public final class ManualRedirectClient {
     public static void main(String... args) throws Exception {
@@ -47,8 +53,8 @@ public final class ManualRedirectClient {
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build()).build()) {
 
             try (HttpClient client = HttpClients.forSingleAddress("localhost", NON_SECURE_SERVER_PORT).build()) {
-                // Redirect of a GET request with a custom header:
-                HttpRequest originalGet = client.get("http://localhost:8080/sayHello")
+                System.out.println("- Redirect of a GET request with a custom header:");
+                HttpRequest originalGet = client.get("/non-relative")
                         .addHeader(CUSTOM_HEADER, "value");
                 client.request(originalGet)
                         .flatMap(response -> {
@@ -64,16 +70,16 @@ public final class ManualRedirectClient {
                         })
                         .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textSerializerUtf8()));
+                            System.out.println(resp.payloadBody(textSerializerAscii()));
                             System.out.println();
                         })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
+                        // This example is demonstrating asynchronous execution, but needs to prevent the main thread
+                        // from exiting before the response has been processed. This isn't typical usage for an
+                        // asynchronous API but is useful for demonstration purposes.
                         .toFuture().get();
 
-                // Redirect of a POST request with a payload body:
-                HttpRequest originalPost = client.post("http://localhost:8080/sayHello")
+                System.out.println("- Redirect of a POST request with a payload body:");
+                HttpRequest originalPost = client.post("/non-relative")
                         .payloadBody(client.executionContext().bufferAllocator().fromAscii("some_content"));
                 client.request(originalPost)
                         .flatMap(response -> {
@@ -89,17 +95,18 @@ public final class ManualRedirectClient {
                         })
                         .whenOnSuccess(resp -> {
                             System.out.println(resp.toString((name, value) -> value));
-                            System.out.println(resp.payloadBody(textSerializerUtf8()));
+                            System.out.println(resp.payloadBody(textSerializerAscii()));
                         })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
+                        // This example is demonstrating asynchronous execution, but needs to prevent the main thread
+                        // from exiting before the response has been processed. This isn't typical usage for an
+                        // asynchronous API but is useful for demonstration purposes.
                         .toFuture().get();
             }
         }
     }
 
-    private static HttpClient lookupClient(CharSequence location, HttpClient sameClient, HttpClient secureClient) {
+    private static HttpClient lookupClient(@Nullable CharSequence location, HttpClient sameClient,
+                                           HttpClient secureClient) {
         if (location == null || location.length() < 1) {
             throw new IllegalArgumentException("Response does not contain redirect location");
         }

@@ -148,9 +148,10 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
          * <p>
          * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
-         * {@link StreamingHttpRequest#payloadBody() payload body} that is replayable, i.e. multiple subscribes to the
-         * payload {@link Publisher} emit the same data. {@link Publisher}s that do not emit any data or which are
-         * created from in-memory data are typically replayable.
+         * {@link StreamingHttpRequest#payloadBody() payload body} that is
+         * <a href="http://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to
+         * the payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or which
+         * are created from in-memory data are typically replayable.
          *
          * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
          */

@@ -25,4 +25,14 @@
     <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <!-- Arrays are copied at the build time -->
+  <Match>
+    <Class name="io.servicetalk.http.utils.RedirectingHttpRequesterFilter$Builder"/>
+    <Or>
+      <Method name="allowedMethods"/>
+      <Method name="headersToRedirect"/>
+      <Method name="trailersToRedirect"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

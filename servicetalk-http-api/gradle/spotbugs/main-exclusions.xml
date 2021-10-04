@@ -86,8 +86,14 @@
     <Or>
       <Class name="io.servicetalk.http.api.ContentEncodingHttpServiceFilter"/>
       <Class name="io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory"/>
+      <Class name="io.servicetalk.http.api.RedirectConfigBuilder"/>
     </Or>
-    <Method name ="&lt;init&gt;"/>
+    <Or>
+      <Method name ="&lt;init&gt;"/>
+      <Method name ="allowedMethods"/>
+      <Method name ="headersToRedirect"/>
+      <Method name ="trailersToRedirect"/>
+    </Or>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>
