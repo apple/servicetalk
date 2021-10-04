@@ -32,9 +32,9 @@ public final class ExecutionStrategyClient {
         try (Greeter.GreeterClient client = GrpcClients.forAddress("localhost", port).build(new Greeter.ClientFactory())) {
             client.sayHello(HelloRequest.newBuilder().setName("World").build())
                     .whenOnSuccess(reply -> System.out.println(port + " : " + reply))
-                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-                    // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-                    // for demonstration purposes.
+                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
+                    // exiting before the response has been processed. This isn't typical usage for an asynchronous API
+                    // but is useful for demonstration purposes.
                     .toFuture().get();
         } catch (Exception all) {
             if (all instanceof RuntimeException) {
