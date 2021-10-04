@@ -38,6 +38,7 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -157,6 +158,19 @@ class GrpcLifecycleObserverTest {
                 .buildBlocking(new ClientFactory());
     }
 
+    @AfterEach
+    void tearDown() throws Exception {
+        try {
+            if (client != null) {
+                client.close();
+            }
+        } finally {
+            if (server != null) {
+                server.close();
+            }
+        }
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] error={0}")
     @ValueSource(booleans = {false, true})
     void test(boolean error) throws Exception {
@@ -184,9 +198,8 @@ class GrpcLifecycleObserverTest {
     private void runTest(Callable<String> executeRequest, boolean error, boolean aggregated) throws Exception {
         setUp(error);
 
-        GrpcStatusException e;
         if (error) {
-            e = assertThrows(GrpcStatusException.class, executeRequest::call);
+            GrpcStatusException e = assertThrows(GrpcStatusException.class, executeRequest::call);
             assertThat(e.status().code(), is(UNKNOWN));
         } else {
             assertThat(executeRequest.call(), equalTo(CONTENT));
