@@ -65,6 +65,7 @@ XSLTDOC
 
 MVN_REPO="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)"
 
+JAVA_VERSION=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
 JAPICMP_VERSION="0.15.3"
 JAR_DIR="${MVN_REPO}/com/github/siom79/japicmp/japicmp/${JAPICMP_VERSION}"
 JAR_FILE="${JAR_DIR}/japicmp-${JAPICMP_VERSION}-jar-with-dependencies.jar"
@@ -101,6 +102,11 @@ ARTIFACTS="$(comm -1 -2 \
   <(echo "${NEW_ARTIFACTS}" | tr ' ' '\n') |
   grep -v -- '-\(benchmarks\|bom\|examples\|gradle-plugin-internal\)$')"
 
+# Skip a module that requires JDK9+ if we are on JDK8 for local build:
+if [ "${LOCAL}" = "local" ] && [ "$JAVA_VERSION" = "1.8" ]; then
+  ARTIFACTS="$(echo "${ARTIFACTS}" | grep -v 'servicetalk-concurrent-jdkflow')"
+fi
+
 for ARTIFACT_ID in ${ARTIFACTS}; do
   OLD_JAR="${BASEPATH}/${ARTIFACT_ID}/${OLD_ST_VERSION}/${ARTIFACT_ID}-${OLD_ST_VERSION}.jar"
 
@@ -110,7 +116,7 @@ for ARTIFACT_ID in ${ARTIFACTS}; do
     echo false)
 
   if [ "${FOUND_OLD}" = "false" ] || [ ! -f "${OLD_JAR}" ]; then
-    echo "# Error  : old artifact (${ARTIFACT_ID}::${OLD_ST_VERSION}) not found"
+    echo "# Error  : old artifact (${ARTIFACT_ID}-${OLD_ST_VERSION}.jar) not found"
     echo ""
     exit 1
   fi
@@ -125,7 +131,7 @@ for ARTIFACT_ID in ${ARTIFACTS}; do
   fi
 
   if [ "${FOUND_NEW:-}" = "false" ] || [ ! -f "${NEW_JAR}" ]; then
-    echo "# Error : new artifact (${ARTIFACT_ID}::${NEW_ST_VERSION}) not found"
+    echo "# Error : new artifact (${ARTIFACT_ID}-${NEW_ST_VERSION}.jar) not found"
     echo ""
     exit 1
   fi
