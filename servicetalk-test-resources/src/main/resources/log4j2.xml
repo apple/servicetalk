@@ -16,7 +16,7 @@
   -->
 <Configuration status="info">
   <Properties>
-    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-DEBUG}</Property>
+    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
     <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
     <Property name="h2FrameLogLevel">${sys:servicetalk.logger.h2FrameLogLevel:-OFF}</Property>
     <Property name="lifecycleObserverLogLevel">${sys:servicetalk.logger.lifecycleObserverLogLevel:-OFF}</Property>
