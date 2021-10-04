@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatus.StatusClass;
@@ -41,19 +40,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
-import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
-import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
-import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpRequestMethod.PUT;
-import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
-import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -87,69 +73,6 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
      */
     public RedirectingHttpRequesterFilter() {
         this(DEFAULT_CONFIG);
-    }
-
-    /**
-     * Create a new instance, only performing relative redirects.
-     *
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
-     */
-    @Deprecated
-    public RedirectingHttpRequesterFilter(final int maxRedirects) {
-        this(true, maxRedirects);
-    }
-
-    /**
-     * Create a new instance, performing relative redirects only for {@link HttpConnection}.
-     *
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
-     */
-    @Deprecated
-    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient) {
-        this(onlyRelativeClient, BackwardCompatibleRedirectConfig.DEFAULT_MAX_REDIRECTS);
-    }
-
-    /**
-     * Create a new instance, performing relative redirects only for {@link HttpConnection}.
-     *
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
-     */
-    @Deprecated
-    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                          final int maxRedirects) {
-        this(new BackwardCompatibleRedirectConfig(maxRedirects, !onlyRelativeClient));
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
-     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
-     */
-    @Deprecated
-    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                          final boolean onlyRelativeConnection) {
-        this(onlyRelativeClient, BackwardCompatibleRedirectConfig.DEFAULT_MAX_REDIRECTS);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @deprecated Use {@link #RedirectingHttpRequesterFilter(RedirectConfig)}.
-     */
-    @Deprecated
-    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                          final boolean onlyRelativeConnection,
-                                          final int maxRedirects) {
-        this(onlyRelativeClient, maxRedirects);
     }
 
     /**
@@ -223,72 +146,5 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         // No influence since we do not block.
         return strategy;
-    }
-
-    @Deprecated
-    private static final class BackwardCompatibleRedirectConfig implements RedirectConfig {
-
-        // https://tools.ietf.org/html/rfc2068#section-10.3 says:
-        // A user agent SHOULD NOT automatically redirect a request more than 5 times,
-        // since such redirects usually indicate an infinite loop.
-        static final int DEFAULT_MAX_REDIRECTS = 5;
-        private static final Set<HttpRequestMethod> DEFAULT_ALLOWED_METHODS =
-                toSet(GET, HEAD, POST, PUT, DELETE, PATCH);
-        private static final RedirectPredicate DEFAULT_SHOULD_REDIRECT_PREDICATE =
-                (relative, redirectCnt, previousRequest, redirectResponse) -> true;
-        private static final RedirectRequestTransformer DEFAULT_REDIRECT_REQUEST_TRANSFORMER =
-                (relative, previousRequest, redirectResponse, redirectRequest) -> {
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.2
-                    // https://tools.ietf.org/html/rfc7231#section-6.4.3
-                    // Note for 301 (Moved Permanently) and 302 (Found):
-                    //     For historical reasons, a user agent MAY change the request method from POST to GET for the
-                    //     subsequent request.  If this behavior is undesired, the 307 (Temporary Redirect) or
-                    //     308 (Permanent Redirect) status codes can be used instead.
-                    final int statusCode = redirectResponse.status().code();
-                    if ((statusCode == MOVED_PERMANENTLY.code() || statusCode == FOUND.code()) &&
-                            POST.name().equals(previousRequest.method().name())) {
-                        redirectRequest.method(GET);
-                    }
-                    return redirectRequest;
-                };
-
-        private final int maxRedirects;
-        private final boolean allowNonRelativeRedirects;
-
-        BackwardCompatibleRedirectConfig(final int maxRedirects, final boolean allowNonRelativeRedirects) {
-            this.maxRedirects = maxRedirects;
-            this.allowNonRelativeRedirects = allowNonRelativeRedirects;
-        }
-
-        @Override
-        public int maxRedirects() {
-            return maxRedirects;
-        }
-
-        @Override
-        public Set<HttpRequestMethod> allowedMethods() {
-            return DEFAULT_ALLOWED_METHODS;
-        }
-
-        @Override
-        public boolean allowNonRelativeRedirects() {
-            return allowNonRelativeRedirects;
-        }
-
-        @Override
-        public RedirectPredicate redirectPredicate() {
-            return DEFAULT_SHOULD_REDIRECT_PREDICATE;
-        }
-
-        @Override
-        public RedirectRequestTransformer redirectRequestTransformer() {
-            return DEFAULT_REDIRECT_REQUEST_TRANSFORMER;
-        }
-
-        private static Set<HttpRequestMethod> toSet(final HttpRequestMethod... allowedMethods) {
-            final Set<HttpRequestMethod> set = new HashSet<>((int) (allowedMethods.length / 0.75f) + 1);
-            set.addAll(asList(allowedMethods));
-            return unmodifiableSet(set);
-        }
     }
 }
