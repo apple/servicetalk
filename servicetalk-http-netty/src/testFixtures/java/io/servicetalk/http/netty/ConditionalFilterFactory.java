@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
+
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
-import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
+import static java.util.Objects.requireNonNull;
 
 public final class ConditionalFilterFactory
         implements StreamingHttpConnectionFilterFactory, StreamingHttpClientFilterFactory {
@@ -73,5 +80,19 @@ public final class ConditionalFilterFactory
                 }
             };
         }
+    }
+
+    private static StreamingHttpConnectionFilterFactory appendConnectionFilterFactory(
+            StreamingHttpConnectionFilterFactory first, StreamingHttpConnectionFilterFactory second) {
+        requireNonNull(first);
+        requireNonNull(second);
+        return connection -> first.create(second.create(connection));
+    }
+
+    private static StreamingHttpClientFilterFactory appendClientFilterFactory(
+            StreamingHttpClientFilterFactory first, StreamingHttpClientFilterFactory second) {
+        requireNonNull(first);
+        requireNonNull(second);
+        return client -> first.create(second.create(client));
     }
 }

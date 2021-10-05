@@ -48,6 +48,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
@@ -63,6 +64,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
@@ -76,6 +78,8 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
@@ -453,6 +457,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return this;
     }
 
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
+        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+    }
+
     // Use another method to keep final references and avoid StackOverflowError
     private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
             @Nullable final StreamingHttpConnectionFilterFactory current,
@@ -493,6 +503,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :
                 requireNonNull(autoRetryStrategyProvider);
         return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                   final StreamingHttpClientFilterFactory factory) {
+        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
+
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.util.function.Predicate;
 
@@ -23,6 +36,28 @@ final class StrategyInfluencerAwareConversions {
 
     private StrategyInfluencerAwareConversions() {
         // No instances.
+    }
+
+    static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
+            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpServiceFilterFactory original) {
+        requireNonNull(predicate);
+        requireNonNull(original);
+
+        if (original instanceof HttpExecutionStrategyInfluencer) {
+            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
+            return new StrategyInfluencingStreamingServiceFilterFactory() {
+                @Override
+                public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+                    return new ConditionalHttpServiceFilter(predicate, original.create(service), service);
+                }
+
+                @Override
+                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                    return influencer.influenceStrategy(strategy);
+                }
+            };
+        }
+        return service -> new ConditionalHttpServiceFilter(predicate, original.create(service), service);
     }
 
     static StreamingHttpConnectionFilterFactory toConditionalConnectionFilterFactory(
@@ -67,6 +102,10 @@ final class StrategyInfluencerAwareConversions {
             };
         }
         return client -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
+    }
+
+    interface StrategyInfluencingStreamingServiceFilterFactory
+            extends StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
     }
 
     interface StrategyInfluencingStreamingConnectionFilterFactory
