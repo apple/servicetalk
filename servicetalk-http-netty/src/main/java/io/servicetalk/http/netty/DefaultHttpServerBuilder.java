@@ -70,6 +70,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
@@ -131,32 +132,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             throw new IllegalArgumentException(desc + " required offloading : " + requires);
         }
         return obj;
-    }
-
-    private static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
-            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpServiceFilterFactory original) {
-        requireNonNull(predicate);
-        requireNonNull(original);
-
-        if (original instanceof HttpExecutionStrategyInfluencer) {
-            HttpExecutionStrategyInfluencer influencer = (HttpExecutionStrategyInfluencer) original;
-            return new StrategyInfluencingStreamingServiceFilterFactory() {
-                @Override
-                public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-                    return new ConditionalHttpServiceFilter(predicate, original.create(service), service);
-                }
-
-                @Override
-                public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                    return influencer.influenceStrategy(strategy);
-                }
-            };
-        }
-        return service -> new ConditionalHttpServiceFilter(predicate, original.create(service), service);
-    }
-
-    private interface StrategyInfluencingStreamingServiceFilterFactory
-            extends StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
     }
 
     @Override

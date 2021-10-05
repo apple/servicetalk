@@ -17,12 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.AbstractHttpRequesterFilterTest;
 import io.servicetalk.http.api.BlockingHttpRequester;
-import io.servicetalk.http.api.ConditionalFilterFactory;
-import io.servicetalk.http.api.ConditionalFilterFactory.FilterFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.netty.ConditionalFilterFactory.FilterFactory;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 

@@ -37,9 +37,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
-import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
-
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided unresolved
  * address.
@@ -166,10 +163,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * purpose of filtering.
      * @return {@code this}
      */
-    default SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
-            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
-        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
-    }
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
@@ -249,10 +244,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * filtering.
      * @return {@code this}
      */
-    default SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                    StreamingHttpClientFilterFactory factory) {
-        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
-    }
+    SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                    StreamingHttpClientFilterFactory factory);
 
     /**
      * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
