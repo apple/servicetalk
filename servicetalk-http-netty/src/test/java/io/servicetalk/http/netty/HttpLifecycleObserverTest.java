@@ -87,7 +87,7 @@ import static org.mockito.Mockito.when;
 class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     private static final Buffer CONTENT = DEFAULT_RO_ALLOCATOR.fromAscii("content");
-    private static final HttpLifecycleObserver LOGGING = logging("servicetalk-tests-http-lifecycle-logger", TRACE);
+    private static final HttpLifecycleObserver LOGGING = logging("servicetalk-tests-lifecycle-observer-logger", TRACE);
 
     // To avoid flaky behavior await for both exchanges to terminate before starting verification:
     private final CountDownLatch bothTerminate = new CountDownLatch(2);

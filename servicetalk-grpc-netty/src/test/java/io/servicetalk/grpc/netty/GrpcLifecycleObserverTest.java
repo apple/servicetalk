@@ -87,7 +87,7 @@ class GrpcLifecycleObserverTest {
             ExecutionContextExtension.cached("client-io", "client-executor");
 
     private static final String CONTENT = "content";
-    private static final GrpcLifecycleObserver LOGGING = logging("servicetalk-tests-http-lifecycle-logger", TRACE);
+    private static final GrpcLifecycleObserver LOGGING = logging("servicetalk-tests-lifecycle-observer-logger", TRACE);
 
     // To avoid flaky behavior await for both exchanges to terminate before starting verification:
     private final CountDownLatch bothTerminate = new CountDownLatch(2);
