@@ -32,7 +32,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.RedirectConfig;
-import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -73,13 +72,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
-    private static final RedirectConfig DEFAULT_REDIRECT_CONFIG = new RedirectConfigBuilder()
-            .allowNonRelativeRedirects(true).build();   // FIXME: remove for 0.42 branch to make redirects opt-in
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
     @Nullable
-    private RedirectConfig redirectConfig = DEFAULT_REDIRECT_CONFIG;
+    private RedirectConfig redirectConfig;
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable

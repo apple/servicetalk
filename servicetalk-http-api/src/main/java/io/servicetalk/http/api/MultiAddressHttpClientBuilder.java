@@ -83,19 +83,6 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 
     /**
-     * Sets a maximum number of redirects to follow.
-     *
-     * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
-     * @return {@code this}.
-     * @deprecated Use {@link #followRedirects(RedirectConfig)} with {@link RedirectConfigBuilder#maxRedirects(int)}.
-     */
-    @Deprecated
-    default MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
-        return followRedirects(new RedirectConfigBuilder().maxRedirects(maxRedirects)
-                .allowNonRelativeRedirects(true).build());
-    }
-
-    /**
      * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
      * <p>
      * Note: For backward compatibility with 0.41.x versions redirects are enabled by default. Starting from version
@@ -107,8 +94,5 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @return {@code this}.
      * @see RedirectConfigBuilder
      */
-    default MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config) {
-        throw new UnsupportedOperationException("followRedirects(RedirectConfig) not yet supported by " +
-                getClass().getName());
-    }
+    MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config);
 }
