@@ -56,14 +56,34 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  */
 public abstract class GrpcServerBuilder {
 
+    /**
+     * Initializes the underlying {@link HttpServerBuilder} used for the transport layer.
+     */
     @FunctionalInterface
     public interface HttpInitializer {
+
+        /**
+         * Configures the underlying {@link HttpServerBuilder}.
+         * @param builder The builder to customize the HTTP layer.
+         */
         void initialize(HttpServerBuilder builder);
     }
 
     private boolean appendedCatchAllFilter;
 
-    public abstract GrpcServerBuilder initializer(HttpInitializer initializer);
+    /**
+     * Set a function which can configure the underlying {@link HttpServerBuilder} used for the transport layer.
+     * <p>
+     * Please note that this method can't be mixed with the {@link Deprecated} methods of this class as the order
+     * of operations would not be the same as the order in which the calls are made. Please migrate all of the calls
+     * to this method.
+     * @param initializer Initializes the underlying HTTP transport builder.
+     * @return {@code this}.
+     */
+    public GrpcServerBuilder initializer(HttpInitializer initializer) {
+        throw new UnsupportedOperationException("Initializing the HttpServerBuilder using this method is not yet" +
+                "supported by " + getClass().getName());
+    }
 
     /**
      * Configurations of various underlying protocol versions.

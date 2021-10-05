@@ -78,10 +78,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Nullable
     private Duration defaultTimeout;
     private boolean invokedBuild;
+    private boolean directAppendCalled;
 
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
         appendCatchAllFilterIfRequired();
+        // Reset the flag guarding proper use of underlying http builder as the above call sets it to true.
+        this.directAppendCalled = false;
     }
 
     @Override
@@ -101,30 +104,35 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     public GrpcServerBuilder protocols(final HttpProtocolConfig... protocols) {
+        directAppendCalled = true;
         httpServerBuilder.protocols(protocols);
         return this;
     }
 
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
+        directAppendCalled = true;
         httpServerBuilder.sslConfig(config);
         return this;
     }
 
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
+        directAppendCalled = true;
         httpServerBuilder.sslConfig(defaultConfig, sniMap);
         return this;
     }
 
     @Override
     public <T> GrpcServerBuilder socketOption(final SocketOption<T> option, final T value) {
+        directAppendCalled = true;
         httpServerBuilder.socketOption(option, value);
         return this;
     }
 
     @Override
     public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+        directAppendCalled = true;
         httpServerBuilder.listenSocketOption(option, value);
         return this;
     }
@@ -132,12 +140,14 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {
+        directAppendCalled = true;
         httpServerBuilder.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 
     @Override
     public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
+        directAppendCalled = true;
         httpServerBuilder.transportObserver(transportObserver);
         return this;
     }
@@ -150,12 +160,14 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
+        directAppendCalled = true;
         httpServerBuilder.drainRequestPayloadBody(enable);
         return this;
     }
 
     @Override
     public GrpcServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+        directAppendCalled = true;
         httpServerBuilder.appendConnectionAcceptorFilter(factory);
         return this;
     }
@@ -195,6 +207,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     protected void doAppendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        directAppendCalled = true;
         httpServerBuilder.appendServiceFilter(factory);
     }
 
@@ -209,6 +222,11 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
             // TODO(dj): Consider logging a warning in every method that changes the state of the builder once it has
             // been used to build a client.
             if (initializer != null) {
+                if (directAppendCalled) {
+                    throw new IllegalStateException("Builder configured with " + HttpInitializer.class.getName() +
+                            " but deprecated methods were also used. The order of operations can not be guaranteed." +
+                            " Please don't mix the initializer with deprecated methods.");
+                }
                 initializer.initialize(httpServerBuilder);
             }
             doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
