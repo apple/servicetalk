@@ -93,6 +93,8 @@ class SupplierSingleTest {
                 latch.await();
             } catch (InterruptedException e) {
                 latch.countDown();
+                Thread.currentThread().interrupt();
+                throw e;
             }
             return 1;
         });

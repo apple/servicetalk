@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
@@ -71,7 +72,8 @@ class SingleStepVerifierTest {
                         try {
                             latch.await();
                         } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                            Thread.currentThread().interrupt();
+                            throwException(e);
                         }
                     })
                     .expectSuccess("foo")

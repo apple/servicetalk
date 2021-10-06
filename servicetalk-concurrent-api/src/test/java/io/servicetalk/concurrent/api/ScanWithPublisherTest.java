@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -396,7 +397,8 @@ class ScanWithPublisherTest {
                                 try {
                                     resume.await();
                                 } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                                    Thread.currentThread().interrupt();
+                                    throwException(e);
                                 }
                             }
                             return true;

@@ -27,9 +27,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -49,7 +49,6 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoE
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class DefaultHttpExecutionStrategyTest {
 
@@ -156,20 +155,16 @@ class DefaultHttpExecutionStrategyTest {
                         // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
                         new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
-        Runnable runHandle = () -> {
-            try {
-                analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
+        Callable<?> runHandle = () -> {
+                return analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                         .flatMapPublisher(StreamingHttpResponse::payloadBody)
                     .toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
-                fail("Unexepected exception", e);
-            }
         };
         if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {
             NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
             ioExecutor.asExecutor().submit(runHandle).toFuture().get();
         } else {
-            runHandle.run();
+            runHandle.call();
         }
         analyzer.verify();
     }

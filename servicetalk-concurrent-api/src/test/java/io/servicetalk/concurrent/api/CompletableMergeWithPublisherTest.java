@@ -398,7 +398,8 @@ class CompletableMergeWithPublisherTest {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                throwException(e);
             }
         }).whenOnComplete(latch::countDown)).subscribe(subscriber);
 

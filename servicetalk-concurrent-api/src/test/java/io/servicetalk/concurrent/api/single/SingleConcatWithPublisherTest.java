@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -258,7 +259,8 @@ class SingleConcatWithPublisherTest {
                 // Simulate the a blocking operation on demand, like ConnectablePayloadWriter.
                 subscription.awaitRequestN(1);
             } catch (InterruptedException e) {
-                throw new AssertionError(e);
+                Thread.currentThread().interrupt();
+                throwException(e);
             }
             return sub1;
         });

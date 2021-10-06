@@ -108,6 +108,7 @@ public abstract class AbstractToFutureTest<T> {
                 latch.await();
                 completeSource();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throwException(e);
             }
         });

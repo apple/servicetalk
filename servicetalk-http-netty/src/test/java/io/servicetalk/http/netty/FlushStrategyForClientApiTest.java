@@ -44,6 +44,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,7 +70,8 @@ class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
                 try {
                     payloadBuffersReceived.put(buffer);
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    Thread.currentThread().interrupt();
+                    throwException(e);
                 }
             });
             return Single.succeeded(responseFactory.ok());

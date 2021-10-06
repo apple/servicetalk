@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.calculateSourceRequested;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -166,7 +167,10 @@ class ConcurrentUtilsSourceRequestedTest {
             futures.add(executorService.submit(() -> {
                 try {
                     barrier.await();
-                } catch (InterruptedException | BrokenBarrierException e) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throwException(e);
+                } catch (BrokenBarrierException e) {
                     throw new IllegalStateException("unexpected exception", e);
                 }
                 int produced = 0;
@@ -192,7 +196,10 @@ class ConcurrentUtilsSourceRequestedTest {
                 futures.add(executorService.submit(() -> {
                     try {
                         barrier.await();
-                    } catch (InterruptedException | BrokenBarrierException e) {
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throwException(e);
+                    } catch (BrokenBarrierException e) {
                         throw new IllegalStateException("unexpected exception", e);
                     }
                     final Random random = ThreadLocalRandom.current();

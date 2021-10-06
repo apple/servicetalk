@@ -522,6 +522,7 @@ class GracefulConnectionClosureHandlingTest {
                     try {
                         payloadBodyLatch.await();
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         throwException(e);
                     }
                 }).concat(from(REQUEST_CONTENT)), RAW_STRING_SERIALIZER);

@@ -251,6 +251,7 @@ class PublisherFlatMapSingleTest {
                     try {
                         cancelledLatch.await();
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         throwException(e);
                     }
                     subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));

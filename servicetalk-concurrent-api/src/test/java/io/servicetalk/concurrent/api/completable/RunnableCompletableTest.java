@@ -85,6 +85,8 @@ class RunnableCompletableTest {
                 latch.await();
             } catch (InterruptedException e) {
                 latch.countDown();
+                Thread.currentThread().interrupt();
+                throw e;
             }
             return 1;
         }).when(factory).run();

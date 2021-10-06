@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -415,7 +416,10 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         private Subscriber<? super T> waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return throwException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -61,6 +61,7 @@ import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 
@@ -343,6 +344,8 @@ class HttpOffloadingTest {
                 latch.await();
             } catch (InterruptedException e) {
                 errors.add(e);
+                Thread.currentThread().interrupt();
+                throwException(e);
             }
             Publisher<Buffer> responsePayload =
                 from(ctx.executionContext().bufferAllocator().fromAscii("Hello"))

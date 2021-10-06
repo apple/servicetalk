@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTes
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.toRunnable;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.verifyCheckedRunnableException;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
@@ -97,7 +98,10 @@ class ConnectableBufferOutputStreamTest {
             })));
             try {
                 barrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (BrokenBarrierException e) {
                 throw new RuntimeException(e);
             }
         })).subscribe(subscriber);
@@ -122,7 +126,10 @@ class ConnectableBufferOutputStreamTest {
             })));
             try {
                 barrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (BrokenBarrierException e) {
                 throw new RuntimeException(e);
             }
         })).subscribe(subscriber);

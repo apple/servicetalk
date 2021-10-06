@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.poll;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.take;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -180,25 +181,19 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      */
     public List<T> takeOnNext(final int n) {
         List<T> list = new ArrayList<>(n);
-        boolean interrupted = false;
-        try {
-            for (int i = 0; i < n; ++i) {
-                T item;
-                do {
-                    try {
-                        item = unwrapNull(items.take());
-                        break;
-                    } catch (InterruptedException e) {
-                        interrupted = true;
-                    }
-                } while (true);
+        for (int i = 0; i < n; ++i) {
+            T item;
+            do {
+                try {
+                    item = unwrapNull(items.take());
+                    break;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throwException(e);
+                }
+            } while (true);
 
-                list.add(item);
-            }
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            list.add(item);
         }
         return list;
     }

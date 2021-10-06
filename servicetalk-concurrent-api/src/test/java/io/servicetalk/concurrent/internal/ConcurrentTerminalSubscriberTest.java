@@ -233,7 +233,8 @@ class ConcurrentTerminalSubscriberTest {
                 onNextEnterBarrier.await();
                 onNextLatch.await();
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                throw e;
             }
             return null;
         }).when(mockSubscriber).onNext(any());
@@ -281,7 +282,8 @@ class ConcurrentTerminalSubscriberTest {
             try {
                 onSubscribeLatch.await();
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                throw e;
             }
             return null;
         }).when(mockSubscriber).onSubscribe(any());

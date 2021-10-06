@@ -49,6 +49,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.time.Duration.ofNanos;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -221,8 +222,7 @@ final class DefaultExecutorTest {
         awaitTillCancelled.awaitStart();
         cancellable.cancel();
         Executable executable = () -> awaitTillCancelled.awaitDone();
-        Exception e = assertThrows(Exception.class, executable);
-        assertThat(e.getCause(), instanceOf(InterruptedException.class));
+        assertThrows(InterruptedException.class, executable);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -505,7 +505,7 @@ final class DefaultExecutorTest {
                     latch.await();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
+                    throwException(e);
                 }
             });
         }

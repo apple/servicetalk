@@ -55,6 +55,7 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
@@ -165,7 +166,8 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                         secondRequestReceivedLatch.await();
                         cancellable.get().cancel(); // If I use thenCancel() the current then(Runnable) does not run
                     } catch (InterruptedException e) {
-                        // ignore
+                        Thread.currentThread().interrupt();
+                        throwException(e);
                     }
                 })
                 // FIXME: use thenCancel() after await() instead of cancelling from inside then(...) + expectError()

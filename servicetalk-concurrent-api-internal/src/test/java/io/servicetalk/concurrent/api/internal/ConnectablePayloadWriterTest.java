@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
@@ -93,7 +94,10 @@ class ConnectablePayloadWriterTest {
             })));
             try {
                 barrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (BrokenBarrierException e) {
                 throw new RuntimeException(e);
             }
         })).subscribe(subscriber);
@@ -118,7 +122,10 @@ class ConnectablePayloadWriterTest {
             })));
             try {
                 barrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            } catch (BrokenBarrierException e) {
                 throw new RuntimeException(e);
             }
         })).subscribe(subscriber);

@@ -296,6 +296,7 @@ class PublisherFlatMapMergeTest {
                     try {
                         cancelledLatch.await();
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         throwException(e);
                     }
                     subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));
@@ -895,6 +896,7 @@ class PublisherFlatMapMergeTest {
                 try {
                     onNextWaitLatch.await();
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throwException(e);
                 }
             }
