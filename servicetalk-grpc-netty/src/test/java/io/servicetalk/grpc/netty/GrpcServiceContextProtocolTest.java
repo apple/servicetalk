@@ -67,7 +67,7 @@ class GrpcServiceContextProtocolTest {
         expectedValue = "gRPC over " + httpProtocol;
 
         serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.protocols(protocolConfig(httpProtocol)))
+                .initializeHttp(builder -> builder.protocols(protocolConfig(httpProtocol)))
                 .listenAndAwait(streamingService ?
                         new ServiceFactory(new TesterServiceImpl()) :
                         new ServiceFactory(new BlockingTesterServiceImpl()));

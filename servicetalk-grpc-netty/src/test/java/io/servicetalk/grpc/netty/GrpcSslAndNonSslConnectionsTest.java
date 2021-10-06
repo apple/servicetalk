@@ -55,7 +55,7 @@ class GrpcSslAndNonSslConnectionsTest {
     private ServerContext secureGrpcServer()
             throws Exception {
         return GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.sslConfig(trustedServerConfig()))
+                .initializeHttp(builder -> builder.sslConfig(trustedServerConfig()))
                 .listenAndAwait(serviceFactory());
     }
 
@@ -141,7 +141,7 @@ class GrpcSslAndNonSslConnectionsTest {
     @Test
     void noSniClientDefaultServerFallbackSuccess() throws Exception {
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.sslConfig(
+                .initializeHttp(builder -> builder.sslConfig(
                         trustedServerConfig(),
                         singletonMap(getLoopbackAddress().getHostName(), untrustedServerConfig())
                 ))
@@ -162,7 +162,7 @@ class GrpcSslAndNonSslConnectionsTest {
     @Test
     void noSniClientDefaultServerFallbackFailExpected() throws Exception {
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.sslConfig(
+                .initializeHttp(builder -> builder.sslConfig(
                         untrustedServerConfig(),
                         singletonMap(getLoopbackAddress().getHostName(), trustedServerConfig())
                 ))

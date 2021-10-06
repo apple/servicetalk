@@ -74,13 +74,13 @@ public abstract class GrpcServerBuilder {
     /**
      * Set a function which can configure the underlying {@link HttpServerBuilder} used for the transport layer.
      * <p>
-     * Please note that this method can't be mixed with the {@link Deprecated} methods of this class as the order
+     * Please note that this method shouldn't be mixed with the {@link Deprecated} methods of this class as the order
      * of operations would not be the same as the order in which the calls are made. Please migrate all of the calls
      * to this method.
      * @param initializer Initializes the underlying HTTP transport builder.
      * @return {@code this}.
      */
-    public GrpcServerBuilder initializer(HttpInitializer initializer) {
+    public GrpcServerBuilder initializeHttp(HttpInitializer initializer) {
         throw new UnsupportedOperationException("Initializing the HttpServerBuilder using this method is not yet" +
                 "supported by " + getClass().getName());
     }
@@ -93,7 +93,7 @@ public abstract class GrpcServerBuilder {
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#protocols(HttpProtocolConfig...)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -114,7 +114,7 @@ public abstract class GrpcServerBuilder {
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#sslConfig(ServerSslConfig)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -129,7 +129,7 @@ public abstract class GrpcServerBuilder {
      * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
      * to provide the corresponding {@link ServerSslConfig}.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#sslConfig(ServerSslConfig, Map)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -146,7 +146,7 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#socketOption(SocketOption, Object)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -162,7 +162,7 @@ public abstract class GrpcServerBuilder {
      * @return this.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#listenSocketOption(SocketOption, Object)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -178,7 +178,7 @@ public abstract class GrpcServerBuilder {
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
      * data and log only network events.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -192,7 +192,7 @@ public abstract class GrpcServerBuilder {
      *
      * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#transportObserver(TransportObserver)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -223,7 +223,7 @@ public abstract class GrpcServerBuilder {
      * @param enable When {@code false} it will disable the automatic consumption of request
      * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#drainRequestPayloadBody(boolean)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -247,7 +247,7 @@ public abstract class GrpcServerBuilder {
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#appendConnectionAcceptorFilter(ConnectionAcceptorFactory)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -268,7 +268,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.
@@ -294,7 +294,7 @@ public abstract class GrpcServerBuilder {
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
-     * @deprecated Call {@link #initializer(HttpInitializer)} and use
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link HttpServerBuilder#appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)}
      * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
      * functional interface.

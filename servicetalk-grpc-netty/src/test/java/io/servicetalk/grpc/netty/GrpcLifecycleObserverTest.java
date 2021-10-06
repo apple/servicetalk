@@ -142,7 +142,7 @@ class GrpcLifecycleObserverTest {
         server = forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executor(SERVER_CTX.executor())
-                .initializer(builder -> builder
+                .initializeHttp(builder -> builder
                         .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                         .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
                                 .build())

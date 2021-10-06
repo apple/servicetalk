@@ -48,8 +48,8 @@ final class GrpcClientValidatesContentTypeTest {
     private TesterProto.Tester.BlockingTesterClient client;
 
     void setUp(boolean withCharset) throws Exception {
-        serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+        serverContext = GrpcServers.forAddress(localAddress(0)).initializeHttp(builder -> builder
+                .appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
                             final HttpServiceContext ctx, final StreamingHttpRequest request,

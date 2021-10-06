@@ -87,7 +87,7 @@ class KeepAliveTest {
                 .executor(SERVER_CTX.executor())
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy())
-                .initializer(builder -> {
+                .initializeHttp(builder -> {
                     if (!keepAlivesFromClient) {
                         builder.protocols(h2Config(keepAliveIdleFor));
                     } else {

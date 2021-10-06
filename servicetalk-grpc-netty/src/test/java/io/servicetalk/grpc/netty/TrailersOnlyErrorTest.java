@@ -151,7 +151,7 @@ class TrailersOnlyErrorTest {
         final TesterService service = mockTesterService();
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> builder.appendServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
+                .initializeHttp(builder -> builder.appendServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
                             final HttpServiceContext ctx, final StreamingHttpRequest request,

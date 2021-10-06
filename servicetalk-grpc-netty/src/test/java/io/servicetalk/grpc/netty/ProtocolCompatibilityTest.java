@@ -1063,7 +1063,7 @@ class ProtocolCompatibilityTest {
                                                               @Nullable final Duration timeout) {
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .initializer(builder -> {
+                .initializeHttp(builder -> {
                     builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
