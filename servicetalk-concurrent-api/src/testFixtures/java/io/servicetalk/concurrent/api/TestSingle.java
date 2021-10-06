@@ -30,6 +30,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -352,8 +353,11 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
         private Subscriber<? super T> waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return throwException(e);
+            } catch (ExecutionException e) {
+                return throwException(e);
             }
         }
     }
