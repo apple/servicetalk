@@ -73,7 +73,7 @@ class GrpcServiceContextProtocolTest {
                         new ServiceFactory(new BlockingTesterServiceImpl()));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .protocols(protocolConfig(httpProtocol))
+                .initializeHttp(builder -> builder.protocols(protocolConfig(httpProtocol)))
                 .buildBlocking(new ClientFactory());
     }
 

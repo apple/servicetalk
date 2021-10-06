@@ -87,7 +87,7 @@ final class GrpcClientValidatesContentTypeTest {
                 });
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .executionStrategy(noOffloadsStrategy())
+                .initializeHttp(builder -> builder.executionStrategy(noOffloadsStrategy()))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 

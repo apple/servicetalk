@@ -149,12 +149,14 @@ class GrpcLifecycleObserverTest {
                 .listenAndAwait(new EchoService(error));
 
         client = GrpcClients.forAddress(serverHostAndPort(server))
-                .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executor(CLIENT_CTX.executor())
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
-                .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build())
-                .appendHttpClientFilter(
-                        new GrpcLifecycleObserverRequesterFilter(combine(clientLifecycleObserver, LOGGING)))
+                .initializeHttp(builder ->
+                    builder.ioExecutor(CLIENT_CTX.ioExecutor())
+                            .executor(CLIENT_CTX.executor())
+                            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+                            .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger",
+                                    TRACE, () -> true).build())
+                            .appendClientFilter(new GrpcLifecycleObserverRequesterFilter(
+                                    combine(clientLifecycleObserver, LOGGING))))
                 .buildBlocking(new ClientFactory());
     }
 

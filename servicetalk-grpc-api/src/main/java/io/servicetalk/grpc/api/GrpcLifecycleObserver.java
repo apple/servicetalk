@@ -33,9 +33,10 @@ import io.servicetalk.transport.api.IoExecutor;
  * offload publications to another {@link Executor} <b>after</b> capturing timing of events. If blocking code is
  * executed inside callbacks without offloading, it will negatively impact {@link IoExecutor}.
  * <p>
- * To install this observer for the server use {@link GrpcServerBuilder#lifecycleObserver(GrpcLifecycleObserver)}, for
- * the client use {@link GrpcClientBuilder#appendHttpClientFilter(StreamingHttpClientFilterFactory)} with
- * {@code io.servicetalk.grpc.netty.GrpcLifecycleObserverRequesterFilter}.
+ * To install this observer for the server use {@link GrpcServerBuilder#lifecycleObserver(GrpcLifecycleObserver)}.
+ * For the client use {@code io.servicetalk.grpc.netty.GrpcLifecycleObserverRequesterFilter} as argument to
+ * {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+ * which can be configured using {@link GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}.
  */
 @FunctionalInterface
 public interface GrpcLifecycleObserver extends HttpLifecycleObserver {

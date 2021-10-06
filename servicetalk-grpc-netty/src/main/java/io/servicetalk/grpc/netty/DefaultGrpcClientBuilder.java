@@ -21,18 +21,23 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.TimeoutFromRequest;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
@@ -46,11 +51,14 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
@@ -79,11 +87,20 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Nullable
     private Duration defaultTimeout;
     private boolean invokedBuild;
+    @Nullable
+    private HttpInitializer<U, R> httpInitializer;
 
     private final SingleAddressHttpClientBuilder<U, R> httpClientBuilder;
 
     DefaultGrpcClientBuilder(final SingleAddressHttpClientBuilder<U, R> httpClientBuilder) {
         this.httpClientBuilder = httpClientBuilder.protocols(h2Default());
+        appendCatchAllFilter();
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> initializeHttp(final GrpcClientBuilder.HttpInitializer<U, R> initializer) {
+        httpInitializer = requireNonNull(initializer);
+        return this;
     }
 
     @Override
@@ -186,7 +203,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-
         httpClientBuilder.autoRetryStrategy(autoRetryStrategyProvider);
         return this;
     }
@@ -221,6 +237,9 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         if (!invokedBuild) {
+            if (httpInitializer != null) {
+                httpInitializer.initialize(httpClientBuilder);
+            }
             httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
         }
         invokedBuild = true;
@@ -236,5 +255,26 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                          final StreamingHttpClientFilterFactory factory) {
         httpClientBuilder.appendClientFilter(predicate, factory);
+    }
+
+    private void appendCatchAllFilter() {
+        doAppendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                final Single<StreamingHttpResponse> resp;
+                try {
+                    resp = super.request(delegate, strategy, request);
+                } catch (Throwable t) {
+                    return failed(toGrpcException(t));
+                }
+                return resp.onErrorMap(DefaultGrpcClientBuilder::toGrpcException);
+            }
+        });
+    }
+
+    private static GrpcStatusException toGrpcException(Throwable cause) {
+        return fromThrowable(cause).asException();
     }
 }

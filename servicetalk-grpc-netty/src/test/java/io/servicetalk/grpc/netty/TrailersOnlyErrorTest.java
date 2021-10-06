@@ -80,8 +80,8 @@ class TrailersOnlyErrorTest {
                 .listenAndAwait(new Tester.ServiceFactory(mockTesterService()))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext))
-                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
 
             // The server only binds on Tester service, but the client sends a HelloRequest (Greeter service),
             // thus no route is found and it should result in UNIMPLEMENTED.
@@ -102,8 +102,8 @@ class TrailersOnlyErrorTest {
                 .listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext))
-                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
                 verifyException(client.test(TestRequest.newBuilder()
@@ -135,8 +135,8 @@ class TrailersOnlyErrorTest {
                 .listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext))
-                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
                 verifyException(client.test(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
@@ -163,8 +163,8 @@ class TrailersOnlyErrorTest {
         try (ServerContext serverContext = serverBuilder.listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext))
-                            .appendHttpClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors));
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
                 verifyException(client.test(TestRequest.newBuilder()

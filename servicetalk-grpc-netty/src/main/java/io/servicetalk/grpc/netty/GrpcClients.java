@@ -108,9 +108,12 @@ public final class GrpcClients {
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link GrpcClientBuilder#unresolvedAddressToHost(Function)}
-     * if you want to override that value or {@link GrpcClientBuilder#hostHeaderFallback(boolean)} if you
-     * want to disable this behavior.
+     * {@link HttpHeaderNames#HOST}.
+     * Use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
+     * via {@link GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+     * if you want to override that value or
+     * {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)}
+     * if you want to disable this behavior.
      * @param <T> The type of {@link SocketAddress}.
      * @return new builder for the address
      */

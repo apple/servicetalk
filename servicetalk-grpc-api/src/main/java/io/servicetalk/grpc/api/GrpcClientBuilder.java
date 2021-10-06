@@ -30,13 +30,11 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
-import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
@@ -50,9 +48,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
-
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> client.
  *
@@ -61,14 +56,45 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
  */
 public abstract class GrpcClientBuilder<U, R> {
 
-    private boolean appendedCatchAllFilter;
+    /**
+     * Initializes the underlying {@link SingleAddressHttpClientBuilder} used for the transport layer.
+     * @param <U> unresolved address
+     * @param <R> resolved address
+     */
+    public interface HttpInitializer<U, R> {
+
+        /**
+         * Configures the underlying {@link SingleAddressHttpClientBuilder}.
+         * @param builder The builder to customize the HTTP layer.
+         */
+        void initialize(SingleAddressHttpClientBuilder<U, R> builder);
+    }
+
+    /**
+     * Set a function which can configure the underlying {@link SingleAddressHttpClientBuilder} used for
+     * the transport layer.
+     * <p>
+     * Please note that this method shouldn't be mixed with the {@link Deprecated} methods of this class as the order
+     * of operations would not be the same as the order in which the calls are made. Please migrate all of the calls
+     * to this method.
+     * @param initializer Initializes the underlying HTTP transport builder.
+     * @return {@code this}.
+     */
+    public GrpcClientBuilder<U, R> initializeHttp(HttpInitializer<U, R> initializer) {
+        throw new UnsupportedOperationException("Initializing the GrpcClientBuilder using this method is not yet" +
+                " supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link Executor} for all clients created from this builder.
      *
      * @param executor {@link Executor} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#executor(Executor)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> executor(Executor executor);
 
     /**
@@ -76,7 +102,11 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#ioExecutor(IoExecutor)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     /**
@@ -84,7 +114,11 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#bufferAllocator(BufferAllocator)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
@@ -93,7 +127,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param strategy {@link GrpcExecutionStrategy} to use.
      * @return {@code this}.
      * @see GrpcExecutionStrategies
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy);
 
     /**
@@ -105,7 +143,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * @return {@code this}.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#socketOption(SocketOption, Object)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     /**
@@ -116,7 +158,12 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
      * data and log only network events.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
                                                               BooleanSupplier logUserData);
 
@@ -128,7 +175,11 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#protocols(HttpProtocolConfig...)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
@@ -160,7 +211,12 @@ public abstract class GrpcClientBuilder<U, R> {
      * </pre>
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFactoryFilter(ConnectionFactoryFilter)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
@@ -184,7 +240,12 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
      * purpose of filtering.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
     /**
@@ -210,7 +271,12 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
      * purpose of filtering.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(Predicate, StreamingHttpConnectionFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
 
@@ -219,7 +285,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param sslConfig The configuration to use.
      * @return {@code this}.
      * @see io.servicetalk.transport.api.ClientSslConfigBuilder
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     /**
@@ -227,7 +297,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * from client's address when peer host is not specified. By default, inference is enabled.
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#inferPeerHost(boolean)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
 
     /**
@@ -235,7 +309,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * from client's address when peer port is not specified (equals {@code -1}). By default, inference is enabled.
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#inferPeerPort(boolean)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
 
     /**
@@ -244,7 +322,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * via {@link #sslConfig(ClientSslConfig)}. By default, inference is enabled.
      * @param shouldInfer value indicating whether inference is on ({@code true}) or off ({@code false}).
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#inferSniHostname(boolean)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
 
     /**
@@ -257,7 +339,12 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param autoRetryStrategyProvider {@link AutoRetryStrategyProvider} for the automatic retry strategy.
      * @return {@code this}
      * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 
@@ -270,7 +357,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link CharSequence} suitable for use in
      * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
@@ -283,7 +374,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param enable Whether a default filter for inferring the {@code Host} headers should be added.
      * @return {@code this}
      * @see #unresolvedAddressToHost(Function)
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable);
 
     /**
@@ -293,7 +388,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link GrpcClient}s are closed and
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} on the {@code builder} instance
+     * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
@@ -302,7 +401,12 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param loadBalancerFactory {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#loadBalancerFactory(HttpLoadBalancerFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
     /**
@@ -319,9 +423,13 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public final GrpcClientBuilder<U, R> appendHttpClientFilter(StreamingHttpClientFilterFactory factory) {
-        appendCatchAllFilterIfRequired();
         doAppendHttpClientFilter(factory);
         return this;
     }
@@ -342,10 +450,14 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
      * @return {@code this}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
+    @Deprecated
     public final GrpcClientBuilder<U, R> appendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                 StreamingHttpClientFilterFactory factory) {
-        appendCatchAllFilterIfRequired();
         doAppendHttpClientFilter(predicate, factory);
         return this;
     }
@@ -408,8 +520,18 @@ public abstract class GrpcClientBuilder<U, R> {
      * </pre>
      *
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
+     * @deprecated Users of this API should call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
+     * <p>
+     * Please note: this method used to be abstract - keep the overridden implementation during transition phase.
      */
-    protected abstract void doAppendHttpClientFilter(StreamingHttpClientFilterFactory factory);
+    @Deprecated
+    protected void doAppendHttpClientFilter(StreamingHttpClientFilterFactory factory) {
+        throw new UnsupportedOperationException("Appending client filters using doAppendHttpClientFilter method" +
+                " is deprecated and not supported by " + getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the client created by this builder, for every request
@@ -426,31 +548,17 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
+     * @deprecated Users of this API should call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
+     * <p>
+     * Please note: this method used to be abstract - keep the overridden implementation during transition phase.
      */
-    protected abstract void doAppendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                     StreamingHttpClientFilterFactory factory);
-
-    private void appendCatchAllFilterIfRequired() {
-        if (!appendedCatchAllFilter) {
-            doAppendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
-                @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
-                                                                final StreamingHttpRequest request) {
-                    final Single<StreamingHttpResponse> resp;
-                    try {
-                        resp = super.request(delegate, strategy, request);
-                    } catch (Throwable t) {
-                        return failed(toGrpcException(t));
-                    }
-                    return resp.onErrorMap(GrpcClientBuilder::toGrpcException);
-                }
-            });
-            appendedCatchAllFilter = true;
-        }
-    }
-
-    private static GrpcStatusException toGrpcException(Throwable cause) {
-        return fromThrowable(cause).asException();
+    @Deprecated
+    protected void doAppendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                     StreamingHttpClientFilterFactory factory) {
+        throw new UnsupportedOperationException("Appending client filters using doAppendHttpClientFilter method" +
+                " is deprecated and not supported by " + getClass().getName());
     }
 }

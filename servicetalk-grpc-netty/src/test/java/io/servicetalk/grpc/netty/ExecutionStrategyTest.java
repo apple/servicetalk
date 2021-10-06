@@ -308,7 +308,7 @@ class ExecutionStrategyTest {
         filterConfiguration.appendServiceFilter(serviceFactory);
         serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .executionStrategy(noOffloadsStrategy())
+                .initializeHttp(b -> b.executionStrategy(noOffloadsStrategy()))
                 .buildBlocking(new ClientFactory());
     }
 
