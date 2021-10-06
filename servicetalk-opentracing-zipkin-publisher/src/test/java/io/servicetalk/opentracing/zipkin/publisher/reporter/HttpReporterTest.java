@@ -175,7 +175,7 @@ class HttpReporterTest {
                 Thread.currentThread().interrupt();
                 throwException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e);
+                throwException(e);
             }
             return factory.ok();
         };

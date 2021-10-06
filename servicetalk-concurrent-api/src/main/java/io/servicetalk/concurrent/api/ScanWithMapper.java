@@ -71,5 +71,5 @@ public interface ScanWithMapper<T, R> {
      * {@link #mapOnError(Throwable)} nor {@link #mapOnComplete()} will be invoked and any terminal signal will be
      * passed through directly (no mapping, no additional {@link Subscriber#onNext(Object)}).
      */
-    boolean mapTerminal() throws InterruptedException;
+    boolean mapTerminal();
 }

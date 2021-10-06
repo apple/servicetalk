@@ -181,26 +181,19 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      */
     public List<T> takeOnNext(final int n) {
         List<T> list = new ArrayList<>(n);
-        boolean interrupted = false;
-        try {
-            for (int i = 0; i < n; ++i) {
-                T item;
-                do {
-                    try {
-                        item = unwrapNull(items.take());
-                        break;
-                    } catch (InterruptedException e) {
-                        interrupted = true;
-                    }
-                } while (true);
+        for (int i = 0; i < n; ++i) {
+            T item;
+            do {
+                try {
+                    item = unwrapNull(items.take());
+                    break;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throwException(e);
+                }
+            } while (true);
 
-                list.add(item);
-            }
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-                throwException(new InterruptedException());
-            }
+            list.add(item);
         }
         return list;
     }

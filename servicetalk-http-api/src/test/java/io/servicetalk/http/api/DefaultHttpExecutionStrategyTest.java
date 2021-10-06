@@ -27,9 +27,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -46,7 +46,6 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -156,23 +155,16 @@ class DefaultHttpExecutionStrategyTest {
                         // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
                         new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
-        Runnable runHandle = () -> {
-            try {
-                analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
+        Callable<?> runHandle = () -> {
+                return analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                         .flatMapPublisher(StreamingHttpResponse::payloadBody)
                     .toFuture().get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throwException(e);
-            } catch (ExecutionException e) {
-                throwException(e);
-            }
         };
         if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {
             NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
             ioExecutor.asExecutor().submit(runHandle).toFuture().get();
         } else {
-            runHandle.run();
+            runHandle.call();
         }
         analyzer.verify();
     }

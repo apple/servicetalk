@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -390,14 +391,14 @@ class ScanWithPublisherTest {
                         }
 
                         @Override
-                        public boolean mapTerminal() throws InterruptedException {
+                        public boolean mapTerminal() {
                             if (interleaveCancellation) {
                                 checkpoint.countDown();
                                 try {
                                     resume.await();
                                 } catch (InterruptedException e) {
                                     Thread.currentThread().interrupt();
-                                    throw e;
+                                    throwException(e);
                                 }
                             }
                             return true;

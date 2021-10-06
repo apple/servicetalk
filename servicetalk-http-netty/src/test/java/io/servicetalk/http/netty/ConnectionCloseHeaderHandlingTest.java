@@ -190,7 +190,6 @@ final class ConnectionCloseHeaderHandlingTest {
                                         responseReceived.await();
                                         done = true;
                                     } catch (InterruptedException e) {
-                                        // ignored
                                         Thread.currentThread().interrupt();
                                         throw e;
                                     }
