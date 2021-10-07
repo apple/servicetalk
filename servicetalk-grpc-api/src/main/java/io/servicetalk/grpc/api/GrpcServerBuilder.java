@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -223,7 +224,10 @@ public abstract class GrpcServerBuilder {
 
     /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
-     *
+     * <p>
+     * Note, if {@link #initializeHttp(HttpInitializer)} is used to configure
+     * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)} – that will override the value specified
+     * using this method. Please choose only one approach.
      * @param lifecycleObserver A {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
      * @return {@code this}.
      */
