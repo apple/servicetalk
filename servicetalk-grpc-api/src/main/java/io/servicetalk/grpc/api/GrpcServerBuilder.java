@@ -99,7 +99,9 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
+    public GrpcServerBuilder protocols(HttpProtocolConfig... protocols) {
+        throw new UnsupportedOperationException("Method protocols is not supported by " + getClass().getName());
+    }
 
     /**
      * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
@@ -120,7 +122,9 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder sslConfig(ServerSslConfig config);
+    public GrpcServerBuilder sslConfig(ServerSslConfig config) {
+        throw new UnsupportedOperationException("Method sslConfig is not supported by " + getClass().getName());
+    }
 
     /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
@@ -135,7 +139,9 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
+    public GrpcServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap) {
+        throw new UnsupportedOperationException("Method sslConfig is not supported by " + getClass().getName());
+    }
 
     /**
      * Add a {@link SocketOption} that is applied.
@@ -152,7 +158,9 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value);
+    public <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value) {
+        throw new UnsupportedOperationException("Method socketOption is not supported by " + getClass().getName());
+    }
 
     /**
      * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
@@ -168,7 +176,10 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value);
+    public <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value) {
+        throw new UnsupportedOperationException("Method listenSocketOption is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Enables wire-logging for connections created by this builder.
@@ -184,8 +195,10 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder enableWireLogging(String loggerName, LogLevel logLevel,
-                                                        BooleanSupplier logUserData);
+    public GrpcServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData) {
+        throw new UnsupportedOperationException("Method enableWireLogging is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Sets a {@link TransportObserver} that provides visibility into transport events.
@@ -198,7 +211,10 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder transportObserver(TransportObserver transportObserver);
+    public GrpcServerBuilder transportObserver(TransportObserver transportObserver) {
+        throw new UnsupportedOperationException("Method transportObserver is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
@@ -229,7 +245,10 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder drainRequestPayloadBody(boolean enable);
+    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
+        throw new UnsupportedOperationException("Method drainRequestPayloadBody is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
@@ -253,7 +272,10 @@ public abstract class GrpcServerBuilder {
      * functional interface.
      */
     @Deprecated
-    public abstract GrpcServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
+    public GrpcServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory) {
+        throw new UnsupportedOperationException("Method appendConnectionAcceptorFilter is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the service used by this builder.
