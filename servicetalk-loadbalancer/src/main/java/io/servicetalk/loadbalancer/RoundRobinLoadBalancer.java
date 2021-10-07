@@ -681,7 +681,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         boolean addConnection(C connection) {
+            int addAttempt = 0;
             for (;;) {
+                ++addAttempt;
                 final ConnState previous = connStateUpdater.get(this);
                 if (previous == CLOSED_CONN_STATE) {
                     return false;
@@ -700,12 +702,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 }
             }
 
+            LOGGER.trace("Load balancer for {}: added a new connection {} to {} after {} attempt(s).",
+                    targetResource, connection, this, addAttempt);
             // Instrument the new connection so we prune it on close
             connection.onClose().beforeFinally(() -> {
+                int removeAttempt = 0;
                 for (;;) {
+                    ++removeAttempt;
                     final ConnState currentConnState = this.connState;
                     if (currentConnState == CLOSED_CONN_STATE) {
-                        return;
+                        break;
                     }
                     int i = 0;
                     final Object[] connections = currentConnState.connections;
@@ -744,6 +750,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         }
                     }
                 }
+                LOGGER.trace("Load balancer for {}: removed connection {} from {} after {} attempt(s).",
+                        targetResource, connection, this, removeAttempt);
             }).subscribe();
             return true;
         }
