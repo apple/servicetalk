@@ -36,7 +36,7 @@ public final class GrpcServers {
      * @return a new builder.
      */
     public static GrpcServerBuilder forPort(int port) {
-        return new DefaultGrpcServerBuilder(HttpServers.forPort(port));
+        return new DefaultGrpcServerBuilder(() -> HttpServers.forPort(port));
     }
 
     /**
@@ -46,6 +46,6 @@ public final class GrpcServers {
      * @return a new builder.
      */
     public static GrpcServerBuilder forAddress(SocketAddress socketAddress) {
-        return new DefaultGrpcServerBuilder(HttpServers.forAddress(socketAddress));
+        return new DefaultGrpcServerBuilder(() -> HttpServers.forAddress(socketAddress));
     }
 }

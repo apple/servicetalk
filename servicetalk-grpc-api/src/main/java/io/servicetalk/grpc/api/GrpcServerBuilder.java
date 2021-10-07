@@ -67,9 +67,14 @@ public abstract class GrpcServerBuilder {
          * @param builder The builder to customize the HTTP layer.
          */
         void initialize(HttpServerBuilder builder);
-    }
 
-    private boolean appendedCatchAllFilter;
+        default HttpInitializer append(HttpInitializer toAppend) {
+            return builder -> {
+                initialize(builder);
+                toAppend.initialize(builder);
+            };
+        }
+    }
 
     /**
      * Set a function which can configure the underlying {@link HttpServerBuilder} used for the transport layer.
@@ -464,14 +469,11 @@ public abstract class GrpcServerBuilder {
     protected abstract void doAppendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
                                                       StreamingHttpServiceFilterFactory factory);
 
-    protected void appendCatchAllFilterIfRequired() {
-        // TODO(dj): Move to DefaultGrpcServerBuilder and remove the check as the call is in the constructor.
+    protected static void appendCatchAllFilter(HttpServerBuilder httpServerBuilder) {
+        // TODO(dj): Move to DefaultGrpcServerBuilder
         // This code depends on GrpcUtils which is inaccessible from the servicetalk-grpc-netty module.
         // When this class is converted to an interface we can also refactor that part.
-        if (!appendedCatchAllFilter) {
-            doAppendHttpServiceFilter(CatchAllHttpServiceFilter::new);
-            appendedCatchAllFilter = true;
-        }
+        httpServerBuilder.appendServiceFilter(CatchAllHttpServiceFilter::new);
     }
 
     static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
