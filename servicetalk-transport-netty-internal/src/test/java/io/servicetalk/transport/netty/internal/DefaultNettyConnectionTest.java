@@ -369,7 +369,10 @@ class DefaultNettyConnectionTest {
     void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        // Late subscriber sees ClosedChannelException.
+        Throwable cause = subscriber.awaitOnError();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause(), is(DELIBERATE_EXCEPTION));
         conn.onClose().toFuture().get();
     }
 

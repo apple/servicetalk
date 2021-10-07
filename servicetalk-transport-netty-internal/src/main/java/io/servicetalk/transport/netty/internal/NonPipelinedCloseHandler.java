@@ -37,7 +37,6 @@ import static java.util.Objects.requireNonNull;
 
 final class NonPipelinedCloseHandler extends CloseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonPipelinedCloseHandler.class);
-
     private static final byte READ = 0x1;
     private static final byte WRITE = 0x2;
     private static final byte IN_CLOSED = 0x4;
@@ -46,10 +45,11 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     private static final byte GRACEFUL_CLOSE = 0x20;
     private static final byte IS_CLIENT = 0x40;
     private static final byte ALL_CLOSED = IN_CLOSED | OUT_CLOSED | CLOSED;
-    private static final byte READ_WRITE = READ | WRITE;
-    private static final byte CLIENT_IN_WRITE = IS_CLIENT | WRITE | IN_CLOSED;
-    private static final byte GRACEFUL_IN_CLOSED = GRACEFUL_CLOSE | IN_CLOSED;
-    private static final byte GRACEFUL_OUT_CLOSED = GRACEFUL_CLOSE | OUT_CLOSED;
+    private static final byte READ_OR_WRITE = READ | WRITE;
+    private static final byte CLIENT_WRITE_OR_IN_CLOSED = IS_CLIENT | WRITE | IN_CLOSED;
+    private static final byte GRACEFUL_OR_IN_CLOSED = GRACEFUL_CLOSE | IN_CLOSED;
+    private static final byte GRACEFUL_OR_OUT_CLOSED = GRACEFUL_CLOSE | OUT_CLOSED;
+
     private byte state;
     private Consumer<CloseEvent> eventHandler = __ -> { };
     @Nullable
@@ -137,14 +137,12 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     @Override
     void closeChannelInbound(final Channel channel) {
         state = set(state, IN_CLOSED);
-        // todo storeCloseRequestAndEmit ?
         inboundEventCheckClose(channel, closeEvent);
     }
 
     @Override
     void closeChannelOutbound(final Channel channel) {
         state = set(state, OUT_CLOSED);
-        // todo storeCloseRequestAndEmit ?
         outboundEventCheckClose(channel, closeEvent);
     }
 
@@ -153,7 +151,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
         state = set(state, GRACEFUL_CLOSE);
         final CloseEvent evt = GRACEFUL_USER_CLOSING;
         storeCloseRequestAndEmit(evt);
-        if (!isAnySet(state, READ_WRITE)) {
+        if (!isAnySet(state, READ_OR_WRITE)) {
             closeChannel(channel, evt);
         }
     }
@@ -162,39 +160,38 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     public String toString() {
         StringBuilder sb = new StringBuilder(32);
         if (isAnySet(state, IS_CLIENT)) {
-            sb.append("CLIENT,");
+            sb.append("CLIENT");
         } else {
-            sb.append("SERVER,");
+            sb.append("SERVER");
         }
         if (isAnySet(state, READ)) {
-            sb.append("READ,");
+            sb.append(",READ");
         }
         if (isAnySet(state, WRITE)) {
-            sb.append("WRITE,");
+            sb.append(",WRITE");
         }
         if (isAnySet(state, IN_CLOSED)) {
-            sb.append("IN_CLOSED,");
+            sb.append(",IN_CLOSED");
         }
         if (isAnySet(state, OUT_CLOSED)) {
-            sb.append("OUT_CLOSED,");
+            sb.append(",OUT_CLOSED");
         }
         if (isAnySet(state, GRACEFUL_CLOSE)) {
-            sb.append("GRACEFUL_CLOSE,");
+            sb.append(",GRACEFUL_CLOSE");
         }
         if (isAnySet(state, CLOSED)) {
-            sb.append("CLOSED,");
+            sb.append(",CLOSED");
         }
         if (closeEvent != null) {
-            sb.append(closeEvent).append(',');
+            sb.append(',').append(closeEvent);
         }
-        sb.setLength(sb.length() - 1);
         return sb.toString();
     }
 
     private void inboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
-        if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_IN_CLOSED) && !isAllSet(state, WRITE))) {
+        if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_OR_IN_CLOSED) && !isAllSet(state, WRITE))) {
             closeChannel(channel, evt);
-        } else if (isAllSet(state, CLIENT_IN_WRITE)) {
+        } else if (isAllSet(state, CLIENT_WRITE_OR_IN_CLOSED)) {
             // If a client inbound has closed while writing we abort the write because we can't be sure if the write
             // will ever complete or receive any additional feedback form the server.
             state = unset(state, WRITE);
@@ -203,7 +200,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     }
 
     private void outboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
-        if (isAllSet(state, IN_CLOSED) || (isAnySet(state, GRACEFUL_OUT_CLOSED) && !isAllSet(state, READ))) {
+        if (isAllSet(state, IN_CLOSED) || (isAnySet(state, GRACEFUL_OR_OUT_CLOSED) && !isAllSet(state, READ))) {
             closeChannel(channel, evt);
         }
     }

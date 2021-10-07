@@ -104,14 +104,16 @@ final class HeaderUtils {
                 !hasContentHeaders(metadata.headers());
     }
 
-    private static boolean shouldAppendTrailers(final HttpProtocolVersion protocolVersion) {
+    private static boolean alwaysAppendTrailers(final HttpProtocolVersion protocolVersion) {
         // Always include trailers for h2 because trailers are allowed even if content-length is present, so we use
         // trailers as a token to know the stream is done (even if they are empty).
-        return protocolVersion.major() != 1;
+        return protocolVersion.major() > 1;
     }
 
-    static boolean shouldAppendTrailers(final HttpProtocolVersion protocolVersion, final HttpHeaders headers) {
-        return shouldAppendTrailers(protocolVersion) || !headers.contains(CONTENT_LENGTH);
+    static boolean shouldAppendTrailers(final HttpProtocolVersion protocolVersion, final HttpMetaData metaData) {
+        return alwaysAppendTrailers(protocolVersion) ||
+                (chunkedSupported(protocolVersion) && (mayHaveTrailers(metaData) ||
+                        !metaData.headers().contains(CONTENT_LENGTH)));
     }
 
     static Publisher<Object> setRequestContentLength(final HttpProtocolVersion protocolVersion,
@@ -194,7 +196,7 @@ final class HeaderUtils {
         // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
         // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
         final Publisher<Object> flatMessage = protocolVersion.major() > 1 ||
-                !shouldAppendTrailers(protocolVersion, metadata.headers()) ? from(metadata) :
+                !shouldAppendTrailers(protocolVersion, metadata) ? from(metadata) :
                 from(metadata, EmptyHttpHeaders.INSTANCE);
         return messageBody == empty() ? flatMessage :
                 // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
@@ -232,7 +234,7 @@ final class HeaderUtils {
             final Publisher<Object> flatRequest;
             // We will insert content-length header but haven't yet because we need to compute the value. So no need
             // to pass headers to determine if trailers should be appended.
-            final boolean appendTrailers = shouldAppendTrailers(protocolVersion);
+            final boolean appendTrailers = alwaysAppendTrailers(protocolVersion);
             if (reduction == null) {
                 flatRequest = appendTrailers ? from(metadata, EmptyHttpHeaders.INSTANCE) : from(metadata);
             } else if (reduction instanceof Buffer) {

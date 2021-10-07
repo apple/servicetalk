@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static java.util.Objects.requireNonNull;
 
@@ -82,7 +83,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte CHANNEL_CLOSED = 1 << 1;
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
-    private static final byte SUBSCRIBER_SOURCE_TERMINATED = SOURCE_TERMINATED | SUBSCRIBER_TERMINATED;
+    private static final byte SUBSCRIBER_OR_SOURCE_TERMINATED = SOURCE_TERMINATED | SUBSCRIBER_TERMINATED;
     private static final Subscription CANCELLED = newEmptySubscription();
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
             AtomicReferenceFieldUpdater.newUpdater(WriteStreamSubscriber.class, Subscription.class, "subscription");
@@ -372,18 +373,18 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void sourceTerminated(@Nullable Throwable cause) {
             assert eventLoop.inEventLoop();
-            if (isAnySet(state, SUBSCRIBER_SOURCE_TERMINATED)) {
+            if (isAnySet(state, SUBSCRIBER_OR_SOURCE_TERMINATED)) {
                 // We have terminated prematurely perhaps due to write failure.
                 return;
             }
             this.failureCause = cause;
-            setFlag(SOURCE_TERMINATED);
+            state = set(state, SOURCE_TERMINATED);
             // Mark the subscription as CANCELLED to prevent propagating cancel from channelClosed. At this point we
             // always have a non-null subscription because this is reachable only if publisher emitted some signals.
             WriteStreamSubscriber.this.subscription = CANCELLED;
             if (activeWrites == 0) {
                 try {
-                    setFlag(SUBSCRIBER_TERMINATED);
+                    state = set(state, SUBSCRIBER_TERMINATED);
                     terminateSubscriber(cause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
@@ -405,7 +406,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 return;
             }
             if (isAllSet(state, SUBSCRIBER_TERMINATED)) {
-                setFlag(CHANNEL_CLOSED);
+                state = set(state, CHANNEL_CLOSED);
                 if (closeOutboundIfIdle) {
                     // We have already terminated the subscriber (all writes have finished (one has failed)) then we
                     // just close the channel now.
@@ -413,9 +414,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
             } else if (activeWrites > 0) {
                 // Writes are pending, we will close the channel once writes are done.
-                setFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
+                state = set(state, CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
             } else {
-                setFlag(CHANNEL_CLOSED);
+                state = set(state, CHANNEL_CLOSED);
                 // subscriber has not terminated, no writes are pending and channel has closed so terminate the
                 // subscriber with a failure.
                 tryFailure(cause);
@@ -457,7 +458,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
             observer.itemWritten();
             if (--activeWrites == 0 && isAllSet(state, SOURCE_TERMINATED)) {
-                setFlag(SUBSCRIBER_TERMINATED);
+                state = set(state, SUBSCRIBER_TERMINATED);
                 try {
                     terminateSubscriber(failureCause);
                 } catch (Throwable t) {
@@ -481,7 +482,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (isAllSet(state, SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
-            setFlag(SUBSCRIBER_TERMINATED);
+            state = set(state, SUBSCRIBER_TERMINATED);
             Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
             if (oldVal != null && !isAllSet(state, SOURCE_TERMINATED)) {
                 oldVal.cancel();
@@ -559,10 +560,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (!super.tryFailure(cause)) {
                 LOGGER.error("Failed to set failure on the write promise {}.", this, cause);
             }
-        }
-
-        private void setFlag(final byte flag) {
-            state |= flag;
         }
     }
 

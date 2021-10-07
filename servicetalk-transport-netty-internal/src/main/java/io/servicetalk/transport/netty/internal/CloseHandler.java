@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.logging.api.LogLevel;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,6 +25,8 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
@@ -30,12 +34,29 @@ import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static java.lang.Boolean.TRUE;
+import static java.lang.System.getProperty;
 
 /**
  * Contract between protocol codecs and a close handler.
  */
 public abstract class CloseHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloseHandler.class);
+    @Nullable
+    private static final LogLevel CLOSE_HANDLER_LOG_LEVEL;
     public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
+    static {
+        LogLevel logLevel = null;
+        final String logLevelProperty = getProperty("io.servicetalk.transport.netty.internal.CloseHandler.LogLevel");
+        if (logLevelProperty != null) {
+            try {
+                logLevel = LogLevel.valueOf(logLevelProperty);
+            } catch (Throwable cause) {
+                LOGGER.info("Error while parsing log", cause);
+            }
+        }
+        LOGGER.debug("LogLevel: {}", logLevel);
+        CLOSE_HANDLER_LOG_LEVEL = logLevel;
+    }
 
     /**
      * New {@link CloseHandler} instance.
@@ -48,7 +69,7 @@ public abstract class CloseHandler {
     public static CloseHandler forPipelinedRequestResponse(boolean client, ChannelConfig config) {
         config.setOption(ALLOW_HALF_CLOSURE, TRUE);
         config.setAutoClose(false);
-        return new RequestResponseCloseHandler(client);
+        return wrapWithLogger(new RequestResponseCloseHandler(client));
     }
 
     /**
@@ -62,7 +83,7 @@ public abstract class CloseHandler {
      */
     public static CloseHandler forNonPipelined(boolean isClient, ChannelConfig config) {
         config.setAutoClose(false);
-        return new NonPipelinedCloseHandler(isClient);
+        return wrapWithLogger(new NonPipelinedCloseHandler(isClient));
     }
 
     /**
@@ -362,5 +383,10 @@ public abstract class CloseHandler {
         private DiscardFurtherInboundEvent() {
             // No instances.
         }
+    }
+
+    private static CloseHandler wrapWithLogger(CloseHandler closeHandler) {
+        return CLOSE_HANDLER_LOG_LEVEL == null ? closeHandler :
+                new LoggingCloseHandler(closeHandler, LOGGER.getName(), CLOSE_HANDLER_LOG_LEVEL);
     }
 }

@@ -482,7 +482,7 @@ class NettyChannelPublisherTest {
     }
 
     @Test
-    void testCancelFromWithinComplete() {
+    void testCancelFromWithinOnNext() {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
@@ -503,6 +503,7 @@ class NettyChannelPublisherTest {
             }
         });
         assertThat("Unexpected value.", resultRef.get(), is(1));
+        // firstOrElse cancels during delivery, NCP will close the channel if the active subscriber cancels.
         assertThat("Channel closed.", channel.closeFuture().isDone(), is(true));
     }
 
@@ -608,7 +609,9 @@ class NettyChannelPublisherTest {
         assertFalse(channel.isOpen());
 
         toSource(publisher).subscribe(subscriber2);
-        assertThat(subscriber2.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        Throwable cause = subscriber2.awaitOnError();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -657,7 +660,9 @@ class NettyChannelPublisherTest {
 
         assertThat(subscriber.takeOnNext(), is(1));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(subscriber2.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        Throwable cause = subscriber2.awaitOnError();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     private void testChannelReadThrows(boolean requestLate) {

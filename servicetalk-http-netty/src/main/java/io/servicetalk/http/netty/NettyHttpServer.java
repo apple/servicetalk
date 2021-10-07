@@ -434,7 +434,7 @@ final class NettyHttpServer {
                 } else {
                     // Not necessary to defer subscribe to the messageBody because server does not retry responses
                     flatResponse = Single.<Object>succeeded(response).concat(response.messageBody());
-                    if (shouldAppendTrailers(protocolVersion, response.headers())) {
+                    if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }
                 }

@@ -25,6 +25,7 @@ import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import javax.annotation.Nullable;
@@ -111,7 +112,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     void channelOnError(Throwable throwable) {
         assertInEventloop();
         if (fatalError == null) {
-            fatalError = throwable;
+            // The Throwable is propagated as-is downstream but subsequent subscribers should see a
+            // ClosedChannelException (with original Throwable as the cause for context).
+            fatalError = throwable instanceof ClosedChannelException ? throwable :
+                    StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "channelOnError")
+                    .initCause(throwable);
             channelOnError0(throwable);
         }
     }
@@ -139,7 +144,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             // in error conditions. Hence we fail-fast when we see such objects.
             emitCatchError(subscription,
                     new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
-                            data.getClass().getSimpleName()));
+                            data.getClass().getSimpleName()), true);
         }
     }
 
@@ -176,28 +181,23 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     private boolean processPending(SubscriptionImpl target) {
         // Should always be called from EventLoop. (assert done before calling)
-        if (!hasQueuedSignals()) {
+        if (pending == null) {
             return false;
         }
-        assert pending != null; // checked by hasQueuedSignals
 
         for (;;) {
             while (requestCount > 0) {
                 Object p = pending.poll();
                 if (p == null) {
                     return false;
-                } else if (p instanceof TerminalNotification) {
-                    emit(target, (TerminalNotification) p);
+                } else if ((p instanceof TerminalNotification && emit(target, (TerminalNotification) p)) ||
+                        emit(target, p)) {
                     // stop draining the pending events if the current Subscription is still the same for which
                     // we started draining, continue emitting the remaining data if there is a new Subscriber
                     if (subscription == null || subscription == target) {
                         return true;
                     }
                     target = subscription;
-                } else {
-                    emit(target, p);
-                    // If emit terminates it will clear the queue, set a fatal error, and propagate the error. No need
-                    // to have special recovery code in this loop.
                 }
             }
             if (pending.peek() instanceof TerminalNotification) {
@@ -214,7 +214,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
-    private void emit(SubscriptionImpl target, Object next) {
+    private boolean emit(SubscriptionImpl target, Object next) {
         assert requestCount > 0;
         --requestCount;
         try {
@@ -222,14 +222,22 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             final T t = (T) next;
             target.associatedSub.onNext(t);
         } catch (Throwable cause) {
-            emitCatchError(target, cause);
+            emitCatchError(target, cause, true);
+            return true;
         }
+        return false;
     }
 
-    private void emitCatchError(@Nullable SubscriptionImpl target, Throwable cause) {
-        // If we have items queued, we may deliver partial content to the next subscriber. So consider the error fatal.
-        if (pending != null) {
-            pending.clear();
+    @SuppressWarnings("StatementWithEmptyBody")
+    private void emitCatchError(@Nullable SubscriptionImpl target, Throwable cause,
+                                boolean drainPendingToNextTerminal) {
+        // If we have items queued, we avoid delivering partial content to the next subscriber by draining until we see
+        // a Terminal signal. We also don't enqueue future signals after we see a fatal error.
+        if (pending != null && drainPendingToNextTerminal) {
+            Object top;
+            while ((top = pending.poll()) != null && !(top instanceof TerminalNotification)) {
+                // intentionally empty
+            }
         }
         if (fatalError == null) {
             fatalError = cause;
@@ -244,13 +252,14 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
-    private void emit(SubscriptionImpl target, TerminalNotification terminal) {
+    private boolean emit(SubscriptionImpl target, TerminalNotification terminal) {
         final Throwable cause = terminal.cause();
         if (cause == null) {
             emitComplete(target);
         } else {
             emitError(target, cause);
         }
+        return true;
     }
 
     private void emitComplete(SubscriptionImpl target) {
@@ -258,7 +267,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         try {
             target.associatedSub.onComplete();
         } catch (Throwable cause) {
-            emitCatchError(null, cause);
+            emitCatchError(null, cause, false);
         }
     }
 
@@ -268,14 +277,13 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             target.associatedSub.onError(throwable);
         } finally {
             // We do not support resumption once we observe an error since we are not sure whether the channel is in a
-            // state to be resumed. We may send data to the next Subscriber which is malformed.
-            // Users are responsible to catch-ignore resumable exceptions in the pipeline or from the processing of a
-            // message in onNext()
+            // state to be resumed. Users are responsible to catch-ignore resumable exceptions in the pipeline or from
+            // the processing of a message in onNext().
             closeChannelInbound();
         }
     }
 
-    private void cancel(SubscriptionImpl forSubscription) {
+    private void cancel0(SubscriptionImpl forSubscription) {
         if (forSubscription != subscription) {
             // Subscription shares common state hence a requestN after termination/cancellation must be ignored
             return;
@@ -284,7 +292,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
         // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
         // any future Subscribers don't get partial data delivered from the queue.
-        emitCatchError(null, StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel"));
+        emitCatchError(null, StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel"), true);
     }
 
     private void closeChannelInbound() {
@@ -360,9 +368,9 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         @Override
         public void cancel() {
             if (eventLoop.inEventLoop()) {
-                NettyChannelPublisher.this.cancel(this);
+                NettyChannelPublisher.this.cancel0(this);
             } else {
-                eventLoop.execute(() -> NettyChannelPublisher.this.cancel(SubscriptionImpl.this));
+                eventLoop.execute(() -> NettyChannelPublisher.this.cancel0(SubscriptionImpl.this));
             }
         }
     }
