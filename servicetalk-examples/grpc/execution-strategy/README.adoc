@@ -1,4 +1,3 @@
 == ServiceTalk gRPC Execution Strategy
 
-Extends "Hello World" example of ServiceTalk gRPC to include examples of how to use alternative execution strategies
-and executors.
+Extends "Hello World" example of ServiceTalk gRPC to include examples of how to use alternative execution strategies and executors.

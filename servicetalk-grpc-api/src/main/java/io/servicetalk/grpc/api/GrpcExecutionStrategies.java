@@ -23,40 +23,10 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
  */
 public final class GrpcExecutionStrategies {
 
-    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY = new GrpcExecutionStrategy() {
+    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
 
-        @Override
-        public String toString() {
-            return "NEVER_OFFLOAD_STRATEGY";
-        }
-
-        @Override
-        public boolean hasOffloads() {
-            return false;
-        }
-
-        @Override
-        public boolean isMetadataReceiveOffloaded() {
-            return false;
-        }
-
-        @Override
-        public boolean isDataReceiveOffloaded() {
-            return false;
-        }
-
-        @Override
-        public boolean isSendOffloaded() {
-            return false;
-        }
-
-        @Override
-        public GrpcExecutionStrategy merge(final HttpExecutionStrategy other) {
-            return this;
-        }
-    };
-
-    static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
+    private static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
 
     private GrpcExecutionStrategies() {

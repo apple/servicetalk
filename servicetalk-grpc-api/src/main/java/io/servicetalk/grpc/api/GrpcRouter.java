@@ -303,10 +303,8 @@ final class GrpcRouter {
                             return route.closeAsyncGracefully();
                         }
                     },
-                            strategy -> {
-                                return executionContext.executionStrategy().merge(
-                                        executionStrategy == null ? strategy : executionStrategy);
-                            }
+                            strategy -> executionContext.executionStrategy().merge(
+                                    executionStrategy == null ? strategy : executionStrategy)
                     ),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
@@ -379,8 +377,9 @@ final class GrpcRouter {
 
                             @Override
                             public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionContext.executionStrategy().merge(executionStrategy == null ?
-                                        executionContext.executionStrategy() : executionStrategy);
+                                return executionStrategy == null ?
+                                        executionContext.executionStrategy() :
+                                        executionContext.executionStrategy().merge(executionStrategy);
                             }
                         };
                     }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
