@@ -28,6 +28,7 @@ import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -63,6 +64,7 @@ import static java.util.Objects.requireNonNull;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
+    static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
     static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
@@ -91,8 +93,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(
-                targetResource, eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+        return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
+                eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**

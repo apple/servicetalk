@@ -49,7 +49,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -74,6 +73,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.EAGER_CONNECTION_SHUTDOWN_ENABLED;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.FACTORY_COUNT;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -94,7 +94,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
-    private static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
     private static final List<?> CLOSED_LIST = new ArrayList<>(0);
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
@@ -168,8 +167,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                            final boolean eagerConnectionShutdown,
                            @Nullable final HealthCheckConfig healthCheckConfig) {
-        this("unknown", eventPublisher.map(Collections::singletonList), connectionFactory,
-                eagerConnectionShutdown, healthCheckConfig);
+        this("unknown#" + FACTORY_COUNT.incrementAndGet(), eventPublisher.map(Collections::singletonList),
+                connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**
@@ -194,7 +193,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final boolean eagerConnectionShutdown,
             @Nullable final HealthCheckConfig healthCheckConfig) {
-        this.targetResource = requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet();
+        this.targetResource = requireNonNull(targetResource);
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
@@ -524,8 +523,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final String targetResource,
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
-                    EAGER_CONNECTION_SHUTDOWN_ENABLED,
+            return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
+                    eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
                     new HealthCheckConfig(SharedExecutor.getInstance(),
                             DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
         }
