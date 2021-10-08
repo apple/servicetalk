@@ -205,7 +205,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             } else if (!trailers.isEmpty()) {
                 tryFailNonEmptyTrailers(ctx, trailers, promise);
             } else if (state > 0) {
-                tryTooLittleContent(ctx, msg, promise);
+                tryTooLittleContent(ctx, promise);
             } else {
                 // Allow trailers to be written as a marker indicating the request is done.
                 if (state != CONTENT_LEN_CONSUMED) {
@@ -239,7 +239,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     private void tryTooLittleContent(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         assert state > 0;
         promise.tryFailure(new IOException("Failed to complete encoding. Expected " + state +
-                " remaining bytes from content-length but got " + msg + " on channel: " + ctx.channel()));
+                " remaining bytes from content-length but new request/response " + msg + " started on channel: " +
+                ctx.channel()));
+    }
+
+    private void tryTooLittleContent(ChannelHandlerContext ctx, ChannelPromise promise) {
+        assert state > 0;
+        promise.tryFailure(new IOException("Failed to complete encoding. Expected " + state +
+                " remaining bytes from content-length but the request/response terminated on channel: " +
+                ctx.channel()));
     }
 
     private void unknownContentLengthNewRequest(ChannelHandlerContext ctx) {

@@ -195,6 +195,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
                     // stop draining the pending events if the current Subscription is still the same for which
                     // we started draining, continue emitting the remaining data if there is a new Subscriber
                     if (subscription == null || subscription == target) {
+                        tryPreemptiveChannelCloseInbound();
                         return true;
                     }
                     target = subscription;
@@ -202,14 +203,28 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             }
             if (pending.peek() instanceof TerminalNotification) {
                 emit(target, (TerminalNotification) pending.poll());
-                // stop draining the pending events if the current Subscription is still the same for which
-                // we started draining, continue emitting the remaining data if there is a new Subscriber
+                // stop draining the pending events if the current Subscription is still the same for which we started
+                // draining, continue emitting the remaining data if there is a new Subscriber
                 if (subscription == null || subscription == target) {
+                    tryPreemptiveChannelCloseInbound();
                     return true;
                 }
                 target = subscription;
             } else {
                 return false;
+            }
+        }
+    }
+
+    private void tryPreemptiveChannelCloseInbound() {
+        assert pending != null;
+        final Object top = pending.peek();
+        if (top instanceof TerminalNotification) {
+            final TerminalNotification terminal = (TerminalNotification) top;
+            if (terminal.cause() != null) {
+                assert fatalError != null;
+                pending.poll();
+                closeChannelInbound();
             }
         }
     }

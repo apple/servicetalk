@@ -133,13 +133,13 @@ class MalformedDataAfterHttpMessageTest {
                 })
                 .buildBlocking()) {
             validateClientResponse(client.request(client.get("/1")));
-            assertThrows(DecoderException.class, () -> client.request(client.get("/2")));
+            validateClientResponse(client.request(client.get("/2")));
 
             ConnectionContext ctx1 = contextQueue.poll();
             assertThat(ctx1, not(nullValue()));
             ConnectionContext ctx2 = contextQueue.poll();
             assertThat(ctx2, not(nullValue()));
-            assertThat(ctx1, equalTo(ctx2));
+            assertThat(ctx1, not(equalTo(ctx2)));
             assertThat(contextQueue, empty());
         } finally {
             server.close().sync();
