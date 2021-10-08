@@ -73,6 +73,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.EAGER_CONNECTION_SHUTDOWN_ENABLED;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.FACTORY_COUNT;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -166,8 +167,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                            final boolean eagerConnectionShutdown,
                            @Nullable final HealthCheckConfig healthCheckConfig) {
-        this("unknown", eventPublisher.map(Collections::singletonList), connectionFactory,
-                eagerConnectionShutdown, healthCheckConfig);
+        this("unknown#" + FACTORY_COUNT.incrementAndGet(), eventPublisher.map(Collections::singletonList),
+                connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**
@@ -213,8 +214,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             @Override
             public void onNext(final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
                 for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-                    LOGGER.debug("Load balancer {}: Received new ServiceDiscoverer event {}.",
-                            RoundRobinLoadBalancer.this, event);
+                    LOGGER.debug("Load balancer for {}: received new ServiceDiscoverer event {}.",
+                            targetResource, event);
 
                     @SuppressWarnings("unchecked")
                     final List<Host<ResolvedAddress, C>> usedAddresses =
@@ -248,8 +249,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 }
                             });
 
-                    LOGGER.debug("Load balancer {}: Now using {} addresses: {}.",
-                            RoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
+                    LOGGER.debug("Load balancer for {}: now using {} addresses: {}.",
+                            targetResource, usedAddresses.size(), usedAddresses);
 
                     if (event.isAvailable()) {
                         if (usedAddresses.size() == 1) {
@@ -340,16 +341,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 List<Host<ResolvedAddress, C>> hosts = usedHosts;
                 eventStreamProcessor.onError(t);
                 LOGGER.error(
-                        "Load balancer {}. Service discoverer {} emitted an error. Last seen addresses (size {}) {}",
-                        RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+                    "Load balancer for {}: service discoverer {} emitted an error. Last seen addresses (size {}): {}",
+                    targetResource, eventPublisher, hosts.size(), hosts, t);
             }
 
             @Override
             public void onComplete() {
                 List<Host<ResolvedAddress, C>> hosts = usedHosts;
                 eventStreamProcessor.onComplete();
-                LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
-                        RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
+                LOGGER.error("Load balancer for {}: service discoverer {} completed. Last seen addresses (size {}): {}",
+                        targetResource, eventPublisher, hosts.size(), hosts);
             }
         });
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -395,6 +396,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     public String toString() {
         return "RoundRobinLoadBalancer{" +
                 "targetResource='" + targetResource + '\'' +
+                ", usedHosts=" + usedHosts +
                 '}';
     }
 
@@ -440,9 +442,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
         if (pickedHost == null) {
-            return failed(StacklessNoAvailableHostException.newInstance(
-                    "Failed to pick an active host for " + targetResource
-                            + ". Either all are busy or all are expired: " + usedHosts,
+            return failed(StacklessNoAvailableHostException.newInstance("Failed to pick an active host for " +
+                            targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                     RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
         // No connection was selected: create a new one.
@@ -522,8 +523,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final String targetResource,
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
-                    EAGER_CONNECTION_SHUTDOWN_ENABLED,
+            return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
+                    eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
                     new HealthCheckConfig(SharedExecutor.getInstance(),
                             DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
         }
@@ -592,7 +593,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             final ConnState oldState = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE);
             final Object[] toRemove = oldState.connections;
             cancelIfHealthCheck(oldState.state);
-            LOGGER.debug("Load balancer for {}: Closing {} connection(s) gracefully to closed address: {}.",
+            LOGGER.debug("Load balancer for {}: closing {} connection(s) gracefully to the closed address: {}.",
                     targetResource, toRemove.length, address);
             for (Object conn : toRemove) {
                 @SuppressWarnings("unchecked")
@@ -621,7 +622,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
 
-        void markHealthy() {
+        void markHealthy(final HealthCheck<Addr, C> successfulHealthCheckState) {
             // Marking healthy is generally called from a successful health check, after a connection was added.
             // However, it is possible that in the meantime, the host entered an EXPIRED state, then ACTIVE, then failed
             // to open connections and entered the UNHEALTHY state before the original thread continues execution here.
@@ -635,7 +636,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 }
                 return previous;
             }).state;
-            cancelIfHealthCheck(oldState);
+            if (oldState != successfulHealthCheckState) {
+                cancelIfHealthCheck(oldState);
+            }
         }
 
         void markUnhealthy(final Throwable cause, final ConnectionFactory<Addr, ? extends C> connectionFactory) {
@@ -655,8 +658,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
                         LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                        " {} times ({} consecutive failures will trigger health check).",
-                                targetResource, nextState.failedConnections, address,
+                                        " {} time(s) ({} consecutive failures will trigger health check).",
+                                targetResource, address, nextState.failedConnections,
                                 healthCheckConfig.failedThreshold, cause);
                         break;
                     }
@@ -668,7 +671,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
                     LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                    " {} times. Threshold reached, triggering health check for this host.",
+                                    " {} time(s). Threshold reached, triggering health check for this host.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
                     healthCheck.schedule();
                     break;
@@ -793,8 +796,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             if (HealthCheck.class.equals(o.getClass())) {
                 @SuppressWarnings("unchecked")
                 HealthCheck<Addr, C> healthCheck = (HealthCheck<Addr, C>) o;
-                LOGGER.debug("Load balancer for {}: Health check for address {} cancelled.",
-                        targetResource, healthCheck.host.address);
+                LOGGER.debug("Load balancer for {}: health check cancelled for {}.", targetResource, healthCheck.host);
                 healthCheck.cancel();
             }
         }
@@ -856,27 +858,30 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                                 cause -> cause == RESCHEDULE_SIGNAL,
                                                 host.healthCheckConfig.healthCheckInterval,
                                                 host.healthCheckConfig.executor)))
+                                .whenOnError(t -> LOGGER.error("Load balancer for {}: health check terminated with " +
+                                        "an unexpected error for {}.", host.targetResource, host, t))
                                 .subscribe());
             }
 
             public Completable reconnect() {
                 return connectionFactory.newConnection(host.address, null)
                         .onErrorMap(cause -> {
-                            LOGGER.debug("Load balancer for {}: Health check failed for address {}.",
-                                    host.targetResource, host.address, cause);
+                            LOGGER.debug("Load balancer for {}: health check failed for {}.",
+                                    host.targetResource, host, cause);
                             return RESCHEDULE_SIGNAL;
                         })
                         .flatMapCompletable(newCnx -> {
                             if (host.addConnection(newCnx)) {
-                                LOGGER.debug("Load balancer for {}: Health check passed for address {}.",
-                                        host.targetResource, host.address);
-                                host.markHealthy();
+                                host.markHealthy(this);
+                                LOGGER.debug("Load balancer for {}: health check passed for {}.",
+                                        host.targetResource, host);
+                                return completed();
                             } else {
-                                LOGGER.debug("Load balancer for {}: Health check finished for address {}." +
-                                                " Host rejected connection.", host.targetResource, host.address);
+                                LOGGER.debug("Load balancer for {}: health check finished for {}, but the host " +
+                                        "rejected a new connection {}. Closing it now.",
+                                        host.targetResource, host, newCnx);
                                 return newCnx.closeAsync();
                             }
-                            return completed();
                         });
             }
 
