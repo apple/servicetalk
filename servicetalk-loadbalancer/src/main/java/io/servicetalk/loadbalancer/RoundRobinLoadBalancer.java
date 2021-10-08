@@ -659,8 +659,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
                         LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                        " {} times ({} consecutive failures will trigger health check).",
-                                targetResource, nextState.failedConnections, address,
+                                        " {} time(s) ({} consecutive failures will trigger health check).",
+                                targetResource, address, nextState.failedConnections,
                                 healthCheckConfig.failedThreshold, cause);
                         break;
                     }
@@ -672,7 +672,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
                     LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                    " {} times. Threshold reached, triggering health check for this host.",
+                                    " {} time(s). Threshold reached, triggering health check for this host.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
                     healthCheck.schedule();
                     break;
