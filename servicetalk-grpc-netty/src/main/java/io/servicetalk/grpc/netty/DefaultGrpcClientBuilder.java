@@ -49,6 +49,7 @@ import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -86,15 +87,18 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Nullable
     private Duration defaultTimeout;
-    private boolean invokedBuild;
-    @Nullable
-    private HttpInitializer<U, R> httpInitializer;
+    private HttpInitializer<U, R> httpInitializer = builder -> {
+        // no-op
+    };
 
-    private final SingleAddressHttpClientBuilder<U, R> httpClientBuilder;
+    private HttpInitializer<U, R> directHttpInitializer = builder -> {
+        // no-op
+    };
 
-    DefaultGrpcClientBuilder(final SingleAddressHttpClientBuilder<U, R> httpClientBuilder) {
-        this.httpClientBuilder = httpClientBuilder.protocols(h2Default());
-        appendCatchAllFilter();
+    private final Supplier<SingleAddressHttpClientBuilder<U, R>> httpClientBuilderSupplier;
+
+    DefaultGrpcClientBuilder(final Supplier<SingleAddressHttpClientBuilder<U, R>> httpClientBuilderSupplier) {
+        this.httpClientBuilderSupplier = httpClientBuilderSupplier;
     }
 
     @Override
@@ -105,160 +109,155 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout) {
-        if (invokedBuild) {
-            throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
-        }
         this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> executor(final Executor executor) {
-        httpClientBuilder.executor(executor);
+        directHttpInitializer.append(builder -> builder.executor(executor));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        httpClientBuilder.ioExecutor(ioExecutor);
+        directHttpInitializer.append(builder -> builder.ioExecutor(ioExecutor));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        httpClientBuilder.bufferAllocator(allocator);
+        directHttpInitializer.append(builder -> builder.bufferAllocator(allocator));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> executionStrategy(final GrpcExecutionStrategy strategy) {
-        httpClientBuilder.executionStrategy(strategy);
+        directHttpInitializer.append(builder -> builder.executionStrategy(strategy));
         return this;
     }
 
     @Override
     public <T> GrpcClientBuilder<U, R> socketOption(final SocketOption<T> option, final T value) {
-        httpClientBuilder.socketOption(option, value);
+        directHttpInitializer.append(builder -> builder.socketOption(option, value));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                      final BooleanSupplier logUserData) {
-        httpClientBuilder.enableWireLogging(loggerName, logLevel, logUserData);
+        directHttpInitializer.append(builder -> builder.enableWireLogging(loggerName, logLevel, logUserData));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols) {
-        httpClientBuilder.protocols(protocols);
+        directHttpInitializer.append(builder -> builder.protocols(protocols));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        httpClientBuilder.appendConnectionFactoryFilter(factory);
+        directHttpInitializer.append(builder -> builder.appendConnectionFactoryFilter(factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        httpClientBuilder.appendConnectionFilter(factory);
+        directHttpInitializer.append(builder -> builder.appendConnectionFilter(factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
-        httpClientBuilder.appendConnectionFilter(predicate, factory);
+        directHttpInitializer.append(builder -> builder.appendConnectionFilter(predicate, factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> sslConfig(final ClientSslConfig sslConfig) {
-        httpClientBuilder.sslConfig(sslConfig);
+        directHttpInitializer.append(builder -> builder.sslConfig(sslConfig));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferPeerHost(final boolean shouldInfer) {
-        httpClientBuilder.inferPeerHost(shouldInfer);
+        directHttpInitializer.append(builder -> builder.inferPeerHost(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferPeerPort(final boolean shouldInfer) {
-        httpClientBuilder.inferPeerPort(shouldInfer);
+        directHttpInitializer.append(builder -> builder.inferPeerPort(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
-        httpClientBuilder.inferSniHostname(shouldInfer);
+        directHttpInitializer.append(builder -> builder.inferSniHostname(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-        httpClientBuilder.autoRetryStrategy(autoRetryStrategyProvider);
+        directHttpInitializer.append(builder -> builder.autoRetryStrategy(autoRetryStrategyProvider));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> unresolvedAddressToHost(
             final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        httpClientBuilder.unresolvedAddressToHost(unresolvedAddressToHostFunction);
+        directHttpInitializer.append(builder -> builder.unresolvedAddressToHost(unresolvedAddressToHostFunction));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
-        httpClientBuilder.hostHeaderFallback(enable);
+        directHttpInitializer.append(builder -> builder.hostHeaderFallback(enable));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        httpClientBuilder.serviceDiscoverer(serviceDiscoverer);
+        directHttpInitializer.append(builder -> builder.serviceDiscoverer(serviceDiscoverer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> loadBalancerFactory(final HttpLoadBalancerFactory<R> loadBalancerFactory) {
-        httpClientBuilder.loadBalancerFactory(loadBalancerFactory);
+        directHttpInitializer.append(builder -> builder.loadBalancerFactory(loadBalancerFactory));
         return this;
     }
 
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
+        SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
+        appendCatchAllFilter(builder);
+        directHttpInitializer.initialize(builder);
+        httpInitializer.initialize(builder);
+        builder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
-        if (!invokedBuild) {
-            if (httpInitializer != null) {
-                httpInitializer.initialize(httpClientBuilder);
-            }
-            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
-        }
-        invokedBuild = true;
-        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(), timeout);
+        return GrpcClientCallFactory.from(builder.buildStreaming(), timeout);
     }
 
     @Override
     protected void doAppendHttpClientFilter(final StreamingHttpClientFilterFactory factory) {
-        httpClientBuilder.appendClientFilter(factory);
+        directHttpInitializer.append(builder -> builder.appendClientFilter(factory));
     }
 
     @Override
     public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                          final StreamingHttpClientFilterFactory factory) {
-        httpClientBuilder.appendClientFilter(predicate, factory);
+        directHttpInitializer.append(builder -> builder.appendClientFilter(predicate, factory));
     }
 
-    private void appendCatchAllFilter() {
-        doAppendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
+    private static <U, R> void appendCatchAllFilter(SingleAddressHttpClientBuilder<U, R> builder) {
+        builder.appendClientFilter(client -> new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,

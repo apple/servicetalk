@@ -68,6 +68,19 @@ public abstract class GrpcClientBuilder<U, R> {
          * @param builder The builder to customize the HTTP layer.
          */
         void initialize(SingleAddressHttpClientBuilder<U, R> builder);
+
+        /**
+         * Appends the passed {@link HttpInitializer} to this {@link HttpInitializer} such that this instance is
+         * applied first and then the argument's {@link HttpInitializer}.
+         * @param toAppend {@link HttpInitializer} to append.
+         * @return A composite {@link HttpInitializer} after the append operation.
+         */
+        default HttpInitializer<U, R> append(HttpInitializer<U, R> toAppend) {
+            return builder -> {
+                initialize(builder);
+                toAppend.initialize(builder);
+            };
+        }
     }
 
     /**
@@ -95,7 +108,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> executor(Executor executor);
+    public GrpcClientBuilder<U, R> executor(Executor executor) {
+        throw new UnsupportedOperationException("Method executor is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link IoExecutor} for all clients created from this builder.
@@ -107,7 +122,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    public GrpcClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor) {
+        throw new UnsupportedOperationException("Method ioExecutor is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link BufferAllocator} for all clients created from this builder.
@@ -119,7 +136,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    public GrpcClientBuilder<U, R> bufferAllocator(BufferAllocator allocator) {
+        throw new UnsupportedOperationException("Method bufferAllocator is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link GrpcExecutionStrategy} for all clients created from this builder.
@@ -132,7 +151,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy);
+    public GrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy) {
+        throw new UnsupportedOperationException("Method executionStrategy is not supported by " + getClass().getName());
+    }
 
     /**
      * Add a {@link SocketOption} for all clients created by this builder.
@@ -148,7 +169,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    public <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
+        throw new UnsupportedOperationException("Method socketOption is not supported by " + getClass().getName());
+    }
 
     /**
      * Enables wire-logging for connections created by this builder.
@@ -164,8 +187,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
-                                                              BooleanSupplier logUserData);
+    public GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
+                                                              BooleanSupplier logUserData) {
+        throw new UnsupportedOperationException("Method enableWireLogging is not supported by " + getClass().getName());
+    }
 
     /**
      * Configurations of various underlying protocol versions.
@@ -180,7 +205,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+    public GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols) {
+        throw new UnsupportedOperationException("Method protocols is not supported by " + getClass().getName());
+    }
 
     /**
      * Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
@@ -217,8 +244,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
+    public GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
+        throw new UnsupportedOperationException("Method appendConnectionFactoryFilter is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -246,7 +276,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
+    public GrpcClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory) {
+        throw new UnsupportedOperationException("Method appendConnectionFilter is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -277,8 +310,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                   StreamingHttpConnectionFilterFactory factory);
+    public GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                   StreamingHttpConnectionFilterFactory factory) {
+        throw new UnsupportedOperationException("Method appendConnectionFilter is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Set the SSL/TLS configuration.
@@ -290,7 +326,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
+    public GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
+        throw new UnsupportedOperationException("Method sslConfig is not supported by " + getClass().getName());
+    }
 
     /**
      * Toggle inference of value to use instead of {@link ClientSslConfig#peerHost()}
@@ -302,7 +340,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> inferPeerHost(boolean shouldInfer);
+    public GrpcClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+        throw new UnsupportedOperationException("Method inferPeerHost is not supported by " + getClass().getName());
+    }
 
     /**
      * Toggle inference of value to use instead of {@link ClientSslConfig#peerPort()}
@@ -314,7 +354,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> inferPeerPort(boolean shouldInfer);
+    public GrpcClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+        throw new UnsupportedOperationException("Method inferPeerPort is not supported by " + getClass().getName());
+    }
 
     /**
      * Toggle <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">SNI</a>
@@ -327,7 +369,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
+    public GrpcClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+        throw new UnsupportedOperationException("Method inferSniHostname is not supported by " + getClass().getName());
+    }
 
     /**
      * Updates the automatic retry strategy for the clients generated by this builder. Automatic retries are done by
@@ -345,8 +389,9 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
-            AutoRetryStrategyProvider autoRetryStrategyProvider);
+    public GrpcClientBuilder<U, R> autoRetryStrategy(AutoRetryStrategyProvider autoRetryStrategyProvider) {
+        throw new UnsupportedOperationException("Method autoRetryStrategy is not supported by " + getClass().getName());
+    }
 
     /**
      * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
@@ -362,8 +407,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> unresolvedAddressToHost(
-            Function<U, CharSequence> unresolvedAddressToHostFunction);
+    public GrpcClientBuilder<U, R> unresolvedAddressToHost(Function<U, CharSequence> unresolvedAddressToHostFunction) {
+        throw new UnsupportedOperationException("Method unresolvedAddressToHost is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
@@ -379,7 +426,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable);
+    public GrpcClientBuilder<U, R> hostHeaderFallback(boolean enable) {
+        throw new UnsupportedOperationException("Method hostHeaderFallback is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -393,8 +443,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * by implementing {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
+    public GrpcClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        throw new UnsupportedOperationException("Method serviceDiscoverer is not supported by " + getClass().getName());
+    }
 
     /**
      * Set a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
@@ -407,7 +459,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
      */
     @Deprecated
-    public abstract GrpcClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
+    public GrpcClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory) {
+        throw new UnsupportedOperationException("Method loadBalancerFactory is not supported by " +
+                getClass().getName());
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the client created by this builder.

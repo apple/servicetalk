@@ -45,7 +45,7 @@ public final class GrpcClients {
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final String host, final int port) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forSingleAddress(host, port));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(host, port));
     }
 
     /**
@@ -57,7 +57,7 @@ public final class GrpcClients {
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final HostAndPort address) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forSingleAddress(address));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(address));
     }
 
     /**
@@ -68,7 +68,7 @@ public final class GrpcClients {
      * @return new builder for the address
      */
     public static GrpcClientBuilder<String, InetSocketAddress> forServiceAddress(final String serviceName) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forServiceAddress(serviceName));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forServiceAddress(serviceName));
     }
 
     /**
@@ -80,7 +80,7 @@ public final class GrpcClients {
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final String host,
                                                                                        final int port) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(host, port));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(host, port));
     }
 
     /**
@@ -90,7 +90,7 @@ public final class GrpcClients {
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final HostAndPort address) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(address));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(address));
     }
 
     /**
@@ -101,7 +101,7 @@ public final class GrpcClients {
      */
     public static GrpcClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
             final InetSocketAddress address) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(address));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(address));
     }
 
     /**
@@ -118,7 +118,7 @@ public final class GrpcClients {
      * @return new builder for the address
      */
     public static <T extends SocketAddress> GrpcClientBuilder<T, T> forResolvedAddress(final T address) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(address));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(address));
     }
 
     /**
@@ -135,6 +135,6 @@ public final class GrpcClients {
     public static <U, R>
     GrpcClientBuilder<U, R> forAddress(final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
                                        final U address) {
-        return new DefaultGrpcClientBuilder<>(HttpClients.forSingleAddress(serviceDiscoverer, address));
+        return new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(serviceDiscoverer, address));
     }
 }
