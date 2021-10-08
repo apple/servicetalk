@@ -25,6 +25,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
@@ -60,6 +61,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -445,6 +447,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .eagerConnectionShutdown(eagerConnectionShutdown())
                         .healthCheckFailedConnectionsThreshold(-1)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
@@ -500,6 +503,58 @@ abstract class RoundRobinLoadBalancerTest {
         // uses the proper connection, final selection reuses that connection. 8 total creation attempts.
         int expectedConnectionAttempts = 8;
         assertThat(unhealthyHostConnectionFactory.requests.get(), equalTo(expectedConnectionAttempts));
+    }
+
+    @Test
+    void healthCheckRecoversFromUnexpectedError() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
+        final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                "address-1", 4, properConnection);
+        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+
+        final AtomicInteger scheduleCnt = new AtomicInteger();
+        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .eagerConnectionShutdown(eagerConnectionShutdown())
+                        .healthCheckFailedConnectionsThreshold(1)
+                        .backgroundExecutor(new DelegatingExecutor(testExecutor) {
+
+                            @Override
+                            public Completable timer(final long delay, final TimeUnit unit) {
+                                if (scheduleCnt.incrementAndGet() == 2) {
+                                    throw DELIBERATE_EXCEPTION;
+                                }
+                                return delegate().timer(delay, unit);
+                            }
+                        })
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+
+        // Trigger first health check:
+        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        // Execute two health checks: first will fail due to connectionFactory,
+        // second - due to an unexpected error from executor:
+        for (int i = 0; i < 2; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        }
+
+        // Trigger yet another health check:
+        e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        // Execute two health checks: first will fail due to connectionFactory, second succeeds:
+        for (int i = 0; i < 2; ++i) {
+            unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        }
+
+        // Make sure we can select a connection:
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+
+        assertThat(unhealthyHostConnectionFactory.requests.get(), equalTo(5));
     }
 
     // Concurrency test, run multiple times (at least 1000).

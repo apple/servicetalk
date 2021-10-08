@@ -622,7 +622,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
 
-        void markHealthy(final HealthCheck<Addr, C> successfulHealthCheckState) {
+        void markHealthy(final HealthCheck<Addr, C> originalHealthCheckState) {
             // Marking healthy is generally called from a successful health check, after a connection was added.
             // However, it is possible that in the meantime, the host entered an EXPIRED state, then ACTIVE, then failed
             // to open connections and entered the UNHEALTHY state before the original thread continues execution here.
@@ -636,7 +636,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 }
                 return previous;
             }).state;
-            if (oldState != successfulHealthCheckState) {
+            if (oldState != originalHealthCheckState) {
                 cancelIfHealthCheck(oldState);
             }
         }
@@ -858,8 +858,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                                 cause -> cause == RESCHEDULE_SIGNAL,
                                                 host.healthCheckConfig.healthCheckInterval,
                                                 host.healthCheckConfig.executor)))
-                                .whenOnError(t -> LOGGER.error("Load balancer for {}: health check terminated with " +
-                                        "an unexpected error for {}.", host.targetResource, host, t))
+                                .onErrorComplete(t -> {
+                                    LOGGER.error("Load balancer for {}: health check terminated with " +
+                                            "an unexpected error for {}. Marking this host as ACTIVE as a fallback " +
+                                            "to allow connection attempts.", host.targetResource, host, t);
+                                    host.markHealthy(this);
+                                    return true;
+                                })
                                 .subscribe());
             }
 
