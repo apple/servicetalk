@@ -69,6 +69,12 @@ public abstract class GrpcServerBuilder {
          */
         void initialize(HttpServerBuilder builder);
 
+        /**
+         * Appends the passed {@link HttpInitializer} to this {@link HttpInitializer} such that this instance is
+         * applied first and then the argument's {@link HttpInitializer}.
+         * @param toAppend {@link HttpInitializer} to append.
+         * @return A composite {@link HttpInitializer} after the append operation.
+         */
         default HttpInitializer append(HttpInitializer toAppend) {
             return builder -> {
                 initialize(builder);
