@@ -860,8 +860,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                                 host.healthCheckConfig.executor)))
                                 .onErrorComplete(t -> {
                                     LOGGER.error("Load balancer for {}: health check terminated with " +
-                                            "an unexpected error for {}. Marking this host as ACTIVE to let health " +
-                                            "check to restart.", host.targetResource, host, t);
+                                            "an unexpected error for {}. Marking this host as ACTIVE as a fallback " +
+                                            "to allow connection attempts.", host.targetResource, host, t);
                                     host.markHealthy(this);
                                     return true;
                                 })
