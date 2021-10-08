@@ -177,17 +177,17 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             ctx.write(byteBuf, promise);
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
-            final long contentLength = stBuffer.readableBytes();
-            if (contentLength <= 0) {
+            final int readableBytes = stBuffer.readableBytes();
+            if (readableBytes <= 0) {
                 ctx.write(EMPTY_BUFFER, promise);
             } else if (state == CONTENT_LEN_CHUNKED) {
                 PromiseCombiner promiseCombiner = new PromiseCombiner(ctx.executor());
                 encodeChunkedContent(ctx, stBuffer, stBuffer.readableBytes(), promiseCombiner);
                 promiseCombiner.finish(promise);
-            } else if (state <= CONTENT_LEN_LARGEST_VALUE || state >= 0 && (state -= contentLength) < 0) {
+            } else if (state <= CONTENT_LEN_LARGEST_VALUE || state >= 0 && (state -= readableBytes) < 0) {
                 // state may be <0 if there is no content-length or transfer-encoding, so let this pass through, but if
                 // state would go negative (or already zeroed) then fail.
-                tryTooMuchContent(ctx, contentLength, promise);
+                tryTooMuchContent(ctx, readableBytes, promise);
             } else {
                 if (state == 0) {
                     state = CONTENT_LEN_CONSUMED;
@@ -220,26 +220,26 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     private static void tryFailNonEmptyTrailers(ChannelHandlerContext ctx, HttpHeaders trailers,
                                                 ChannelPromise promise) {
         promise.tryFailure(new IOException("Trailers are only supported for HTTP/1.x with " +
-                TRANSFER_ENCODING + "=" + CHUNKED + ". Channel: " + ctx.channel() +
-                " attempted to write non-empty trailers: " + trailers.toString((k, v) -> v)));
+                TRANSFER_ENCODING + ": " + CHUNKED + ". Channel: " + ctx.channel() +
+                " attempted to write non-empty trailers: " + trailers));
     }
 
-    private void tryTooMuchContent(ChannelHandlerContext ctx, long contentLength, ChannelPromise promise) {
+    private void tryTooMuchContent(ChannelHandlerContext ctx, int bytes, ChannelPromise promise) {
         if (state == CONTENT_LEN_EMPTY) {
-            promise.tryFailure(new IOException("payload body must be empty, but write of: " + contentLength +
+            promise.tryFailure(new IOException("payload body must be empty, but write of: " + bytes +
                     " bytes attempted on channel: " + ctx.channel()));
         } else {
             promise.tryFailure(new IOException("payload body size exceeded content-length header. write of " +
-                    contentLength + " bytes attempted, " +
-                    ((state <= CONTENT_LEN_LARGEST_VALUE) ? 0 : state + contentLength) +
+                    bytes + " bytes attempted, " +
+                    ((state <= CONTENT_LEN_LARGEST_VALUE) ? 0 : state + bytes) +
                     " bytes remaining on channel: " + ctx.channel()));
         }
     }
 
     private void tryTooLittleContent(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         assert state > 0;
-        promise.tryFailure(new IOException("encoding completed on write " + msg + ", but missing " + state +
-                " bytes from content-length on channel: " + ctx.channel()));
+        promise.tryFailure(new IOException("Failed to complete encoding. Expected " + state +
+                " remaining bytes from content-length but got " + msg + " on channel: " + ctx.channel()));
     }
 
     private void unknownContentLengthNewRequest(ChannelHandlerContext ctx) {

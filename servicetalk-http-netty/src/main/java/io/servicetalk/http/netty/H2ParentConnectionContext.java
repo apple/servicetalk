@@ -42,6 +42,7 @@ import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
 import java.net.SocketAddress;
@@ -237,7 +238,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                             (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
                             observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
-                } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                } else if (evt == ChannelInputShutdownReadComplete.INSTANCE || evt == SslCloseCompletionEvent.SUCCESS) {
                     parentContext.keepAliveManager.channelInputShutdown();
                 } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                     parentContext.keepAliveManager.channelOutputShutdown();

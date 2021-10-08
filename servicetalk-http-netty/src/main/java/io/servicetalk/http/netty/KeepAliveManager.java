@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
@@ -126,7 +127,7 @@ final class KeepAliveManager {
                         if (keepAliveState != null) {
                             keepAliveState = KEEP_ALIVE_ACK_TIMEDOUT;
                             LOGGER.debug(
-                                    "channel={}, timeout {}ns waiting for keep-alive PING(ACK), writing go_away.",
+                                    "channel={}, timeout {}ns waiting for keep-alive PING(ACK), writing GO_AWAY.",
                                     this.channel, pingAckTimeoutNanos);
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
@@ -251,15 +252,10 @@ final class KeepAliveManager {
         void configure(Channel channel, int idlenessThresholdSeconds, Runnable onIdle);
     }
 
-    @FunctionalInterface
-    private interface BooleanFunction<T> {
-        boolean apply(T arg);
-    }
-
-    private void channelHalfShutdown(BooleanFunction<DuplexChannel> otherSideShutdown) {
+    private void channelHalfShutdown(Predicate<DuplexChannel> otherSideShutdown) {
         if (channel instanceof DuplexChannel) {
             final DuplexChannel duplexChannel = (DuplexChannel) channel;
-            if (otherSideShutdown.apply(duplexChannel) ||
+            if (otherSideShutdown.test(duplexChannel) ||
                     (gracefulCloseState != GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT && gracefulCloseState != CLOSED)) {
                 // If we have not started the graceful close process, or waiting for ack/read to complete the graceful
                 // close process just force a close now because we will not read any more data.
