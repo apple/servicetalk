@@ -62,8 +62,20 @@ class GrpcSslAndNonSslConnectionsTest {
     }
 
     private GrpcClientBuilder<HostAndPort, InetSocketAddress> secureGrpcClient(
+            final ServerContext serverContext, final ClientSslConfigBuilder sslConfigBuilder,
+            final boolean inferPeerHost) {
+        return GrpcClients.forAddress(serverHostAndPort(serverContext))
+                .initializeHttp(builder -> {
+                    builder.sslConfig(sslConfigBuilder.build());
+                    if (!inferPeerHost) {
+                        builder.inferPeerHost(false);
+                    }
+                });
+    }
+
+    private GrpcClientBuilder<HostAndPort, InetSocketAddress> secureGrpcClient(
             final ServerContext serverContext, final ClientSslConfigBuilder sslConfigBuilder) {
-        return GrpcClients.forAddress(serverHostAndPort(serverContext)).sslConfig(sslConfigBuilder.build());
+        return secureGrpcClient(serverContext, sslConfigBuilder, true);
     }
 
     private BlockingTesterClient nonSecureGrpcClient(ServerContext serverContext) {
@@ -131,8 +143,8 @@ class GrpcSslAndNonSslConnectionsTest {
                      new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .peerHost(null)
                              // if verification is not disabled, identity check fails against the undefined address
-                             .hostnameVerificationAlgorithm(""))
-                     .inferPeerHost(false)
+                             .hostnameVerificationAlgorithm(""),
+                     false)
                      .buildBlocking(clientFactory())) {
             final TesterProto.TestResponse response = client.test(REQUEST);
             assertThat(response, is(notNullValue()));
@@ -150,9 +162,10 @@ class GrpcSslAndNonSslConnectionsTest {
                 .listenAndAwait(serviceFactory());
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
-                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                             .peerHost(serverPemHostname()).build())
-                     .inferSniHostname(false)
+                     .initializeHttp(builder -> builder
+                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                                     .peerHost(serverPemHostname()).build())
+                     .inferSniHostname(false))
                      .buildBlocking(clientFactory());
         ) {
             final TesterProto.TestResponse response = client.test(REQUEST);
@@ -171,9 +184,10 @@ class GrpcSslAndNonSslConnectionsTest {
                 .listenAndAwait(serviceFactory());
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
-                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                             .peerHost(serverPemHostname()).build())
-                     .inferSniHostname(false)
+                     .initializeHttp(builder -> builder
+                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                                     .peerHost(serverPemHostname()).build())
+                             .inferSniHostname(false))
                      .buildBlocking(clientFactory());
         ) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> client.test(REQUEST));

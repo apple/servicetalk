@@ -1048,8 +1048,8 @@ class ProtocolCompatibilityTest {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
         if (ssl) {
-            builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                    .peerHost(serverPemHostname()).build());
+            builder.initializeHttp(b -> b.sslConfig(new ClientSslConfigBuilder(
+                    DefaultTestCerts::loadServerCAPem).peerHost(serverPemHostname()).build()));
         }
         if (null != timeout) {
             builder.defaultTimeout(timeout);
