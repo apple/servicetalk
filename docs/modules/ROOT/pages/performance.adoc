@@ -594,8 +594,10 @@ HttpResponse resp = client.request(client.get("/"));
 
 [IMPORTANT]
 `OPENSSL` provider requires `io.netty:netty-tcnative-boringssl-static:$tcnativeVersion` in the classpath.
-Latest `netty-tcnative-boringssl-static` version can be found in
+The latest `netty-tcnative-boringssl-static` version can be found in
 link:https://search.maven.org/artifact/io.netty/netty-tcnative-boringssl-static[Maven Central Repository].
+Alternatively, rather than setting `$tcnativeVersion` to a specific version, you can omit the version and instead import the latest `netty-bom:$nettyVersion` from
+link:https://search.maven.org/artifact/io.netty/netty-bom[Maven Central Repository]. The Netty BOM will specify the version for tcnative components appropriate for the Netty version you are using.
 
 === Netty LEAK-detection
 ServiceTalk is built on top of Netty. Netty supports
