@@ -52,6 +52,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
@@ -59,12 +60,19 @@ import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
 
-    private final HttpServerBuilder httpServerBuilder;
+    private final Supplier<HttpServerBuilder> httpServerBuilderSupplier;
+    private GrpcServerBuilder.HttpInitializer initializer = builder -> {
+        // no-op
+    };
+    private GrpcServerBuilder.HttpInitializer directCallInitializer = builder -> {
+        // no-op
+    };
     private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
             // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy which is
             // not compatible with gRPC.
@@ -75,107 +83,113 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
      */
     @Nullable
     private Duration defaultTimeout;
-    private boolean invokedBuild;
 
-    DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
-        this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
+    DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
+        this.httpServerBuilderSupplier = () -> httpServerBuilderSupplier.get()
+                .protocols(h2Default()).allowDropRequestTrailers(true);
+    }
+
+    @Override
+    public GrpcServerBuilder initializeHttp(final GrpcServerBuilder.HttpInitializer initializer) {
+        this.initializer = requireNonNull(initializer);
+        return this;
     }
 
     @Override
     public GrpcServerBuilder defaultTimeout(Duration defaultTimeout) {
-        if (invokedBuild) {
-            throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
-        }
         this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
         return this;
     }
 
     @Override
     public GrpcServerBuilder protocols(final HttpProtocolConfig... protocols) {
-        httpServerBuilder.protocols(protocols);
+        directCallInitializer = directCallInitializer.append(builder -> builder.protocols(protocols));
         return this;
     }
 
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
-        httpServerBuilder.sslConfig(config);
+        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(config));
         return this;
     }
 
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        httpServerBuilder.sslConfig(defaultConfig, sniMap);
+        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(defaultConfig, sniMap));
         return this;
     }
 
     @Override
     public <T> GrpcServerBuilder socketOption(final SocketOption<T> option, final T value) {
-        httpServerBuilder.socketOption(option, value);
+        directCallInitializer = directCallInitializer.append(builder -> builder.socketOption(option, value));
         return this;
     }
 
     @Override
     public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-        httpServerBuilder.listenSocketOption(option, value);
+        directCallInitializer = directCallInitializer.append(builder -> builder.listenSocketOption(option, value));
         return this;
     }
 
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {
-        httpServerBuilder.enableWireLogging(loggerName, logLevel, logUserData);
+        directCallInitializer = directCallInitializer.append(builder ->
+                builder.enableWireLogging(loggerName, logLevel, logUserData));
         return this;
     }
 
     @Override
     public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
-        httpServerBuilder.transportObserver(transportObserver);
+        directCallInitializer = directCallInitializer.append(builder -> builder.transportObserver(transportObserver));
         return this;
     }
 
     @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
-        httpServerBuilder.lifecycleObserver(new GrpcToHttpLifecycleObserverBridge(lifecycleObserver));
+        directCallInitializer = directCallInitializer.append(builder -> builder
+                .lifecycleObserver(new GrpcToHttpLifecycleObserverBridge(lifecycleObserver)));
         return this;
     }
 
     @Override
     public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
-        httpServerBuilder.drainRequestPayloadBody(enable);
+        directCallInitializer = directCallInitializer.append(builder -> builder.drainRequestPayloadBody(enable));
         return this;
     }
 
     @Override
     public GrpcServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-        httpServerBuilder.appendConnectionAcceptorFilter(factory);
+        directCallInitializer = directCallInitializer.append(builder ->
+                builder.appendConnectionAcceptorFilter(factory));
         return this;
     }
 
     @Override
     public GrpcServerBuilder executor(final Executor executor) {
         contextBuilder.executor(executor);
-        httpServerBuilder.executor(executor);
+        directCallInitializer = directCallInitializer.append(builder -> builder.executor(executor));
         return this;
     }
 
     @Override
     public GrpcServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         contextBuilder.ioExecutor(ioExecutor);
-        httpServerBuilder.ioExecutor(ioExecutor);
+        directCallInitializer = directCallInitializer.append(builder -> builder.ioExecutor(ioExecutor));
         return this;
     }
 
     @Override
     public GrpcServerBuilder bufferAllocator(final BufferAllocator allocator) {
         contextBuilder.bufferAllocator(allocator);
-        httpServerBuilder.bufferAllocator(allocator);
+        directCallInitializer = directCallInitializer.append(builder -> builder.bufferAllocator(allocator));
         return this;
     }
 
     @Override
     public GrpcServerBuilder executionStrategy(final GrpcExecutionStrategy strategy) {
         contextBuilder.executionStrategy(strategy);
-        httpServerBuilder.executionStrategy(strategy);
+        directCallInitializer = directCallInitializer.append(builder -> builder.executionStrategy(strategy));
         return this;
     }
 
@@ -186,20 +200,26 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     protected void doAppendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        httpServerBuilder.appendServiceFilter(factory);
+        directCallInitializer = directCallInitializer.append(builder -> builder.appendServiceFilter(factory));
     }
 
     @Override
     protected void doAppendHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                              final StreamingHttpServiceFilterFactory factory) {
-        httpServerBuilder.appendServiceFilter(predicate, factory);
+        directCallInitializer = directCallInitializer.append(builder ->
+                builder.appendServiceFilter(predicate, factory));
     }
 
     private HttpServerBuilder preBuild() {
-        if (!invokedBuild) {
-            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
-        }
-        invokedBuild = true;
+        final HttpServerBuilder httpServerBuilder = httpServerBuilderSupplier.get();
+
+        appendCatchAllFilter(httpServerBuilder);
+
+        directCallInitializer.initialize(httpServerBuilder);
+        initializer.initialize(httpServerBuilder);
+
+        httpServerBuilder.appendServiceFilter(
+                new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
         return httpServerBuilder;
     }
 

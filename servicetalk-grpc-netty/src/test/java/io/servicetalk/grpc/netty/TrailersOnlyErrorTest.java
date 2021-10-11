@@ -151,14 +151,14 @@ class TrailersOnlyErrorTest {
         final TesterService service = mockTesterService();
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .appendHttpServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
+                .initializeHttp(builder -> builder.appendServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
                             final HttpServiceContext ctx, final StreamingHttpRequest request,
                             final StreamingHttpResponseFactory responseFactory) {
                         throw DELIBERATE_EXCEPTION;
                     }
-                });
+                }));
 
         try (ServerContext serverContext = serverBuilder.listenAndAwait(new Tester.ServiceFactory(service))) {
 
