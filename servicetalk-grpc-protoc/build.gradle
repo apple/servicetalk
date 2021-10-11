@@ -26,6 +26,8 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 dependencies {
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "com.google.protobuf:protobuf-java:$protobufVersion"
@@ -33,7 +35,7 @@ dependencies {
 
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 
   testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"

@@ -26,6 +26,8 @@ apply plugin: "com.google.protobuf"
 ideaModule.dependsOn "generateTestProto"
 
 dependencies {
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-grpc-api")
   api "com.google.protobuf:protobuf-java:$protobufVersion"
   api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
@@ -36,7 +38,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 

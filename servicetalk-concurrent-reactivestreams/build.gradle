@@ -17,6 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-concurrent-api")
   api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
@@ -27,7 +29,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"

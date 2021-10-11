@@ -17,6 +17,9 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-concurrent")
 
   implementation project(":servicetalk-annotations")
@@ -25,13 +28,13 @@ dependencies {
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testFixturesImplementation project(":servicetalk-annotations")
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "junit:junit:$junitVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"

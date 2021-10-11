@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform("io.netty:netty-bom:$nettyVersion")
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-buffer-netty")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-transport-api")
-  api "io.netty:netty-handler:$nettyVersion"
+  api "io.netty:netty-handler"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -29,12 +33,12 @@ dependencies {
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-transport-native-epoll:$nettyVersion"
-  runtimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  runtimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-aarch_64"
-  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion"
-  runtimeOnly "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
-  runtimeOnly "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-aarch_64"
+  implementation "io.netty:netty-transport-native-epoll"
+  runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
+  runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
+  implementation "io.netty:netty-transport-native-kqueue"
+  runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
+  runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
@@ -42,17 +46,15 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-concurrent-test-internal")
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "junit:junit:$junitVersion"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
