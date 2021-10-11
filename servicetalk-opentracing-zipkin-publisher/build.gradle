@@ -17,6 +17,9 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform("io.netty:netty-bom:$nettyVersion")
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-opentracing-inmemory-api")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
@@ -31,8 +34,8 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-codec:$nettyVersion"
-  implementation "io.netty:netty-transport:$nettyVersion"
+  implementation "io.netty:netty-codec"
+  implementation "io.netty:netty-transport"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
@@ -45,7 +48,7 @@ dependencies {
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

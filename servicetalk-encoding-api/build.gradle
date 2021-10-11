@@ -17,6 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+    testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
     api project(":servicetalk-buffer-api")
     api project(":servicetalk-concurrent-api")
     api project(":servicetalk-serializer-api")
@@ -26,9 +28,7 @@ dependencies {
     implementation "com.google.code.findbugs:jsr305:$jsr305Version"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testImplementation "org.junit.jupiter:junit-jupiter-params"
     testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

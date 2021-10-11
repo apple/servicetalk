@@ -17,6 +17,10 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-client-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-transport-netty-internal")
@@ -34,22 +38,22 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+  testImplementation "io.netty:netty-tcnative-boringssl-static"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "io.netty:netty-transport-native-epoll:$nettyVersion"
-  testFixturesRuntimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  testFixturesRuntimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-aarch_64"
-  testFixturesImplementation "io.netty:netty-transport-native-kqueue:$nettyVersion"
-  testFixturesRuntimeOnly "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
-  testFixturesRuntimeOnly "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-aarch_64"
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testFixturesImplementation "io.netty:netty-transport-native-epoll"
+  testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
+  testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
+  testFixturesImplementation "io.netty:netty-transport-native-kqueue"
+  testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
+  testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
