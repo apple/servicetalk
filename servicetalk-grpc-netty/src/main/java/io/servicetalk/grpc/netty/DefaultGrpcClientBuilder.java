@@ -115,122 +115,127 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> executor(final Executor executor) {
-        directHttpInitializer.append(builder -> builder.executor(executor));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.executor(executor));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        directHttpInitializer.append(builder -> builder.ioExecutor(ioExecutor));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.ioExecutor(ioExecutor));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        directHttpInitializer.append(builder -> builder.bufferAllocator(allocator));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.bufferAllocator(allocator));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> executionStrategy(final GrpcExecutionStrategy strategy) {
-        directHttpInitializer.append(builder -> builder.executionStrategy(strategy));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.executionStrategy(strategy));
         return this;
     }
 
     @Override
     public <T> GrpcClientBuilder<U, R> socketOption(final SocketOption<T> option, final T value) {
-        directHttpInitializer.append(builder -> builder.socketOption(option, value));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.socketOption(option, value));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                      final BooleanSupplier logUserData) {
-        directHttpInitializer.append(builder -> builder.enableWireLogging(loggerName, logLevel, logUserData));
+        directHttpInitializer = directHttpInitializer.append(builder ->
+                builder.enableWireLogging(loggerName, logLevel, logUserData));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols) {
-        directHttpInitializer.append(builder -> builder.protocols(protocols));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.protocols(protocols));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        directHttpInitializer.append(builder -> builder.appendConnectionFactoryFilter(factory));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.appendConnectionFactoryFilter(factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        directHttpInitializer.append(builder -> builder.appendConnectionFilter(factory));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.appendConnectionFilter(factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
-        directHttpInitializer.append(builder -> builder.appendConnectionFilter(predicate, factory));
+        directHttpInitializer = directHttpInitializer.append(builder ->
+                builder.appendConnectionFilter(predicate, factory));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> sslConfig(final ClientSslConfig sslConfig) {
-        directHttpInitializer.append(builder -> builder.sslConfig(sslConfig));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.sslConfig(sslConfig));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferPeerHost(final boolean shouldInfer) {
-        directHttpInitializer.append(builder -> builder.inferPeerHost(shouldInfer));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.inferPeerHost(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferPeerPort(final boolean shouldInfer) {
-        directHttpInitializer.append(builder -> builder.inferPeerPort(shouldInfer));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.inferPeerPort(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
-        directHttpInitializer.append(builder -> builder.inferSniHostname(shouldInfer));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.inferSniHostname(shouldInfer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-        directHttpInitializer.append(builder -> builder.autoRetryStrategy(autoRetryStrategyProvider));
+        directHttpInitializer = directHttpInitializer.append(builder ->
+                builder.autoRetryStrategy(autoRetryStrategyProvider));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> unresolvedAddressToHost(
             final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        directHttpInitializer.append(builder -> builder.unresolvedAddressToHost(unresolvedAddressToHostFunction));
+        directHttpInitializer = directHttpInitializer.append(builder ->
+                builder.unresolvedAddressToHost(unresolvedAddressToHostFunction));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
-        directHttpInitializer.append(builder -> builder.hostHeaderFallback(enable));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.hostHeaderFallback(enable));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        directHttpInitializer.append(builder -> builder.serviceDiscoverer(serviceDiscoverer));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.serviceDiscoverer(serviceDiscoverer));
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> loadBalancerFactory(final HttpLoadBalancerFactory<R> loadBalancerFactory) {
-        directHttpInitializer.append(builder -> builder.loadBalancerFactory(loadBalancerFactory));
+        directHttpInitializer = directHttpInitializer.append(builder ->
+                builder.loadBalancerFactory(loadBalancerFactory));
         return this;
     }
 
@@ -247,13 +252,13 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     protected void doAppendHttpClientFilter(final StreamingHttpClientFilterFactory factory) {
-        directHttpInitializer.append(builder -> builder.appendClientFilter(factory));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.appendClientFilter(factory));
     }
 
     @Override
     public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                          final StreamingHttpClientFilterFactory factory) {
-        directHttpInitializer.append(builder -> builder.appendClientFilter(predicate, factory));
+        directHttpInitializer = directHttpInitializer.append(builder -> builder.appendClientFilter(predicate, factory));
     }
 
     private static <U, R> void appendCatchAllFilter(SingleAddressHttpClientBuilder<U, R> builder) {
