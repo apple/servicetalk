@@ -263,7 +263,9 @@ class ErrorHandlingTest {
                 throw new IllegalArgumentException("Unknown mode: " + testMode);
         }
         this.requestPublisher = requestPublisher;
-        serverContext = GrpcServers.forAddress(localAddress(0)).appendHttpServiceFilter(serviceFilterFactory)
+        final StreamingHttpServiceFilterFactory filterFactory = serviceFilterFactory;
+        serverContext = GrpcServers.forAddress(localAddress(0))
+                .initializeHttp(builder -> builder.appendServiceFilter(filterFactory))
                 .executionStrategy(serverStrategy).listenAndAwait(serviceFactory);
         final StreamingHttpClientFilterFactory pickedClientFilterFactory = clientFilterFactory;
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =

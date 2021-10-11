@@ -1076,26 +1076,29 @@ class ProtocolCompatibilityTest {
                                                               @Nullable final Duration timeout) {
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
-                    @Override
-                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                final StreamingHttpRequest req,
-                                                                final StreamingHttpResponseFactory resFactory) {
-                        if (errorMode == ErrorMode.SIMPLE_IN_SERVER_FILTER) {
-                            throwGrpcStatusException();
-                        } else if (errorMode == ErrorMode.STATUS_IN_SERVER_FILTER) {
-                            throwGrpcStatusExceptionWithStatus();
+                .initializeHttp(builder -> {
+                    builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                        @Override
+                        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                    final StreamingHttpRequest req,
+                                                                    final StreamingHttpResponseFactory resFactory) {
+                            if (errorMode == ErrorMode.SIMPLE_IN_SERVER_FILTER) {
+                                throwGrpcStatusException();
+                            } else if (errorMode == ErrorMode.STATUS_IN_SERVER_FILTER) {
+                                throwGrpcStatusExceptionWithStatus();
+                            }
+                            return delegate().handle(ctx, req, resFactory);
                         }
-                        return delegate().handle(ctx, req, resFactory);
+                    });
+                    if (ssl) {
+                        builder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                                DefaultTestCerts::loadServerKey).provider(OPENSSL).build());
                     }
                 });
         if (null != timeout) {
             serverBuilder.defaultTimeout(timeout);
         }
-        return ssl ?
-                serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                        DefaultTestCerts::loadServerKey).provider(OPENSSL).build()) :
-                serverBuilder;
+        return serverBuilder;
     }
 
     private static TestServerContext serviceTalkServerBlocking(final ErrorMode errorMode, final boolean ssl,

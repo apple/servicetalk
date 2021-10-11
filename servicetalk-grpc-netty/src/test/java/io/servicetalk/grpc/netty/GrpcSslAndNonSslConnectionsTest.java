@@ -55,9 +55,7 @@ class GrpcSslAndNonSslConnectionsTest {
     private ServerContext secureGrpcServer()
             throws Exception {
         return GrpcServers.forAddress(localAddress(0))
-                .sslConfig(
-                        trustedServerConfig()
-                )
+                .initializeHttp(builder -> builder.sslConfig(trustedServerConfig()))
                 .listenAndAwait(serviceFactory());
     }
 
@@ -155,10 +153,10 @@ class GrpcSslAndNonSslConnectionsTest {
     @Test
     void noSniClientDefaultServerFallbackSuccess() throws Exception {
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .sslConfig(
+                .initializeHttp(builder -> builder.sslConfig(
                         trustedServerConfig(),
                         singletonMap(getLoopbackAddress().getHostName(), untrustedServerConfig())
-                )
+                ))
                 .listenAndAwait(serviceFactory());
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
@@ -177,10 +175,10 @@ class GrpcSslAndNonSslConnectionsTest {
     @Test
     void noSniClientDefaultServerFallbackFailExpected() throws Exception {
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .sslConfig(
+                .initializeHttp(builder -> builder.sslConfig(
                         untrustedServerConfig(),
                         singletonMap(getLoopbackAddress().getHostName(), trustedServerConfig())
-                )
+                ))
                 .listenAndAwait(serviceFactory());
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
@@ -197,7 +195,10 @@ class GrpcSslAndNonSslConnectionsTest {
 
     @Test
     void connectingToSecureServerWithSecureClientDeprecatedWay() throws Exception {
-        try (ServerContext serverContext = secureGrpcServer();
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .secure()
+                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .listenAndAwait(serviceFactory());
              BlockingTesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                      .secure()
                      .trustManager(DefaultTestCerts::loadServerCAPem)
