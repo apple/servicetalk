@@ -87,7 +87,7 @@ class SingleRequestOrResponseApiTest {
 
         clientBuilder = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 // HTTP filter that modifies path to workaround gRPC API constraints:
-                .appendHttpClientFilter(origin -> new StreamingHttpClientFilter(origin) {
+                .initializeHttp(builder -> builder.appendClientFilter(origin -> new StreamingHttpClientFilter(origin) {
                     @Override
                     protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
                                                                     HttpExecutionStrategy strategy,
@@ -99,7 +99,7 @@ class SingleRequestOrResponseApiTest {
                             return delegate.request(strategy, request).subscribeShareContext();
                         });
                     }
-                });
+                }));
     }
 
     private static Stream<Arguments> params() {
