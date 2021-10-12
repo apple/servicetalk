@@ -33,7 +33,6 @@ import io.netty.util.AsciiString;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
@@ -59,8 +58,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
 final class HeaderUtils {
-    static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
-
     private HeaderUtils() {
         // no instances
     }
@@ -107,6 +104,18 @@ final class HeaderUtils {
                 !hasContentHeaders(metadata.headers());
     }
 
+    private static boolean alwaysAppendTrailers(final HttpProtocolVersion protocolVersion) {
+        // Always include trailers for h2 because trailers are allowed even if content-length is present, so we use
+        // trailers as a token to know the stream is done (even if they are empty).
+        return protocolVersion.major() > 1;
+    }
+
+    static boolean shouldAppendTrailers(final HttpProtocolVersion protocolVersion, final HttpMetaData metaData) {
+        return alwaysAppendTrailers(protocolVersion) ||
+                (chunkedSupported(protocolVersion) && (mayHaveTrailers(metaData) ||
+                        !metaData.headers().contains(CONTENT_LENGTH)));
+    }
+
     static Publisher<Object> setRequestContentLength(final HttpProtocolVersion protocolVersion,
                                                      final StreamingHttpRequest request) {
         return setContentLength(request, request.messageBody(),
@@ -142,9 +151,8 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
-    static ScanWithMapper<Object, Object> insertTrailersMapper() {
+    static ScanWithMapper<Object, Object> appendTrailersMapper() {
         return new ScanWithMapper<Object, Object>() {
-
             private boolean sawHeaders;
 
             @Nullable
@@ -187,8 +195,8 @@ final class HeaderUtils {
         assert emptyMessageBody(metadata, messageBody);
         // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
         // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
-        final Publisher<Object> flatMessage = protocolVersion.major() > 1 ? from(metadata) :
-                from(metadata, EmptyHttpHeaders.INSTANCE);
+        final Publisher<Object> flatMessage = shouldAppendTrailers(protocolVersion, metadata) ?
+                from(metadata, EmptyHttpHeaders.INSTANCE) : from(metadata);
         return messageBody == empty() ? flatMessage :
                 // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
                 // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
@@ -223,12 +231,20 @@ final class HeaderUtils {
         }).flatMapPublisher(reduction -> {
             int contentLength = 0;
             final Publisher<Object> flatRequest;
+            // We will insert content-length header but haven't yet because we need to compute the value. So no need
+            // to pass headers to determine if trailers should be appended.
+            final boolean appendTrailers = alwaysAppendTrailers(protocolVersion);
             if (reduction == null) {
-                flatRequest = from(metadata, EmptyHttpHeaders.INSTANCE);
+                flatRequest = appendTrailers ? from(metadata, EmptyHttpHeaders.INSTANCE) : from(metadata);
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                flatRequest = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
+                if (appendTrailers) {
+                    flatRequest = contentLength != 0 ? from(metadata, buffer, EmptyHttpHeaders.INSTANCE) :
+                                    from(metadata, EmptyHttpHeaders.INSTANCE);
+                } else {
+                    flatRequest = contentLength != 0 ? from(metadata, buffer) : from(metadata);
+                }
             } else if (reduction instanceof List) {
                 @SuppressWarnings("unchecked")
                 final List<Object> items = (List<Object>) reduction;
@@ -237,7 +253,7 @@ final class HeaderUtils {
                         contentLength += ((Buffer) item).readableBytes();
                     }
                 }
-                if (!(items.get(items.size() - 1) instanceof HttpHeaders)) {
+                if (appendTrailers && !(items.get(items.size() - 1) instanceof HttpHeaders)) {
                     items.add(EmptyHttpHeaders.INSTANCE);
                 }
                 flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));

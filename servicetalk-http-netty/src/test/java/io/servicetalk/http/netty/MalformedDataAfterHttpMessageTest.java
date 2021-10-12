@@ -16,9 +16,18 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -36,8 +45,12 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
@@ -59,12 +72,16 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MalformedDataAfterHttpMessageTest {
-
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
         ExecutionContextExtension.cached("server-io", "server-executor");
@@ -73,30 +90,57 @@ class MalformedDataAfterHttpMessageTest {
         ExecutionContextExtension.cached("client-io", "client-executor");
 
     private static final String CONTENT = "hello";
+    private static final String RESPONSE_MSG = "HTTP/1.1 200 OK\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: " + CONTENT.length() + "\r\n\r\n" +
+            CONTENT +
+            valueOf(new char[]{0x00, 0x00});   // malformed data at the end of the response msg
 
     @Test
     void afterResponse() throws Exception {
-        String responseMsg = "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + CONTENT.length() + "\r\n\r\n" +
-                             CONTENT +
-                             valueOf(new char[]{0x00, 0x00});   // malformed data at the end of the response msg
-
-        ServerSocketChannel server = nettyServer(responseMsg);
+        ServerSocketChannel server = nettyServer(RESPONSE_MSG);
         try (BlockingHttpClient client = stClient(server.localAddress())) {
-
-            ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"));
+            HttpRequest request = client.get("/1");
+            ReservedBlockingHttpConnection connection = client.reserveConnection(request);
             CountDownLatch connectionClosedLatch = new CountDownLatch(1);
             connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
 
-            HttpResponse response = connection.request(connection.get("/"));
-            assertThat(response.status(), is(OK));
-            assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
-            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
+            validateClientResponse(connection.request(request));
 
             // Verify that the next request fails and connection gets closed:
-            assertThrows(DecoderException.class, () -> connection.request(connection.get("/")));
+            // The exception generation is currently racy. A write maybe triggered while the channel is not active
+            // which will lead to ClosedChannelException.
+            assertThat(assertThrows(Exception.class, () -> connection.request(connection.get("/2"))),
+                    anyOf(instanceOf(DecoderException.class), instanceOf(ClosedChannelException.class)));
             connectionClosedLatch.await();
+        } finally {
+            server.close().sync();
+        }
+    }
+
+    @Test
+    void afterResponseNextClientRequestSucceeds() throws Exception {
+        Queue<ConnectionContext> contextQueue = new ArrayBlockingQueue<>(4);
+        ServerSocketChannel server = nettyServer(RESPONSE_MSG);
+        try (BlockingHttpClient client = stClientBuilder(server.localAddress())
+                .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
+                    @Override
+                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                 final StreamingHttpRequest request) {
+                        contextQueue.add(connectionContext());
+                        return super.request(strategy, request);
+                    }
+                })
+                .buildBlocking()) {
+            validateClientResponse(client.request(client.get("/1")));
+            validateClientResponse(client.request(client.get("/2")));
+
+            ConnectionContext ctx1 = contextQueue.poll();
+            assertThat(ctx1, not(nullValue()));
+            ConnectionContext ctx2 = contextQueue.poll();
+            assertThat(ctx2, not(nullValue()));
+            assertThat(ctx1, not(equalTo(ctx2)));
+            assertThat(contextQueue, empty());
         } finally {
             server.close().sync();
         }
@@ -106,20 +150,17 @@ class MalformedDataAfterHttpMessageTest {
     void afterRequest() throws Exception {
         try (ServerContext server = stServer();
              BlockingHttpClient client = stClient(server.listenAddress())) {
-
-            ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"));
+            Buffer malformedBody = client.executionContext().bufferAllocator().fromAscii(CONTENT)
+                    .writeShort(0); // malformed data at the end of the request msg
+            HttpRequest request = client.post("/")
+                    .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                    .setHeader(CONTENT_TYPE, TEXT_PLAIN)
+                    .payloadBody(malformedBody);
+            ReservedBlockingHttpConnection connection = client.reserveConnection(request);
             CountDownLatch connectionClosedLatch = new CountDownLatch(1);
             connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
 
-            Buffer malformedBody = client.executionContext().bufferAllocator().fromAscii(CONTENT)
-                .writeShort(0); // malformed data at the end of the request msg
-            HttpResponse response = connection.request(connection.post("/")
-                                                           .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
-                                                           .setHeader(CONTENT_TYPE, TEXT_PLAIN)
-                                                           .payloadBody(malformedBody));
-            assertThat(response.status(), is(OK));
-            assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
-            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
+            assertThrows(IOException.class, () -> connection.request(request));
 
             // Server should close the connection:
             connectionClosedLatch.await();
@@ -163,12 +204,22 @@ class MalformedDataAfterHttpMessageTest {
     }
 
     private static BlockingHttpClient stClient(SocketAddress serverAddress) {
+        return stClientBuilder(serverAddress).buildBlocking();
+    }
+
+    private static void validateClientResponse(HttpResponse response) {
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(CONTENT.length())));
+        assertThat(response.payloadBody(textSerializerUtf8()), equalTo(CONTENT));
+    }
+
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> stClientBuilder(
+            SocketAddress serverAddress) {
         return forSingleAddress(of((InetSocketAddress) serverAddress))
-            .ioExecutor(CLIENT_CTX.ioExecutor())
-            .executor(CLIENT_CTX.executor())
-            .executionStrategy(defaultStrategy())
-            .bufferAllocator(CLIENT_CTX.bufferAllocator())
-            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
-            .buildBlocking();
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(CLIENT_CTX.executor())
+                .executionStrategy(defaultStrategy())
+                .bufferAllocator(CLIENT_CTX.bufferAllocator())
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue);
     }
 }

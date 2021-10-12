@@ -31,7 +31,6 @@ import java.util.Queue;
 
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -49,13 +48,6 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
-
-    HttpRequestDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
-                       final HttpHeadersFactory headersFactory, final int maxStartLineLength,
-                       final int maxHeaderFieldLength) {
-        this(methodQueue, alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength,
-                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
-    }
 
     HttpRequestDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
                        final HttpHeadersFactory headersFactory, final int maxStartLineLength,

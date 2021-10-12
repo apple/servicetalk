@@ -30,25 +30,15 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.unset;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.ALL_CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.DISCARDING_SERVER_INPUT;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_OUT_CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.OUT_CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.READ;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.WRITE;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.has;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.hasAny;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.idle;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.set;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.unset;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
@@ -59,8 +49,21 @@ import static java.util.Objects.requireNonNull;
  * This handler is sufficient to implement <a href="https://tools.ietf.org/html/rfc7230#section-6.6">
  * https://tools.ietf.org/html/rfc7230#section-6.6</a> but is protocol-independent.
  */
-class RequestResponseCloseHandler extends CloseHandler {
+final class RequestResponseCloseHandler extends CloseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestResponseCloseHandler.class);
+    private static final byte READ = 0x01;
+    private static final byte WRITE = 0x02;
+    private static final byte DISCARDING_SERVER_INPUT = 0x04;
+    private static final byte CLOSING_SERVER_GRACEFULLY = 0x08;
+    private static final byte IN_CLOSED = 0x10;
+    private static final byte OUT_CLOSED = 0x20;
+    private static final byte CLOSED = 0x40;
+    private static final byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
+    private static final byte IN_OR_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
+    private static final byte READ_OR_WRITE = READ | WRITE;
+    private static final byte DISCARDING_SERVER_OR_IN_CLOSED = DISCARDING_SERVER_INPUT | IN_CLOSED;
+    private static final byte GRACEFUL_SERVER_OR_OUT_CLOSED = OUT_CLOSED | CLOSING_SERVER_GRACEFULLY;
+    private static final byte GRACEFUL_SERVER_OR_IN_CLOSED = IN_CLOSED | CLOSING_SERVER_GRACEFULLY;
 
     private final boolean isClient;
 
@@ -83,40 +86,6 @@ class RequestResponseCloseHandler extends CloseHandler {
      */
     @Nullable
     private CloseEvent closeEvent;
-
-    protected interface State {
-        byte READ = 0x01;
-        byte WRITE = 0x02;
-        byte DISCARDING_SERVER_INPUT = 0x04;
-        byte CLOSING_SERVER_GRACEFULLY = 0x08;
-        byte IN_CLOSED = 0x10;
-        byte OUT_CLOSED = 0x20;
-        byte CLOSED = 0x40;
-
-        byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
-        byte IN_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
-        byte MASK_IDLE = READ | WRITE;
-
-        static boolean idle(int pending, byte state) {
-            return pending == 0 && (state & MASK_IDLE) == 0;
-        }
-
-        static boolean has(byte state, byte mask) {
-            return (state & mask) == mask;
-        }
-
-        static boolean hasAny(byte state, byte flag1, byte flag2) {
-            return (state & (flag1 | flag2)) != 0;
-        }
-
-        static byte set(byte state, byte flags) {
-            return (byte) (state | flags);
-        }
-
-        static byte unset(byte state, byte flags) {
-            return (byte) (state & ~flags);
-        }
-    }
 
     /**
      * Feed back events to {@link DefaultNettyConnection} bypassing the pipeline.
@@ -164,10 +133,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     @Override
     public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
+        ctx.pipeline().fireUserEventTriggered(InboundDataEndEvent.INSTANCE);
         state = unset(state, READ);
-        final CloseEvent evt = this.closeEvent;
-        if (evt != null) {
-            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, true);
+        if (closeEvent != null) {
+            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), closeEvent, true);
         }
     }
 
@@ -210,10 +179,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
-        if (!has(state, IN_CLOSED)) {
+        if (!isAllSet(state, IN_CLOSED)) {
             state = set(state, IN_CLOSED);
             // Use the actual event that initiated graceful closure:
-            final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? closeEvent : CHANNEL_CLOSED_INBOUND;
+            final CloseEvent evt = isAllSet(state, CLOSING_SERVER_GRACEFULLY) ? closeEvent : CHANNEL_CLOSED_INBOUND;
             assert evt != null;
             storeCloseRequestAndEmit(evt);
             maybeCloseChannelOnHalfClosed(ctx.channel(), evt);
@@ -224,10 +193,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedOutbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
-        if (!has(state, OUT_CLOSED)) {
+        if (!isAllSet(state, OUT_CLOSED)) {
             state = set(state, OUT_CLOSED);
             storeCloseRequestAndEmit(CHANNEL_CLOSED_OUTBOUND);
-            if (!has(state, CLOSING_SERVER_GRACEFULLY)) {
+            if (!isAllSet(state, CLOSING_SERVER_GRACEFULLY)) {
                 // Only try to close when we are not closing server gracefully
                 maybeCloseChannelOnHalfClosed(ctx.channel(), CHANNEL_CLOSED_OUTBOUND);
             }
@@ -237,7 +206,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void channelCloseNotify(final ChannelHandlerContext ctx) {
-        if (hasAny(state, OUT_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
+        if (isAnySet(state, GRACEFUL_SERVER_OR_OUT_CLOSED)) {
             // We already closed outbound side of the channel, which triggers closure of SSLEngine and results in
             // SslCloseCompletionEvent#SUCCESS event generated immediately. Connection is already in a closing state,
             // we should ignore this event and wait for ChannelInputShutdownReadComplete from the remote peer.
@@ -255,7 +224,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     void closeChannelInbound(final Channel channel) {
         // Do not reset INBOUND when server is closing gracefully. This event is triggered during processing of
         // ChannelOutputShutdownEvent if the USER_CLOSE was initiated after response was written.
-        if (!hasAny(state, IN_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
+        if (!isAnySet(state, GRACEFUL_SERVER_OR_IN_CLOSED)) {
             LOGGER.debug("{} Half-Closing INBOUND (reset)", channel);
             setSocketResetOnClose(channel);
             ((DuplexChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
@@ -264,7 +233,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void closeChannelOutbound(final Channel channel) {
-        if (!has(state, OUT_CLOSED)) {
+        if (!isAllSet(state, OUT_CLOSED)) {
             LOGGER.debug("{} Half-Closing OUTBOUND (reset)", channel);
             setSocketResetOnClose(channel);
             halfCloseOutbound(channel, true);
@@ -278,13 +247,49 @@ class RequestResponseCloseHandler extends CloseHandler {
         maybeCloseChannelHalfOrFullyOnClosing(channel, GRACEFUL_USER_CLOSING);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(32);
+        if (isClient) {
+            sb.append("CLIENT,");
+        } else {
+            sb.append("SERVER,");
+        }
+        sb.append(pending);
+        if (isAllSet(state, READ)) {
+            sb.append(",READ");
+        }
+        if (isAllSet(state, WRITE)) {
+            sb.append(",WRITE");
+        }
+        if (isAllSet(state, IN_CLOSED)) {
+            sb.append(",IN_CLOSED");
+        }
+        if (isAllSet(state, OUT_CLOSED)) {
+            sb.append(",OUT_CLOSED");
+        }
+        if (isAllSet(state, DISCARDING_SERVER_INPUT)) {
+            sb.append(",DISCARDING_SERVER_INPUT");
+        }
+        if (isAllSet(state, CLOSING_SERVER_GRACEFULLY)) {
+            sb.append(",CLOSING_SERVER_GRACEFULLY");
+        }
+        if (isAllSet(state, CLOSED)) {
+            sb.append(",CLOSED");
+        }
+        if (closeEvent != null) {
+            sb.append(',').append(closeEvent);
+        }
+        return sb.toString();
+    }
+
     // This closes the channel either completely when there are no more outstanding requests to drain or half-closes
     // when a deferred request was encountered.
     private void closeChannelHalfOrFullyOnPayloadEnd(final Channel channel, final CloseEvent evt,
                                                      final boolean endInbound) {
 
-        if (idle(pending, state)) {
-            if (isClient || has(state, IN_CLOSED) ||
+        if (isIdle(pending, state)) {
+            if (isClient || isAllSet(state, IN_CLOSED) ||
                     (evt != GRACEFUL_USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
                 closeChannel(channel, evt);
             } else {
@@ -299,7 +304,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closing event rather than deferring
     private void maybeCloseChannelHalfOrFullyOnClosing(final Channel channel, final CloseEvent evt) {
-        if (idle(pending, state)) { // Only GRACEFUL_USER_CLOSING
+        if (isIdle(pending, state)) { // Only GRACEFUL_USER_CLOSING
             assert evt == GRACEFUL_USER_CLOSING;
             if (isClient) {
                 closeChannel(channel, evt);
@@ -312,7 +317,7 @@ class RequestResponseCloseHandler extends CloseHandler {
                 // count before reading the inbound closure signal. This means if pending > 0 there are more
                 // requests pending responses but the peer has signalled close. We need to abort write for pending
                 // requests:
-                if (has(state, WRITE)) {
+                if (isAllSet(state, WRITE)) {
                     channel.pipeline().fireUserEventTriggered(AbortWritesEvent.INSTANCE);
                     state = unset(state, WRITE);
                 }
@@ -321,12 +326,12 @@ class RequestResponseCloseHandler extends CloseHandler {
         } else if (evt == PROTOCOL_CLOSING_OUTBOUND) { // Server
             // eagerly close inbound channel on an outbound close command, unless we are still reading
             // the current request, no eager close on PROTOCOL_CLOSING_INBOUND
-            if (pending != 0 || !has(state, READ)) { // Don't abort current request
+            if (pending != 0 || !isAllSet(state, READ)) { // Don't abort current request
                 serverHalfCloseInbound(channel);
             }
             // discards extra pending requests when closing, ensures an eventual "idle" state
             pending = 0;
-        } else if (!has(state, READ)) { // Server && GRACEFUL_USER_CLOSING - Don't abort any request
+        } else if (!isAllSet(state, READ)) { // Server && GRACEFUL_USER_CLOSING - Don't abort any request
             assert evt == GRACEFUL_USER_CLOSING;
             serverHalfCloseInbound(channel);
         }
@@ -334,28 +339,28 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closed event rather than deferring
     private void maybeCloseChannelOnHalfClosed(final Channel channel, final CloseEvent evt) {
-        if (idle(pending, state)) {
+        if (isIdle(pending, state)) {
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == CHANNEL_CLOSED_INBOUND) {
                 // pending > 0 + WRITE => next request for which we can't respond, abort
                 if (pending != 0) {
-                    if (has(state, WRITE)) {
+                    if (isAllSet(state, WRITE)) {
                         closeAndResetChannel(channel, evt);
                     } else {
                         closeChannel(channel, evt);
                     }
                 } else { // current request still ongoing, defer close, but unset READ flag
                     state = unset(state, READ);
-                    if (idle(pending, state)) {
+                    if (isIdle(pending, state)) {
                         closeChannel(channel, evt);
                     }
                 }
-            } else if (has(state, WRITE)) { // evt == CHANNEL_CLOSED_OUTBOUND
+            } else if (isAllSet(state, WRITE)) { // evt == CHANNEL_CLOSED_OUTBOUND
                 assert evt == CHANNEL_CLOSED_OUTBOUND;
                 // ensure we finish reading pending responses, abort others
                 setSocketResetOnClose(channel);
-                if (pending <= 1 && !has(state, READ)) {
+                if (pending <= 1 && !isAllSet(state, READ)) {
                     closeChannel(channel, evt);
                 } else if (pending != 0) {
                     // discards current request, ensures an eventual "idle" state
@@ -363,11 +368,11 @@ class RequestResponseCloseHandler extends CloseHandler {
                 }
             }
         } else if (evt == CHANNEL_CLOSED_INBOUND) { // Server
-            if (has(state, READ)) {
+            if (isAllSet(state, READ)) {
                 // defer close to allow server error response, but unset READ flag
                 state = unset(state, READ);
                 setSocketResetOnClose(channel);
-                if (idle(pending, state)) {
+                if (isIdle(pending, state)) {
                     closeChannel(channel, evt);
                 }
             }
@@ -375,7 +380,7 @@ class RequestResponseCloseHandler extends CloseHandler {
             assert evt == CHANNEL_CLOSED_OUTBOUND;
             // pending > 0 => ensures we finish reading current request, abort others we can't respond to anyway
             closeAndResetChannel(channel, evt);
-        } else if (!has(state, READ)) { // Server && CHANNEL_CLOSED_OUTBOUND && pending == 0
+        } else if (!isAllSet(state, READ)) { // Server && CHANNEL_CLOSED_OUTBOUND && pending == 0
             assert evt == CHANNEL_CLOSED_OUTBOUND;
             // last response, we are not reading and OUTBOUND is closed, so just close the channel.
             closeChannel(channel, evt);
@@ -383,7 +388,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
-        if (!has(state, CLOSED)) {
+        if (!isAllSet(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
             LOGGER.debug("{} Closing channel – evt: {}", channel, evt == null ? "FullCloseAfterHalfClose" : evt);
             channel.close();
@@ -391,7 +396,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     private void closeAndResetChannel(final Channel channel, @Nullable final CloseEvent evt) {
-        if (!has(state, CLOSED)) {
+        if (!isAllSet(state, CLOSED)) {
             LOGGER.debug("{} Closing channel – evt: {} - reset",
                     channel, evt == null ? "FullCloseAfterHalfClose" : evt);
             setSocketResetOnClose(channel);
@@ -409,7 +414,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         // When both IN_CLOSED and OUT_CLOSED have been observed we should NOT attempt to set socket options. However
         // when only IN_CLOSED is observed as part of a TCP RST we also shouldn't attempt to set, but there is no
         // reliable event for this (in netty/JDK) so the best we can do is catch and log the exception.
-        if (channel instanceof SocketChannel && !has(state, IN_OUT_CLOSED)) {
+        if (channel instanceof SocketChannel && !isAllSet(state, IN_OR_OUT_CLOSED)) {
             try {
                 ((SocketChannel) channel).config().setSoLinger(0);
             } catch (Exception e) {
@@ -427,7 +432,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     private void serverHalfCloseInbound(final Channel channel) {
         assert !isClient;
-        if (!hasAny(state, DISCARDING_SERVER_INPUT, IN_CLOSED)) {
+        if (!isAnySet(state, DISCARDING_SERVER_OR_IN_CLOSED)) {
             // Instead of actual half-closure via DuplexChannel.shutdownInput() we request the pipeline to discard all
             // further inbound data until the FIN is received. Incoming FIN from the client-side
             // (ChannelInputShutdownReadComplete event) notifies server that client received the last response and is
@@ -435,15 +440,14 @@ class RequestResponseCloseHandler extends CloseHandler {
             // DuplexChannel.shutdownInput() silently discards all incoming data at OS level and does not notify netty
             // when the FIN is received.
             LOGGER.debug("{} Discarding further INBOUND", channel);
-            state = unset(state, READ);
+            state = set(unset(state, READ), DISCARDING_SERVER_INPUT);
             channel.pipeline().fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
-            state = set(state, DISCARDING_SERVER_INPUT);
         }
     }
 
     private void serverHalfCloseOutbound(final Channel channel) {
-        assert !isClient && idle(pending, state);
-        if (!has(state, OUT_CLOSED)) {
+        assert !isClient && isIdle(pending, state);
+        if (!isAllSet(state, OUT_CLOSED)) {
             state = set(state, CLOSING_SERVER_GRACEFULLY);
             LOGGER.debug("{} Half-Closing OUTBOUND", channel);
             halfCloseOutbound(channel, false);
@@ -475,5 +479,9 @@ class RequestResponseCloseHandler extends CloseHandler {
             LOGGER.debug("{} Fully closing socket channel, both input and output shutdown", dplxChannel);
             closeChannel(dplxChannel, null);
         }
+    }
+
+    private static boolean isIdle(int pending, byte state) {
+        return pending == 0 && !isAnySet(state, READ_OR_WRITE);
     }
 }

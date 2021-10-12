@@ -87,7 +87,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             }
             writeMetaData(ctx, metaData, h2Headers, promise);
         } else if (msg instanceof Buffer) {
-            writeBuffer(ctx, msg, promise);
+            writeBuffer(ctx, (Buffer) msg, promise);
         } else if (msg instanceof HttpHeaders) {
             writeTrailers(ctx, msg, promise);
         } else {
@@ -155,7 +155,6 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         assert method != null;
         ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
                 h2HeadersToH1HeadersClient(h2Headers, httpStatus, true)));
-        ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
 
     private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(Http2Headers h2Headers,

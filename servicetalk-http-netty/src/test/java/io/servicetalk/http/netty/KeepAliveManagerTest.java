@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
@@ -285,7 +286,12 @@ class KeepAliveManagerTest {
     }
 
     private void verifyNoWrite() {
-        assertThat("Unexpected frame written.", channel.outboundMessages().poll(), is(nullValue()));
+        Object msg = channel.outboundMessages().poll();
+        if (msg instanceof ByteBuf) {
+            assertThat(((ByteBuf) msg).readableBytes(), is(0));
+        } else {
+            assertThat("Unexpected frame written.", msg, is(nullValue()));
+        }
     }
 
     private void verifyNoScheduledTasks() {

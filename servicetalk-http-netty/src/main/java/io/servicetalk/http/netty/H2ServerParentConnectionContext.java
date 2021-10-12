@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
@@ -161,7 +160,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 DefaultNettyConnection<Object, Object> streamConnection =
                                         DefaultNettyConnection.initChildChannel(streamChannel,
                                                 connection.executionContext(),
-                                                LAST_CHUNK_PREDICATE,
                                                 closeHandler,
                                                 // TODO(scott): after flushStrategy is no longer on the connection
                                                 // level we can use DefaultNettyConnection.initChannel instead of this

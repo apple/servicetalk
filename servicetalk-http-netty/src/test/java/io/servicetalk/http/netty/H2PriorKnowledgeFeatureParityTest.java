@@ -68,7 +68,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
@@ -149,7 +148,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -791,11 +789,10 @@ class H2PriorKnowledgeFeatureParityTest {
                 request.trailers().set("mytrailer", "myvalue");
             }
             if (h2PriorKnowledge) {
-                assertThat(assertThrows(Throwable.class, () -> client.request(request)),
-                        instanceOf(Http2Exception.class));
+                assertThrows(Http2Exception.class, () -> client.request(request));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
-                    assertThrows(DecoderException.class, () -> {
+                    assertThrows(IOException.class, () -> {
                         // Either the current request or the next one should fail
                         reservedConn.request(request);
                         reservedConn.request(client.get("/"));

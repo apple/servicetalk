@@ -28,6 +28,7 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -95,35 +96,43 @@ class DefaultNettyConnectionTest {
         setupWithCloseHandler(closeHandlerFactory, immediate());
     }
 
+    private static Function<Buffer, Buffer> mapThrower() {
+        return buffer -> {
+            if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
+                throw DELIBERATE_EXCEPTION;
+            }
+            return buffer;
+        };
+    }
+
     private void setupWithCloseHandler(Function<EmbeddedChannel, CloseHandler> closeHandlerFactory,
                                        Executor executor) throws Exception {
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedDuplexChannel(false);
         demandEstimator = mock(WriteDemandEstimator.class);
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
+        CloseHandler closeHandler = closeHandlerFactory.apply(channel);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
-                null, buffer -> {
-                    if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
-                        throw DELIBERATE_EXCEPTION;
-                    }
-                    return true;
-                },
-                closeHandlerFactory.apply(channel), defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(),
+                null, closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(closeHandler),
                 OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = new TestPublisher<>();
     }
 
-    private static ChannelInitializer trailerProtocolEndEventEmitter() {
+    private static ChannelInitializer trailerProtocolEndEventEmitter(CloseHandler closeHandler) {
         return ch -> ch.pipeline()
                 .addLast(new ChannelOutboundHandlerAdapter() {
                     @Override
-                    public void write(final ChannelHandlerContext ctx,
-                                      final Object msg,
-                                      final ChannelPromise promise) {
+                    public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
                         if (TRAILER.equals(msg)) {
                             ctx.pipeline().fireUserEventTriggered(CloseHandler.OutboundDataEndEvent.INSTANCE);
                         }
                         ctx.write(msg, promise);
+                    }
+                }).addLast(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                        ctx.fireChannelRead(msg);
+                        closeHandler.protocolPayloadEndInbound(ctx);
                     }
                 });
     }
@@ -320,7 +329,7 @@ class DefaultNettyConnectionTest {
     @Test
     void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
-        toSource(conn.read()).subscribe(subscriber);
+        toSource(conn.read().map(mapThrower())).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         channel.writeInbound(allocator.fromAscii("DELIBERATE_EXCEPTION"));
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -360,7 +369,10 @@ class DefaultNettyConnectionTest {
     void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        // Late subscriber sees ClosedChannelException.
+        Throwable cause = subscriber.awaitOnError();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause(), is(DELIBERATE_EXCEPTION));
         conn.onClose().toFuture().get();
     }
 

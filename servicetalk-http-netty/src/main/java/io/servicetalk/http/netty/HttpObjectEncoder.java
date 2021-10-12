@@ -31,6 +31,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.netty.internal.CloseHandler;
@@ -42,6 +45,7 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.PromiseCombiner;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
@@ -54,12 +58,13 @@ import static io.netty.handler.codec.http.HttpConstants.COLON;
 import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
-import static io.netty.util.internal.StringUtil.simpleClassName;
 import static io.servicetalk.buffer.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
@@ -69,6 +74,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutboundHandlerAdapter {
     static final int CRLF_SHORT = (CR << 8) | LF;
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
+    private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
     private static final byte[] ZERO_CRLF_CRLF = {'0', CR, LF, CR, LF};
     private static final ByteBuf CRLF_BUF = unreleasableBuffer(directBuffer(2).writeByte(CR).writeByte(LF));
     private static final ByteBuf ZERO_CRLF_CRLF_BUF = unreleasableBuffer(directBuffer(ZERO_CRLF_CRLF.length)
@@ -77,14 +83,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     private static final float HEADERS_WEIGHT_HISTORICAL = 1 - HEADERS_WEIGHT_NEW;
     private static final float TRAILERS_WEIGHT_NEW = HEADERS_WEIGHT_NEW;
     private static final float TRAILERS_WEIGHT_HISTORICAL = HEADERS_WEIGHT_HISTORICAL;
-    private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
-    private static final int ST_INIT = 0;
-    private static final int ST_CONTENT_NON_CHUNK = 1;
-    private static final int ST_CONTENT_CHUNK = 2;
-    private static final int ST_CONTENT_ALWAYS_EMPTY = 3;
+    private static final long CONTENT_LEN_INIT = Long.MIN_VALUE;
+    private static final long CONTENT_LEN_EMPTY = Long.MIN_VALUE + 1;
+    private static final long CONTENT_LEN_CHUNKED = Long.MIN_VALUE + 2;
+    private static final long CONTENT_LEN_CONSUMED = Long.MIN_VALUE + 3;
+    private static final long CONTENT_LEN_LARGEST_VALUE = CONTENT_LEN_CONSUMED;
 
-    @SuppressWarnings("RedundantFieldInitialization")
-    private int state = ST_INIT;
+    private long state = CONTENT_LEN_INIT;
 
     /**
      * Used to calculate an exponential moving average of the encoded size of the initial line and the headers for
@@ -117,9 +122,16 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpMetaData) {
-            if (state != ST_INIT) {
-                throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
+            if (state == CONTENT_LEN_CHUNKED) {
+                // The user didn't write any trailers, so just send the last chunk.
+                encodeAndWriteTrailers(ctx, EmptyHttpHeaders.INSTANCE, promise);
+            } else if (state > 0) {
+                tryTooLittleContent(ctx, msg, promise);
+                return;
+            } else if (state == -1) {
+                unknownContentLengthNewRequest(ctx);
             }
+
             T metaData = castMetaData(msg);
             closeHandler.protocolPayloadBeginOutbound(ctx);
             if (shouldClose(metaData)) {
@@ -135,10 +147,21 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
                 // Encode the message.
                 encodeInitialLine(stBuf, metaData);
-                state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
-                        isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
+                if (isContentAlwaysEmpty(metaData)) {
+                    state = CONTENT_LEN_EMPTY;
+                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                } else if (isTransferEncodingChunked(metaData.headers())) {
+                    state = CONTENT_LEN_CHUNKED;
+                } else {
+                    state = getContentLength(metaData);
+                    assert state > CONTENT_LEN_LARGEST_VALUE;
+                    if (state == 0) {
+                        state = CONTENT_LEN_CONSUMED;
+                        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    }
+                }
 
-                sanitizeHeadersBeforeEncode(metaData, state);
+                sanitizeHeadersBeforeEncode(metaData);
 
                 encodeHeaders(metaData.headers(), byteBuf, stBuf);
                 writeShortBE(byteBuf, CRLF_SHORT);
@@ -147,59 +170,96 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             } catch (Throwable e) {
                 // Encoding of meta-data can fail or cause expansion of the initial ByteBuf capacity that can fail
                 byteBuf.release();
-                throw e;
+                tryIoException(ctx, e, promise);
+                return;
             }
+
             ctx.write(byteBuf, promise);
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
-            if (stBuffer.readableBytes() == 0) {
-                // Bypass the encoder in case of an empty buffer, so that the following idiom works:
-                //
-                //     ch.write(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-                //
-                // See https://github.com/netty/netty/issues/2983 for more information.
-                // We can directly write EMPTY_BUFFER here because there is no need to worry about the buffer being
-                // already released.
+            final int readableBytes = stBuffer.readableBytes();
+            if (readableBytes <= 0) {
                 ctx.write(EMPTY_BUFFER, promise);
+            } else if (state == CONTENT_LEN_CHUNKED) {
+                PromiseCombiner promiseCombiner = new PromiseCombiner(ctx.executor());
+                encodeChunkedContent(ctx, stBuffer, stBuffer.readableBytes(), promiseCombiner);
+                promiseCombiner.finish(promise);
+            } else if (state <= CONTENT_LEN_LARGEST_VALUE || state >= 0 && (state -= readableBytes) < 0) {
+                // state may be <0 if there is no content-length or transfer-encoding, so let this pass through, but if
+                // state would go negative (or already zeroed) then fail.
+                tryTooMuchContent(ctx, readableBytes, promise);
             } else {
-                switch (state) {
-                    case ST_INIT:
-                        throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
-                    case ST_CONTENT_NON_CHUNK:
-                        final long contentLength = stBuffer.readableBytes();
-                        if (contentLength > 0) {
-                            ctx.write(encodeAndRetain(stBuffer), promise);
-                            break;
-                        }
-
-                        // fall-through!
-                    case ST_CONTENT_ALWAYS_EMPTY:
-                        // Need to produce some output otherwise an IllegalStateException will be thrown as we did
-                        // not write anything Its ok to just write an EMPTY_BUFFER as if there are reference count
-                        // issues these will be propagated as the caller of the encodeAndRetain(...) method will
-                        // release the original buffer. Writing an empty buffer will not actually write anything on
-                        // the wire, so if there is a user error with msg it will not be visible externally
-                        ctx.write(EMPTY_BUFFER, promise);
-                        break;
-                    case ST_CONTENT_CHUNK:
-                        PromiseCombiner promiseCombiner = new PromiseCombiner();
-                        encodeChunkedContent(ctx, stBuffer, stBuffer.readableBytes(), promiseCombiner);
-                        promiseCombiner.finish(promise);
-                        break;
-                    default:
-                        throw new Error();
+                if (state == 0) {
+                    state = CONTENT_LEN_CONSUMED;
+                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
                 }
+                ctx.write(encodeAndRetain(stBuffer), promise);
             }
         } else if (msg instanceof HttpHeaders) {
-            closeHandler.protocolPayloadEndOutbound(ctx, promise);
-            final int oldState = state;
-            state = ST_INIT;
-            if (oldState == ST_CONTENT_CHUNK) {
-                encodeAndWriteTrailers(ctx, (HttpHeaders) msg, promise);
+            final boolean isChunked = state == CONTENT_LEN_CHUNKED;
+            state = CONTENT_LEN_INIT;
+            final HttpHeaders trailers = (HttpHeaders) msg;
+            if (isChunked) {
+                closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                encodeAndWriteTrailers(ctx, trailers, promise);
+            } else if (!trailers.isEmpty()) {
+                tryFailNonEmptyTrailers(ctx, trailers, promise);
+            } else if (state > 0) {
+                tryTooLittleContent(ctx, promise);
             } else {
+                // Allow trailers to be written as a marker indicating the request is done.
+                if (state != CONTENT_LEN_CONSUMED) {
+                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                }
+                state = CONTENT_LEN_INIT;
                 ctx.write(EMPTY_BUFFER, promise);
             }
         }
+    }
+
+    private static void tryFailNonEmptyTrailers(ChannelHandlerContext ctx, HttpHeaders trailers,
+                                                ChannelPromise promise) {
+        promise.tryFailure(new IOException("Trailers are only supported for HTTP/1.x with " +
+                TRANSFER_ENCODING + ": " + CHUNKED + ". Channel: " + ctx.channel() +
+                " attempted to write non-empty trailers: " + trailers));
+    }
+
+    private void tryTooMuchContent(ChannelHandlerContext ctx, int bytes, ChannelPromise promise) {
+        if (state == CONTENT_LEN_EMPTY) {
+            promise.tryFailure(new IOException("payload body must be empty, but write of: " + bytes +
+                    " bytes attempted on channel: " + ctx.channel()));
+        } else {
+            promise.tryFailure(new IOException("payload body size exceeded content-length header. write of " +
+                    bytes + " bytes attempted, " +
+                    ((state <= CONTENT_LEN_LARGEST_VALUE) ? 0 : state + bytes) +
+                    " bytes remaining on channel: " + ctx.channel()));
+        }
+    }
+
+    private void tryTooLittleContent(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        assert state > 0;
+        promise.tryFailure(new IOException("Failed to complete encoding. Expected " + state +
+                " remaining bytes from content-length but new request/response " + msg + " started on channel: " +
+                ctx.channel()));
+    }
+
+    private void tryTooLittleContent(ChannelHandlerContext ctx, ChannelPromise promise) {
+        assert state > 0;
+        promise.tryFailure(new IOException("Failed to complete encoding. Expected " + state +
+                " remaining bytes from content-length but the request/response terminated on channel: " +
+                ctx.channel()));
+    }
+
+    private void unknownContentLengthNewRequest(ChannelHandlerContext ctx) {
+        // If state == -1 we don't know the content length, signal end of outbound and best effort continue.
+        ChannelPromise emptyWritePromise = ctx.newPromise();
+        ctx.write(EMPTY_BUFFER, emptyWritePromise);
+        closeHandler.protocolPayloadEndOutbound(ctx, emptyWritePromise);
+    }
+
+    private static void tryIoException(ChannelHandlerContext ctx, Throwable e, ChannelPromise promise) {
+        promise.tryFailure(e instanceof IOException ? e :
+                new IOException("unexpected exception while encoding on channel: " + ctx.channel(), e));
     }
 
     /**
@@ -213,13 +273,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         return false;
     }
 
-    private void sanitizeHeadersBeforeEncode(T msg, int state) {
-        if (state == ST_CONTENT_CHUNK && HTTP_1_1.equals(msg.version())) {
+    private void sanitizeHeadersBeforeEncode(T msg) {
+        if (state == CONTENT_LEN_CHUNKED && HTTP_1_1.equals(msg.version())) {
             // A sender MUST remove the received Content-Length field prior to forwarding a "Transfer-Encoding: chunked"
             // message downstream: https://tools.ietf.org/html/rfc7230#section-3.3.3
             msg.headers().remove(CONTENT_LENGTH);
         }
-        sanitizeHeadersBeforeEncode(msg, state == ST_CONTENT_ALWAYS_EMPTY);
+        sanitizeHeadersBeforeEncode(msg, state == CONTENT_LEN_EMPTY);
     }
 
     /**
@@ -240,6 +300,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      * @param message The message to encode.
      */
     protected abstract void encodeInitialLine(Buffer buf, T message);
+
+    /**
+     * Get the expected length of content when {@link HttpHeaderNames#TRANSFER_ENCODING} is not
+     * {@link HttpHeaderValues#CHUNKED}.
+     * @param message The message to encode.
+     * @return Expected length of content when {@link HttpHeaderNames#TRANSFER_ENCODING} is not
+     * {@link HttpHeaderValues#CHUNKED}, or {@code -1} if unknown.
+     */
+    protected abstract long getContentLength(T message);
 
     /**
      * Encode the {@link HttpHeaders} into a {@link ByteBuf}.
@@ -355,7 +424,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     static ByteBuf encodeAndRetain(Buffer msg) {
         // We still want to retain the objects we encode because otherwise folks may hold on to references of objects
         // with a 0 reference count and get an IllegalReferenceCountException.
-        // TODO(scott): add support for file region
         return toByteBuf(msg).retain();
     }
 

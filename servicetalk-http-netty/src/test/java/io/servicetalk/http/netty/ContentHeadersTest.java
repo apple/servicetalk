@@ -140,7 +140,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
                 // ----- Response -----
                 new ResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
-                new ResponseTest(aggregatedResponse(OK), HEAD, defaults(), HAVE_NEITHER),
                 new ResponseTest(aggregatedResponse(OK), POST, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), PUT, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), DELETE, defaults(), HAVE_CONTENT_LENGTH),

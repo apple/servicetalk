@@ -62,8 +62,8 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonStringEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -176,7 +176,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     @MethodSource("data")
     void implicitHead(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
-        runTwiceToEnsureEndpointCache(() -> sendAndAssertResponse(head("/text"), OK, TEXT_PLAIN, isEmptyString(), 16));
+        runTwiceToEnsureEndpointCache(() -> sendAndAssertResponse(head("/text"), OK, TEXT_PLAIN, emptyString(), 16));
     }
 
     @ParameterizedTest(name = "{1} server-no-offloads = {0}")
@@ -184,7 +184,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     void explicitHead(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(
-                () -> sendAndAssertResponse(head("/head"), ACCEPTED, TEXT_PLAIN, isEmptyString(), 123));
+                () -> sendAndAssertResponse(head("/head"), ACCEPTED, TEXT_PLAIN, emptyString(), 123));
     }
 
     @ParameterizedTest(name = "{1} server-no-offloads = {0}")
@@ -193,7 +193,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             final StreamingHttpResponse res = sendAndAssertResponse(options("/text"),
-                    OK, newAsciiString("application/vnd.sun.wadl+xml"), not(isEmptyString()), String::length);
+                    OK, newAsciiString("application/vnd.sun.wadl+xml"), not(emptyString()), String::length);
 
             assertThat(res.headers().get(ALLOW).toString().split(","),
                     is(arrayContainingInAnyOrder("HEAD", "POST", "GET", "OPTIONS")));
@@ -206,7 +206,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/text"), OK, TEXT_PLAIN, "GOT: null & null");
-            sendAndAssertResponse(get("/text?null=true"), NO_CONTENT, null, isEmptyString(), __ -> null);
+            sendAndAssertResponse(get("/text?null=true"), NO_CONTENT, null, emptyString(), __ -> null);
         });
     }
 
@@ -255,7 +255,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             final StreamingHttpResponse res = sendAndAssertResponse(withHeader(get("/text-response"), "hdr",
-                    "bar"), NO_CONTENT, null, isEmptyString(), __ -> null);
+                    "bar"), NO_CONTENT, null, emptyString(), __ -> null);
             assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
         });
     }

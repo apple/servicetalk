@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -45,12 +46,14 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -169,7 +172,7 @@ abstract class HttpObjectDecoderTest {
         if (expectedContentLength > 0) {
             assertSingleHeaderValue(metaData.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             HttpHeaders trailers = assertPayloadSize(expectedContentLength, channel);
-            assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+            assertThat("Trailers are not empty", trailers, nullValue());
         } else if (expectedContentLength == 0) {
             if (containsTrailers) {
                 assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
@@ -184,8 +187,9 @@ abstract class HttpObjectDecoderTest {
                     isTransferEncodingChunked(metaData.headers()), is(true));
             HttpHeaders trailers = assertPayloadSize(-expectedContentLength, channel);
             if (containsTrailers) {
+                assertThat(trailers, not(nullValue()));
                 assertSingleHeaderValue(trailers, "TrailerStatus", "good");
-            } else {
+            } else if (trailers != null) {
                 assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
             }
         }
@@ -193,10 +197,12 @@ abstract class HttpObjectDecoderTest {
         return metaData;
     }
 
+    @Nullable
     final HttpHeaders assertPayloadSize(int expectedPayloadSize) {
         return assertPayloadSize(expectedPayloadSize, channel());
     }
 
+    @Nullable
     final HttpHeaders assertPayloadSize(int expectedPayloadSize, EmbeddedChannel channel) {
         int actualPayloadSize = 0;
         Object item;
@@ -206,7 +212,7 @@ abstract class HttpObjectDecoderTest {
                 actualPayloadSize += ((Buffer) item).readableBytes();
             } else {
                 assertThat(actualPayloadSize, is(expectedPayloadSize));
-                assertThat(item, instanceOf(HttpHeaders.class));
+                assertThat(item, anyOf(nullValue(), instanceOf(HttpHeaders.class)));
                 return (HttpHeaders) item;
             }
         }
@@ -214,7 +220,9 @@ abstract class HttpObjectDecoderTest {
 
     static void assertEmptyTrailers(EmbeddedChannel channel) {
         HttpHeaders trailers = channel.readInbound();
-        assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+        if (trailers != null) {
+            assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+        }
     }
 
     static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {

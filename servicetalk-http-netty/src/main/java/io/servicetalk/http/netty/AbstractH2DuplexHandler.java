@@ -44,7 +44,6 @@ import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.newStreamResetE
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
-
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
@@ -76,13 +75,10 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         ctx.write(new DefaultHttp2HeadersFrame(h2Headers, endStream), promise);
     }
 
-    static void writeBuffer(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        Buffer buffer = (Buffer) msg;
-        if (buffer.readableBytes() > 0) {
-            ctx.write(new DefaultHttp2DataFrame(encodeAndRetain(buffer), false), promise);
-        } else {
-            promise.setSuccess();
-        }
+    static void writeBuffer(ChannelHandlerContext ctx, Buffer buffer, ChannelPromise promise) {
+        // Even if the Buffer is empty we still want to write it. This is to preserve order of notification for
+        // when writing empty payload in order to know when prior content is written (and then close the channel).
+        ctx.write(new DefaultHttp2DataFrame(encodeAndRetain(buffer), false), promise);
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
@@ -120,7 +116,6 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
                 toRelease = release(dataFrame);
             }
             if (dataFrame.isEndStream()) {
-                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                 closeHandler.protocolPayloadEndInbound(ctx);
             }
         } finally {

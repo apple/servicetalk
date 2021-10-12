@@ -31,7 +31,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
@@ -303,7 +302,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         // fast-path
                         // No content is expected.
                         ctx.fireChannelRead(message);
-                        ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                         closeHandler.protocolPayloadEndInbound(ctx);
                         resetNow();
                         return;
@@ -320,7 +318,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         long contentLength = contentLength();
                         if (contentLength == 0 || contentLength == -1 && isDecodingRequest()) {
                             ctx.fireChannelRead(message);
-                            ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                             closeHandler.protocolPayloadEndInbound(ctx);
                             resetNow();
                             return;
@@ -377,7 +374,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     // https://tools.ietf.org/html/rfc7230.html#section-4.1
                     // This is not chunked encoding so there will not be any trailers.
                     ctx.fireChannelRead(newBufferFrom(content));
-                    ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                     closeHandler.protocolPayloadEndInbound(ctx);
                     resetNow();
                 } else {
@@ -436,7 +432,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (trailer == null) {
                     return;
                 }
-                ctx.fireChannelRead(trailer);
+                if (!trailer.isEmpty()) {
+                    ctx.fireChannelRead(trailer);
+                }
                 closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
@@ -484,7 +482,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
                     (currentState == State.READ_CHUNK_SIZE && chunked && allowPrematureClosureBeforePayloadBody))) {
                 // End of connection.
-                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
@@ -512,7 +509,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
 
             if (!prematureClosure) {
-                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);
             }
             resetNow();
@@ -911,7 +907,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return -1;
     }
 
-    private static long getContentLength(final HttpMetaData message) {
+    static long getContentLength(final HttpMetaData message) {
         final HttpHeaders headers = message.headers();
         final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH));
         if (contentLength >= 0) {

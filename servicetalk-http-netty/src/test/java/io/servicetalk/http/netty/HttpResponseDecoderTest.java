@@ -362,7 +362,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertThat(isTransferEncodingChunked(metaData.headers()), is(false));
         HttpHeaders trailers = assertPayloadSize(expectedContentLength);
-        assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+        assertThat("Trailers are not empty", trailers, nullValue());
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -481,7 +481,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         writeContent(contentLength);
         assertResponseLine(HTTP_1_1, BAD_REQUEST);
         HttpHeaders trailers = assertPayloadSize(contentLength);
-        assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+        assertThat("Trailers are not empty", trailers, nullValue());
         assertFalse(channel.finishAndReleaseAll());
     }
 }

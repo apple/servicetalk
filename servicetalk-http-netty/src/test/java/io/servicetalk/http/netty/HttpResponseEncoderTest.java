@@ -24,7 +24,10 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -45,6 +48,7 @@ import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -75,6 +79,7 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
         channel.writeOutbound(buffer.duplicate());
         channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, buffer, TransferEncoding.ContentLength, false);
+        consumeEmptyBufferFromTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -101,7 +106,6 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(response);
         channel.writeOutbound(buffer.duplicate());
-        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
 
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
@@ -122,7 +126,6 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
         byteBuf = channel.readOutbound();
         assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
         byteBuf.release();
-        consumeEmptyBufferFromTrailers(channel);
 
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -211,35 +214,45 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void variableWithTrailers() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void variableWithTrailers(boolean emptyTrailers) {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
-        trailers.add("TrailerStatus", "good");
+        if (!emptyTrailers) {
+            trailers.add("TrailerStatus", "good");
+        }
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
         channel.writeOutbound(buffer.duplicate());
-        channel.writeOutbound(trailers);
-        verifyHttpResponse(channel, buffer, TransferEncoding.Variable, false);
+        if (!emptyTrailers) {
+            assertThrows(IOException.class, () -> channel.writeOutbound(trailers));
+        } else {
+            channel.writeOutbound(trailers);
+            verifyHttpResponse(channel, buffer, TransferEncoding.Variable, false);
+        }
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.
-        assertFalse(channel.finishAndReleaseAll());
+        assertNotEquals(emptyTrailers, channel.finishAndReleaseAll());
     }
 
-    @Test
-    void contentLengthWithTrailers() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void contentLengthWithTrailers(boolean emptyTrailers) {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
-        trailers.add("TrailerStatus", "good");
+        if (!emptyTrailers) {
+            trailers.add("TrailerStatus", "good");
+        }
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
@@ -247,11 +260,16 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(response);
         channel.writeOutbound(buffer.duplicate());
-        channel.writeOutbound(trailers);
-        verifyHttpResponse(channel, buffer, TransferEncoding.ContentLength, false);
+        if (!emptyTrailers) {
+            assertThrows(IOException.class, () -> channel.writeOutbound(trailers));
+        } else {
+            channel.writeOutbound(trailers);
+            verifyHttpResponse(channel, buffer, TransferEncoding.ContentLength, false);
+            consumeEmptyBufferFromTrailers(channel);
+        }
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.
-        assertFalse(channel.finishAndReleaseAll());
+        assertNotEquals(emptyTrailers, channel.finishAndReleaseAll());
     }
 
     @Test
@@ -329,7 +347,6 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
                         () -> "unexpected metadata: " + actualMetaData);
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
-                consumeEmptyBufferFromTrailers(channel);
                 break;
             case Variable:
                 byteBuf = channel.readOutbound();

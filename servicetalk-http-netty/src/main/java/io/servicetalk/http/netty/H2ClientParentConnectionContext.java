@@ -82,7 +82,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
@@ -346,7 +345,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             closeHandler, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
-                                    parentContext.executionContext(), LAST_CHUNK_PREDICATE,
+                                    parentContext.executionContext(),
                                     closeHandler,
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,

@@ -24,17 +24,19 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
+import static io.servicetalk.transport.netty.internal.ByteMaskUtils.unset;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.has;
 import static java.util.Objects.requireNonNull;
 
 final class NonPipelinedCloseHandler extends CloseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonPipelinedCloseHandler.class);
-
     private static final byte READ = 0x1;
     private static final byte WRITE = 0x2;
     private static final byte IN_CLOSED = 0x4;
@@ -43,10 +45,11 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     private static final byte GRACEFUL_CLOSE = 0x20;
     private static final byte IS_CLIENT = 0x40;
     private static final byte ALL_CLOSED = IN_CLOSED | OUT_CLOSED | CLOSED;
-    private static final byte READ_WRITE = READ | WRITE;
-    private static final byte CLIENT_IN_WRITE = IS_CLIENT | WRITE | IN_CLOSED;
-    private static final byte GRACEFUL_IN_CLOSED = GRACEFUL_CLOSE | IN_CLOSED;
-    private static final byte GRACEFUL_OUT_CLOSED = GRACEFUL_CLOSE | OUT_CLOSED;
+    private static final byte READ_OR_WRITE = READ | WRITE;
+    private static final byte CLIENT_OR_WRITE_OR_IN_CLOSED = IS_CLIENT | WRITE | IN_CLOSED;
+    private static final byte GRACEFUL_OR_IN_CLOSED = GRACEFUL_CLOSE | IN_CLOSED;
+    private static final byte GRACEFUL_OR_OUT_CLOSED = GRACEFUL_CLOSE | OUT_CLOSED;
+
     private byte state;
     private Consumer<CloseEvent> eventHandler = __ -> { };
     @Nullable
@@ -65,6 +68,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
+        ctx.pipeline().fireUserEventTriggered(InboundDataEndEvent.INSTANCE);
         state = unset(state, READ);
         inboundEventCheckClose(ctx.channel(), closeEvent);
     }
@@ -106,7 +110,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
-        if (!has(state, IN_CLOSED)) {
+        if (!isAllSet(state, IN_CLOSED)) {
             state = unset(set(state, IN_CLOSED), READ);
             final CloseEvent evt = CHANNEL_CLOSED_INBOUND;
             storeCloseRequestAndEmit(evt);
@@ -116,7 +120,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedOutbound(final ChannelHandlerContext ctx) {
-        if (!has(state, OUT_CLOSED)) {
+        if (!isAllSet(state, OUT_CLOSED)) {
             state = unset(set(state, OUT_CLOSED), WRITE);
             final CloseEvent evt = CHANNEL_CLOSED_OUTBOUND;
             storeCloseRequestAndEmit(evt);
@@ -133,14 +137,12 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     @Override
     void closeChannelInbound(final Channel channel) {
         state = set(state, IN_CLOSED);
-        // todo storeCloseRequestAndEmit ?
         inboundEventCheckClose(channel, closeEvent);
     }
 
     @Override
     void closeChannelOutbound(final Channel channel) {
         state = set(state, OUT_CLOSED);
-        // todo storeCloseRequestAndEmit ?
         outboundEventCheckClose(channel, closeEvent);
     }
 
@@ -149,15 +151,47 @@ final class NonPipelinedCloseHandler extends CloseHandler {
         state = set(state, GRACEFUL_CLOSE);
         final CloseEvent evt = GRACEFUL_USER_CLOSING;
         storeCloseRequestAndEmit(evt);
-        if (!isAnySet(state, READ_WRITE)) {
+        if (!isAnySet(state, READ_OR_WRITE)) {
             closeChannel(channel, evt);
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(32);
+        if (isAnySet(state, IS_CLIENT)) {
+            sb.append("CLIENT");
+        } else {
+            sb.append("SERVER");
+        }
+        if (isAnySet(state, READ)) {
+            sb.append(",READ");
+        }
+        if (isAnySet(state, WRITE)) {
+            sb.append(",WRITE");
+        }
+        if (isAnySet(state, IN_CLOSED)) {
+            sb.append(",IN_CLOSED");
+        }
+        if (isAnySet(state, OUT_CLOSED)) {
+            sb.append(",OUT_CLOSED");
+        }
+        if (isAnySet(state, GRACEFUL_CLOSE)) {
+            sb.append(",GRACEFUL_CLOSE");
+        }
+        if (isAnySet(state, CLOSED)) {
+            sb.append(",CLOSED");
+        }
+        if (closeEvent != null) {
+            sb.append(',').append(closeEvent);
+        }
+        return sb.toString();
+    }
+
     private void inboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
-        if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_IN_CLOSED) && !isAllSet(state, WRITE))) {
+        if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_OR_IN_CLOSED) && !isAllSet(state, WRITE))) {
             closeChannel(channel, evt);
-        } else if (isAllSet(state, CLIENT_IN_WRITE)) {
+        } else if (isAllSet(state, CLIENT_OR_WRITE_OR_IN_CLOSED)) {
             // If a client inbound has closed while writing we abort the write because we can't be sure if the write
             // will ever complete or receive any additional feedback form the server.
             state = unset(state, WRITE);
@@ -166,7 +200,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     }
 
     private void outboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
-        if (isAllSet(state, IN_CLOSED) || (isAnySet(state, GRACEFUL_OUT_CLOSED) && !isAllSet(state, READ))) {
+        if (isAllSet(state, IN_CLOSED) || (isAnySet(state, GRACEFUL_OR_OUT_CLOSED) && !isAllSet(state, READ))) {
             closeChannel(channel, evt);
         }
     }
@@ -179,26 +213,10 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     }
 
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
-        if (!has(state, CLOSED)) {
+        if (!isAllSet(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
             LOGGER.trace("{} Closing channel – evt: {}", channel, evt);
             channel.close();
         }
-    }
-
-    private static byte set(byte state, byte flags) {
-        return (byte) (state | flags);
-    }
-
-    private static byte unset(byte state, byte flags) {
-        return (byte) (state & ~flags);
-    }
-
-    private static boolean isAllSet(byte state, byte flags) {
-        return (state & flags) == flags;
-    }
-
-    private static boolean isAnySet(byte state, byte flags) {
-        return (state & flags) != 0;
     }
 }
