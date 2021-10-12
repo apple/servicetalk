@@ -46,7 +46,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     private static final byte IS_CLIENT = 0x40;
     private static final byte ALL_CLOSED = IN_CLOSED | OUT_CLOSED | CLOSED;
     private static final byte READ_OR_WRITE = READ | WRITE;
-    private static final byte CLIENT_WRITE_OR_IN_CLOSED = IS_CLIENT | WRITE | IN_CLOSED;
+    private static final byte CLIENT_OR_WRITE_OR_IN_CLOSED = IS_CLIENT | WRITE | IN_CLOSED;
     private static final byte GRACEFUL_OR_IN_CLOSED = GRACEFUL_CLOSE | IN_CLOSED;
     private static final byte GRACEFUL_OR_OUT_CLOSED = GRACEFUL_CLOSE | OUT_CLOSED;
 
@@ -191,7 +191,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     private void inboundEventCheckClose(final Channel channel, @Nullable final CloseEvent evt) {
         if (isAllSet(state, OUT_CLOSED) || (isAnySet(state, GRACEFUL_OR_IN_CLOSED) && !isAllSet(state, WRITE))) {
             closeChannel(channel, evt);
-        } else if (isAllSet(state, CLIENT_WRITE_OR_IN_CLOSED)) {
+        } else if (isAllSet(state, CLIENT_OR_WRITE_OR_IN_CLOSED)) {
             // If a client inbound has closed while writing we abort the write because we can't be sure if the write
             // will ever complete or receive any additional feedback form the server.
             state = unset(state, WRITE);

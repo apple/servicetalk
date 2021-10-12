@@ -119,7 +119,7 @@ class MalformedDataAfterHttpMessageTest {
     }
 
     @Test
-    void afterResponseNextClientRequestFails() throws Exception {
+    void afterResponseNextClientRequestSucceeds() throws Exception {
         Queue<ConnectionContext> contextQueue = new ArrayBlockingQueue<>(4);
         ServerSocketChannel server = nettyServer(RESPONSE_MSG);
         try (BlockingHttpClient client = stClientBuilder(server.localAddress())

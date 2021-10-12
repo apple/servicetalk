@@ -46,15 +46,16 @@ public abstract class CloseHandler {
     public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
     static {
         LogLevel logLevel = null;
-        final String logLevelProperty = getProperty("io.servicetalk.transport.netty.internal.CloseHandler.LogLevel");
+        final String logLevelPropertyStr = "io.servicetalk.transport.netty.internal.CloseHandler.LogLevel";
+        final String logLevelProperty = getProperty(logLevelPropertyStr);
         if (logLevelProperty != null) {
             try {
                 logLevel = LogLevel.valueOf(logLevelProperty);
             } catch (Throwable cause) {
-                LOGGER.info("Error while parsing log", cause);
+                LOGGER.info("Error while parsing {}", logLevelPropertyStr, cause);
             }
         }
-        LOGGER.debug("LogLevel: {}", logLevel);
+        LOGGER.debug("{}={}", logLevelPropertyStr, logLevel);
         CLOSE_HANDLER_LOG_LEVEL = logLevel;
     }
 
