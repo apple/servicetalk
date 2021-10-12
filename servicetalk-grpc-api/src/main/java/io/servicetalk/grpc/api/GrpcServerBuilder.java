@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
@@ -479,29 +480,47 @@ public abstract class GrpcServerBuilder {
     protected abstract void doAppendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
                                                       StreamingHttpServiceFilterFactory factory);
 
+    /**
+     * Temporarily method to append "catch-all-exceptions" filter, required until we transition from abstract classes
+     * to interfaces.
+     *
+     * @param httpServerBuilder {@link HttpServerBuilder} to add a filter to
+     * @deprecated This method was introduced temporarily, should not be used, and will be removed in version 0.42.
+     */
+    @Deprecated
     protected static void appendCatchAllFilter(HttpServerBuilder httpServerBuilder) {
         // TODO(dj): Move to DefaultGrpcServerBuilder
         // This code depends on GrpcUtils which is inaccessible from the servicetalk-grpc-netty module.
         // When this class is converted to an interface we can also refactor that part.
-        httpServerBuilder.appendServiceFilter(CatchAllHttpServiceFilter::new);
+        httpServerBuilder.appendNonOffloadingServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
     }
 
-    static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
-        CatchAllHttpServiceFilter(final StreamingHttpService service) {
-            super(service);
+    static final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory,
+                                                            HttpExecutionStrategyInfluencer {
+
+        static final StreamingHttpServiceFilterFactory INSTANCE = new CatchAllHttpServiceFilter();
+
+        private CatchAllHttpServiceFilter() {
+            // Singleton
         }
 
         @Override
-        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                    final StreamingHttpRequest request,
-                                                    final StreamingHttpResponseFactory responseFactory) {
-            final Single<StreamingHttpResponse> handle;
-            try {
-                handle = delegate().handle(ctx, request, responseFactory);
-            } catch (Throwable cause) {
-                return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
-            }
-            return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    final Single<StreamingHttpResponse> handle;
+                    try {
+                        handle = delegate().handle(ctx, request, responseFactory);
+                    } catch (Throwable cause) {
+                        return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
+                    }
+                    return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+                }
+            };
         }
 
         private static StreamingHttpResponse convertToGrpcErrorResponse(
@@ -509,6 +528,11 @@ public abstract class GrpcServerBuilder {
                 final Throwable cause) {
             return newErrorResponse(responseFactory, GRPC_CONTENT_TYPE, cause,
                     ctx.executionContext().bufferAllocator());
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            return strategy;    // no influence since we do not block
         }
     }
 }
