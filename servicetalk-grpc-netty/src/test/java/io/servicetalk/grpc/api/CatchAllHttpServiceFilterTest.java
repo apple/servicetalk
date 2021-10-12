@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.grpc.api.GrpcServerBuilder.CatchAllHttpServiceFilter;
+
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
@@ -23,6 +25,6 @@ class CatchAllHttpServiceFilterTest {
 
     @Test
     void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(GrpcServerBuilder.CatchAllHttpServiceFilter::new);
+        verifyServerFilterAsyncContextVisibility(CatchAllHttpServiceFilter.INSTANCE);
     }
 }

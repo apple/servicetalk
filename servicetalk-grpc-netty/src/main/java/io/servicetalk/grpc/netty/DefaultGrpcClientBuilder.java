@@ -27,11 +27,15 @@ import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -259,7 +263,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
-        appendCatchAllFilter(builder);
+        builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         directHttpInitializer.initialize(builder);
         httpInitializer.initialize(builder);
         builder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
@@ -278,25 +282,63 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         directHttpInitializer = directHttpInitializer.append(builder -> builder.appendClientFilter(predicate, factory));
     }
 
-    private static <U, R> void appendCatchAllFilter(SingleAddressHttpClientBuilder<U, R> builder) {
-        builder.appendClientFilter(client -> new StreamingHttpClientFilter(client) {
-            @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                final Single<StreamingHttpResponse> resp;
-                try {
-                    resp = super.request(delegate, strategy, request);
-                } catch (Throwable t) {
-                    return failed(toGrpcException(t));
-                }
-                return resp.onErrorMap(DefaultGrpcClientBuilder::toGrpcException);
-            }
-        });
-    }
+    static final class CatchAllHttpClientFilter implements StreamingHttpClientFilterFactory,
+                                                           HttpExecutionStrategyInfluencer {
 
-    private static GrpcStatusException toGrpcException(Throwable cause) {
-        return fromThrowable(cause).asException();
+        static final StreamingHttpClientFilterFactory INSTANCE = new CatchAllHttpClientFilter();
+
+        private CatchAllHttpClientFilter() {
+            // Singleton
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    return CatchAllHttpClientFilter.request(delegate, strategy, request);
+                }
+
+                @Override
+                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+
+                    return delegate().reserveConnection(strategy, metaData)
+                            .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
+                                @Override
+                                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                                final HttpExecutionStrategy strategy,
+                                                                                final StreamingHttpRequest request) {
+                                    return CatchAllHttpClientFilter.request(delegate, strategy, request);
+                                }
+                            });
+                }
+            };
+        }
+
+        private static Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                             final HttpExecutionStrategy strategy,
+                                                             final StreamingHttpRequest request) {
+            final Single<StreamingHttpResponse> resp;
+            try {
+                resp = delegate.request(strategy, request);
+            } catch (Throwable t) {
+                return failed(toGrpcException(t));
+            }
+            return resp.onErrorMap(CatchAllHttpClientFilter::toGrpcException);
+        }
+
+        private static GrpcStatusException toGrpcException(Throwable cause) {
+            return fromThrowable(cause).asException();
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            return strategy;    // no influence since we do not block
+        }
     }
 
     private final class LazyGrpcClientConfigurator implements GrpcClientSecurityConfigurator<U, R> {
