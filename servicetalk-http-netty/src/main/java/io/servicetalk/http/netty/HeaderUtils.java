@@ -195,8 +195,9 @@ final class HeaderUtils {
         assert emptyMessageBody(metadata, messageBody);
         // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
         // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
-        final Publisher<Object> flatMessage = shouldAppendTrailers(protocolVersion, metadata) ?
-                from(metadata, EmptyHttpHeaders.INSTANCE) : from(metadata);
+        final Publisher<Object> flatMessage =
+                protocolVersion.major() > 1 || !shouldAppendTrailers(protocolVersion, metadata) ? from(metadata) :
+                        from(metadata, EmptyHttpHeaders.INSTANCE);
         return messageBody == empty() ? flatMessage :
                 // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
                 // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
