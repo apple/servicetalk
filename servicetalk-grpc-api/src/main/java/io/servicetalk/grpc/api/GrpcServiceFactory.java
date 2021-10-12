@@ -81,7 +81,7 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
+    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
         if (filterFactory != null) {
             applyFilterToRoutes(filterFactory);
         }
