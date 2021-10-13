@@ -570,7 +570,7 @@ public abstract class GrpcServerBuilder {
         // TODO(dj): Move to DefaultGrpcServerBuilder
         // This code depends on GrpcUtils which is inaccessible from the servicetalk-grpc-netty module.
         // When this class is converted to an interface we can also refactor that part.
-        httpServerBuilder.appendNonOffloadingServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
+        httpServerBuilder.appendServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
     }
 
     static final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory,
