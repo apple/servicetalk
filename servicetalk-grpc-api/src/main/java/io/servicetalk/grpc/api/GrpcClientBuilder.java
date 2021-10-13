@@ -165,6 +165,19 @@ public abstract class GrpcClientBuilder<U, R>
     /**
      * {@inheritDoc}
      * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link SingleAddressHttpClientBuilder#enableWireLogging(String)}
+     * on the {@code builder} instance by implementing
+     * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
+     */
+    @Override
+    @Deprecated
+    public GrpcClientBuilder<U, R> enableWireLogging(String loggerName) {
+        throw new UnsupportedOperationException("Method enableWireLogging is not supported by " + getClass().getName());
+    }
+
+    /**
+     * {@inheritDoc}
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
      * {@link SingleAddressHttpClientBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)}
      * on the {@code builder} instance by implementing
      * {@link HttpInitializer#initialize(SingleAddressHttpClientBuilder)} functional interface.
