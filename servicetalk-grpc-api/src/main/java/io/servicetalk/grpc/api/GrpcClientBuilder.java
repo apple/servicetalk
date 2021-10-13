@@ -61,6 +61,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param <U> unresolved address
      * @param <R> resolved address
      */
+    @FunctionalInterface
     public interface HttpInitializer<U, R> {
 
         /**
