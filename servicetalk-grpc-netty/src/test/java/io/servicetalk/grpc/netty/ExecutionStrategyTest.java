@@ -29,6 +29,7 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -302,7 +303,7 @@ class ExecutionStrategyTest {
         filterConfiguration.appendServiceFilter(serviceFactory);
         serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .executionStrategy(noOffloadsStrategy())
+                .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()))
                 .buildBlocking(new ClientFactory());
     }
 
