@@ -17,14 +17,15 @@
 
 SCRIPT=$(basename "${BASH_SOURCE:-stidn}")
 
-if [ $# -lt 1 ] || [ $# -gt 3 ]; then
+if [ $# -lt 1 ] || [ $# -gt 4 ]; then
   echo "# Usage"
-  echo "#    ${SCRIPT} <old_version> (<new_version> (<group_id>))"
+  echo "#    ${SCRIPT} <old_version> (<new_version> (<group_id> (<build_dir>)))"
   echo "# Description"
   echo "# This script compares versions for binary backward compatibility."
   echo "# It must be run from a directory containing a clone of ServiceTalk"
   echo "# if optional <new_version> unspecified or string 'local' then compare to local build"
   echo "# if optional <group_id> unspecified then local dir gradle 'group' property will be used"
+  echo "# if optional <build_dir> unspecified then 'build' dir will be used when comparing with the local build"
   echo "# Comparisons against local build assume that './gradlew build' has been run."
   exit 1
 fi
@@ -79,6 +80,8 @@ OLD_ST_VERSION="${1:-}"
 LOCAL="${2:-local}"
 NEW_ST_VERSION="${2:-$(./gradlew properties | grep '^version: ' | cut -f 2 -d ' ')}"
 GROUP_ID="${3:-$(./gradlew properties | grep '^group: ' | cut -f 2 -d ' ')}"
+BUILD_DIR="${4:-build}"
+
 GROUP_PATH=$(echo "${GROUP_ID}" | tr '.' '/')
 BASEPATH="${MVN_REPO}/${GROUP_PATH}/"
 
@@ -87,20 +90,20 @@ if [ -z "${OLD_ST_VERSION}" ]; then
   exit 1
 fi
 
-OLD_ARTIFACTS="$(bom_artifacts "${GROUP_ID}" "${OLD_ST_VERSION}")"
-
 if [ "${LOCAL}" = "local" ]; then
-  NEW_ARTIFACTS="$(find servicetalk-* -type d -maxdepth 0 | sort -)"
+  ARTIFACTS="$(find servicetalk-* -type d -maxdepth 0 | sort -)"
+  NEW_ST_VERSION="$(./gradlew properties | grep '^version: ' | cut -f 2 -d ' ')"
 else
+  OLD_ARTIFACTS="$(bom_artifacts "${GROUP_ID}" "${OLD_ST_VERSION}")"
   NEW_ARTIFACTS="$(bom_artifacts "${GROUP_ID}" "${NEW_ST_VERSION}")"
+  ARTIFACTS="$(comm -1 -2 \
+    <(echo "${OLD_ARTIFACTS}" | tr ' ' '\n') \
+    <(echo "${NEW_ARTIFACTS}" | tr ' ' '\n'))"
 fi
 
 # All servicetalk modules except:
 # servicetalk-benchmarks, servicetalk-bom, servicetalk-examples, servicetalk-gradle-plugin-internal
-ARTIFACTS="$(comm -1 -2 \
-  <(echo "${OLD_ARTIFACTS}" | tr ' ' '\n') \
-  <(echo "${NEW_ARTIFACTS}" | tr ' ' '\n') |
-  grep -v -- '-\(benchmarks\|bom\|examples\|gradle-plugin-internal\)$')"
+ARTIFACTS="$(echo "${ARTIFACTS}" | grep -v -- '-\(benchmarks\|bom\|examples\|gradle-plugin-internal\)$')"
 
 # Skip a module that requires JDK9+ if we are on JDK8 for local build:
 if [ "${LOCAL}" = "local" ] && [ "$JAVA_VERSION" = "1.8" ]; then
@@ -116,13 +119,13 @@ for ARTIFACT_ID in ${ARTIFACTS}; do
     echo false)
 
   if [ "${FOUND_OLD}" = "false" ] || [ ! -f "${OLD_JAR}" ]; then
-    echo "# Error  : old artifact (${ARTIFACT_ID}-${OLD_ST_VERSION}.jar) not found"
+    echo "# Error: old artifact (${ARTIFACT_ID}-${OLD_ST_VERSION}.jar) not found"
     echo ""
-    exit 1
+    continue
   fi
 
   if [ "${LOCAL}" = "local" ]; then
-    NEW_JAR="${ARTIFACT_ID}/build/libs/${ARTIFACT_ID}-${NEW_ST_VERSION}.jar"
+    NEW_JAR="${ARTIFACT_ID}/${BUILD_DIR}/libs/${ARTIFACT_ID}-${NEW_ST_VERSION}.jar"
   else
     FOUND_NEW=$( (mvn -N -U dependency:get -DgroupId="${GROUP_ID}" -DartifactId="${ARTIFACT_ID}" \
       -Dversion="${NEW_ST_VERSION}" -Dtransitive=false 1>&2 >/dev/null && echo true) ||
@@ -131,9 +134,9 @@ for ARTIFACT_ID in ${ARTIFACTS}; do
   fi
 
   if [ "${FOUND_NEW:-}" = "false" ] || [ ! -f "${NEW_JAR}" ]; then
-    echo "# Error : new artifact (${ARTIFACT_ID}-${NEW_ST_VERSION}.jar) not found"
+    echo "# Error: new artifact (${ARTIFACT_ID}-${NEW_ST_VERSION}.jar) not found"
     echo ""
-    exit 1
+    continue
   fi
 
   java -jar "$JAR_FILE" --no-error-on-exclusion-incompatibility --report-only-filename \
