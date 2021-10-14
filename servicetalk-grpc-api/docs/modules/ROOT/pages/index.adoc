@@ -96,6 +96,10 @@ HTTP layer.
 
 === gRPC Filters
 
+WARNING: gRPC Service Filters have been deprecated and will be removed in a future release. Please use
+xref:_http_filters[HTTP service filters] or implement the interception logic in the particular service definition
+if decoded protos are required.
+
 In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java[GrpcServiceFactory]
