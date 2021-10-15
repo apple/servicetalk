@@ -56,13 +56,17 @@ final class Types {
 
     static final ClassName StreamingHttpServiceFilterFactory =
             bestGuess(httpApiPkg + ".StreamingHttpServiceFilterFactory");
+    static final ClassName StreamingHttpClientFilterFactory =
+            bestGuess(httpApiPkg + ".StreamingHttpClientFilterFactory");
     static final ClassName HttpServerBuilder = bestGuess(httpApiPkg + ".HttpServerBuilder");
+    static final ClassName SingleAddressHttpClientBuilder = bestGuess(httpApiPkg + ".SingleAddressHttpClientBuilder");
 
     static final ClassName BlockingGrpcClient = bestGuess(grpcApiPkg + ".BlockingGrpcClient");
     static final ClassName BlockingGrpcService = bestGuess(grpcApiPkg + ".BlockingGrpcService");
     static final ClassName GrpcClientMetadata = bestGuess(grpcApiPkg + ".GrpcClientMetadata");
     static final ClassName DefaultGrpcClientMetadata = bestGuess(grpcApiPkg + ".DefaultGrpcClientMetadata");
     static final ClassName GrpcClient = bestGuess(grpcApiPkg + ".GrpcClient");
+    static final ClassName GrpcClientBuilder = bestGuess(grpcApiPkg + ".GrpcClientBuilder");
     static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
     static final ClassName GrpcClientFactory = bestGuess(grpcApiPkg + ".GrpcClientFactory");
     static final ClassName GrpcClientFilterFactory = bestGuess(grpcApiPkg + ".GrpcClientFilterFactory");
@@ -83,7 +87,8 @@ final class Types {
     static final ClassName GrpcBindableService = bestGuess(grpcApiPkg + ".GrpcBindableService");
     static final ClassName GrpcService = bestGuess(grpcApiPkg + ".GrpcService");
     static final ClassName GrpcServerBuilder = bestGuess(grpcApiPkg + ".GrpcServerBuilder");
-    static final ClassName HttpInitializer = bestGuess(GrpcServerBuilder + ".HttpInitializer");
+    static final ClassName GrpcServerBuilderHttpInitializer = bestGuess(GrpcServerBuilder + ".HttpInitializer");
+    static final ClassName GrpcClientBuilderHttpInitializer = bestGuess(GrpcClientBuilder + ".HttpInitializer");
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");
     static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");

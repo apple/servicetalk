@@ -101,7 +101,15 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      *
      * @param before the factory to apply before this factory is applied
      * @return {@code this}
+     * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+     * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+     * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+     * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+     * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+     * if HTTP filters are acceptable in your use case.
      */
+    @Deprecated
     public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
     appendClientFilter(FilterFactory before) {
         if (filterFactory == null) {
@@ -167,7 +175,15 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @param append {@link FilterFactory} to append to {@code existing}.
      * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
      * factory
+     * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+     * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+     * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+     * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+     * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+     * if HTTP filters are acceptable in your use case.
      */
+    @Deprecated
     protected abstract FilterFactory appendClientFilterFactory(FilterFactory existing, FilterFactory append);
 
     /**
@@ -187,7 +203,15 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @param client {@link Client} to use for creating a {@link Filter} through the {@link FilterFactory}.
      * @param filterFactory {@link FilterFactory}
      * @return A {@link Filter} filtering the passed {@link Client}.
+     * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+     * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+     * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+     * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+     * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+     * if HTTP filters are acceptable in your use case.
      */
+    @Deprecated
     protected abstract Filter newFilter(Client client, FilterFactory filterFactory);
 
     /**
