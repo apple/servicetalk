@@ -117,13 +117,13 @@ class ExecutionStrategyTest {
         CUSTOM {
             @Override
             void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(defaultStrategy(BUILDER_EXEC.executor()));
+                builder.initializeHttp(b -> b.executionStrategy(defaultStrategy(BUILDER_EXEC.executor())));
             }
         },
         NO_OFFLOADS {
             @Override
             void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(noOffloadsStrategy());
+                builder.initializeHttp(b -> b.executionStrategy(noOffloadsStrategy()));
             }
         };
 
