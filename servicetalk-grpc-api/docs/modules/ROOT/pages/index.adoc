@@ -88,6 +88,7 @@ which provides additional context
 into the `Connection`/transport details for each request/response. This means that a `GrpcService` method may be invoked
 for multiple connections, from different threads, and even concurrently.
 
+[#HttpFilters]
 === HTTP Filters
 
 As gRPC module is built on top of xref:{page-version}@servicetalk-http-api::index.adoc[HTTP module], one can use the
@@ -97,7 +98,7 @@ HTTP layer.
 === gRPC Filters
 
 WARNING: gRPC Service Filters have been deprecated and will be removed in a future release. Please use
-xref:_http_filters[HTTP service filters] or implement the interception logic in the particular service definition
+<<index#HttpFilters, HTTP service filters>> or implement the interception logic in the particular service definition
 if decoded protos are required.
 
 In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
