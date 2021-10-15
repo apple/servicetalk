@@ -61,6 +61,7 @@ final class Words {
     static final String JAVADOC_PARAM = "@param ";
     static final String JAVADOC_RETURN = "@return ";
     static final String JAVADOC_THROWS = "@throws ";
+    static final String JAVADOC_DEPRECATED = "@deprecated";
 
     private Words() {
         // no instance

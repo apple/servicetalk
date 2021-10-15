@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -22,8 +24,15 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <Filter> Type for service filter
  * @param <Service> Type for service
+ * @deprecated gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ * {@link StreamingHttpServiceFilterFactory} and if the access to the decoded payload is necessary, then performing
+ * that logic can be done in the particular {@link GrpcService service implementation}.
+ * Please use {@link io.servicetalk.http.api.HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
+ * upon the {@code builder} obtained using {@link GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)}
+ * if HTTP filters are acceptable in your use case.
  */
 @FunctionalInterface
+@Deprecated
 public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
 
     /**
