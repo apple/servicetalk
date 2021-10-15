@@ -21,6 +21,7 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -98,7 +99,16 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      *
      * @param before the factory to apply before this factory is applied
      * @return {@code this}
+     * @deprecated gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link StreamingHttpServiceFilterFactory} and if the access to the decoded payload is necessary, then performing
+     * that logic can be done in the particular {@link GrpcService service implementation}.
+     * Please use
+     * {@link io.servicetalk.http.api.HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
+     * upon the {@code builder} obtained using
+     * {@link GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)} if HTTP filters are acceptable
+     * in your use case.
      */
+    @Deprecated
     public GrpcServiceFactory<Filter, Service, FilterFactory> appendServiceFilter(FilterFactory before) {
         requireNonNull(before);
         if (filterFactory == null) {
@@ -116,7 +126,16 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * @param append {@link FilterFactory} to append to {@code existing}.
      * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
      * factory
+     * @deprecated gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link StreamingHttpServiceFilterFactory} and if the access to the decoded payload is necessary, then performing
+     * that logic can be done in the particular {@link GrpcService service implementation}.
+     * Please use
+     * {@link io.servicetalk.http.api.HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
+     * upon the {@code builder} obtained using
+     * {@link GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)} if HTTP filters are acceptable
+     * in your use case.
      */
+    @Deprecated
     protected abstract FilterFactory appendServiceFilterFactory(FilterFactory existing, FilterFactory append);
 
     private void applyFilterToRoutes(final FilterFactory filterFactory) {
