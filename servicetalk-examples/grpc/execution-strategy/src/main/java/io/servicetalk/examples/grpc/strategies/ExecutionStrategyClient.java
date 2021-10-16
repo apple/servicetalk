@@ -15,14 +15,11 @@
  */
 package io.servicetalk.examples.grpc.strategies;
 
-import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.netty.GrpcClients;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.grpc.examples.strategies.Greeter;
 import io.grpc.examples.strategies.HelloRequest;
 
-import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
 
 /**
@@ -32,8 +29,8 @@ import java.util.stream.IntStream;
  */
 public final class ExecutionStrategyClient {
     private static void sayHello(int port) {
-        GrpcClientBuilder<HostAndPort, InetSocketAddress> builder = GrpcClients.forAddress("localhost", port);
-        try (Greeter.GreeterClient client = builder.build(new Greeter.ClientFactory())) {
+        try (Greeter.GreeterClient client =
+                     GrpcClients.forAddress("localhost", port).build(new Greeter.ClientFactory())) {
             client.sayHello(HelloRequest.newBuilder().setName("World").build())
                     .whenOnSuccess(reply -> System.out.println(port + " : " + reply))
                     // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
@@ -50,6 +47,6 @@ public final class ExecutionStrategyClient {
     }
     public static void main(String... args) {
         // Execute the same client request for each of the server variations.
-        IntStream.rangeClosed(8080,8087).forEach(ExecutionStrategyClient::sayHello);
+        IntStream.rangeClosed(8080,8088).forEach(ExecutionStrategyClient::sayHello);
     }
 }

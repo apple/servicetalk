@@ -17,8 +17,9 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,6 +32,7 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -69,13 +71,15 @@ final class InOrderRouter implements StreamingHttpService {
             if (pair.predicate().test(ctx, request)) {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
-                if (strategy != null && // extra offloading
-                        strategy != noOffloadsStrategy() && // ineffective
-                        noOffloadsStrategy() != ctx.executionContext().executionStrategy()) {
-                    HttpExecutionStrategy offloadStrategy = ctx.executionContext().executionStrategy().merge(strategy);
-                    Executor executor = ctx.executionContext().executor();
-                    service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                            offloadStrategy, executor, IoThreadFactory.IoThread::currentThreadIsIoThread, service);
+                HttpExecutionContext useContext = ctx.executionContext();
+                HttpExecutionStrategy useStrategy = null != strategy && strategy.hasOffloads() &&
+                        (defaultStrategy() != strategy || noOffloadsStrategy() != useContext.executionStrategy()) ?
+                        HttpExecutionStrategies.difference(useContext.executionStrategy(), strategy) :
+                        null;
+                if (useStrategy != null) {
+                    // Additional offloading needed
+                    service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(strategy,
+                            useContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread, service);
                 }
                 return service.handle(ctx, request, factory);
             }

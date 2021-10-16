@@ -26,6 +26,8 @@
 
     <!-- Prints default subscriber errors-->
     <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
+    <!-- Prints execution strategy computation results -->
+    <Logger name="io.servicetalk.grpc.api" level="DEBUG"/>
 
     <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
     <Root level="${sys:servicetalk.logger.level:-INFO}">

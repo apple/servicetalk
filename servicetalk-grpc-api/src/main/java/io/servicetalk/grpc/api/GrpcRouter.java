@@ -43,6 +43,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -58,6 +59,9 @@ import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +72,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
@@ -96,6 +101,8 @@ import static java.util.Collections.unmodifiableMap;
  * implementation of a <a href="https://www.grpc.io">gRPC</a> method.
  */
 final class GrpcRouter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouter.class);
+
     private final Map<String, RouteProvider> routes;
     private final Map<String, RouteProvider> streamingRoutes;
     private final Map<String, RouteProvider> blockingRoutes;
@@ -302,10 +309,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    },
-                            strategy -> executionContext.executionStrategy().merge(
-                                    executionStrategy == null ? strategy : executionStrategy)
-                    ),
+                    }, newInfluencer(executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -509,8 +513,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionContext.executionStrategy().merge(
-                            executionStrategy == null ? strategy : executionStrategy)),
+                    }, newInfluencer(executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -580,8 +583,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionContext.executionStrategy().merge(
-                            executionStrategy == null ? strategy : executionStrategy)),
+                    }, newInfluencer(executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -655,6 +657,21 @@ final class GrpcRouter {
                             route.closeGracefully();
                         }
                     });
+        }
+
+        private static HttpExecutionStrategyInfluencer newInfluencer(
+                @Nullable GrpcExecutionStrategy routeStrategy, GrpcExecutionContext ctx) {
+            return strategy -> {
+                GrpcExecutionStrategy baseStrategy = routeStrategy == null || defaultStrategy() == routeStrategy ?
+                        ctx.executionStrategy() :
+                        routeStrategy;
+
+                HttpExecutionStrategy useStrategy = baseStrategy.merge(strategy);
+                LOGGER.debug("route strategy: ctx={} route={} api={} use={}",
+                        ctx.executionStrategy(), routeStrategy, strategy, useStrategy);
+
+                return useStrategy;
+            };
         }
 
         /**

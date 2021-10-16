@@ -23,6 +23,7 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -148,12 +149,12 @@ class PredicateRouterOffloadingTest {
         serverBuilder.executionStrategy(noOffloadsStrategy()).executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread)
-                        .executionStrategy(defaultStrategy()),
+                        .executionStrategy(HttpExecutionStrategies.customStrategyBuilder().offloadAll().build()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        assertRouteAndPredicateNotOffloaded();
+        assertRouteOffloadedAndNotPredicate(EXECUTOR_NAME_PREFIX);
     }
 
     @ParameterizedTest

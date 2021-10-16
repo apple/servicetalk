@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -176,7 +175,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private class RouteContinuationImpl implements RouteContinuation {
 
-        private StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
         @Nullable
         private HttpExecutionStrategy strategy;
 
@@ -258,7 +256,10 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteStarter thenRouteTo(final StreamingHttpService service) {
-            return thenRouteTo0(service, newInfluencer(service).influenceStrategy(defaultStrategy()));
+            @Nullable
+            HttpExecutionStrategy serviceInvocationStrategy = service instanceof HttpExecutionStrategyInfluencer ?
+                    ((HttpExecutionStrategyInfluencer) service).influenceStrategy(strategy) : strategy;
+            return thenRouteTo0(service, serviceInvocationStrategy);
         }
 
         @Override
@@ -280,14 +281,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         private HttpExecutionStrategyInfluencer newInfluencer(final Object service) {
+            StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
             influencerChainBuilder.prependIfInfluencer(service);
-            final HttpExecutionStrategyInfluencer strategyInfluencer;
-            if (strategy != null) {
-                strategyInfluencer = influencerChainBuilder.build(strategy);
-            } else {
-                strategyInfluencer = influencerChainBuilder.build();
-            }
-            return strategyInfluencer;
+            return strategy != null ? influencerChainBuilder.build(strategy) : influencerChainBuilder.build();
         }
 
         private RouteStarter thenRouteTo0(final StreamingHttpService route,
@@ -296,7 +292,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
             routes.add(new Route(predicate, route, routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
-            influencerChainBuilder = new StrategyInfluencerChainBuilder();
             strategy = null;
             return HttpPredicateRouterBuilder.this;
         }
