@@ -64,6 +64,8 @@ import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.FilterableGrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
+import static io.servicetalk.grpc.protoc.Types.GrpcClientBuilder;
+import static io.servicetalk.grpc.protoc.Types.GrpcClientBuilderHttpInitializer;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFilterFactory;
@@ -74,13 +76,13 @@ import static io.servicetalk.grpc.protoc.Types.GrpcRouteExecutionStrategyFactory
 import static io.servicetalk.grpc.protoc.Types.GrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.GrpcSerializationProvider;
 import static io.servicetalk.grpc.protoc.Types.GrpcServerBuilder;
+import static io.servicetalk.grpc.protoc.Types.GrpcServerBuilderHttpInitializer;
 import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcStatusException;
 import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
-import static io.servicetalk.grpc.protoc.Types.HttpInitializer;
 import static io.servicetalk.grpc.protoc.Types.HttpServerBuilder;
 import static io.servicetalk.grpc.protoc.Types.ProtoBufSerializationProviderBuilder;
 import static io.servicetalk.grpc.protoc.Types.Publisher;
@@ -90,7 +92,9 @@ import static io.servicetalk.grpc.protoc.Types.ResponseStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.Route;
 import static io.servicetalk.grpc.protoc.Types.Single;
+import static io.servicetalk.grpc.protoc.Types.SingleAddressHttpClientBuilder;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
+import static io.servicetalk.grpc.protoc.Types.StreamingHttpClientFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.StreamingHttpServiceFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
 import static io.servicetalk.grpc.protoc.Words.Blocking;
@@ -415,7 +419,7 @@ final class Generator {
                                 " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
                                 " if HTTP filters are acceptable in your use case." + lineSeparator(),
                                 StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
+                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, GrpcServerBuilderHttpInitializer)
                         .addAnnotation(Deprecated.class);
 
         state.serviceProto.getMethodList().forEach(methodProto ->
@@ -440,7 +444,7 @@ final class Generator {
                         " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
                         " if HTTP filters are acceptable in your use case." + lineSeparator(),
                         StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                        StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
+                        StreamingHttpServiceFilterFactory, GrpcServerBuilder, GrpcServerBuilderHttpInitializer)
                 .addAnnotation(Deprecated.class)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcServiceFilterFactory, state.serviceFilterClass,
@@ -628,7 +632,7 @@ final class Generator {
                                         " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
                                         " if HTTP filters are acceptable in your use case." + lineSeparator(),
                                 StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
+                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, GrpcServerBuilderHttpInitializer)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addAnnotation(Override.class)
@@ -646,7 +650,7 @@ final class Generator {
                                         " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
                                         " if HTTP filters are acceptable in your use case." + lineSeparator(),
                                 StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
+                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, GrpcServerBuilderHttpInitializer)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
@@ -790,6 +794,16 @@ final class Generator {
     private TypeSpec.Builder addClientFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
+                .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                " is necessary, then performing that logic can be done in the particular" +
+                                " {@link $T client implementation}. Please use" +
+                                " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                " use case." + lineSeparator(),
+                        StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                        StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                .addAnnotation(Deprecated.class)
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
                 .addMethod(newDelegatingMethodSpec(executionContext, delegate, GrpcExecutionContext, null));
 
@@ -807,6 +821,16 @@ final class Generator {
     private static TypeSpec.Builder addClientFilterFactory(final State state,
                                                            final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.clientFilterFactoryClass)
+                .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                " is necessary, then performing that logic can be done in the particular" +
+                                " {@link $T client implementation}. Please use" +
+                                " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                " use case." + lineSeparator(),
+                        StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                        StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                .addAnnotation(Deprecated.class)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClientFilterFactory, state.clientFilterClass,
                         state.filterableClientClass))
@@ -830,6 +854,16 @@ final class Generator {
                 .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass,
                         state.clientFilterClass, state.filterableClientClass, state.clientFilterFactoryClass))
                 .addMethod(methodBuilder("appendClientFilterFactory")
+                        .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                        " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                        " is necessary, then performing that logic can be done in the particular" +
+                                        " {@link $T client implementation}. Please use" +
+                                        " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                        " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                        " use case." + lineSeparator(),
+                                StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                                StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                        .addAnnotation(Deprecated.class)
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
                         .returns(state.clientFilterFactoryClass)
@@ -845,7 +879,17 @@ final class Generator {
                         .addStatement("return new $T($L, $L())", defaultClientClass, factory, supportedMessageCodings)
                         .build())
                 .addMethod(methodBuilder("newFilter")
+                        .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                        " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                        " is necessary, then performing that logic can be done in the particular" +
+                                        " {@link $T client implementation}. Please use" +
+                                        " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                        " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                        " use case." + lineSeparator(),
+                                StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                                StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
                         .addModifiers(PROTECTED)
+                        .addAnnotation(Deprecated.class)
                         .addAnnotation(Override.class)
                         .returns(state.clientFilterClass)
                         .addParameter(state.clientClass, client, FINAL)

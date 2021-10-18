@@ -20,7 +20,15 @@ package io.servicetalk.grpc.api;
  *
  * @param <Filter> Type for client filter
  * @param <FilterableClient> Type of filterable client.
+ * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+ * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+ * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+ * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+ * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+ * if HTTP filters are acceptable in your use case.
  */
+@Deprecated
 public interface GrpcClientFilterFactory<Filter extends FilterableClient,
         FilterableClient extends FilterableGrpcClient> {
 
