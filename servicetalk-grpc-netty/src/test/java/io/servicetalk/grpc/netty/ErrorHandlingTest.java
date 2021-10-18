@@ -33,7 +33,6 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -117,10 +116,6 @@ class ErrorHandlingTest {
         HttpFilterThrowsGrpcException,
         HttpFilterEmitsError,
         HttpFilterEmitsGrpcException,
-        FilterThrows,
-        FilterThrowsGrpcException,
-        FilterEmitsError,
-        FilterEmitsGrpcException,
         ServiceThrows,
         ServiceThrowsGrpcException,
         ServiceOperatorThrows,
@@ -163,7 +158,6 @@ class ErrorHandlingTest {
         this.testMode = testMode;
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
         ServiceFactory serviceFactory;
-        TesterService filter = mockTesterService();
         StreamingHttpServiceFilterFactory serviceFilterFactory = IDENTITY_FILTER;
         StreamingHttpClientFilterFactory clientFilterFactory = IDENTITY_CLIENT_FILTER;
         Publisher<TestRequest> requestPublisher = from(TestRequest.newBuilder().build());
@@ -199,22 +193,6 @@ class ErrorHandlingTest {
             case HttpFilterEmitsGrpcException:
                 serviceFilterFactory = new ErrorProducingSvcFilter(false, cannedException);
                 serviceFactory = setupForSuccess();
-                break;
-            case FilterThrows:
-                setupForServiceThrows(filter, DELIBERATE_EXCEPTION);
-                serviceFactory = configureFilter(filter);
-                break;
-            case FilterThrowsGrpcException:
-                setupForServiceThrows(filter, cannedException);
-                serviceFactory = configureFilter(filter);
-                break;
-            case FilterEmitsError:
-                setupForServiceEmitsError(filter, DELIBERATE_EXCEPTION);
-                serviceFactory = configureFilter(filter);
-                break;
-            case FilterEmitsGrpcException:
-                setupForServiceEmitsError(filter, cannedException);
-                serviceFactory = configureFilter(filter);
                 break;
             case ServiceThrows:
                 serviceFactory = setupForServiceThrows(DELIBERATE_EXCEPTION);
@@ -273,15 +251,6 @@ class ErrorHandlingTest {
                                 .executionStrategy(clientStrategy));
         client = clientBuilder.build(new ClientFactory());
         blockingClient = clientBuilder.buildBlocking(new ClientFactory());
-    }
-
-    private ServiceFactory configureFilter(final TesterService filter) {
-        final ServiceFactory serviceFactory;
-        final TesterService service = mockTesterService();
-        serviceFactory = new ServiceFactory(service);
-        serviceFactory.appendServiceFilter(original ->
-                new ErrorSimulatingTesterServiceFilter(original, filter));
-        return serviceFactory;
     }
 
     private ServiceFactory setupForSuccess() {
@@ -598,10 +567,6 @@ class ErrorHandlingTest {
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsError:
             case HttpFilterEmitsGrpcException:
-            case FilterThrows:
-            case FilterThrowsGrpcException:
-            case FilterEmitsError:
-            case FilterEmitsGrpcException:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrows:
@@ -646,10 +611,6 @@ class ErrorHandlingTest {
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsError:
             case HttpFilterEmitsGrpcException:
-            case FilterThrows:
-            case FilterThrowsGrpcException:
-            case FilterEmitsError:
-            case FilterEmitsGrpcException:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrows:
@@ -684,8 +645,6 @@ class ErrorHandlingTest {
             case HttpClientFilterEmitsError:
             case HttpFilterThrows:
             case HttpFilterEmitsError:
-            case FilterThrows:
-            case FilterEmitsError:
             case ServiceThrows:
             case ServiceOperatorThrows:
             case BlockingServiceThrows:
@@ -697,8 +656,6 @@ class ErrorHandlingTest {
             case HttpClientFilterEmitsGrpcException:
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsGrpcException:
-            case FilterEmitsGrpcException:
-            case FilterThrowsGrpcException:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrowsGrpcException:
             case ServiceSecondOperatorThrowsGrpcException:
@@ -709,38 +666,6 @@ class ErrorHandlingTest {
                 return cannedException.status().code();
             default:
                 throw new IllegalArgumentException("Unknown mode: " + testMode);
-        }
-    }
-
-    private static final class ErrorSimulatingTesterServiceFilter extends TesterServiceFilter {
-        private final TesterService simulator;
-
-        ErrorSimulatingTesterServiceFilter(final TesterService original, final TesterService simulator) {
-            super(original);
-            this.simulator = simulator;
-        }
-
-        @Override
-        public Single<TestResponse> test(final GrpcServiceContext ctx, final TestRequest request) {
-            return simulator.test(ctx, request);
-        }
-
-        @Override
-        public Publisher<TestResponse> testBiDiStream(final GrpcServiceContext ctx,
-                                                      final Publisher<TestRequest> request) {
-            return simulator.testBiDiStream(ctx, request);
-        }
-
-        @Override
-        public Publisher<TestResponse> testResponseStream(final GrpcServiceContext ctx,
-                                                          final TestRequest request) {
-            return simulator.testResponseStream(ctx, request);
-        }
-
-        @Override
-        public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,
-                                                      final Publisher<TestRequest> request) {
-            return simulator.testRequestStream(ctx, request);
         }
     }
 

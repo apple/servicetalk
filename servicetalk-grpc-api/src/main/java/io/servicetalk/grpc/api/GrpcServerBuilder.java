@@ -385,10 +385,10 @@ public abstract class GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listen(GrpcBindableService<?, ?, ?>... services) {
-        GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+    public final Single<ServerContext> listen(GrpcBindableService<?>... services) {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                 .map(GrpcBindableService::bindService)
-                .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+                .toArray(GrpcServiceFactory<?>[]::new);
         return listen(factories);
     }
 
@@ -401,7 +401,7 @@ public abstract class GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listen(GrpcServiceFactory<?, ?, ?>... serviceFactories) {
+    public final Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
         return doListen(GrpcServiceFactory.merge(serviceFactories));
     }
 
@@ -415,7 +415,7 @@ public abstract class GrpcServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenAndAwait(GrpcServiceFactory<?, ?, ?>... serviceFactories) throws Exception {
+    public final ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
         return awaitResult(listen(serviceFactories).toFuture());
     }
 
@@ -429,10 +429,10 @@ public abstract class GrpcServerBuilder {
       * throws an {@link Exception} if the server could not be started.
       * @throws Exception if the server could not be started.
       */
-     public final ServerContext listenAndAwait(GrpcBindableService<?, ?, ?>... services) throws Exception {
-         GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+     public final ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
+         GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                  .map(GrpcBindableService::bindService)
-                 .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+                 .toArray(GrpcServiceFactory<?>[]::new);
          return listenAndAwait(factories);
      }
 
@@ -445,7 +445,7 @@ public abstract class GrpcServerBuilder {
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      */
-    protected abstract Single<ServerContext> doListen(GrpcServiceFactory<?, ?, ?> serviceFactory);
+    protected abstract Single<ServerContext> doListen(GrpcServiceFactory<?> serviceFactory);
 
     /**
      * Append the filter to the chain of filters used to decorate the service used by this builder.

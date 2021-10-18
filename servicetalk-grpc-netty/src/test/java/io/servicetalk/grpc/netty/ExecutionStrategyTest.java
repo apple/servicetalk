@@ -27,8 +27,6 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
-import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ServerContext;
@@ -250,41 +248,6 @@ class ExecutionStrategyTest {
         }
     }
 
-    private enum FilterConfiguration {
-        NO_FILTER {
-            @Override
-            void appendServiceFilter(final ServiceFactory serviceFactory) {
-                // noop
-            }
-        },
-        DEFAULT_FILTER {
-            @Override
-            void appendServiceFilter(final ServiceFactory serviceFactory) {
-                // This filter doesn't do anything, it just delegates, but we want to verify that presence of the filter
-                // does not break execution strategy configuration
-                serviceFactory.appendServiceFilter(TesterServiceFilter::new);
-            }
-        },
-        ANNOTATED_FILTER {
-            @Override
-            void appendServiceFilter(final ServiceFactory serviceFactory) {
-                // This filter wraps the service with annotated class as an attempt to modify route's execution strategy
-                // for the original service. We want to make sure that this annotation will be ignored
-                serviceFactory.appendServiceFilter(ServiceFilterWithExecutionStrategy::new);
-            }
-        };
-
-        abstract void appendServiceFilter(ServiceFactory serviceFactory);
-
-        @io.servicetalk.router.api.RouteExecutionStrategy(id = "filter")
-        private static final class ServiceFilterWithExecutionStrategy extends TesterServiceFilter {
-
-            ServiceFilterWithExecutionStrategy(final TesterService delegate) {
-                super(delegate);
-            }
-        }
-    }
-
     @Nullable
     private ContextExecutionStrategy contextStrategy;
     @Nullable
@@ -298,15 +261,13 @@ class ExecutionStrategyTest {
 
     private void setUp(ContextExecutionStrategy contextStrategy,
                        RouteExecutionStrategy routeStrategy,
-                       RouteApi routeApi,
-                       FilterConfiguration filterConfiguration) throws Exception {
+                       RouteApi routeApi) throws Exception {
         this.contextStrategy = contextStrategy;
         this.routeStrategy = routeStrategy;
         this.routeApi = routeApi;
         GrpcServerBuilder builder = GrpcServers.forAddress(localAddress(0));
         contextStrategy.configureContextExecutionStrategy(builder);
         ServiceFactory serviceFactory = routeStrategy.getServiceFactory();
-        filterConfiguration.appendServiceFilter(serviceFactory);
         serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()))
@@ -318,9 +279,7 @@ class ExecutionStrategyTest {
         for (ContextExecutionStrategy builderEs : ContextExecutionStrategy.values()) {
             for (RouteExecutionStrategy routeEs : RouteExecutionStrategy.values()) {
                 for (RouteApi routeApi : RouteApi.values()) {
-                    for (FilterConfiguration filterConfiguration : FilterConfiguration.values()) {
-                        parameters.add(Arguments.of(builderEs, routeEs, routeApi, filterConfiguration));
-                    }
+                    parameters.add(Arguments.of(builderEs, routeEs, routeApi));
                 }
             }
         }
@@ -357,9 +316,8 @@ class ExecutionStrategyTest {
     @MethodSource("data")
     void testRoute(ContextExecutionStrategy contextExecutionStrategy,
                    RouteExecutionStrategy routeStrategy,
-                   RouteApi routeApi,
-                   FilterConfiguration filterConfiguration) throws Exception {
-        setUp(contextExecutionStrategy, routeStrategy, routeApi, filterConfiguration);
+                   RouteApi routeApi) throws Exception {
+        setUp(contextExecutionStrategy, routeStrategy, routeApi);
         Assumptions.assumeFalse(isDeadlockConfig(), "BlockingStreaming + noOffloads = deadlock");
 
         final ThreadInfo threadInfo = parse(routeApi.execute(Objects.requireNonNull(client, "client")));
