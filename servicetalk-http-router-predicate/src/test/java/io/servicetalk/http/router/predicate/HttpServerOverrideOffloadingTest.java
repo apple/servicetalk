@@ -130,7 +130,8 @@ class HttpServerOverrideOffloadingTest {
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory responseFactory) {
-            boolean offloading = ctx.executionContext().executionStrategy() != noOffloadsStrategy();
+            boolean offloading = ctx.executionContext().executionStrategy() != noOffloadsStrategy() ||
+                    defaultStrategy() != usingStrategy;
             boolean expectReadMetaOffload = offloading &&
                     (ctx.executionContext().executionStrategy().isMetadataReceiveOffloaded() ||
                     (null != usingStrategy && usingStrategy.isMetadataReceiveOffloaded()));
@@ -140,19 +141,21 @@ class HttpServerOverrideOffloadingTest {
             boolean expectSendOffload = offloading &&
                     (ctx.executionContext().executionStrategy().isSendOffloaded() ||
                     (null != usingStrategy && usingStrategy.isSendOffloaded()));
-            boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
+            boolean handleOnIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
             invoked.incrementAndGet();
             Processor cp = newCompletableProcessor();
-            if ((!offloading && !onIoThread) || (expectReadMetaOffload && onIoThread)) {
+            if ((!offloading && !handleOnIoThread) || (expectReadMetaOffload && handleOnIoThread)) {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
             toSource(request.payloadBody().beforeOnNext(__ -> {
+                boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
                 if ((!offloading && !onIoThread) || (expectReadDataOffload && onIoThread)) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
                 }
             }).beforeOnComplete(() -> {
+                boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
                 if ((!offloading && !onIoThread) || (expectReadDataOffload && onIoThread)) {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));
@@ -160,6 +163,7 @@ class HttpServerOverrideOffloadingTest {
             }).ignoreElements()).subscribe(cp);
             return succeeded(responseFactory.ok().payloadBody(from("Hello"), appSerializerUtf8FixLen())
                     .transformPayloadBody(p -> p.beforeRequest(__ -> {
+                        boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
                         if ((!offloading && !onIoThread) || (expectSendOffload && onIoThread)) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +
                                     "request-n. Thread: " + currentThread()));

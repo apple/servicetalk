@@ -63,6 +63,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_AGGREGATED;
+import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_STREAMING;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.BLOCKING_AGGREGATED;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -169,7 +170,11 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        assertRouteAndPredicateNotOffloaded();
+        if (routeServiceType != ASYNC_STREAMING) {
+            assertRouteOffloadedAndNotPredicate(GLOBAL_EXECUTOR_NAME_PREFIX);
+        } else {
+            assertRouteAndPredicateNotOffloaded();
+        }
     }
 
     @ParameterizedTest

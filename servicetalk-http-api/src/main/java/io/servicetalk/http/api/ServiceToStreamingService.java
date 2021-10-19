@@ -29,7 +29,7 @@ final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     private final HttpService original;
 
     ServiceToStreamingService(final HttpService original, HttpExecutionStrategyInfluencer influencer) {
-        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+        super(influencedStrategy(influencer, DEFAULT_STRATEGY));
         this.original = requireNonNull(original);
     }
 
