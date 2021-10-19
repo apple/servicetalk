@@ -84,6 +84,7 @@ protobuf {
     all().each { task ->
       task.inputs
           .file(pluginFile)
+          .withNormalizer(ClasspathNormalizer)
           .withPropertyName("servicetalkPluginJar")
           .withPathSensitivity(PathSensitivity.RELATIVE)
 
