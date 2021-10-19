@@ -484,6 +484,16 @@ class ErrorHandlingTest {
 
     @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
     @MethodSource("data")
+    void context(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
+        assertThat(serverContext.executionContext().executionStrategy(), equalTo(serverStrategy));
+        assertThat(client.executionContext().executionStrategy(), equalTo(clientStrategy));
+        assertThat(blockingClient.executionContext().executionStrategy(), equalTo(clientStrategy));
+    }
+
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
     void scalar(TestMode testMode, GrpcExecutionStrategy serverStrategy,
                 GrpcExecutionStrategy clientStrategy) throws Exception {
         setUp(testMode, serverStrategy, clientStrategy);
