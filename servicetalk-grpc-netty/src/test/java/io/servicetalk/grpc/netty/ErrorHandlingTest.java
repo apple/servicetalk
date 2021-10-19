@@ -265,8 +265,10 @@ class ErrorHandlingTest {
         this.requestPublisher = requestPublisher;
         final StreamingHttpServiceFilterFactory filterFactory = serviceFilterFactory;
         serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(builder -> builder.appendServiceFilter(filterFactory))
-                .executionStrategy(serverStrategy).listenAndAwait(serviceFactory);
+                .initializeHttp(builder -> builder
+                        .appendServiceFilter(filterFactory)
+                        .executionStrategy(serverStrategy))
+                .listenAndAwait(serviceFactory);
         final StreamingHttpClientFilterFactory pickedClientFilterFactory = clientFilterFactory;
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 GrpcClients.forAddress(serverHostAndPort(serverContext))
@@ -478,6 +480,16 @@ class ErrorHandlingTest {
         } finally {
             newCompositeCloseable().appendAll(client, serverContext).close();
         }
+    }
+
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
+    void context(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
+        assertThat(serverContext.executionContext().executionStrategy(), equalTo(serverStrategy));
+        assertThat(client.executionContext().executionStrategy(), equalTo(clientStrategy));
+        assertThat(blockingClient.executionContext().executionStrategy(), equalTo(clientStrategy));
     }
 
     @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")

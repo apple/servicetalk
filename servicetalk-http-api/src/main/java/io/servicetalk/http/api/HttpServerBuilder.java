@@ -190,7 +190,7 @@ public abstract class HttpServerBuilder {
      * @deprecated Use {@link #drainRequestPayloadBody(boolean)}.
      */
     @Deprecated
-    public final HttpServerBuilder disableDrainingRequestPayloadBody() {
+    public HttpServerBuilder disableDrainingRequestPayloadBody() {
         this.drainRequestPayloadBody = false;
         return this;
     }
@@ -211,7 +211,7 @@ public abstract class HttpServerBuilder {
      * {@link StreamingHttpRequest#payloadBody()}.
      * @return {@code this}.
      */
-    public final HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
+    public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
         this.drainRequestPayloadBody = enable;
         return this;
     }
@@ -246,7 +246,7 @@ public abstract class HttpServerBuilder {
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+    public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
         if (connectionAcceptorFactory == null) {
             connectionAcceptorFactory = factory;
         } else {
@@ -274,7 +274,7 @@ public abstract class HttpServerBuilder {
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+    public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
         requireNonNull(factory);
         serviceFilter = appendFilter(serviceFilter, factory);
         if (!influencerChainBuilder.appendIfInfluencer(factory)) {
@@ -303,7 +303,7 @@ public abstract class HttpServerBuilder {
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+    public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                        final StreamingHttpServiceFilterFactory factory) {
         appendServiceFilter(toConditionalServiceFilterFactory(predicate, factory));
         return this;
@@ -341,7 +341,7 @@ public abstract class HttpServerBuilder {
      * @param strategy {@link HttpExecutionStrategy} to use by this server.
      * @return {@code this}.
      */
-    public final HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
+    public HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
         this.strategy = strategy;
         return this;
     }
@@ -357,7 +357,7 @@ public abstract class HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenAndAwait(final HttpService service) throws Exception {
+    public ServerContext listenAndAwait(final HttpService service) throws Exception {
         return blockingInvocation(listen(service));
     }
 
@@ -372,7 +372,7 @@ public abstract class HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenStreamingAndAwait(final StreamingHttpService handler) throws Exception {
+    public ServerContext listenStreamingAndAwait(final StreamingHttpService handler) throws Exception {
         return blockingInvocation(listenStreaming(handler));
     }
 
@@ -387,7 +387,7 @@ public abstract class HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenBlockingAndAwait(final BlockingHttpService service) throws Exception {
+    public ServerContext listenBlockingAndAwait(final BlockingHttpService service) throws Exception {
         return blockingInvocation(listenBlocking(service));
     }
 
@@ -402,7 +402,7 @@ public abstract class HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenBlockingStreamingAndAwait(
+    public ServerContext listenBlockingStreamingAndAwait(
             final BlockingStreamingHttpService handler) throws Exception {
         return blockingInvocation(listenBlockingStreaming(handler));
     }
@@ -417,7 +417,7 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listen(final HttpService service) {
+    public Single<ServerContext> listen(final HttpService service) {
         influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
@@ -432,7 +432,7 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+    public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
         return listenForService(service, strategy);
     }
 
@@ -446,7 +446,7 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+    public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
         influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
@@ -461,7 +461,7 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+    public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
