@@ -84,10 +84,10 @@ class KeepAliveTest {
                        final Duration idleTimeout) throws Exception {
         this.idleTimeoutMillis = idleTimeout.toMillis();
         GrpcServerBuilder serverBuilder = forAddress(localAddress(0))
-                .executor(SERVER_CTX.executor())
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy())
                 .initializeHttp(builder -> {
+                    builder.executor(SERVER_CTX.executor())
+                            .ioExecutor(SERVER_CTX.ioExecutor())
+                            .executionStrategy(defaultStrategy());
                     if (!keepAlivesFromClient) {
                         builder.protocols(h2Config(keepAliveIdleFor));
                     } else {
