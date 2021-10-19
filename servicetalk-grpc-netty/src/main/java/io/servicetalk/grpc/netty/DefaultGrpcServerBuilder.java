@@ -395,6 +395,14 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         }
 
         @Override
+        protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
+                                                 final StreamingHttpService service,
+                                                 final HttpExecutionStrategy strategy,
+                                                 final boolean drainRequestPayloadBody) {
+            throw new UnsupportedOperationException("This delegate builder does not create the ServerContext");
+        }
+
+        @Override
         public HttpServerBuilder executor(final Executor executor) {
             contextBuilder.executor(executor);
             return delegate.executor(executor);
@@ -468,14 +476,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         @Override
         public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
             return delegate.allowDropRequestTrailers(allowDrop);
-        }
-
-        @Override
-        protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
-                                                 final StreamingHttpService service,
-                                                 final HttpExecutionStrategy strategy,
-                                                 final boolean drainRequestPayloadBody) {
-            throw new UnsupportedOperationException("This delegate builder does not create the ServerContext");
         }
 
         @Override
