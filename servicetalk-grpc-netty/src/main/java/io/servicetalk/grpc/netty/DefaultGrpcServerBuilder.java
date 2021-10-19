@@ -405,30 +405,35 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         @Override
         public HttpServerBuilder executor(final Executor executor) {
             contextBuilder.executor(executor);
-            return delegate.executor(executor);
+            delegate.executor(executor);
+            return this;
         }
 
         @Override
         public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
             contextBuilder.ioExecutor(ioExecutor);
-            return delegate.ioExecutor(ioExecutor);
+            delegate.ioExecutor(ioExecutor);
+            return this;
         }
 
         @Override
         public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
             contextBuilder.executionStrategy(strategy);
-            return delegate.executionStrategy(strategy);
+            delegate.executionStrategy(strategy);
+            return this;
         }
 
         @Override
         public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
             contextBuilder.bufferAllocator(allocator);
-            return delegate.bufferAllocator(allocator);
+            delegate.bufferAllocator(allocator);
+            return this;
         }
 
         @Override
         public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
-            return delegate.protocols(protocols);
+            delegate.protocols(protocols);
+            return this;
         }
 
         @Override
@@ -438,80 +443,95 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
         @Override
         public HttpServerBuilder sslConfig(final ServerSslConfig config) {
-            return delegate.sslConfig(config);
+            delegate.sslConfig(config);
+            return this;
         }
 
         @Override
         public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig,
                                            final Map<String, ServerSslConfig> sniMap) {
-            return delegate.sslConfig(defaultConfig, sniMap);
+            delegate.sslConfig(defaultConfig, sniMap);
+            return this;
         }
 
         @Override
         public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
-            return delegate.socketOption(option, value);
+            delegate.socketOption(option, value);
+            return this;
         }
 
         @Override
         public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-            return delegate.listenSocketOption(option, value);
+            delegate.listenSocketOption(option, value);
+            return this;
         }
 
         @Override
         public HttpServerBuilder enableWireLogging(final String loggerName) {
-            return delegate.enableWireLogging(loggerName);
+            delegate.enableWireLogging(loggerName);
+            return this;
         }
 
         @Override
         public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                    final BooleanSupplier logUserData) {
-            return delegate.enableWireLogging(loggerName, logLevel, logUserData);
+            delegate.enableWireLogging(loggerName, logLevel, logUserData);
+            return this;
         }
 
         @Override
         public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
-            return delegate.transportObserver(transportObserver);
+            delegate.transportObserver(transportObserver);
+            return this;
         }
 
         @Override
         public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
-            return delegate.allowDropRequestTrailers(allowDrop);
+            delegate.allowDropRequestTrailers(allowDrop);
+            return this;
         }
 
         @Override
         public HttpServerBuilder backlog(final int backlog) {
-            return delegate.backlog(backlog);
+            delegate.backlog(backlog);
+            return this;
         }
 
         @Override
         public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
-            return delegate.lifecycleObserver(lifecycleObserver);
+            delegate.lifecycleObserver(lifecycleObserver);
+            return this;
         }
 
         @Override
         public HttpServerBuilder disableDrainingRequestPayloadBody() {
-            return delegate.disableDrainingRequestPayloadBody();
+            delegate.disableDrainingRequestPayloadBody();
+            return this;
         }
 
         @Override
         public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
-            return delegate.drainRequestPayloadBody(enable);
+            delegate.drainRequestPayloadBody(enable);
+            return this;
         }
 
         @Override
         public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-            return delegate.appendConnectionAcceptorFilter(factory);
+            delegate.appendConnectionAcceptorFilter(factory);
+            return this;
         }
 
         @Override
         public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-            return delegate.appendServiceFilter(factory);
+            delegate.appendServiceFilter(factory);
+            return this;
         }
 
         @Override
         public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                      final StreamingHttpServiceFilterFactory factory) {
-            return delegate.appendServiceFilter(predicate, factory);
+            delegate.appendServiceFilter(predicate, factory);
+            return this;
         }
 
         @Override
