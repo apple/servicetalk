@@ -226,9 +226,8 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {
-        final HttpServerBuilder httpServerBuilder = httpServerBuilderSupplier.get();
         final ExecutionContextInterceptorHttpServerBuilder interceptor =
-                new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilder);
+                new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
 
         appendCatchAllFilter(interceptor);
 
@@ -396,6 +395,30 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         }
 
         @Override
+        public HttpServerBuilder executor(final Executor executor) {
+            contextBuilder.executor(executor);
+            return delegate.executor(executor);
+        }
+
+        @Override
+        public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
+            contextBuilder.ioExecutor(ioExecutor);
+            return delegate.ioExecutor(ioExecutor);
+        }
+
+        @Override
+        public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+            contextBuilder.executionStrategy(strategy);
+            return delegate.executionStrategy(strategy);
+        }
+
+        @Override
+        public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
+            contextBuilder.bufferAllocator(allocator);
+            return delegate.bufferAllocator(allocator);
+        }
+
+        @Override
         public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
             return delegate.protocols(protocols);
         }
@@ -448,18 +471,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         }
 
         @Override
-        public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
-            contextBuilder.ioExecutor(ioExecutor);
-            return delegate.ioExecutor(ioExecutor);
-        }
-
-        @Override
-        public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
-            contextBuilder.bufferAllocator(allocator);
-            return delegate.bufferAllocator(allocator);
-        }
-
-        @Override
         protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
                                                  final StreamingHttpService service,
                                                  final HttpExecutionStrategy strategy,
@@ -475,12 +486,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         @Override
         public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
             return delegate.lifecycleObserver(lifecycleObserver);
-        }
-
-        @Override
-        public HttpServerBuilder executor(final Executor executor) {
-            contextBuilder.executor(executor);
-            return delegate.executor(executor);
         }
 
         @Override
@@ -507,12 +512,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                      final StreamingHttpServiceFilterFactory factory) {
             return delegate.appendServiceFilter(predicate, factory);
-        }
-
-        @Override
-        public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
-            contextBuilder.executionStrategy(strategy);
-            return delegate.executionStrategy(strategy);
         }
 
         @Override
