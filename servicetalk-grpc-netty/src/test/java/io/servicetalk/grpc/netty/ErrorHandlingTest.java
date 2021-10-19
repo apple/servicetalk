@@ -263,8 +263,10 @@ class ErrorHandlingTest {
         this.requestPublisher = requestPublisher;
         final StreamingHttpServiceFilterFactory filterFactory = serviceFilterFactory;
         serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(builder -> builder.appendServiceFilter(filterFactory))
-                .executionStrategy(serverStrategy).listenAndAwait(serviceFactory);
+                .initializeHttp(builder -> builder
+                        .appendServiceFilter(filterFactory)
+                        .executionStrategy(serverStrategy))
+                .listenAndAwait(serviceFactory);
         final StreamingHttpClientFilterFactory pickedClientFilterFactory = clientFilterFactory;
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 GrpcClients.forAddress(serverHostAndPort(serverContext))

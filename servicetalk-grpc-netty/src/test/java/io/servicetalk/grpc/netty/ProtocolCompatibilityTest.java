@@ -1061,9 +1061,18 @@ class ProtocolCompatibilityTest {
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode,
                                                               final boolean ssl,
                                                               @Nullable final Duration timeout) {
+        return serviceTalkServerBuilder(errorMode, ssl, timeout, b -> {
+            // no-op
+        });
+    }
+
+    private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode,
+                                                              final boolean ssl,
+                                                              @Nullable final Duration timeout,
+                                                              GrpcServerBuilder.HttpInitializer initializer) {
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(builder -> {
+                .initializeHttp(((GrpcServerBuilder.HttpInitializer) builder -> {
                     builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -1081,7 +1090,7 @@ class ProtocolCompatibilityTest {
                         builder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                                 DefaultTestCerts::loadServerKey).provider(OPENSSL).build());
                     }
-                });
+                }).append(initializer));
         if (null != timeout) {
             serverBuilder.defaultTimeout(timeout);
         }
@@ -1317,9 +1326,9 @@ class ProtocolCompatibilityTest {
             }
         });
 
-        final ServerContext serverContext = serviceTalkServerBuilder(errorMode, ssl, timeout)
-                .executionStrategy(strategy)
-                .listenAndAwait(serviceFactory);
+        final ServerContext serverContext =
+                serviceTalkServerBuilder(errorMode, ssl, timeout, b -> b.executionStrategy(strategy))
+                        .listenAndAwait(serviceFactory);
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
