@@ -107,27 +107,27 @@ class ExecutionStrategyTest {
         CUSTOM_STRATEGY {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(customStrategyBuilder().offloadAll().build());
+                builder.initializeHttp(b -> b.executionStrategy(customStrategyBuilder().offloadAll().build()));
             }
         },
         CUSTOM_EXECUTOR {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executor(CONTEXT_EXEC.executor());
+                builder.initializeHttp(b -> b.executor(CONTEXT_EXEC.executor()));
             }
         },
         CUSTOM_EXECUTOR_STRATEGY {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder
+                builder.initializeHttp(b -> b
                         .executor(CONTEXT_EXEC.executor())
-                        .executionStrategy(customStrategyBuilder().offloadAll().build());
+                        .executionStrategy(customStrategyBuilder().offloadAll().build()));
             }
         },
         NO_OFFLOADS {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder.executionStrategy(noOffloadsStrategy());
+                builder.initializeHttp(b -> b.executionStrategy(noOffloadsStrategy()));
             }
         };
 

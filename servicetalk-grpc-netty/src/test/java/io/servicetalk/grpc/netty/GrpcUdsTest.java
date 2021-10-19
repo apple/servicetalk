@@ -59,7 +59,7 @@ class GrpcUdsTest {
         String name = "foo";
         String expectedResponse = greetingPrefix + name;
         try (ServerContext serverContext = forAddress(newSocketAddress())
-                .ioExecutor(ioExecutor)
+                .initializeHttp(builder -> builder.ioExecutor(ioExecutor))
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())

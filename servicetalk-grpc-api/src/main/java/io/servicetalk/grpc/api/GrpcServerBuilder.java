@@ -349,32 +349,60 @@ public abstract class GrpcServerBuilder {
      *
      * @param executor {@link Executor} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link HttpServerBuilder#executor(Executor)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
-    public abstract GrpcServerBuilder executor(Executor executor);
+    @Deprecated
+    public GrpcServerBuilder executor(Executor executor) {
+        throw new UnsupportedOperationException("Method executor is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link IoExecutor} to be used by this server.
      *
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link HttpServerBuilder#ioExecutor(IoExecutor)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
-    public abstract GrpcServerBuilder ioExecutor(IoExecutor ioExecutor);
+    @Deprecated
+    public GrpcServerBuilder ioExecutor(IoExecutor ioExecutor) {
+        throw new UnsupportedOperationException("Method ioExecutor is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.
      *
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link HttpServerBuilder#bufferAllocator(BufferAllocator)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
-    public abstract GrpcServerBuilder bufferAllocator(BufferAllocator allocator);
+    @Deprecated
+    public GrpcServerBuilder bufferAllocator(BufferAllocator allocator) {
+        throw new UnsupportedOperationException("Method bufferAllocator is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the {@link HttpExecutionStrategy} to be used by this server.
      *
      * @param strategy {@link HttpExecutionStrategy} to use by this server.
      * @return {@code this}.
+     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
+     * {@link HttpServerBuilder#executionStrategy(HttpExecutionStrategy)}
+     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
+     * functional interface.
      */
-    public abstract GrpcServerBuilder executionStrategy(GrpcExecutionStrategy strategy);
+    @Deprecated
+    public GrpcServerBuilder executionStrategy(GrpcExecutionStrategy strategy) {
+        throw new UnsupportedOperationException("Method executionStrategy is not supported by " + getClass().getName());
+    }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
