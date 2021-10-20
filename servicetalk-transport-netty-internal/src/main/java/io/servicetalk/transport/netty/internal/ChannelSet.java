@@ -141,14 +141,14 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     return;
                 }
 
-                CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
+                CompositeCloseable closeable = newCompositeCloseable();
 
                 for (final Channel channel : channelMap.values()) {
                     Attribute<PrivilegedListenableAsyncCloseable> closeableAttribute =
                             channel.attr(CHANNEL_CLOSEABLE_KEY);
                     PrivilegedListenableAsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
                     if (null != channelCloseable) {
-                        // Upon shutdown of the set, we will close all live channels. If close of individual hannels
+                        // Upon shutdown of the set, we will close all live channels. If close of individual channels
                         // are offloaded, then this would trigger a surge in threads required to offload these closures.
                         // Here we assume that if there is any offloading required, it is done by offloading the
                         // Completable returned by closeAsyncGracefully() hence offloading each channel is not required.
@@ -169,6 +169,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                         channel.close();
                     }
                 }
+                closeable.append(() -> onClose);
                 toSource(closeable.closeAsyncGracefully()).subscribe(subscriber);
             }
         };
