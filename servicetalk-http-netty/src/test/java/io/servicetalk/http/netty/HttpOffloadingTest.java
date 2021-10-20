@@ -68,10 +68,6 @@ import static java.lang.Thread.currentThread;
 
 class HttpOffloadingTest {
 
-    static {
-        AsyncContext.disable();
-    }
-
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @RegisterExtension
