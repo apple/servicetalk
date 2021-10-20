@@ -79,14 +79,18 @@ public final class AsyncContext {
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
      * @param value the value to put.
      * @param <T>   The type of object associated with {@code key}.
+     * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
+     * also indicate the value associated value with {@code key} is {@code null} (if {@code null} values are supported
+     * by the implementation).
      * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
      * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
      * implementation.
      * @see AsyncContextMap#put(AsyncContextMap.Key, Object)
      */
-    public static <T> void put(AsyncContextMap.Key<T> key, @Nullable T value) {
-        current().put(key, value);
+    @Nullable
+    public static <T> T put(AsyncContextMap.Key<T> key, @Nullable T value) {
+        return current().put(key, value);
     }
 
     /**
@@ -108,25 +112,30 @@ public final class AsyncContext {
     /**
      * Convenience method to remove a key/value pair from the current context.
      *
+     * @param <T> The type of object associated with {@code key}.
      * @param key The key to remove.
+     * @return the previous value associated with {@code key}, or {@code null} if there was none. A {@code null}
+     * value may also indicate there was a previous value which was {@code null}.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
      * implementation.
      * @see AsyncContextMap#remove(AsyncContextMap.Key)
      */
-    public static void remove(AsyncContextMap.Key<?> key) {
-        current().remove(key);
+    @Nullable
+    public static <T> T remove(AsyncContextMap.Key<T> key) {
+        return current().remove(key);
     }
 
     /**
      * Convenience method to remove all the key/value pairs from the current context.
      *
      * @param entries A {@link Iterable} which contains all the keys to remove.
+     * @return {@code true} if this map has changed as a result of this operation.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
      * implementation.
      * @see AsyncContextMap#removeAll(Iterable)
      */
-    public static void removeAll(Iterable<AsyncContextMap.Key<?>> entries) {
-        current().removeAll(entries);
+    public static boolean removeAll(Iterable<AsyncContextMap.Key<?>> entries) {
+        return current().removeAll(entries);
     }
 
     /**
