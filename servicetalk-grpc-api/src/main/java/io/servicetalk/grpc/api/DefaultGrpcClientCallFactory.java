@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
 import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
@@ -51,6 +50,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_PROTO_CONTENT_TYPE;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {

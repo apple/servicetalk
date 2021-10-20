@@ -52,8 +52,13 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
         this.routes = routes;
     }
 
+    /**
+     * Convert multiple {@link GrpcServiceFactory factories} into a single instance.
+     * @param factories instanes of {@link GrpcServiceFactory} to merge.
+     * @return An aggregate {@link GrpcServiceFactory}.
+     */
     @SuppressWarnings("unchecked")
-    static GrpcServiceFactory<?, ?, ?> merge(final GrpcServiceFactory<?, ?, ?>... factories) {
+    public static GrpcServiceFactory<?, ?, ?> merge(final GrpcServiceFactory<?, ?, ?>... factories) {
         if (factories.length == 1) {
             return factories[0];
         }

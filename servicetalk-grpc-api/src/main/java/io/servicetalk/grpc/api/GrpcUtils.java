@@ -72,6 +72,14 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_ACCEPT_ENCODING_KEY;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE_PREFIX;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_MESSAGE_ENCODING_KEY;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_CODE_TRAILER;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_DETAILS_TRAILER;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_MESSAGE_TRAILER;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static io.servicetalk.http.api.HttpHeaderNames.TE;
@@ -83,16 +91,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
-    private static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
-    static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
-    static final CharSequence GRPC_CONTENT_TYPE = newAsciiString(GRPC_CONTENT_TYPE_PREFIX);
-    private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
-    private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
-    private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
-    // TODO (nkant): add project version
-    private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
-    private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
-    private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 

@@ -41,11 +41,11 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.compressors;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
 import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_PROTO_CONTENT_TYPE;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getAndValidateRouteExecutionStrategyAnnotationIfPresent;
 import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
