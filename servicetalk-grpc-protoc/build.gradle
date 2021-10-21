@@ -73,15 +73,21 @@ protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:$protobufVersion"
   }
+  def pluginFile = file("${buildExecutable.destinationDir}/$grpcPluginUberJarName")
   // Used for testing
   plugins {
     servicetalk_grpc {
-      path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
-                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+      path = pluginFile
     }
   }
   generateProtoTasks {
     all().each { task ->
+      task.inputs
+          .file(pluginFile)
+          .withNormalizer(ClasspathNormalizer)
+          .withPropertyName("servicetalkPluginJar")
+          .withPathSensitivity(PathSensitivity.RELATIVE)
+
       if (task.isTest) {
         task.dependsOn(buildExecutable)
       }
