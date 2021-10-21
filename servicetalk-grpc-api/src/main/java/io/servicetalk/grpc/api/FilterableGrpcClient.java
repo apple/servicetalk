@@ -19,7 +19,15 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 /**
  * A client to a <a href="https://www.grpc.io">gRPC</a> service that supports filtering.
+ * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+ * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+ * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+ * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+ * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+ * if HTTP filters are acceptable in your use case.
  */
+@Deprecated
 public interface FilterableGrpcClient extends ListenableAsyncCloseable {
 
     /**
