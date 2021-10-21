@@ -27,11 +27,9 @@ final class Types {
     private static final String concurrentPkg = basePkg + ".concurrent";
     private static final String concurrentApiPkg = basePkg + ".concurrent.api";
     private static final String grpcBasePkg = basePkg + ".grpc";
-    private static final String httpBasePkg = basePkg + ".http";
     private static final String encodingBasePkg = basePkg + ".encoding";
     private static final String encodingApiPkg = encodingBasePkg + ".api";
     private static final String grpcApiPkg = grpcBasePkg + ".api";
-    private static final String httpApiPkg = httpBasePkg + ".api";
     private static final String grpcRoutesFqcn = grpcApiPkg + ".GrpcRoutes";
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
     private static final String routerApiPkg = basePkg + ".router.api";
@@ -54,23 +52,13 @@ final class Types {
     static final ClassName Publisher = bestGuess(concurrentApiPkg + ".Publisher");
     static final ClassName Single = bestGuess(concurrentApiPkg + ".Single");
 
-    static final ClassName StreamingHttpServiceFilterFactory =
-            bestGuess(httpApiPkg + ".StreamingHttpServiceFilterFactory");
-    static final ClassName StreamingHttpClientFilterFactory =
-            bestGuess(httpApiPkg + ".StreamingHttpClientFilterFactory");
-    static final ClassName HttpServerBuilder = bestGuess(httpApiPkg + ".HttpServerBuilder");
-    static final ClassName SingleAddressHttpClientBuilder = bestGuess(httpApiPkg + ".SingleAddressHttpClientBuilder");
-
     static final ClassName BlockingGrpcClient = bestGuess(grpcApiPkg + ".BlockingGrpcClient");
     static final ClassName BlockingGrpcService = bestGuess(grpcApiPkg + ".BlockingGrpcService");
     static final ClassName GrpcClientMetadata = bestGuess(grpcApiPkg + ".GrpcClientMetadata");
     static final ClassName DefaultGrpcClientMetadata = bestGuess(grpcApiPkg + ".DefaultGrpcClientMetadata");
     static final ClassName GrpcClient = bestGuess(grpcApiPkg + ".GrpcClient");
-    static final ClassName GrpcClientBuilder = bestGuess(grpcApiPkg + ".GrpcClientBuilder");
     static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
     static final ClassName GrpcClientFactory = bestGuess(grpcApiPkg + ".GrpcClientFactory");
-    static final ClassName GrpcClientFilterFactory = bestGuess(grpcApiPkg + ".GrpcClientFilterFactory");
-    static final ClassName FilterableGrpcClient = bestGuess(grpcApiPkg + ".FilterableGrpcClient");
     static final ClassName GrpcExecutionContext = bestGuess(grpcApiPkg + ".GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
     static final ClassName GrpcStatusException = bestGuess(grpcApiPkg + ".GrpcStatusException");
@@ -86,12 +74,8 @@ final class Types {
     static final ClassName GrpcSerializationProvider = bestGuess(grpcApiPkg + ".GrpcSerializationProvider");
     static final ClassName GrpcBindableService = bestGuess(grpcApiPkg + ".GrpcBindableService");
     static final ClassName GrpcService = bestGuess(grpcApiPkg + ".GrpcService");
-    static final ClassName GrpcServerBuilder = bestGuess(grpcApiPkg + ".GrpcServerBuilder");
-    static final ClassName GrpcServerBuilderHttpInitializer = bestGuess(GrpcServerBuilder + ".HttpInitializer");
-    static final ClassName GrpcClientBuilderHttpInitializer = bestGuess(GrpcClientBuilder + ".HttpInitializer");
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");
-    static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");
     static final ClassName GrpcMethodDescriptor = bestGuess(grpcApiPkg + ".MethodDescriptor");
     static final ClassName GrpcMethodDescriptors = bestGuess(grpcApiPkg + ".MethodDescriptors");
     static final ParameterizedTypeName GrpcMethodDescriptorCollection = ParameterizedTypeName.get(Collection,

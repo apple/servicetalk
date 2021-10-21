@@ -67,7 +67,6 @@ import static io.servicetalk.grpc.protoc.Types.Completable;
 import static io.servicetalk.grpc.protoc.Types.ContentCodec;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.EmptyBufferDecoderGroup;
-import static io.servicetalk.grpc.protoc.Types.FilterableGrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
@@ -204,7 +203,6 @@ final class Generator {
 
         final List<ClientMetaData> clientMetaDatas;
         final ClassName clientClass;
-        final ClassName filterableClientClass;
         final ClassName blockingClientClass;
 
         private State(final ServiceDescriptorProto serviceProto, String name, int serviceIndex) {
@@ -220,7 +218,6 @@ final class Generator {
             // Filled in during addClientMetadata()
             clientMetaDatas = new ArrayList<>(serviceProto.getMethodCount());
             clientClass = ClassName.bestGuess(sanitizeIdentifier(serviceProto.getName(), false) + "Client");
-            filterableClientClass = clientClass.peerClass("Filterable" + clientClass.simpleName());
             blockingClientClass = clientClass.peerClass(Blocking + clientClass.simpleName());
         }
     }
@@ -771,12 +768,7 @@ final class Generator {
     private TypeSpec.Builder addClientInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder clientSpecBuilder = interfaceBuilder(state.clientClass)
                 .addModifiers(PUBLIC)
-                .addSuperinterface(state.filterableClientClass)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClient, state.blockingClientClass));
-
-        final TypeSpec.Builder filterableClientSpecBuilder = interfaceBuilder(state.filterableClientClass)
-                .addModifiers(PUBLIC)
-                .addSuperinterface(FilterableGrpcClient);
 
         final TypeSpec.Builder blockingClientSpecBuilder = interfaceBuilder(state.blockingClientClass)
                 .addModifiers(PUBLIC)
@@ -793,9 +785,7 @@ final class Generator {
                                     extractJavaDocComments(state, methodIndex, b);
                                 }
                                 return b;
-                            }));
-
-            filterableClientSpecBuilder
+                            }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
@@ -811,9 +801,7 @@ final class Generator {
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
-                            }));
-
-            filterableClientSpecBuilder
+                            }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
@@ -863,9 +851,7 @@ final class Generator {
                             }));
         }
 
-        serviceClassBuilder.addType(clientSpecBuilder.build())
-                .addType(filterableClientSpecBuilder.build())
-                .addType(blockingClientSpecBuilder.build());
+        serviceClassBuilder.addType(clientSpecBuilder.build()).addType(blockingClientSpecBuilder.build());
 
         return serviceClassBuilder;
     }
@@ -873,8 +859,6 @@ final class Generator {
     private TypeSpec.Builder addClientFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final ClassName clientFactoryClass = state.clientClass.peerClass("Client" + Factory);
         final ClassName defaultClientClass = clientFactoryClass.peerClass(Default + state.clientClass.simpleName());
-        final ClassName filterableClientToClientClass = clientFactoryClass.peerClass(
-                state.filterableClientClass.simpleName() + To + state.clientClass.simpleName());
         final ClassName defaultBlockingClientClass = clientFactoryClass.peerClass(Default +
                 state.blockingClientClass.simpleName());
         final ClassName clientToBlockingClientClass = clientFactoryClass.peerClass(state.clientClass.simpleName() + To +
@@ -882,8 +866,7 @@ final class Generator {
 
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)
-                .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass,
-                        state.filterableClientClass))
+                .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass))
                 .addMethod(methodBuilder("newClient")
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
@@ -891,13 +874,6 @@ final class Generator {
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
                         .addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
                                 supportedMessageCodings, bufferDecoderGroup)
-                        .build())
-                .addMethod(methodBuilder("newClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        .addParameter(state.filterableClientClass, client, FINAL)
-                        .addStatement("return new $T($L)", filterableClientToClientClass, client)
                         .build())
                 .addMethod(methodBuilder("newBlockingClient")
                         .addModifiers(PROTECTED)
@@ -908,8 +884,6 @@ final class Generator {
                                 supportedMessageCodings, bufferDecoderGroup)
                         .build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
-                .addType(newFilterableClientToClientClassSpec(state, filterableClientToClientClass,
-                        clientToBlockingClientClass))
                 .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
                 .addType(newClientToBlockingClientClassSpec(state, clientToBlockingClientClass));
 
@@ -1202,52 +1176,6 @@ final class Generator {
                                     supportedMessageCodings, inClass, outClass)
                             .endControlFlow().build());
         }
-    }
-
-    private TypeSpec newFilterableClientToClientClassSpec(final State state,
-                                                          final ClassName filterableClientToClientClass,
-                                                          final ClassName clientToBlockingClientClass) {
-        final TypeSpec.Builder typeSpecBuilder = classBuilder(filterableClientToClientClass)
-                .addModifiers(PRIVATE, STATIC, FINAL)
-                .addSuperinterface(state.clientClass)
-                .addField(state.filterableClientClass, client, PRIVATE, FINAL)
-                .addMethod(constructorBuilder()
-                        .addModifiers(PRIVATE)
-                        .addParameter(state.filterableClientClass, client, FINAL)
-                        .addStatement("this.$L = $L", client, client)
-                        .build())
-                .addMethod(methodBuilder("asBlockingClient")
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T(this)", clientToBlockingClientClass)
-                        .build())
-                .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
-                .addMethod(newDelegatingCompletableMethodSpec(onClose, client))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsync, client))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, client));
-
-        state.clientMetaDatas.forEach(clientMetaData -> typeSpecBuilder
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        // Keep using clientMetaData.className until the class is removed, after it is removed switch to
-                        // DefaultGrpcClientMetadata.INSTANCE. This is because we don't know if the underlying
-                        // ClientCall object was generated with the MethodDescriptor or not, if it wasn't then we need
-                        // to grab the path() from the metadata.
-                        (n, b) -> b.addAnnotation(Override.class)
-                                   .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE,
-                                           request)))
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        (n, b) -> b.addAnnotation(Deprecated.class)
-                                .addAnnotation(Override.class)
-                                .addParameter(clientMetaData.className, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)", client, n, metadata, request)))
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        (n, b) -> b.addAnnotation(Override.class)
-                                .addParameter(GrpcClientMetadata, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)", client, n, metadata, request))));
-
-        return typeSpecBuilder.build();
     }
 
     private TypeSpec newClientToBlockingClientClassSpec(final State state,

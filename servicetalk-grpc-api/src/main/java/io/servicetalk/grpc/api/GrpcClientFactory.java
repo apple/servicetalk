@@ -35,11 +35,9 @@ import static java.util.Objects.requireNonNull;
  * factory represents.
  * @param <BlockingClient> Blocking <a href="https://www.grpc.io">gRPC</a> service that any client
  * built from this builder represents.
- * @param <FilterableClient> Type of filterable client.
  */
 public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient>,
-        BlockingClient extends BlockingGrpcClient<Client>,
-        FilterableClient extends FilterableGrpcClient> {
+        BlockingClient extends BlockingGrpcClient<Client>> {
 
     @Deprecated
     private List<ContentCodec> supportedCodings = emptyList();
@@ -80,7 +78,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link io.servicetalk.encoding.api.BufferEncoder}s and {@link io.servicetalk.encoding.api.BufferDecoderGroup}.
      */
     @Deprecated
-    public GrpcClientFactory<Client, BlockingClient, FilterableClient>
+    public GrpcClientFactory<Client, BlockingClient>
     supportedMessageCodings(List<ContentCodec> codings) {
         this.supportedCodings = unmodifiableList(new ArrayList<>(codings));
         return this;
@@ -105,7 +103,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @param bufferDecoderGroup The supported {@link BufferDecoderGroup} for this client.
      * @return {@code this}
      */
-    public GrpcClientFactory<Client, BlockingClient, FilterableClient> bufferDecoderGroup(
+    public GrpcClientFactory<Client, BlockingClient> bufferDecoderGroup(
             BufferDecoderGroup bufferDecoderGroup) {
         this.bufferDecoderGroup = requireNonNull(bufferDecoderGroup);
         return this;
@@ -129,23 +127,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
     protected abstract Client newClient(GrpcClientCallFactory clientCallFactory);
-
-    /**
-     * Create a new {@link Client} using the passed {@link FilterableClient}.
-     *
-     * @param filterableClient {@link FilterableClient} to create a {@link Client} from.
-     * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
-     * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
-     * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
-     * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
-     * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
-     * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
-     * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
-     * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
-     * if HTTP filters are acceptable in your use case.
-     */
-    @Deprecated
-    protected abstract Client newClient(FilterableClient filterableClient);
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>

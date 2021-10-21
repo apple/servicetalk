@@ -524,12 +524,10 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param clientFactory {@link GrpcClientFactory} to use.
      * @param <Client> <a href="https://www.grpc.io">gRPC</a> service that any client built from
      * this factory represents.
-     * @param <FilterableClient> Type of filterable client.
      *
      * @return A <a href="https://www.grpc.io">gRPC</a> client.
      */
-    public final <Client extends GrpcClient<?>, FilterableClient extends FilterableGrpcClient> Client
-    build(GrpcClientFactory<Client, ?, FilterableClient> clientFactory) {
+    public final <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory) {
         return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
     }
 
@@ -539,13 +537,11 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param clientFactory {@link GrpcClientFactory} to use.
      * @param <BlockingClient> Blocking <a href="https://www.grpc.io">gRPC</a> service that any
      * client built from this builder represents.
-     * @param <FilterableClient> Type of filterable client.
      *
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
      */
-    public final <BlockingClient extends BlockingGrpcClient<?>,
-            FilterableClient extends FilterableGrpcClient> BlockingClient
-    buildBlocking(GrpcClientFactory<?, BlockingClient, FilterableClient> clientFactory) {
+    public final <BlockingClient extends BlockingGrpcClient<?>> BlockingClient
+    buildBlocking(GrpcClientFactory<?, BlockingClient> clientFactory) {
         return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
     }
 
