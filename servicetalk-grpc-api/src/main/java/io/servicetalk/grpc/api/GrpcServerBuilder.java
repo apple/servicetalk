@@ -15,14 +15,10 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLifecycleObserver;
-import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,22 +27,10 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionAcceptorFactory;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfig;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.TransportObserver;
 
-import java.net.SocketOption;
-import java.net.StandardSocketOptions;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
@@ -86,34 +70,12 @@ public abstract class GrpcServerBuilder {
 
     /**
      * Set a function which can configure the underlying {@link HttpServerBuilder} used for the transport layer.
-     * <p>
-     * Please note that this method shouldn't be mixed with the {@link Deprecated} methods of this class as the order
-     * of operations would not be the same as the order in which the calls are made. Please migrate all of the calls
-     * to this method.
      * @param initializer Initializes the underlying HTTP transport builder.
      * @return {@code this}.
      */
     public GrpcServerBuilder initializeHttp(HttpInitializer initializer) {
         throw new UnsupportedOperationException("Initializing the HttpServerBuilder using this method is not yet" +
                 "supported by " + getClass().getName());
-    }
-
-    /**
-     * Configurations of various underlying protocol versions.
-     * <p>
-     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections use
-     * {@link #sslConfig(ServerSslConfig)}.
-     *
-     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#protocols(HttpProtocolConfig...)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder protocols(HttpProtocolConfig... protocols) {
-        throw new UnsupportedOperationException("Method protocols is not supported by " + getClass().getName());
     }
 
     /**
@@ -126,110 +88,6 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
 
     /**
-     * Set the SSL/TLS configuration.
-     * @param config The configuration to use.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#sslConfig(ServerSslConfig)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder sslConfig(ServerSslConfig config) {
-        throw new UnsupportedOperationException("Method sslConfig is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
-     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
-     * SNI hostname doesn't match any values in {@code sniMap}.
-     * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
-     * to provide the corresponding {@link ServerSslConfig}.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#sslConfig(ServerSslConfig, Map)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap) {
-        throw new UnsupportedOperationException("Method sslConfig is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Add a {@link SocketOption} that is applied.
-     *
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return {@code this}.
-     * @see StandardSocketOptions
-     * @see ServiceTalkSocketOptions
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#socketOption(SocketOption, Object)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value) {
-        throw new UnsupportedOperationException("Method socketOption is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return this.
-     * @see StandardSocketOptions
-     * @see ServiceTalkSocketOptions
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#listenSocketOption(SocketOption, Object)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public <T> GrpcServerBuilder listenSocketOption(SocketOption<T> option, T value) {
-        throw new UnsupportedOperationException("Method listenSocketOption is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Enables wire-logging for connections created by this builder.
-     *
-     * @param loggerName The name of the logger to log wire events.
-     * @param logLevel The level to log at.
-     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
-     * data and log only network events.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData) {
-        throw new UnsupportedOperationException("Method enableWireLogging is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Sets a {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#transportObserver(TransportObserver)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder transportObserver(TransportObserver transportObserver) {
-        throw new UnsupportedOperationException("Method transportObserver is not supported by " +
-                getClass().getName());
-    }
-
-    /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
      * <p>
      * Note, if {@link #initializeHttp(HttpInitializer)} is used to configure
@@ -239,170 +97,6 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder lifecycleObserver(GrpcLifecycleObserver lifecycleObserver);
-
-    /**
-     * Configures automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is
-     * not consumed by the service.
-     * <p>
-     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
-     * eventually consume the entire request payload to enable reading of the next request. This is required because
-     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
-     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
-     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
-     * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
-     * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
-     *
-     * @param enable When {@code false} it will disable the automatic consumption of request
-     * {@link StreamingHttpRequest#payloadBody()}.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#drainRequestPayloadBody(boolean)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
-        throw new UnsupportedOperationException("Method drainRequestPayloadBody is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.appendConnectionAcceptorFilter(filter1).appendConnectionAcceptorFilter(filter2).
-     *     appendConnectionAcceptorFilter(filter3)
-     * </pre>
-     * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
-     * be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3
-     * </pre>
-     * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
-     * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#appendConnectionAcceptorFilter(ConnectionAcceptorFactory)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory) {
-        throw new UnsupportedOperationException("Method appendConnectionAcceptorFilter is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Append the filter to the chain of filters used to decorate the service used by this builder.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
-     * </pre>
-     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public final GrpcServerBuilder appendHttpServiceFilter(StreamingHttpServiceFilterFactory factory) {
-        doAppendHttpServiceFilter(factory);
-        return this;
-    }
-
-    /**
-     * Append the filter to the chain of filters used to decorate the service used by this builder, for every request
-     * that passes the provided {@link Predicate}.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public final GrpcServerBuilder appendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                           StreamingHttpServiceFilterFactory factory) {
-        doAppendHttpServiceFilter(predicate, factory);
-        return this;
-    }
-
-    /**
-     * Sets the {@link Executor} to be used by this server.
-     *
-     * @param executor {@link Executor} to use.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#executor(Executor)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder executor(Executor executor) {
-        throw new UnsupportedOperationException("Method executor is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Sets the {@link IoExecutor} to be used by this server.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#ioExecutor(IoExecutor)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder ioExecutor(IoExecutor ioExecutor) {
-        throw new UnsupportedOperationException("Method ioExecutor is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Sets the {@link BufferAllocator} to be used by this server.
-     *
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#bufferAllocator(BufferAllocator)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder bufferAllocator(BufferAllocator allocator) {
-        throw new UnsupportedOperationException("Method bufferAllocator is not supported by " + getClass().getName());
-    }
-
-    /**
-     * Sets the {@link HttpExecutionStrategy} to be used by this server.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use by this server.
-     * @return {@code this}.
-     * @deprecated Call {@link #initializeHttp(HttpInitializer)} and use
-     * {@link HttpServerBuilder#executionStrategy(HttpExecutionStrategy)}
-     * on the {@code builder} instance by implementing {@link HttpInitializer#initialize(HttpServerBuilder)}
-     * functional interface.
-     */
-    @Deprecated
-    public GrpcServerBuilder executionStrategy(GrpcExecutionStrategy strategy) {
-        throw new UnsupportedOperationException("Method executionStrategy is not supported by " + getClass().getName());
-    }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -474,39 +168,6 @@ public abstract class GrpcServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      */
     protected abstract Single<ServerContext> doListen(GrpcServiceFactory<?, ?, ?> serviceFactory);
-
-    /**
-     * Append the filter to the chain of filters used to decorate the service used by this builder.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
-     * </pre>
-     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     */
-    protected abstract void doAppendHttpServiceFilter(StreamingHttpServiceFilterFactory factory);
-
-    /**
-     * Append the filter to the chain of filters used to decorate the service used by this builder, for every request
-     * that passes the provided {@link Predicate}.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     */
-    protected abstract void doAppendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                      StreamingHttpServiceFilterFactory factory);
 
     /**
      * Temporarily method to append "catch-all-exceptions" filter, required until we transition from abstract classes
