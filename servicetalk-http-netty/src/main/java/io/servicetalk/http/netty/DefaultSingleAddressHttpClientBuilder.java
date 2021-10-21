@@ -42,6 +42,9 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.InjectableStreamingClientFilterFactory;
+import io.servicetalk.http.api.LoadBalancerReadinessAware;
+import io.servicetalk.http.api.ServiceDiscoveryStatusAware;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -63,6 +66,8 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -125,6 +130,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private AutoRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
+    private Set<InjectableStreamingClientFilterFactory> injectabledFactories = new HashSet<>();
 
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
@@ -162,6 +168,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         addHostHeaderFallbackFilter = from.addHostHeaderFallbackFilter;
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
+        injectabledFactories = from.injectabledFactories;
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
@@ -243,6 +250,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public StreamingHttpClient buildStreaming() {
         return buildStreaming(copyBuildCtx());
+    }
+
+    private void deferInjectableContextIfNeeded(final Object factory) {
+        if (factory instanceof InjectableStreamingClientFilterFactory) {
+            injectabledFactories.add((InjectableStreamingClientFilterFactory) factory);
+        }
+    }
+
+    private static <U, R> void injectDependencies(
+            final HttpClientBuildContext<U, R> ctx,
+            final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
+        for (final InjectableStreamingClientFilterFactory factory : ctx.builder.injectabledFactories) {
+            injectDependencies(factory, ctx, loadBalancer);
+        }
+    }
+
+    private static <U, R> void injectDependencies(final InjectableStreamingClientFilterFactory factory,
+            final HttpClientBuildContext<U, R> ctx,
+            final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
+        if (factory instanceof LoadBalancerReadinessAware) {
+            ((LoadBalancerReadinessAware) factory).inject(loadBalancer.eventStream());
+        }
+        if (factory instanceof ServiceDiscoveryStatusAware) {
+            ((ServiceDiscoveryStatusAware) factory).inject(ctx.sdStatus);
+        }
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
@@ -328,12 +360,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             }
-
             HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
-
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
                     targetAddress(ctx), executionStrategy, computedStrategy);
-
+            injectDependencies(ctx, lb);
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, computedStrategy);
         } catch (final Throwable t) {
@@ -469,6 +499,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         requireNonNull(factory);
         connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         strategyComputation.add(factory);
+        deferInjectableContextIfNeeded(factory);
         return this;
     }
 
@@ -532,6 +563,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         requireNonNull(factory);
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
+        deferInjectableContextIfNeeded(factory);
         return this;
     }
 

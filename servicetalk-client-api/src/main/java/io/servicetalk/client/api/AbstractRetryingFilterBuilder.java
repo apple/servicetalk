@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,10 @@ import static java.util.Objects.requireNonNull;
  * @param <Builder> the type of builder for retrying filter
  * @param <Filter> the type of retrying filter to build
  * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
- *
  * @see RetryStrategies
+ * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter.
  */
+@Deprecated
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
     private static final Duration FULL_JITTER = ofDays(1024);
@@ -234,7 +235,10 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * A read-only settings for retryable filters.
      *
      * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
+     * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific
+     * filter and builder.
      */
+    @Deprecated
     public static final class ReadOnlyRetryableSettings<Meta> {
 
         private final int maxRetries;

@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
  * returns {@code true} from {@link LoadBalancerReadyEvent#isReady()}.
  */
-final class LoadBalancerReadySubscriber extends DelayedCancellable implements Subscriber<Object> {
+public final class LoadBalancerReadySubscriber extends DelayedCancellable implements Subscriber<Object> {
     @Nullable
     private volatile Processor onHostsAvailable = newCompletableProcessor();
 
@@ -42,7 +42,7 @@ final class LoadBalancerReadySubscriber extends DelayedCancellable implements Su
      * from {@link LoadBalancerReadyEvent#isReady()}, or {@code null} if this event has already been seen and a
      * a {@link LoadBalancerReadyEvent} that returns {@code true} has not been seend.
      */
-    Completable onHostsAvailable() {
+    public Completable onHostsAvailable() {
         Processor onHostsAvailable = this.onHostsAvailable;
         return onHostsAvailable == null ? completed() : fromSource(onHostsAvailable);
     }
