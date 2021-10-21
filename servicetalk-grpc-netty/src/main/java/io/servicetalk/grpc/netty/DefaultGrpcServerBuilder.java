@@ -108,7 +108,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    protected Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
+    protected Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }

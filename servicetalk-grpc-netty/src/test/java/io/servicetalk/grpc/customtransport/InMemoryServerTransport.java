@@ -71,7 +71,7 @@ final class InMemoryServerTransport implements ServerTransport {
     private final Map<String, Route> routeMap;
     private final BufferAllocator allocator;
 
-    InMemoryServerTransport(final BufferAllocator allocator, final GrpcBindableService<?, ?, ?> grpcService)
+    InMemoryServerTransport(final BufferAllocator allocator, final GrpcBindableService<?> grpcService)
             throws NoSuchMethodException, IllegalAccessException {
         this.allocator = requireNonNull(allocator);
         routeMap = new HashMap<>((int) ceil(grpcService.methodDescriptors().size() / 0.75));
@@ -99,11 +99,11 @@ final class InMemoryServerTransport implements ServerTransport {
     private static final class Route {
         private final StreamingDeserializer<?> deserializer;
         private final StreamingSerializer<?> serializer;
-        private final GrpcBindableService<?, ?, ?> grpcService;
+        private final GrpcBindableService<?> grpcService;
         private final MethodHandle methodHandle;
         private final byte methodSignature;
 
-        Route(MethodDescriptor<?, ?> descriptor, final GrpcBindableService<?, ?, ?> grpcService)
+        Route(MethodDescriptor<?, ?> descriptor, final GrpcBindableService<?> grpcService)
                 throws NoSuchMethodException, IllegalAccessException {
             requireNonNull(descriptor);
             this.grpcService = requireNonNull(grpcService);

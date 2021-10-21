@@ -40,9 +40,9 @@ class CustomTransportTest {
     enum ServiceType {
         ASYNC(new AsyncUserService()), BLOCKING(new BlockingUserService());
 
-        final GrpcBindableService<?, ?, ?> grpcService;
+        final GrpcBindableService<?> grpcService;
 
-        ServiceType(GrpcBindableService<?, ?, ?> grpcService) {
+        ServiceType(GrpcBindableService<?> grpcService) {
             this.grpcService = grpcService;
         }
     }

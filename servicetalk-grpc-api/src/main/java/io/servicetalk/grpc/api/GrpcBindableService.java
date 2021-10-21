@@ -21,19 +21,16 @@ import java.util.Collection;
  * A <a href="https://www.grpc.io">gRPC</a> service that can generate {@link GrpcServiceFactory factory} instances bound
  * to itself.
  *
- * @param <F> Filter type
  * @param <S> Service Type
- * @param <FF> FilterFactory type
  */
-public interface GrpcBindableService<F extends S, S extends GrpcService,
-        FF extends GrpcServiceFilterFactory<F, S>> {
+public interface GrpcBindableService<S extends GrpcService> {
 
     /**
      * Return an appropriate service factory bound to this service.
      *
      * @return A service factory bound to this service with other appropriate configuration.
      */
-    GrpcServiceFactory<F, S, FF> bindService();
+    GrpcServiceFactory<S> bindService();
 
     /**
      * Get a {@link Collection} of all {@link MethodDescriptor}s for this service.

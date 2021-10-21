@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestBiDiStreamRpc;
@@ -99,23 +97,6 @@ class GrpcRouterConfigurationTest {
 
         Throwable t = assertThrows(GrpcStatusException.class, () -> client.testRequestStream(singletonList(REQUEST)));
         assertThat(t.getMessage(), equalTo(UNIMPLEMENTED.name()));
-    }
-
-    @Test
-    void testCanNotAppendFilterWithoutImplementingAllRoutes() {
-        Throwable t = assertThrows(IllegalArgumentException.class, () -> startGrpcServer(new ServiceFactory.Builder()
-                .test(DEFAULT_STRATEGY_ASYNC_SERVICE)
-                .build()
-                .appendServiceFilter(delegate -> new TesterProto.Tester.TesterServiceFilter(delegate) {
-                    @Override
-                    public Single<TesterProto.TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
-                        if (request.getName().isEmpty()) {
-                            throw new IllegalArgumentException("Received name can not be empty");
-                        }
-                        return delegate().test(ctx, request);
-                    }
-                })));
-        assertThat(t.getMessage(), startsWith("No routes registered for path"));
     }
 
     @Test
