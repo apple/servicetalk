@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -102,50 +101,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder protocols(final HttpProtocolConfig... protocols) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.protocols(protocols));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(config));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(defaultConfig, sniMap));
-        return this;
-    }
-
-    @Override
-    public <T> GrpcServerBuilder socketOption(final SocketOption<T> option, final T value) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.socketOption(option, value));
-        return this;
-    }
-
-    @Override
-    public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.listenSocketOption(option, value));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
-                                               final BooleanSupplier logUserData) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.enableWireLogging(loggerName, logLevel, logUserData));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.transportObserver(transportObserver));
-        return this;
-    }
-
-    @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
         directCallInitializer = directCallInitializer.append(builder -> builder
                 .lifecycleObserver(new GrpcToHttpLifecycleObserverBridge(lifecycleObserver)));
@@ -153,58 +108,9 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.drainRequestPayloadBody(enable));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.appendConnectionAcceptorFilter(factory));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder executor(final Executor executor) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.executor(executor));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder ioExecutor(final IoExecutor ioExecutor) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.ioExecutor(ioExecutor));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder bufferAllocator(final BufferAllocator allocator) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.bufferAllocator(allocator));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder executionStrategy(final GrpcExecutionStrategy strategy) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.executionStrategy(strategy));
-        return this;
-    }
-
-    @Override
     protected Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
-    }
-
-    @Override
-    protected void doAppendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.appendServiceFilter(factory));
-    }
-
-    @Override
-    protected void doAppendHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                             final StreamingHttpServiceFilterFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.appendServiceFilter(predicate, factory));
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {
