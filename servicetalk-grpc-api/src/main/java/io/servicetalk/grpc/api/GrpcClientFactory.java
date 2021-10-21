@@ -220,7 +220,15 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @param filterableClient {@link FilterableClient} to create a {@link Client} from.
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
+     * @deprecated gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+     * {@link io.servicetalk.http.api.StreamingHttpClientFilterFactory} and if the access to the decoded payload is
+     * necessary, then performing that logic can be done in the particular {@link GrpcClient client implementation}.
+     * Please use {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#appendClientFilter(
+     * io.servicetalk.http.api.StreamingHttpClientFilterFactory)} upon the {@code builder} obtained using
+     * {@link io.servicetalk.grpc.api.GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)}
+     * if HTTP filters are acceptable in your use case.
      */
+    @Deprecated
     protected abstract Client newClient(FilterableClient filterableClient);
 
     /**

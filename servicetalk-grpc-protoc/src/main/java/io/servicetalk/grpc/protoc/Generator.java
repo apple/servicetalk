@@ -885,6 +885,17 @@ final class Generator {
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClient, state.blockingClientClass));
 
         final TypeSpec.Builder filterableClientSpecBuilder = interfaceBuilder(state.filterableClientClass)
+                .addJavadoc(JAVADOC_DEPRECATED +
+                                " gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                " is necessary, then performing that logic can be done in the particular" +
+                                " {@link $T client implementation}. Please use" +
+                                " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                " use case." + lineSeparator(),
+                        StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                        StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                .addAnnotation(Deprecated.class)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(FilterableGrpcClient);
 
@@ -983,7 +994,8 @@ final class Generator {
     private TypeSpec.Builder addClientFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
-                .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                .addJavadoc(JAVADOC_DEPRECATED +
+                                " gRPC Client Filters will be removed in future release of ServiceTalk." +
                                 " We encourage the use of {@link $T} and if the access to the decoded payload" +
                                 " is necessary, then performing that logic can be done in the particular" +
                                 " {@link $T client implementation}. Please use" +
@@ -1017,7 +1029,8 @@ final class Generator {
     private static TypeSpec.Builder addClientFilterFactory(final State state,
                                                            final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.clientFilterFactoryClass)
-                .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                .addJavadoc(JAVADOC_DEPRECATED +
+                                " gRPC Client Filters will be removed in future release of ServiceTalk." +
                                 " We encourage the use of {@link $T} and if the access to the decoded payload" +
                                 " is necessary, then performing that logic can be done in the particular" +
                                 " {@link $T client implementation}. Please use" +
@@ -1050,7 +1063,8 @@ final class Generator {
                 .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass,
                         state.clientFilterClass, state.filterableClientClass, state.clientFilterFactoryClass))
                 .addMethod(methodBuilder("appendClientFilterFactory")
-                        .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                        .addJavadoc(JAVADOC_DEPRECATED +
+                                        " gRPC Client Filters will be removed in future release of ServiceTalk." +
                                         " We encourage the use of {@link $T} and if the access to the decoded payload" +
                                         " is necessary, then performing that logic can be done in the particular" +
                                         " {@link $T client implementation}. Please use" +
@@ -1076,7 +1090,8 @@ final class Generator {
                                 supportedMessageCodings, bufferDecoderGroup)
                         .build())
                 .addMethod(methodBuilder("newFilter")
-                        .addJavadoc("gRPC Client Filters will be removed in future release of ServiceTalk." +
+                        .addJavadoc(JAVADOC_DEPRECATED +
+                                        " gRPC Client Filters will be removed in future release of ServiceTalk." +
                                         " We encourage the use of {@link $T} and if the access to the decoded payload" +
                                         " is necessary, then performing that logic can be done in the particular" +
                                         " {@link $T client implementation}. Please use" +
@@ -1094,6 +1109,17 @@ final class Generator {
                         .addStatement("return $L.create($L)", factory, client)
                         .build())
                 .addMethod(methodBuilder("newClient")
+                        .addJavadoc(JAVADOC_DEPRECATED +
+                                        " gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                        " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                        " is necessary, then performing that logic can be done in the particular" +
+                                        " {@link $T client implementation}. Please use" +
+                                        " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                        " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                        " use case." + lineSeparator(),
+                                StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                                StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                        .addAnnotation(Deprecated.class)
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
                         .returns(state.clientClass)
@@ -1409,6 +1435,17 @@ final class Generator {
                                                           final ClassName filterableClientToClientClass,
                                                           final ClassName clientToBlockingClientClass) {
         final TypeSpec.Builder typeSpecBuilder = classBuilder(filterableClientToClientClass)
+                .addJavadoc(JAVADOC_DEPRECATED +
+                                " gRPC Client Filters will be removed in future release of ServiceTalk." +
+                                " We encourage the use of {@link $T} and if the access to the decoded payload" +
+                                " is necessary, then performing that logic can be done in the particular" +
+                                " {@link $T client implementation}. Please use" +
+                                " {@link $T#appendClientFilter($T)} upon the {@code builder} obtained using" +
+                                " {@link $T#initializeHttp($T)} if HTTP filters are acceptable in your" +
+                                " use case." + lineSeparator(),
+                        StreamingHttpClientFilterFactory, GrpcClient, SingleAddressHttpClientBuilder,
+                        StreamingHttpClientFilterFactory, GrpcClientBuilder, GrpcClientBuilderHttpInitializer)
+                .addAnnotation(Deprecated.class)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(state.clientClass)
                 .addField(state.filterableClientClass, client, PRIVATE, FINAL)
