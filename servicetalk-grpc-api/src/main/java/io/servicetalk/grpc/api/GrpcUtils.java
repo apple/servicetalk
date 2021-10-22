@@ -64,6 +64,14 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingForRaw;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ACCEPT_ENCODING;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_CODE;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_DETAILS;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PREFIX;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
@@ -72,14 +80,6 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_ACCEPT_ENCODING_KEY;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE_PREFIX;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_MESSAGE_ENCODING_KEY;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_CODE_TRAILER;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_DETAILS_TRAILER;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_STATUS_MESSAGE_TRAILER;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static io.servicetalk.http.api.HttpHeaderNames.TE;
@@ -140,10 +140,10 @@ final class GrpcUtils {
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
-            headers.set(GRPC_MESSAGE_ENCODING_KEY, encoding);
+            headers.set(GRPC_MESSAGE_ENCODING, encoding);
         }
         if (acceptedEncoding != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
         }
     }
 
@@ -212,13 +212,13 @@ final class GrpcUtils {
 
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           @Nullable final BufferAllocator allocator) {
-        trailers.set(GRPC_STATUS_CODE_TRAILER, valueOf(status.code().value()));
+        trailers.set(GRPC_STATUS_CODE, valueOf(status.code().value()));
         if (status.description() != null) {
-            trailers.set(GRPC_STATUS_MESSAGE_TRAILER, status.description());
+            trailers.set(GRPC_STATUS_MESSAGE, status.description());
         }
         if (details != null) {
             assert allocator != null;
-            trailers.set(GRPC_STATUS_DETAILS_TRAILER,
+            trailers.set(GRPC_STATUS_DETAILS,
                     newAsciiString(allocator.wrap(Base64.getEncoder().encode(details.toByteArray()))));
         }
     }
@@ -331,7 +331,7 @@ final class GrpcUtils {
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
             throw new GrpcStatus(UNKNOWN, null, "Response does not contain " +
-                    GRPC_STATUS_CODE_TRAILER + " header or trailer").asException();
+                    GRPC_STATUS_CODE + " header or trailer").asException();
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
@@ -342,14 +342,14 @@ final class GrpcUtils {
     static <T> T readGrpcMessageEncodingRaw(final HttpHeaders headers, final T identityEncoder,
                                             final List<T> supportedEncoders,
                                             final Function<T, CharSequence> messageEncodingFunc) {
-        final CharSequence encoding = headers.get(GRPC_MESSAGE_ENCODING_KEY);
+        final CharSequence encoding = headers.get(GRPC_MESSAGE_ENCODING);
         if (encoding == null || contentEqualsIgnoreCase(Identity.identityEncoder().encodingName(), encoding)) {
             return identityEncoder;
         }
         final T result = encodingForRaw(supportedEncoders, messageEncodingFunc, encoding);
         if (result == null) {
             throw GrpcStatusException.of(Status.newBuilder().setCode(UNIMPLEMENTED.value())
-                    .setMessage("Invalid " + GRPC_MESSAGE_ENCODING_KEY + ": " + encoding).build());
+                    .setMessage("Invalid " + GRPC_MESSAGE_ENCODING + ": " + encoding).build());
         }
 
         return result;
@@ -359,7 +359,7 @@ final class GrpcUtils {
                                               final T identityEncoder,
                                               final List<T> supportedEncoders,
                                               final Function<T, CharSequence> messageEncodingFunc) {
-        T result = HeaderUtils.negotiateAcceptedEncodingRaw(headers.get(GRPC_ACCEPT_ENCODING_KEY),
+        T result = HeaderUtils.negotiateAcceptedEncodingRaw(headers.get(GRPC_MESSAGE_ACCEPT_ENCODING),
                 supportedEncoders, messageEncodingFunc);
         return result == null ? identityEncoder : result;
     }
@@ -373,16 +373,16 @@ final class GrpcUtils {
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
-            headers.set(GRPC_MESSAGE_ENCODING_KEY, encoding);
+            headers.set(GRPC_MESSAGE_ENCODING, encoding);
         }
         if (acceptedEncoding != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
         }
     }
 
     @Nullable
     private static GrpcStatusCode extractGrpcStatusCodeFromHeaders(final HttpHeaders headers) {
-        final CharSequence statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
+        final CharSequence statusCode = headers.get(GRPC_STATUS_CODE);
         if (statusCode == null) {
             return null;
         }
@@ -395,13 +395,13 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER));
+        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE));
         return grpcStatus.asException(new StatusSupplier(headers, grpcStatus));
     }
 
     @Nullable
     private static Status getStatusDetails(final HttpHeaders headers) {
-        final CharSequence details = headers.get(GRPC_STATUS_DETAILS_TRAILER);
+        final CharSequence details = headers.get(GRPC_STATUS_DETAILS);
         if (details == null) {
             return null;
         }

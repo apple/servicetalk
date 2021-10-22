@@ -145,7 +145,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      */
-    protected Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
+    private Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }

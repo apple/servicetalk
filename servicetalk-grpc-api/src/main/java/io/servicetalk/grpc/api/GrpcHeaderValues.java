@@ -13,23 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.internal;
+package io.servicetalk.grpc.api;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
-public final class GrpcConstants {
-    public static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
-    public static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
-    public static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
-    public static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
-    public static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
+/**
+ * Common <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC header values</a>.
+ */
+public final class GrpcHeaderValues {
+
+    /**
+     * {@code application/grpc} prefix
+     *
+     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     */
     public static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
+
+    /**
+     * {@code application/grpc+proto} content type
+     *
+     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     */
     public static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
+
+    /**
+     * {@code application/grpc} default content type
+     *
+     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     */
     public static final CharSequence GRPC_CONTENT_TYPE = newAsciiString(GRPC_CONTENT_TYPE_PREFIX);
+
     // TODO (nkant): add project version
+    /**
+     * ServiceTalk specific value for use with {@code server} and {@code user-agent} headers.
+     */
     public static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
 
-    private GrpcConstants() {
+    private GrpcHeaderValues() {
         // No instances.
     }
 }
