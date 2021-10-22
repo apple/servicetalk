@@ -111,28 +111,28 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     @Override
-    public Single<ServerContext> listen(GrpcBindableService<?, ?, ?>... services) {
-        GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+    public Single<ServerContext> listen(GrpcBindableService<?>... services) {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                 .map(GrpcBindableService::bindService)
-                .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+                .toArray(GrpcServiceFactory<?>[]::new);
         return listen(factories);
     }
 
     @Override
-    public Single<ServerContext> listen(GrpcServiceFactory<?, ?, ?>... serviceFactories) {
+    public Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
         return doListen(GrpcServiceFactory.merge(serviceFactories));
     }
 
     @Override
-    public ServerContext listenAndAwait(GrpcServiceFactory<?, ?, ?>... serviceFactories) throws Exception {
+    public ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
         return awaitResult(listen(serviceFactories).toFuture());
     }
 
     @Override
-    public ServerContext listenAndAwait(GrpcBindableService<?, ?, ?>... services) throws Exception {
-        GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+    public ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                 .map(GrpcBindableService::bindService)
-                .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+                .toArray(GrpcServiceFactory<?>[]::new);
         return listenAndAwait(factories);
     }
 
@@ -145,7 +145,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      */
-    private Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
+    private Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }

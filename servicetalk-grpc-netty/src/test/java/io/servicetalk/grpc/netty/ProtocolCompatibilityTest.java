@@ -185,7 +185,6 @@ class ProtocolCompatibilityTest {
         NONE,
         SIMPLE,
         SIMPLE_IN_SERVER_FILTER,
-        SIMPLE_IN_SERVICE_FILTER,
         SIMPLE_IN_RESPONSE,
         STATUS,
         STATUS_IN_SERVER_FILTER,
@@ -411,17 +410,6 @@ class ProtocolCompatibilityTest {
 
     @ParameterizedTest
     @MethodSource("sslStreamingAndCompressionParams")
-    void grpcJavaToServiceTalkErrorViaServiceFilter(final boolean ssl,
-                                                    final boolean streaming,
-                                                    final String compression)
-            throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl, compression, null);
-        final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
-        testGrpcError(client, server, false, streaming, compression);
-    }
-
-    @ParameterizedTest
-    @MethodSource("sslStreamingAndCompressionParams")
     void grpcJavaToServiceTalkErrorViaServerFilter(final boolean ssl,
                                                    final boolean streaming,
                                                    final String compression)
@@ -470,17 +458,6 @@ class ProtocolCompatibilityTest {
         final String compression) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl,
                 noOffloadsStrategy(), compression, null);
-        final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
-        testGrpcError(client, server, true, streaming, compression);
-    }
-
-    @ParameterizedTest
-    @MethodSource("sslStreamingAndCompressionParams")
-    void grpcJavaToServiceTalkErrorWithStatusViaServiceFilter(
-        final boolean ssl, final boolean streaming,
-        final String compression)
-            throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl, compression, null);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testGrpcError(client, server, true, streaming, compression);
     }
@@ -542,17 +519,6 @@ class ProtocolCompatibilityTest {
 
     @ParameterizedTest
     @MethodSource("sslStreamingAndCompressionParams")
-    void serviceTalkToServiceTalkErrorViaServiceFilter(final boolean ssl,
-                                                       final boolean streaming,
-                                                       final String compression)
-            throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl, compression, null);
-        final CompatClient client = serviceTalkClient(server.listenAddress(), ssl, compression, null);
-        testGrpcError(client, server, false, streaming, compression);
-    }
-
-    @ParameterizedTest
-    @MethodSource("sslStreamingAndCompressionParams")
     void serviceTalkToServiceTalkErrorViaServerFilter(final boolean ssl,
                                                       final boolean streaming,
                                                       final String compression)
@@ -569,17 +535,6 @@ class ProtocolCompatibilityTest {
                                                  final String compression)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS, ssl, compression, null);
-        final CompatClient client = serviceTalkClient(server.listenAddress(), ssl, compression, null);
-        testGrpcError(client, server, true, streaming, compression);
-    }
-
-    @ParameterizedTest
-    @MethodSource("sslStreamingAndCompressionParams")
-    void serviceTalkToServiceTalkErrorWithStatusViaServiceFilter(
-        final boolean ssl, final boolean streaming,
-        final String compression)
-            throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl, compression, null);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl, compression, null);
         testGrpcError(client, server, true, streaming, compression);
     }
@@ -1289,46 +1244,10 @@ class ProtocolCompatibilityTest {
                 .serverStreamingCall(strategy, compatService)
                 .build();
 
-        serviceFactory.appendServiceFilter(delegate -> new Compat.CompatServiceFilter(delegate) {
-            @Override
-            public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
-                                                                        final Publisher<CompatRequest> req) {
-                maybeThrowFromFilter();
-                return delegate().bidirectionalStreamingCall(ctx, req);
-            }
-
-            @Override
-            public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
-                                                              final Publisher<CompatRequest> req) {
-                maybeThrowFromFilter();
-                return delegate().clientStreamingCall(ctx, req);
-            }
-
-            @Override
-            public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
-                                                                 final CompatRequest req) {
-                maybeThrowFromFilter();
-                return delegate().serverStreamingCall(ctx, req);
-            }
-
-            @Override
-            public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
-                maybeThrowFromFilter();
-                return delegate().scalarCall(ctx, req);
-            }
-
-            private void maybeThrowFromFilter() {
-                if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER) {
-                    throwGrpcStatusException();
-                } else if (errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
-                    throwGrpcStatusExceptionWithStatus();
-                }
-            }
-        });
-
         final ServerContext serverContext =
                 serviceTalkServerBuilder(errorMode, ssl, timeout, b -> b.executionStrategy(strategy))
                         .listenAndAwait(serviceFactory);
+
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 

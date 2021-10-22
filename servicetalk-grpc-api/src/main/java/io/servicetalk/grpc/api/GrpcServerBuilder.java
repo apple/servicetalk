@@ -89,7 +89,7 @@ public interface GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listen(GrpcBindableService<?, ?, ?>... services);
+    Single<ServerContext> listen(GrpcBindableService<?>... services);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -100,7 +100,7 @@ public interface GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listen(GrpcServiceFactory<?, ?, ?>... serviceFactories);
+    Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -112,7 +112,7 @@ public interface GrpcServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    ServerContext listenAndAwait(GrpcServiceFactory<?, ?, ?>... serviceFactories) throws Exception;
+    ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception;
 
      /**
       * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -124,5 +124,5 @@ public interface GrpcServerBuilder {
       * throws an {@link Exception} if the server could not be started.
       * @throws Exception if the server could not be started.
       */
-     ServerContext listenAndAwait(GrpcBindableService<?, ?, ?>... services) throws Exception;
+     ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception;
 }

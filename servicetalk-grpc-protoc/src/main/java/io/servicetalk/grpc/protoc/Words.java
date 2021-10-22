@@ -16,8 +16,6 @@
 package io.servicetalk.grpc.protoc;
 
 final class Words {
-    static final String append = "append";
-    static final String appendServiceFilter = append + "ServiceFilter";
     static final String bind = "bind";
     static final String builder = "builder";
     static final String client = "client";
@@ -28,8 +26,6 @@ final class Words {
     static final String closeGracefully = close + "Gracefully";
     static final String executionContext = "executionContext";
     static final String ctx = "ctx";
-    static final String delegate = "delegate";
-    static final String existing = "existing";
     static final String factory = "factory";
     static final String onClose = "onClose";
     static final String metadata = "metadata";
