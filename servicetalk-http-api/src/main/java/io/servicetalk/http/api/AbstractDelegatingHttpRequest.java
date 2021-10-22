@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
@@ -24,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequestMetaData {
@@ -88,6 +90,12 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     @Override
     public HttpHeaders headers() {
         return original.headers();
+    }
+
+    @Nonnull
+    @Override
+    public ContextMap context() {
+        return original.context();
     }
 
     @Deprecated

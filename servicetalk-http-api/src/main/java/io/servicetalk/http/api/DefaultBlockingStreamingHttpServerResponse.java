@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -95,6 +96,12 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         checkSent();
         return super.addSetCookie(name, value);
+    }
+
+    @Override
+    public BlockingStreamingHttpServerResponse context(final ContextMap context) {
+        checkSent();
+        return super.context(context);
     }
 
     private void checkSent() {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
@@ -49,6 +50,12 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     @Override
     public HttpResponse encoding(final ContentCodec encoding) {
         original.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public HttpResponse context(final ContextMap context) {
+        original.context(context);
         return this;
     }
 
@@ -106,8 +113,9 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
         }
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
-        return new DefaultStreamingHttpResponse(status(), version(), headers(), original.payloadHolder().allocator(),
-                payload, payloadInfo, original.payloadHolder().headersFactory());
+        return new DefaultStreamingHttpResponse(status(), version(), headers(), context(),
+                original.payloadHolder().allocator(), payload, payloadInfo,
+                original.payloadHolder().headersFactory());
     }
 
     @Override

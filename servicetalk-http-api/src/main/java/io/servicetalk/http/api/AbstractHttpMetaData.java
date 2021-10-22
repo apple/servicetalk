@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -30,10 +32,14 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     private ContentCodec encoding;
     private HttpProtocolVersion version;
     private final HttpHeaders headers;
+    @Nullable
+    private ContextMap context;
 
-    AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers) {
+    AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers,
+                         @Nullable final ContextMap context) {
         this.version = requireNonNull(version);
         this.headers = requireNonNull(headers);
+        this.context = context;
     }
 
     @Override
@@ -63,6 +69,21 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Override
     public final HttpHeaders headers() {
         return headers;
+    }
+
+    @Nonnull
+    @Override
+    public ContextMap context() {
+        if (context == null) {
+            context = new DefaultContextMap();
+        }
+        return context;
+    }
+
+    @Override
+    public HttpMetaData context(final ContextMap context) {
+        this.context = requireNonNull(context);
+        return this;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
@@ -193,6 +194,12 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
+    public HttpRequest context(final ContextMap context) {
+        original.context(context);
+        return this;
+    }
+
+    @Override
     public Buffer payloadBody() {
         if (payloadBody == EMPTY_BUFFER) {  // default value after aggregation,
             // override with a new empty buffer to allow users expand it with more data:
@@ -270,7 +277,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         }
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
-        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
+        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), context(), encoding(),
                 contentEncoding(), original.payloadHolder().allocator(), payload, payloadInfo,
                 original.payloadHolder().headersFactory());
     }

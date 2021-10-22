@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpResponseStatus.OK;
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-public class DefaultHttpResponseMetaDataTest extends AbstractHttpResponseMetaDataTest<DefaultHttpResponseMetaData> {
+dependencies {
+  implementation project(":servicetalk-annotations")
 
-    @Override
-    protected void createFixture() {
-        fixture = new DefaultHttpResponseMetaData(OK, HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders(), null);
-    }
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }
