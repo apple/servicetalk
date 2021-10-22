@@ -15,6 +15,8 @@
  */
 package io.servicetalk.client.api;
 
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
  * @param <ResolvedAddress> the type of address after resolution.
@@ -27,9 +29,24 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     ResolvedAddress address();
 
     /**
+     * {@link ServiceDiscoveryStatus Status} of the event instructing the {@link ServiceDiscoverer} what actions
+     * to take upon the associated {@link #address() address}.
+     * @return {@link ServiceDiscoveryStatus Status} of the associated {@link #address()}.
+     */
+    default ServiceDiscoveryStatus status() {
+        throw new UnsupportedOperationException("Method status is not supported by " + getClass().getName());
+    }
+
+    /**
      * Determine if {@link #address()} is now available or unavailable.
      * @return {@code true} if {@link #address()} is now available or false if the {@link #address()} is now
      * unavailable.
+     * @deprecated Use {@link #status()}. This method will be removed, but in the transition period its default
+     * implementation calls {{@link #status()}} to determine availability – implementors of this interface need to
+     * override {@link #status()}.
      */
-    boolean isAvailable();
+    @Deprecated
+    default boolean isAvailable() {
+        return status() == AVAILABLE;
+    }
 }

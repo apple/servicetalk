@@ -17,6 +17,7 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -68,6 +69,8 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -219,7 +222,8 @@ final class DefaultDnsClient implements DnsClient {
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
-                if (srvEvent.isAvailable()) {
+                // TODO: consider other events than AVAILABLE and UNAVAILABLE
+                if (srvEvent.status() == AVAILABLE) {
                     return defer(() -> {
                         final ARecordPublisher aPublisher =
                                 new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);
@@ -708,11 +712,11 @@ final class DefaultDnsClient implements DnsClient {
                 final List<ServiceDiscovererEvent<T>> events = new ArrayList<>(activeAddresses.size());
                 if (activeAddresses instanceof RandomAccess) {
                     for (int i = 0; i < activeAddresses.size(); ++i) {
-                        events.add(new DefaultServiceDiscovererEvent<>(activeAddresses.get(i), false));
+                        events.add(new DefaultServiceDiscovererEvent<>(activeAddresses.get(i), UNAVAILABLE));
                     }
                 } else {
                     for (final T address : activeAddresses) {
-                        events.add(new DefaultServiceDiscovererEvent<>(address, false));
+                        events.add(new DefaultServiceDiscovererEvent<>(address, UNAVAILABLE));
                     }
                 }
                 activeAddresses = emptyList();
@@ -728,21 +732,22 @@ final class DefaultDnsClient implements DnsClient {
             ArrayList<ServiceDiscovererEvent<InetSocketAddress>> mappedEvents = new ArrayList<>(events.size());
             for (ServiceDiscovererEvent<InetAddress> event : events) {
                 InetSocketAddress addr = new InetSocketAddress(event.address(), port);
-                if (event.isAvailable()) {
+                final ServiceDiscoveryStatus status = event.status();
+                if (status == AVAILABLE) {
                     Integer count = availableAddresses.get(addr);
                     if (count == null) {
-                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, true));
+                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, status));
                         availableAddresses.put(addr, 1);
                     } else {
                         availableAddresses.put(addr, count + 1);
                     }
-                } else {
+                } else { // TODO: consider other events than UNAVAILABLE
                     Integer count = availableAddresses.get(addr);
                     if (count == null) {
                         throw new IllegalStateException("null count for: " + addr);
                     }
                     if (count == 1) {
-                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, false));
+                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, status));
                         availableAddresses.remove(addr);
                     } else {
                         availableAddresses.put(addr, count - 1);
@@ -864,8 +869,8 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         @Override
-        public boolean isAvailable() {
-            return false;
+        public ServiceDiscoveryStatus status() {
+            return UNAVAILABLE;
         }
     }
 

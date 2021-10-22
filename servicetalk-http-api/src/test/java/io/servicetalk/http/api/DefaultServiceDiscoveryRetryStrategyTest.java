@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -30,6 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withTestExecutor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -233,12 +236,14 @@ class DefaultServiceDiscoveryRetryStrategyTest {
                 .collect(toList());
         assertThat("Event not received.", received, hasSize(1));
         assertThat("Unexpected event received.", received.iterator().next().address(), is(addr));
-        assertThat("Unexpected event received.", received.iterator().next().isAvailable(), is(true));
+        assertThat("Unexpected event received.", received.iterator().next().status(), is(AVAILABLE));
         return evt;
     }
 
     private static ServiceDiscovererEvent<String> flipAvailable(final ServiceDiscovererEvent<String> evt) {
-        return new DefaultServiceDiscovererEvent<>(evt.address(), !evt.isAvailable());
+        // TODO: consider other events than AVAILABLE and UNAVAILABLE
+        final ServiceDiscoveryStatus flipped = evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
+        return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
     }
 
     private final class State {

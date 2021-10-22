@@ -18,6 +18,7 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.RandomAccess;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static java.util.Collections.binarySearch;
 
 /**
@@ -89,8 +92,8 @@ public final class ServiceDiscovererUtils {
      * {@code sortedA}).
      * <p>
      * See <a href="https://en.wikipedia.org/wiki/Venn_diagram#Overview">Set Mathematics</a>.
-     * @param available Will be used for {@link ServiceDiscovererEvent#isAvailable()} for each
-     * {@link ServiceDiscovererEvent} in the returned {@link List}.
+     * @param available Will be used to map to {@link ServiceDiscoveryStatus#AVAILABLE} in
+     * {@link ServiceDiscovererEvent#status()} for each {@link ServiceDiscovererEvent} in the returned {@link List}.
      * @param sortedA A sorted {@link List} of which no elements be present in the return value.
      * @param sortedB A sorted {@link List} of which elements in this set that are not in {@code sortedA} will be in the
      * return value.
@@ -104,17 +107,18 @@ public final class ServiceDiscovererUtils {
     private static <T> List<ServiceDiscovererEvent<T>> relativeComplement(
             boolean available, List<? extends T> sortedA, List<? extends T> sortedB, Comparator<T> comparator,
             @Nullable List<ServiceDiscovererEvent<T>> result) {
+        ServiceDiscoveryStatus status = available ? AVAILABLE : UNAVAILABLE;
         if (sortedB instanceof RandomAccess) {
             for (int i = 0; i < sortedB.size(); ++i) {
                 final T valueB = sortedB.get(i);
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
-                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, status));
                     } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
                         // make sure we don't include duplicates. the input lists are sorted and we process in order so
                         // we verify the previous entry is not a duplicate.
-                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, status));
                     }
                 }
             }
@@ -123,11 +127,11 @@ public final class ServiceDiscovererUtils {
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
-                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, status));
                     } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
                         // make sure we don't include duplicates. the input lists are sorted and we process in order so
                         // we verify the previous entry is not a duplicate.
-                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, status));
                     }
                 }
             }

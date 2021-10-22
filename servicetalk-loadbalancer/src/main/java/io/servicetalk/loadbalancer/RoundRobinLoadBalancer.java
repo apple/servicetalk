@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -58,6 +59,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -152,10 +154,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      *
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
-     * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#isAvailable()} flag
-     * set to {@code false} should be eagerly closed. When {@code false}, the expired addresses will be used
-     * for sending requests, but new connections will not be requested, allowing the server to drive
-     * the connection closure and shifting traffic to other addresses.
+     * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#status()}
+     * of {@link ServiceDiscoveryStatus#UNAVAILABLE} should be eagerly closed. When {@code false} is used,
+     * the expired addresses will be used for sending requests, but new connections will not be requested,
+     * allowing the server to drive the connection closure and shifting traffic to other addresses.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
      * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
      * continues being eligible for connecting on the request path).
@@ -178,10 +180,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
-     * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#isAvailable()} flag
-     * set to {@code false} should be eagerly closed. When {@code false}, the expired addresses will be used
-     * for sending requests, but new connections will not be requested, allowing the server to drive
-     * the connection closure and shifting traffic to other addresses.
+     * @param eagerConnectionShutdown whether connections with {@link ServiceDiscovererEvent#status()}
+     * of {@link ServiceDiscoveryStatus#UNAVAILABLE} should be eagerly closed. When {@code false} is used,
+     * the expired addresses will be used for sending requests, but new connections will not be requested,
+     * allowing the server to drive the connection closure and shifting traffic to other addresses.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
      * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
      * continues being eligible for connecting on the request path).
@@ -217,6 +219,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: received new ServiceDiscoverer event {}.",
                             targetResource, event);
 
+                    // TODO: consider other events than AVAILABLE and UNAVAILABLE
                     @SuppressWarnings("unchecked")
                     final List<Host<ResolvedAddress, C>> usedAddresses =
                             usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
@@ -229,7 +232,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                         (List<Host<ResolvedAddress, C>>) oldHosts;
 
                                 if (eagerConnectionShutdown) {
-                                    if (event.isAvailable()) {
+                                    if (event.status() == AVAILABLE) {
                                         return addHostToList(oldHostsTyped, addr, false);
                                     } else {
                                         return listWithHostRemoved(oldHostsTyped, host -> {
@@ -240,7 +243,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                             return match;
                                         });
                                     }
-                                } else if (event.isAvailable()) {
+                                } else if (event.status() == AVAILABLE) {
                                     return addHostToList(oldHostsTyped, addr, true);
                                 } else if (oldHostsTyped.isEmpty()) {
                                     return emptyList();
@@ -252,7 +255,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: now using {} addresses: {}.",
                             targetResource, usedAddresses.size(), usedAddresses);
 
-                    if (event.isAvailable()) {
+                    if (event.status() == AVAILABLE) {
                         if (usedAddresses.size() == 1) {
                             eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                         }

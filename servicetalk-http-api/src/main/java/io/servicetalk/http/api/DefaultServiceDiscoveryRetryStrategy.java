@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -35,6 +36,8 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
@@ -151,8 +154,11 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          */
         public static <ResolvedAddress> Builder<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>>
         withDefaults(final Executor executor, final Duration initialDelay, final Duration jitter) {
-            return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter),
-                    evt -> new DefaultServiceDiscovererEvent<>(evt.address(), !evt.isAvailable()));
+            // TODO(dj): flip availability might not make sense for EXPIRED
+            return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter), evt -> {
+                final ServiceDiscoveryStatus flipped = evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
+                return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
+            });
         }
 
         /**
@@ -179,8 +185,9 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                         }
 
                         @Override
-                        public boolean isAvailable() {
-                            return !evt.isAvailable();
+                        public ServiceDiscoveryStatus status() {
+                            // TODO(dj): flip availability might not make sense for EXPIRED
+                            return evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
                         }
                     });
         }
@@ -192,8 +199,9 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          * @param initialDelay {@link Duration} to use as initial delay for backoffs.
          * @param jitter {@link Duration} of jitter to apply to each backoff delay.
          * @param flipAvailability {@link UnaryOperator} that returns a new {@link ServiceDiscovererEvent} that is the
-         * same as the passed {@link ServiceDiscovererEvent} but with {@link ServiceDiscovererEvent#isAvailable()} value
-         * flipped.
+         * same as the passed {@link ServiceDiscovererEvent} but with {@link ServiceDiscovererEvent#status()} value
+         * flipped (with the assumption that only {@link ServiceDiscoveryStatus#AVAILABLE}
+         * and {@link ServiceDiscoveryStatus#UNAVAILABLE} statuses are in use).
          * @param <ResolvedAddress> The type of address after resolution.
          * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
          * @return A new {@link Builder}.
@@ -235,7 +243,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         Collection<E> consumeAndFilter(final Collection<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
                 for (E e : events) {
-                    if (e.isAvailable()) {
+                    // TODO: consider other events than AVAILABLE and UNAVAILABLE
+                    if (e.status() == AVAILABLE) {
                         activeAddresses.put(e.address(), e);
                     } else {
                         activeAddresses.remove(e.address());
@@ -249,7 +258,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             List<E> toReturn = new ArrayList<>(activeAddresses.size() + retainedAddresses.size());
             for (E event : events) {
                 final R address = event.address();
-                if (event.isAvailable()) {
+                // TODO: consider other events than AVAILABLE and UNAVAILABLE
+                if (event.status() == AVAILABLE) {
                     activeAddresses.put(address, event);
                     if (retainedAddresses.remove(address) == null) {
                         toReturn.add(event);
