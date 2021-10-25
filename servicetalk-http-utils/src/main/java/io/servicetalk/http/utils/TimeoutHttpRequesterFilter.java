@@ -121,7 +121,9 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate.request(strategy, r));
+                return TimeoutHttpRequesterFilter.this.withTimeout(request,
+                        r -> delegate.request(strategy, r),
+                        client.executionContext().executor());
             }
         };
     }
@@ -132,7 +134,9 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate().request(strategy, r));
+                return TimeoutHttpRequesterFilter.this.withTimeout(request,
+                        r -> delegate().request(strategy, r),
+                        connection.executionContext().executor());
             }
         };
     }
