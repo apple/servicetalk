@@ -16,21 +16,25 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.http.api.ConnectAndHttpExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 final class ClientStrategyInfluencerChainBuilder {
 
-    private HttpExecutionStrategy connFactoryChain;
+    private ConnectAndHttpExecutionStrategy connFactoryChain;
     private HttpExecutionStrategy connFilterChain;
     private HttpExecutionStrategy clientChain;
 
     ClientStrategyInfluencerChainBuilder() {
-        connFactoryChain = HttpExecutionStrategies.anyStrategy();
+        connFactoryChain = new ConnectAndHttpExecutionStrategy(ConnectExecutionStrategy.anyStrategy(),
+                HttpExecutionStrategies.defaultStrategy());
         connFilterChain = HttpExecutionStrategies.anyStrategy();
         clientChain = HttpExecutionStrategies.anyStrategy();
     }
@@ -50,21 +54,24 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
-        connFactoryChain =
-                connFactoryChain.merge(HttpExecutionStrategy.from(connectionFactoryFilter.requiredOffloads()));
+        connFactoryChain = connFactoryChain.merge(connectionFactoryFilter.requiredOffloads());
     }
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
-        connFilterChain =
-                connFilterChain.merge(HttpExecutionStrategy.from(connectionFilter.requiredOffloads()));
+        connFilterChain = connFilterChain.merge(connectionFilter.requiredOffloads());
     }
 
     HttpExecutionStrategy buildForClient(HttpExecutionStrategy transportStrategy) {
-        return clientChain.merge(buildForConnectionFactory(transportStrategy));
+        return transportStrategy.merge(clientChain.merge(connFilterChain.merge(
+                HttpExecutionStrategy.from(buildForConnectionFactory()))));
     }
 
-    HttpExecutionStrategy buildForConnectionFactory(HttpExecutionStrategy transportStrategy) {
-        return connFilterChain.merge(connFactoryChain.merge(transportStrategy));
+    ExecutionStrategy buildForConnectionFactory() {
+        return HttpExecutionStrategies.defaultStrategy() != connFactoryChain.httpStrategy() ?
+                ConnectExecutionStrategy.anyStrategy() != connFactoryChain.connectStrategy() ?
+                        connFactoryChain : connFactoryChain.httpStrategy() :
+                ConnectExecutionStrategy.anyStrategy() != connFactoryChain.connectStrategy() ?
+                        connFactoryChain.connectStrategy() : ExecutionStrategy.anyStrategy();
     }
 
     ClientStrategyInfluencerChainBuilder copy() {

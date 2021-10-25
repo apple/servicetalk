@@ -16,6 +16,7 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
@@ -76,6 +77,8 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
     /**
      * {@inheritDoc}
      *
+     * <p>If the returned strategy extends {@link ConnectExecutionStrategy} then the connection creation or accept may
+     * be offloaded.
      * <p>If the returned strategy extends {@code HttpExecutionStrategy} then the HTTP execution strategy will be
      * applied to the connections created.</p>
      * <p>A utility class provides the ability to combine connect and HTTP execution strategies,
@@ -83,8 +86,8 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      */
     @Override
     default ExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to override
-        return ExecutionStrategy.offloadAll();
+        // safe default--implementations are expected to override if offloading is required.
+        return ConnectExecutionStrategy.anyStrategy();
     }
 
     /**

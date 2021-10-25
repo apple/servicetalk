@@ -24,11 +24,15 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
@@ -49,35 +53,42 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final HttpExecutionContext executionContext;
     final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc;
     /**
-     * Computed execution strategy of the connection factory and connection filters.
+     * Computed execution strategy of the connection factory.
      */
-    final HttpExecutionStrategy chainStrategy;
+    final ExecutionStrategy connectStrategy;
     final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
     private final Function<FilterableStreamingHttpConnection,
             FilterableStreamingHttpLoadBalancedConnection> protocolBinding;
 
     AbstractLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
-            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
-            final HttpExecutionStrategy chainStrategy,
+            final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final Function<FilterableStreamingHttpConnection,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
+            final Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
+                    protocolBinding) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactoryFunc = requireNonNull(reqRespFactoryFunc);
-        this.chainStrategy = chainStrategy;
+        this.connectStrategy = connectStrategy;
         filterableConnectionFactory = connectionFactoryFilter.create(
+                // provide the supplier of connections.
                 new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
                     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
                             final ResolvedAddress ra, @Nullable final TransportObserver observer) {
-                        return newFilterableConnection(ra, observer == null ? NoopTransportObserver.INSTANCE :
+                        Single<FilterableStreamingHttpConnection> connection =
+                                newFilterableConnection(ra, observer == null ? NoopTransportObserver.INSTANCE :
                                 asSafeObserver(observer));
+                        return connectStrategy instanceof ConnectExecutionStrategy &&
+                                ((ConnectExecutionStrategy) connectStrategy).isConnectOffloaded() ?
+                                connection.publishOn(executionContext.executor(),
+                                        IoThreadFactory.IoThread::currentThreadIsIoThread) :
+                                connection;
                     }
 
                     @Override
@@ -114,7 +125,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     }
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
                             newConcurrencyController(filteredConnection, onClosing),
-                            executionContext.executionStrategy(), chainStrategy);
+                            executionContext.executionStrategy(),
+                            connectStrategy instanceof HttpExecutionStrategy ?
+                                    (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.anyStrategy());
                 });
     }
 
