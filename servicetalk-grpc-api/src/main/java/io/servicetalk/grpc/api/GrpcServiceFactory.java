@@ -42,7 +42,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
     }
 
     /**
-     * Convert multiple {@link GrpcServiceFactory factories} into a single instance.
+     * Merges multiple {@link GrpcServiceFactory factories} into a single instance.
      * @param factories instanes of {@link GrpcServiceFactory} to merge.
      * @return An aggregate {@link GrpcServiceFactory}.
      */

@@ -27,14 +27,14 @@ public final class GrpcHeaderNames {
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
-    public static final CharSequence GRPC_STATUS_CODE = newAsciiString("grpc-status");
+    public static final CharSequence GRPC_STATUS = newAsciiString("grpc-status");
 
     /**
      * {@code grpc-status-details-bin}
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
-    public static final CharSequence GRPC_STATUS_DETAILS = newAsciiString("grpc-status-details-bin");
+    public static final CharSequence GRPC_STATUS_DETAILS_BIN = newAsciiString("grpc-status-details-bin");
 
     /**
      * {@code grpc-message}

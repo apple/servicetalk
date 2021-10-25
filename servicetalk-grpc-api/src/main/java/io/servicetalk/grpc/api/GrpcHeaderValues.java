@@ -27,14 +27,14 @@ public final class GrpcHeaderValues {
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
-    public static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
+    static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
 
     /**
      * {@code application/grpc+proto} content type
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
-    public static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
+    static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
 
     /**
      * {@code application/grpc} default content type
