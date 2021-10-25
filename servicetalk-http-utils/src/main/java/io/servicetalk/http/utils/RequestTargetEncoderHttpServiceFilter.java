@@ -16,8 +16,8 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -39,8 +39,7 @@ import static java.util.Objects.requireNonNull;
  * URI producers <a href="https://tools.ietf.org/html/rfc3986">should encode query strings</a>, but
  * just in case they don't this filter will do the encoding.
  */
-public final class RequestTargetEncoderHttpServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                                    HttpExecutionStrategyInfluencer {
+public final class RequestTargetEncoderHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final Charset charset;
 
     /**
@@ -74,8 +73,8 @@ public final class RequestTargetEncoderHttpServiceFilter implements StreamingHtt
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

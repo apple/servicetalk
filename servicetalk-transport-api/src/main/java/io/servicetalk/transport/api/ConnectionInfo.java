@@ -56,7 +56,7 @@ public interface ConnectionInfo {
      *
      * @return the {@link ExecutionContext} for this {@link ConnectionInfo}.
      */
-    ExecutionContext executionContext();
+    ExecutionContext<?> executionContext();
 
     /**
      * Get the {@link SocketOption} value of type {@code T} for this {@link ConnectionInfo}.

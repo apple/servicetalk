@@ -15,17 +15,18 @@
  */
 package io.servicetalk.http.api;
 
-/**
- * A factory for {@link StreamingHttpClientFilter}.
- */
-@FunctionalInterface
-public interface StreamingHttpClientFilterFactory extends HttpFilterFactory {
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-    /**
-     * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
-     *
-     * @param client {@link FilterableStreamingHttpClient} to filter
-     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
-     */
-    StreamingHttpClientFilter create(FilterableStreamingHttpClient client);
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
+
+/**
+ * A factory for HTTP filters.
+ */
+public interface HttpFilterFactory extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        // "safe" default strategy -- implementations are expected to override
+        return OFFLOAD_ALL_STRATEGY;
+    }
 }

@@ -29,6 +29,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConne
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.anyStrategy;
 
 public final class TestStreamingHttpClient {
 
@@ -98,17 +99,17 @@ public final class TestStreamingHttpClient {
                         .map(rc -> new ReservedStreamingHttpConnection() {
                             @Override
                             public ReservedHttpConnection asConnection() {
-                                return toReservedConnection(this, s -> s);
+                                return toReservedConnection(this, anyStrategy());
                             }
 
                             @Override
                             public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                                return toReservedBlockingStreamingConnection(this, s -> s);
+                                return toReservedBlockingStreamingConnection(this, anyStrategy());
                             }
 
                             @Override
                             public ReservedBlockingHttpConnection asBlockingConnection() {
-                                return toReservedBlockingConnection(this, s -> s);
+                                return toReservedBlockingConnection(this, anyStrategy());
                             }
 
                             @Override
@@ -218,17 +219,17 @@ public final class TestStreamingHttpClient {
 
             @Override
             public HttpClient asClient() {
-                return toClient(this, strategy -> strategy);
+                return toClient(this, anyStrategy());
             }
 
             @Override
             public BlockingStreamingHttpClient asBlockingStreamingClient() {
-                return toBlockingStreamingClient(this, strategy -> strategy);
+                return toBlockingStreamingClient(this, anyStrategy());
             }
 
             @Override
             public BlockingHttpClient asBlockingClient() {
-                return toBlockingClient(this, strategy -> strategy);
+                return toBlockingClient(this, anyStrategy());
             }
         };
     }

@@ -23,6 +23,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -89,12 +90,12 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
 
     private static ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factoryFilter(
             final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
-        return orig -> {
+        return ConnectionFactoryFilter.withStrategy(orig -> {
             when(factory.newConnection(any(), any()))
                     .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0),
                             invocation.getArgument(1)));
             return factory;
-        };
+        }, HttpExecutionStrategies.anyStrategy());
     }
 
     @SuppressWarnings("unchecked")

@@ -15,13 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
+
 import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT_STREAMING_STRATEGY_INFLUENCER;
 
 /**
  * An entity that wishes to influence {@link HttpExecutionStrategy} for an HTTP client or server.
  */
-@FunctionalInterface
-public interface HttpExecutionStrategyInfluencer {
+public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     /**
      * Optionally modify the passed {@link HttpExecutionStrategy} to a new {@link HttpExecutionStrategy} that suits
@@ -29,8 +30,22 @@ public interface HttpExecutionStrategyInfluencer {
      *
      * @param strategy {@link HttpExecutionStrategy} to influence.
      * @return {@link HttpExecutionStrategy} that suits this {@link HttpExecutionStrategyInfluencer}
+     * @deprecated Implement {@link ExecutionStrategyInfluencer} interface and {@link #requiredOffloads()} instead.
      */
-    HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy);
+    @Deprecated
+    default HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
+        return requiredOffloads().merge(strategy);
+    }
+
+    /**
+     * Return the {@link HttpExecutionStrategy} describing offloads required by this instance.
+     *
+     * @return the {@link HttpExecutionStrategy} describing offloads required by this instance
+     */
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        return HttpExecutionStrategies.offloadAll();
+    }
 
     /**
      * Returns an {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.
@@ -39,5 +54,30 @@ public interface HttpExecutionStrategyInfluencer {
      */
     static HttpExecutionStrategyInfluencer defaultStreamingInfluencer() {
         return DEFAULT_STREAMING_STRATEGY_INFLUENCER;
+    }
+
+    /**
+     * Returns an influencer which imposes no influence and is compatible ith any strategy.
+     *
+     * @return an influencer which imposes no influence and is compatible ith any strategy.
+     */
+    static HttpExecutionStrategyInfluencer anyStrategy() {
+        return DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY.asInfluencer();
+    }
+
+    /**
+     * Creates an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
+     *
+     * @param requiredStrategy The required strategy of the influencer to be created.
+     * @return an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
+     */
+    static HttpExecutionStrategyInfluencer newInfluencer(HttpExecutionStrategy requiredStrategy) {
+        return new HttpExecutionStrategyInfluencer() {
+
+            @Override
+            public HttpExecutionStrategy requiredOffloads() {
+                return requiredStrategy;
+            }
+        };
     }
 }

@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -95,6 +96,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
                 eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+    }
+
+    @Override
+    public ExecutionStrategy requiredOffloads() {
+        // We do not block
+        return ExecutionStrategy.anyStrategy();
     }
 
     /**

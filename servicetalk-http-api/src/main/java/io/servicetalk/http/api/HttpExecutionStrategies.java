@@ -34,21 +34,47 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * The default {@link HttpExecutionStrategy}.
+     * A special default {@link HttpExecutionStrategy} that offloads all actions unless merged with another
+     * strategy that requires less offloading.
      *
      * @return Default {@link HttpExecutionStrategy}.
+     * @see #offloadAll()
      */
     public static HttpExecutionStrategy defaultStrategy() {
         return DEFAULT_HTTP_EXECUTION_STRATEGY;
     }
 
     /**
-     * A {@link HttpExecutionStrategy} that disables all offloads on the request-response path.
+     * A special {@link HttpExecutionStrategy} that disables all offloads on the request-response path. When merged
+     * with another execution strategy the result is always this strategy.
      *
      * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
+     * @see #anyStrategy()
      */
     public static HttpExecutionStrategy noOffloadsStrategy() {
         return OFFLOAD_NEVER_STRATEGY;
+    }
+
+    /**
+     * An {@link HttpExecutionStrategy} that requires no offloads on the request-response path. Unlike
+     * {@link #noOffloadsStrategy()}, this strategy merges normally with other execution strategy instances.
+     *
+     * @return {@link HttpExecutionStrategy} that requires no request-response path offloads.
+     * @see #noOffloadsStrategy()
+     */
+    public static HttpExecutionStrategy anyStrategy() {
+        return DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
+    }
+
+    /**
+     * An {@link HttpExecutionStrategy} that requires offloading on the request-response path. Unlike
+     * {@link #defaultStrategy()}, this strategy merges normally with other execution strategy instances.
+     *
+     * @return {@link HttpExecutionStrategy} that requires no request-response path offloads.
+     * @see #defaultStrategy()
+     */
+    public static HttpExecutionStrategy offloadAll() {
+        return DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
     }
 
     /**

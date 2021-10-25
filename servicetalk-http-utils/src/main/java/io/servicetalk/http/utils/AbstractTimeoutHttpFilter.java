@@ -17,11 +17,12 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -33,7 +34,7 @@ import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluencer {
+abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     /**
      * Establishes the timeout for a given request.
      */
@@ -62,8 +63,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
     }
 
     @Override
-    public final HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return timeoutForRequest.influenceStrategy(strategy);
+    public final HttpExecutionStrategy requiredOffloads() {
+        return timeoutForRequest.requiredOffloads();
     }
 
     final Single<StreamingHttpResponse> withTimeout(final StreamingHttpRequest request,
@@ -129,9 +130,9 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return strategy;
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }

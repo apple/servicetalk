@@ -18,14 +18,16 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
 /**
  * A service contract for the HTTP protocol.
  */
 @FunctionalInterface
-public interface StreamingHttpService extends AsyncCloseable {
+public interface StreamingHttpService extends AsyncCloseable, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     /**
      * Handles a single HTTP request.
      *
@@ -45,5 +47,11 @@ public interface StreamingHttpService extends AsyncCloseable {
     @Override
     default Completable closeAsync() {
         return completed();
+    }
+
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        // "safe" default -- implementations are expected to override
+        return OFFLOAD_ALL_STRATEGY;
     }
 }

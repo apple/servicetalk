@@ -42,6 +42,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
@@ -301,7 +302,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -491,7 +492,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -558,7 +559,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between

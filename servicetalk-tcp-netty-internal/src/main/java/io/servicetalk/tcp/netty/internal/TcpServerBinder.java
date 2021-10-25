@@ -77,16 +77,15 @@ public final class TcpServerBinder {
      * @param connectionFunction Used to create a new {@link NettyConnection} from a {@link Channel}.
      * @param connectionConsumer Used to consume the result of {@code connectionFunction} after initialization and
      * filtering is done. This can be used for protocol specific initialization and to start data flow.
-     * @param <T> The type of {@link ConnectionContext} that is created for each accepted socket.
+     * @param <CC> The type of {@link ConnectionContext} that is created for each accepted socket.
      * @return a {@link Single} that completes with a {@link ServerContext} that represents a socket which is bound and
      * listening on the {@code listenAddress}.
      */
-    public static <T extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
-            final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext executionContext,
+    public static <CC extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
+            final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
             @Nullable final ConnectionAcceptor connectionAcceptor,
-            final BiFunction<Channel, ConnectionObserver, Single<T>> connectionFunction,
-            final Consumer<T> connectionConsumer) {
-
+            final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
+            final Consumer<CC> connectionConsumer) {
         requireNonNull(connectionFunction);
         requireNonNull(connectionConsumer);
         listenAddress = toNettyAddress(listenAddress);
@@ -124,7 +123,7 @@ public final class TcpServerBinder {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                Single<T> connectionSingle = connectionFunction.apply(channel,
+                Single<CC> connectionSingle = connectionFunction.apply(channel,
                         config.transportObserver().onNewConnection());
                 if (connectionAcceptor != null) {
                     connectionSingle = connectionSingle.flatMap(conn ->

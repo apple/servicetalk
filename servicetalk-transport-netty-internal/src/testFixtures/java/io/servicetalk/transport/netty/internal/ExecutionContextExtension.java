@@ -37,7 +37,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -61,7 +60,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     public ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
                                      final Supplier<IoExecutor> ioExecutorSupplier,
                                      final Supplier<Executor> executorSupplier) {
-        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_FROM_IO_STRATEGY);
+        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, ExecutionStrategy::offloadAll);
     }
 
     private ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,

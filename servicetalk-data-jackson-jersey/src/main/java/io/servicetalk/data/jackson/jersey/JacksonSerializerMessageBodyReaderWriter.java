@@ -94,7 +94,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                            final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
         final JacksonSerializerFactory serializerFactory = getJacksonSerializerFactory(mediaType);
-        final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+        final ExecutionContext<?> executionContext = ctxRefProvider.get().get().executionContext();
         final BufferAllocator allocator = executionContext.bufferAllocator();
         final int contentLength = requestCtxProvider.get().getLength();
 

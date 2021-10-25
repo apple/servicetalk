@@ -18,5 +18,43 @@ package io.servicetalk.transport.api;
 /**
  * An execution strategy for all transports.
  */
+@FunctionalInterface
 public interface ExecutionStrategy {
+
+    /**
+     * Returns {@code true} if the instance has offloading for any operation.
+     *
+     * @return {@code true} if the instance has offloading for any operation.
+     */
+    boolean hasOffloads();
+
+    /**
+     * Returns an {@link ExecutionStrategy} that requires no offloading.
+     *
+     * @return an {@link ExecutionStrategy} that requires no offloading.
+     */
+    static ExecutionStrategy anyStrategy() {
+        return SpecialExecutionStrategy.NO_OFFLOADS;
+    }
+
+    /**
+     * Returns an {@link ExecutionStrategy} that requires offloading for all actions.
+     *
+     * @return an {@link ExecutionStrategy} that requires offloading.
+     */
+    static ExecutionStrategy offloadAll() {
+        return SpecialExecutionStrategy.OFFLOAD_ALL;
+    }
+
+    /**
+     * Combines this execution strategy with another execution strategy.
+     *
+     * @param other The other execution strategy to combine.
+     * @return The combined execution strategy.
+     */
+    default ExecutionStrategy merge(ExecutionStrategy other) {
+        return hasOffloads() ?
+                other.hasOffloads() ? ExecutionStrategy.offloadAll() : this :
+                other.hasOffloads() ? other : ExecutionStrategy.anyStrategy();
+    }
 }

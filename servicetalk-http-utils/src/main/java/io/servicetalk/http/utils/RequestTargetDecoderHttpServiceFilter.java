@@ -16,8 +16,8 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -35,8 +35,7 @@ import static java.util.Objects.requireNonNull;
  * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">Decodes</a> the
  * {@link StreamingHttpRequest#requestTarget()} for each incoming request.
  */
-public final class RequestTargetDecoderHttpServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                                    HttpExecutionStrategyInfluencer {
+public final class RequestTargetDecoderHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final Charset charset;
 
     /**
@@ -70,8 +69,8 @@ public final class RequestTargetDecoderHttpServiceFilter implements StreamingHtt
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

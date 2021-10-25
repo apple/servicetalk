@@ -66,6 +66,8 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * Builds a new {@link StreamingHttpClient}.
      *
      * @return A new {@link StreamingHttpClient}
+     * @throws IllegalArgumentException for incomplete or illegal configurations
+     * @throws IllegalStateException for unsupported configuration combinations
      */
     StreamingHttpClient buildStreaming();
 

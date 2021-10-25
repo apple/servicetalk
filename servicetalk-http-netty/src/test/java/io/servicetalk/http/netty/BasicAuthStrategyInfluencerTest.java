@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
@@ -32,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -54,6 +56,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.anyStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -131,7 +134,7 @@ class BasicAuthStrategyInfluencerTest {
         when(credentialsVerifier.closeAsyncGracefully()).thenReturn(completed());
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
-            verifier = new InfluencingVerifier(verifier, strategy -> strategy);
+            verifier = new InfluencingVerifier(verifier, anyStrategy());
             serverBuilder.executionStrategy(noOffloadsStrategy());
         }
         serverBuilder.appendServiceFilter(new BasicAuthHttpServiceFilter.Builder<>(verifier, "dummy")
@@ -146,7 +149,8 @@ class BasicAuthStrategyInfluencerTest {
         return this.client;
     }
 
-    private static final class OffloadCheckingService implements StreamingHttpService, HttpExecutionStrategyInfluencer {
+    private static final class OffloadCheckingService implements StreamingHttpService,
+                                                                 ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
         private enum OffloadPoint {
             ServiceHandle,
@@ -189,14 +193,14 @@ class BasicAuthStrategyInfluencerTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            // Do not influence strategy to avoid influencing the results!
-            return strategy;
+        public HttpExecutionStrategy requiredOffloads() {
+            // No influence since we do not block.
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 
     private static final class InfluencingVerifier
-            implements CredentialsVerifier<String>, HttpExecutionStrategyInfluencer {
+            implements CredentialsVerifier<String>, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
         private final CredentialsVerifier<String> delegate;
         private final HttpExecutionStrategyInfluencer influencer;
@@ -213,8 +217,8 @@ class BasicAuthStrategyInfluencerTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return influencer.influenceStrategy(strategy);
+        public HttpExecutionStrategy requiredOffloads() {
+            return influencer.requiredOffloads();
         }
 
         @Override
