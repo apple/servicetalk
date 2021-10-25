@@ -27,7 +27,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE;
+import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE;
 import static io.servicetalk.grpc.netty.GrpcUtils.newErrorResponse;
 
 final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory,

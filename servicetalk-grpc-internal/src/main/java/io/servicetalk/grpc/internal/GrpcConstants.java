@@ -13,43 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
+package io.servicetalk.grpc.internal;
+
+import io.servicetalk.http.api.HttpHeaderNames;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
- * Common <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC header values</a>.
+ * Constants that have to be shared between {@code servicetalk-grpc-api} and {@code servicetalk-grpc-netty}.
  */
-public final class GrpcHeaderValues {
-
+public final class GrpcConstants {
     /**
-     * {@code application/grpc} prefix
-     *
-     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     * {@code application/grpc} prefix for the content-type.
      */
-    static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
+    public static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
 
     /**
-     * {@code application/grpc+proto} content type
-     *
-     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     * {@code +proto} suffix for the content-type.
      */
-    static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
+    public static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
 
     /**
-     * {@code application/grpc} default content type
+     * {@code application/grpc} content-type as {@link CharSequence}.
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
     public static final CharSequence GRPC_CONTENT_TYPE = newAsciiString(GRPC_CONTENT_TYPE_PREFIX);
 
-    // TODO (nkant): add project version
     /**
-     * ServiceTalk specific value for use with {@code server} and {@code user-agent} headers.
+     * ServiceTalk specific value to use for {@link HttpHeaderNames#SERVER} and {@link HttpHeaderNames#USER_AGENT}
+     * headers.
      */
+    // TODO (nkant): add project version
     public static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
 
-    private GrpcHeaderValues() {
-        // No instances.
+    private GrpcConstants() {
+        // No instances
     }
 }

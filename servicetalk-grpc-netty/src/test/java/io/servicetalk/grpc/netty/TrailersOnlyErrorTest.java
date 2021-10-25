@@ -50,11 +50,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
@@ -70,8 +70,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class TrailersOnlyErrorTest {
-
-    private static final CharSequence GRPC_STATUS_HEADER = newAsciiString("grpc-status");
 
     @Test
     void testRouteThrows() throws Exception {
@@ -241,7 +239,7 @@ class TrailersOnlyErrorTest {
     private static void assertGrpcStatusInHeaders(final HttpResponseMetaData metaData,
                                                   final BlockingQueue<Throwable> errors) {
         try {
-            assertThat("GRPC_STATUS not present in headers.", metaData.headers().get(GRPC_STATUS_HEADER),
+            assertThat("GRPC_STATUS not present in headers.", metaData.headers().get(GRPC_STATUS),
                     notNullValue());
         } catch (Throwable t) {
             errors.add(t);
