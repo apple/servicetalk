@@ -45,6 +45,10 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
      */
     private final boolean fullRequestResponse;
 
+    /**
+     * Executor that will be used for timeout actions. This is optional and the connection or request context executor
+     * or global executor will be used if not specified.
+     */
     @Nullable
     private final Executor timeoutExecutor;
 
@@ -67,21 +71,25 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
     }
 
     final Single<StreamingHttpResponse> withTimeout(final StreamingHttpRequest request,
-                final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction) {
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction,
+            @Nullable final Executor executor) {
+
+        // timeoutExecutor → request/connection executor → global default executor
+        final Executor useExecutor = null != timeoutExecutor ? timeoutExecutor : executor;
 
         return Single.defer(() -> {
             final Duration timeout = timeoutForRequest.apply(request);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                final Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
-                        response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
+                final Single<StreamingHttpResponse> timeoutResponse = useExecutor == null ?
+                        response.timeout(timeout) : response.timeout(timeout, useExecutor);
 
                 if (fullRequestResponse) {
                     final long deadline = System.nanoTime() + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
                         final Duration remaining = ofNanos(deadline - System.nanoTime());
-                        return (timeoutExecutor == null ?
-                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, timeoutExecutor))
+                        return (useExecutor == null ?
+                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, useExecutor))
                                 .onErrorMap(TimeoutException.class, t ->
                                         new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
                                                 "ms", t))
