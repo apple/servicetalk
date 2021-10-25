@@ -117,7 +117,8 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return TimeoutHttpServiceFilter.this.withTimeout(request,
-                        r -> delegate().handle(ctx, r, responseFactory));
+                        r -> delegate().handle(ctx, r, responseFactory),
+                        ctx.executionContext().executor());
             }
         };
     }
