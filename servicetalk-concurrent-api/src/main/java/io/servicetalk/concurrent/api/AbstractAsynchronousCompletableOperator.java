@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,7 +38,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
 
     @Override
     final void handleSubscribe(Subscriber subscriber,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                               ContextMap contextMap, AsyncContextProvider contextProvider) {
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.

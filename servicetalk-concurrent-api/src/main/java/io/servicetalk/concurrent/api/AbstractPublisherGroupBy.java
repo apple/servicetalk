@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
     abstract static class AbstractGroupBySubscriber<Key, T> implements Subscriber<T> {
         private boolean rootCancelled;
         private final int queueLimit;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         private final Map<Key, GroupMulticastSubscriber<Key, T>> groups;
         private final GroupMulticastSubscriber<String, GroupedPublisher<Key, T>> target;
@@ -61,7 +62,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
         private Subscription subscription;
 
         AbstractGroupBySubscriber(final Subscriber<? super GroupedPublisher<Key, T>> target, final int queueLimit,
-                                  final int initialCapacityForGroups, final AsyncContextMap contextMap,
+                                  final int initialCapacityForGroups, final ContextMap contextMap,
                                   final AsyncContextProvider contextProvider) {
             this.queueLimit = queueLimit;
             this.contextMap = contextMap;
@@ -169,7 +170,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
         }
 
         void subscriber(final Subscriber<? super T> subscriber, final boolean triggerOnSubscribe,
-                        final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                        final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             // The root Subscriber's downstream subscriber is set internally, so no need for atomic operation to filter
             // duplicates.
             if (!triggerOnSubscribe) {
@@ -219,11 +220,11 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
     private static final class DefaultGroupedPublisher<Key, T> extends GroupedPublisher<Key, T>
             implements PublisherSource<T> {
         private final GroupMulticastSubscriber<Key, T> groupSink;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
         DefaultGroupedPublisher(final Key key, final GroupMulticastSubscriber<Key, T> groupSink,
-                                final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             super(key);
             this.groupSink = groupSink;
             this.contextMap = contextMap;

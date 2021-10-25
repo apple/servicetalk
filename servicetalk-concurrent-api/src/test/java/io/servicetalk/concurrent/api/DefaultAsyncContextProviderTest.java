@@ -21,9 +21,10 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMap.Key;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -66,14 +67,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultAsyncContextProviderTest {
-    private static final Key<String> K1 = Key.newKey("k1");
-    private static final Key<String> K2 = Key.newKey("k2");
-    private static final Key<String> K3 = Key.newKey("k3");
-    private static final Key<String> K4 = Key.newKey("k4");
-    private static final Key<String> K5 = Key.newKey("k5");
-    private static final Key<String> K6 = Key.newKey("k6");
-    private static final Key<String> K7 = Key.newKey("k7");
-    private static final Key<String> K8 = Key.newKey("k8");
+    private static final Key<String> K1 = Key.newKey("k1", String.class);
+    private static final Key<String> K2 = Key.newKey("k2", String.class);
+    private static final Key<String> K3 = Key.newKey("k3", String.class);
+    private static final Key<String> K4 = Key.newKey("k4", String.class);
+    private static final Key<String> K5 = Key.newKey("k5", String.class);
+    private static final Key<String> K6 = Key.newKey("k6", String.class);
+    private static final Key<String> K7 = Key.newKey("k7", String.class);
+    private static final Key<String> K8 = Key.newKey("k8", String.class);
 
     private static ScheduledExecutorService executor;
 
@@ -137,16 +138,16 @@ class DefaultAsyncContextProviderTest {
 
     @Test
     void testContextInCompletableOperators() throws Exception {
-        CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f1 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f2 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f3 = new CompletableFuture<>();
 
         Completable completable = new Completable() {
             @Override
             protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
-                f1.complete(AsyncContext.current().copy());
+                f1.complete(AsyncContext.context().copy());
                 completeOnExecutor(completableSubscriber);
             }
         }.merge(new Completable() {
@@ -154,10 +155,10 @@ class DefaultAsyncContextProviderTest {
             protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 AsyncContext.put(K2, "v2.2");
                 // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
-                f2.complete(AsyncContext.current().copy());
+                f2.complete(AsyncContext.context().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).beforeFinally(() -> f3.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f3.complete(AsyncContext.context().copy()));
 
         AsyncContext.put(K1, "v1.1");
         completable.toFuture().get();
@@ -305,37 +306,37 @@ class DefaultAsyncContextProviderTest {
 
     @Test
     void testContextInSingleOperators() throws Exception {
-        CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f4 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f5 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f1 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f2 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f3 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f4 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f5 = new CompletableFuture<>();
 
         Single<String> single = new Single<String>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
-                f1.complete(AsyncContext.current().copy());
+                f1.complete(AsyncContext.context().copy());
                 completeOnExecutor(singleSubscriber, "a");
             }
         }.map(v -> {
 
             AsyncContext.put(K2, "v2.2");
-            f2.complete(AsyncContext.current().copy());
+            f2.complete(AsyncContext.context().copy());
             return v;
         }).flatMap(v -> {
             AsyncContext.put(K2, "v2.3"); // this will apply to the Single(b) created here
-            f3.complete(AsyncContext.current().copy());
+            f3.complete(AsyncContext.context().copy());
             return new Single<String>() {
                 @Override
                 protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                     // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
-                    f4.complete(AsyncContext.current().copy());
+                    f4.complete(AsyncContext.context().copy());
                     completeOnExecutor(singleSubscriber, "b");
                 }
             };
-        }).beforeFinally(() -> f5.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f5.complete(AsyncContext.context().copy()));
 
         AsyncContext.put(K1, "v1.1");
         single.toFuture().get();
@@ -357,16 +358,16 @@ class DefaultAsyncContextProviderTest {
 
     @Test
     void testContextInSingleConversions() throws Exception {
-        CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f1 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f2 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f3 = new CompletableFuture<>();
 
         Completable completable = new Single<String>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
-                f1.complete(AsyncContext.current().copy());
+                f1.complete(AsyncContext.context().copy());
                 completeOnExecutor(singleSubscriber, "a");
             }
         }.ignoreElement().merge(new Completable() {
@@ -374,10 +375,10 @@ class DefaultAsyncContextProviderTest {
             protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
                 AsyncContext.put(K2, "v2.2");
-                f2.complete(AsyncContext.current().copy());
+                f2.complete(AsyncContext.context().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).beforeFinally(() -> f3.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f3.complete(AsyncContext.context().copy()));
 
         AsyncContext.put(K1, "v1.1");
         completable.toFuture().get();
@@ -423,33 +424,33 @@ class DefaultAsyncContextProviderTest {
 
     @Test
     void testContextInPublisherOperators() throws Exception {
-        CompletableFuture<AsyncContextMap> f1 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f2 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f3 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f4 = new CompletableFuture<>();
-        CompletableFuture<AsyncContextMap> f5 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f1 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f2 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f3 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f4 = new CompletableFuture<>();
+        CompletableFuture<ContextMap> f5 = new CompletableFuture<>();
 
         Single<StringBuilder> single = new ContextCaptureTestPublisher().map(v -> {
-            f1.complete(AsyncContext.current());
+            f1.complete(AsyncContext.context());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return v;
         }).concat(new ContextCaptureTestPublisher().filter(v -> {
-            f2.complete(AsyncContext.current());
+            f2.complete(AsyncContext.context());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return true;
         })).map(v -> {
-            f3.complete(AsyncContext.current());
+            f3.complete(AsyncContext.context());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return v;
         }).beforeOnComplete(() -> {
-            f4.complete(AsyncContext.current());
+            f4.complete(AsyncContext.context());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
         }).collect(StringBuilder::new, StringBuilder::append)
-                .beforeFinally(() -> f5.complete(AsyncContext.current()));
+                .beforeFinally(() -> f5.complete(AsyncContext.context()));
 
         AsyncContext.put(K1, "v1");
         single.toFuture().get();
@@ -469,7 +470,7 @@ class DefaultAsyncContextProviderTest {
     @Test
     void testWrapExecutor() throws Exception {
         AsyncContext.put(K1, "v1");
-        Consumer<AsyncContextMap> verifier = map -> {
+        Consumer<ContextMap> verifier = map -> {
             assertEquals("v1", map.get(K1));
             assertNull(map.get(K2));
         };
@@ -494,7 +495,7 @@ class DefaultAsyncContextProviderTest {
     @Test
     void testWrapFunctions() throws Exception {
         AsyncContext.put(K1, "v1");
-        Consumer<AsyncContextMap> verifier = map -> {
+        Consumer<ContextMap> verifier = map -> {
             assertEquals("v1", map.get(K1));
             assertNull(map.get(K2));
         };
@@ -502,17 +503,17 @@ class DefaultAsyncContextProviderTest {
         new ContextCapturer()
                 .runAndWait(collector -> {
                     Function<Void, Void> f = INSTANCE.wrapFunction(v -> {
-                        collector.complete(AsyncContext.current());
+                        collector.complete(AsyncContext.context());
                         return v;
-                    }, AsyncContext.current());
+                    }, AsyncContext.context());
                     executor.execute(() -> f.apply(null));
                 })
                 .verifyContext(verifier);
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.current()),
-                            AsyncContext.current());
+                    Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.context()),
+                            AsyncContext.context());
                     executor.execute(() -> c.accept(null));
                 })
                 .verifyContext(verifier);
@@ -520,9 +521,9 @@ class DefaultAsyncContextProviderTest {
         new ContextCapturer()
                 .runAndWait(collector -> {
                     BiFunction<Void, Void, Void> bf = INSTANCE.wrapBiFunction((v1, v2) -> {
-                        collector.complete(AsyncContext.current());
+                        collector.complete(AsyncContext.context());
                         return v1;
-                    }, AsyncContext.current());
+                    }, AsyncContext.context());
                     executor.execute(() -> bf.apply(null, null));
                 })
                 .verifyContext(verifier);
@@ -530,8 +531,8 @@ class DefaultAsyncContextProviderTest {
         new ContextCapturer()
                 .runAndWait(collector -> {
                     BiConsumer<Void, Void> bc = INSTANCE.wrapBiConsumer((v1, v2) -> {
-                        collector.complete(AsyncContext.current());
-                    }, AsyncContext.current());
+                        collector.complete(AsyncContext.context());
+                    }, AsyncContext.context());
                     executor.execute(() -> bc.accept(null, null));
                 })
                 .verifyContext(verifier);
@@ -699,34 +700,34 @@ class DefaultAsyncContextProviderTest {
 
     @Test
     void testMultiPutAndRemove() {
-        AsyncContext.putAll(newMap(K1, "v1"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1"));
         assertContains(K1, "v1");
         assertContextSize(1);
 
-        AsyncContext.putAll(newMap(K1, "v1-2", K2, "v2"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1-2", K2, "v2"));
         assertContains(K1, "v1-2");
         assertContains(K2, "v2");
         assertContextSize(2);
 
-        AsyncContext.putAll(newMap(K1, "v1-3", K3, "v3"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1-3", K3, "v3"));
         assertContains(K1, "v1-3");
         assertContains(K2, "v2");
         assertContains(K3, "v3");
         assertContextSize(3);
 
-        AsyncContext.putAll(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
         assertContains(K1, "v1-4");
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
         assertContextSize(3);
 
-        AsyncContext.putAll(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
         assertContains(K1, "v1-4");
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
         assertContextSize(3);
 
-        AsyncContext.putAll(newMap(K4, "v4", K5, "v5", K6, "v6"));
+        AsyncContext.putAllFromMap(newMap(K4, "v4", K5, "v5", K6, "v6"));
         assertContains(K1, "v1-4");
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
@@ -735,7 +736,7 @@ class DefaultAsyncContextProviderTest {
         assertContains(K6, "v6");
         assertContextSize(6);
 
-        AsyncContext.putAll(newMap(K1, "v1-5", K7, "v7", K8, "v8"));
+        AsyncContext.putAllFromMap(newMap(K1, "v1-5", K7, "v7", K8, "v8"));
         assertContains(K1, "v1-5");
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
@@ -747,7 +748,7 @@ class DefaultAsyncContextProviderTest {
         assertContextSize(8);
 
         // Start removal
-        AsyncContext.removeAll(asList(K1));
+        AsyncContext.removeAllPairs(asList(K1));
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
         assertContains(K4, "v4");
@@ -757,7 +758,7 @@ class DefaultAsyncContextProviderTest {
         assertContains(K8, "v8");
         assertContextSize(7);
 
-        AsyncContext.removeAll(asList(K1, K8, K3));
+        AsyncContext.removeAllPairs(asList(K1, K8, K3));
         assertContains(K2, "v2-2");
         assertContains(K4, "v4");
         assertContains(K5, "v5");
@@ -765,14 +766,14 @@ class DefaultAsyncContextProviderTest {
         assertContains(K7, "v7");
         assertContextSize(5);
 
-        AsyncContext.removeAll(asList(K7));
+        AsyncContext.removeAllPairs(asList(K7));
         assertContains(K2, "v2-2");
         assertContains(K4, "v4");
         assertContains(K5, "v5");
         assertContains(K6, "v6");
         assertContextSize(4);
 
-        AsyncContext.removeAll(asList(K6, K4, K2, K5));
+        AsyncContext.removeAllPairs(asList(K6, K4, K2, K5));
         assertContextSize(0);
     }
 
@@ -835,7 +836,7 @@ class DefaultAsyncContextProviderTest {
                 remainingBits &= ~(1 << keysIndex);
             } while (remainingBits != 0);
 
-            AsyncContext.removeAll(asList(permutation));
+            AsyncContext.removeAllPairs(asList(permutation));
 
             // Verify all the remove elements are not present in the context, and the size is as expected.
             assertContextSize(keys.size() - permutation.length);
@@ -932,7 +933,7 @@ class DefaultAsyncContextProviderTest {
             } while (remainingBits != 0);
 
             Map<Key<?>, Object> insertionMap = newMap(permutation);
-            AsyncContext.putAll(insertionMap);
+            AsyncContext.putAllFromMap(insertionMap);
 
             // Verify all the put values are present and the expected size is as expected.
             int expectedSize = initialKeys.size();
@@ -1004,7 +1005,7 @@ class DefaultAsyncContextProviderTest {
     private static <T> void assertContains(Key<T> key, Object value) {
         assertEquals(value, AsyncContext.get(key));
         assertTrue(AsyncContext.containsKey(key));
-        assertFalse(AsyncContext.current().isEmpty());
+        assertFalse(AsyncContext.context().isEmpty());
     }
 
     private static void assertNotContains(Key<?> key) {
@@ -1013,33 +1014,33 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static void assertContextSize(int size) {
-        assertEquals(size, AsyncContext.current().size());
-        assertEquals(size == 0, AsyncContext.current().isEmpty());
+        assertEquals(size, AsyncContext.context().size());
+        assertEquals(size == 0, AsyncContext.context().isEmpty());
     }
 
     private static class ContextCaptureCompletableSubscriber implements CompletableSource.Subscriber {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
-        AsyncContextMap onTerminateContext;
+        ContextMap onTerminateContext;
         @Nullable
-        AsyncContextMap onSubscribeContext;
+        ContextMap onSubscribeContext;
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            onSubscribeContext = AsyncContext.current();
+            onSubscribeContext = AsyncContext.context();
             latch.countDown();
         }
 
         @Override
         public void onComplete() {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
         @Override
         public void onError(Throwable t) {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
@@ -1049,7 +1050,7 @@ class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureCompletableSubscriber verifyContext(Consumer<AsyncContextMap> consumer) {
+        ContextCaptureCompletableSubscriber verifyContext(Consumer<ContextMap> consumer) {
             consumer.accept(onSubscribeContext);
             consumer.accept(onTerminateContext);
             return this;
@@ -1060,25 +1061,25 @@ class DefaultAsyncContextProviderTest {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
-        AsyncContextMap onTerminateContext;
+        ContextMap onTerminateContext;
         @Nullable
-        AsyncContextMap onSubscribeContext;
+        ContextMap onSubscribeContext;
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            onSubscribeContext = AsyncContext.current();
+            onSubscribeContext = AsyncContext.context();
             latch.countDown();
         }
 
         @Override
         public void onSuccess(@Nullable T result) {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
         @Override
         public void onError(Throwable t) {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
@@ -1088,7 +1089,7 @@ class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureSingleSubscriber<T> verifyContext(Consumer<AsyncContextMap> consumer) {
+        ContextCaptureSingleSubscriber<T> verifyContext(Consumer<ContextMap> consumer) {
             consumer.accept(onSubscribeContext);
             consumer.accept(onTerminateContext);
             return this;
@@ -1096,9 +1097,9 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static class ContextCaptureTestPublisher extends Publisher<String> {
-        final List<AsyncContextMap> requestNContexts = new ArrayList<>();
+        final List<ContextMap> requestNContexts = new ArrayList<>();
         @Nullable
-        AsyncContextMap cancelContext;
+        ContextMap cancelContext;
 
         @Override
         protected void handleSubscribe(PublisherSource.Subscriber s) {
@@ -1107,7 +1108,7 @@ class DefaultAsyncContextProviderTest {
                 @Override
                 public void request(long n) {
                     assert n >= 2 : "This test requires request(n >= 2)";
-                    requestNContexts.add(AsyncContext.current());
+                    requestNContexts.add(AsyncContext.context());
 
                     s.onNext("1");
                     executor.execute(() -> {
@@ -1118,12 +1119,12 @@ class DefaultAsyncContextProviderTest {
 
                 @Override
                 public void cancel() {
-                    cancelContext = AsyncContext.current();
+                    cancelContext = AsyncContext.context();
                 }
             }));
         }
 
-        ContextCaptureTestPublisher verifySubscriptionContext(Consumer<AsyncContextMap> consumer) {
+        ContextCaptureTestPublisher verifySubscriptionContext(Consumer<ContextMap> consumer) {
             requestNContexts.forEach(consumer);
             if (cancelContext != null) {
                 consumer.accept(cancelContext);
@@ -1136,31 +1137,31 @@ class DefaultAsyncContextProviderTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         @Nullable
-        AsyncContextMap onSubscribeContext;
-        final List<AsyncContextMap> onNextContexts = new ArrayList<>();
+        ContextMap onSubscribeContext;
+        final List<ContextMap> onNextContexts = new ArrayList<>();
         @Nullable
-        AsyncContextMap onTerminateContext;
+        ContextMap onTerminateContext;
 
         @Override
         public void onSubscribe(Subscription s) {
-            onSubscribeContext = AsyncContext.current();
+            onSubscribeContext = AsyncContext.context();
             s.request(Long.MAX_VALUE); // this is acceptable for the tests we have right now
         }
 
         @Override
         public void onNext(T t) {
-            onNextContexts.add(AsyncContext.current());
+            onNextContexts.add(AsyncContext.context());
         }
 
         @Override
         public void onError(Throwable t) {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
         @Override
         public void onComplete() {
-            onTerminateContext = AsyncContext.current();
+            onTerminateContext = AsyncContext.context();
             latch.countDown();
         }
 
@@ -1170,7 +1171,7 @@ class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureSubscriber<T> verifyContext(Consumer<AsyncContextMap> consumer) {
+        ContextCaptureSubscriber<T> verifyContext(Consumer<ContextMap> consumer) {
             consumer.accept(onSubscribeContext);
             onNextContexts.forEach(consumer);
             consumer.accept(onTerminateContext);
@@ -1179,11 +1180,11 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static class ContextCaptureRunnable implements Runnable {
-        final CompletableFuture<AsyncContextMap> mapFuture = new CompletableFuture<>();
+        final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
         @Override
         public void run() {
-            mapFuture.complete(AsyncContext.current());
+            mapFuture.complete(AsyncContext.context());
         }
 
         ContextCaptureRunnable runAndWait(Executor executor) throws ExecutionException, InterruptedException {
@@ -1198,7 +1199,7 @@ class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureRunnable verifyContext(Consumer<AsyncContextMap> consumer)
+        ContextCaptureRunnable verifyContext(Consumer<ContextMap> consumer)
                 throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;
@@ -1206,11 +1207,11 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static class ContextCaptureCallable<T> implements Callable<T> {
-        final CompletableFuture<AsyncContextMap> mapFuture = new CompletableFuture<>();
+        final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
         @Override
         public T call() {
-            mapFuture.complete(AsyncContext.current());
+            mapFuture.complete(AsyncContext.context());
             return null;
         }
 
@@ -1227,7 +1228,7 @@ class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureCallable<T> verifyContext(Consumer<AsyncContextMap> consumer)
+        ContextCaptureCallable<T> verifyContext(Consumer<ContextMap> consumer)
                 throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;
@@ -1235,16 +1236,16 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static class ContextCapturer {
-        final CompletableFuture<AsyncContextMap> mapFuture = new CompletableFuture<>();
+        final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
-        ContextCapturer runAndWait(Consumer<CompletableFuture<AsyncContextMap>> consumer)
+        ContextCapturer runAndWait(Consumer<CompletableFuture<ContextMap>> consumer)
                 throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture);
             mapFuture.get();
             return this;
         }
 
-        ContextCapturer verifyContext(Consumer<AsyncContextMap> consumer)
+        ContextCapturer verifyContext(Consumer<ContextMap> consumer)
                 throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;

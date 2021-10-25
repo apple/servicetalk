@@ -115,6 +115,6 @@ final class LoggingCloseHandler extends CloseHandler {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + delegate + ")";
+        return getClass().getSimpleName() + '(' + delegate + ")";
     }
 }

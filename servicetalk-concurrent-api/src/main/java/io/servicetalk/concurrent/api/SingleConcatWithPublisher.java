@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -40,7 +41,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(deferSubscribe ? new ConcatDeferNextSubscriber<>(subscriber, next) :
                         new ConcatSubscriber<>(subscriber, next), contextMap, contextProvider);
     }

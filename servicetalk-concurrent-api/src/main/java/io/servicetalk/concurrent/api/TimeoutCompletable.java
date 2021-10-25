@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.context.api.ContextMap;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +56,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
 
     @Override
     protected void handleSubscribe(final Subscriber subscriber,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
                 TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
                 contextMap, contextProvider);
@@ -90,7 +91,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
         }
 
         static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target,
-                                             AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                             ContextMap contextMap, AsyncContextProvider contextProvider) {
             TimeoutSubscriber s = new TimeoutSubscriber(parent, target, contextProvider);
             Cancellable localTimerCancellable;
             try {
@@ -171,7 +172,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
                 final Subscriber wrappedTarget = parent.timeoutExecutor == immediate() ? target :
-                        contextProvider.wrapCompletableSubscriber(target, contextProvider.contextMap());
+                        contextProvider.wrapCompletableSubscriber(target, contextProvider.context());
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();

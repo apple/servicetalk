@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
@@ -40,17 +42,18 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public AsyncContextMap contextMap() {
+        return new AsyncContextMapToContextMapAdapter(context());
+    }
+
+    @Nonnull
+    @Override
+    public ContextMap context() {
         return contextLocal.get();
     }
 
     @Override
-    public void contextMap(AsyncContextMap newContextMap) {
-        contextLocal.set(newContextMap);
-    }
-
-    @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
-                                                        final AsyncContextMap current) {
+                                                        final ContextMap current) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
             if (s.saved == current) {
@@ -67,8 +70,8 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CompletableSource.Subscriber wrapCompletableSubscriber(CompletableSource.Subscriber subscriber,
-                                                                  AsyncContextMap current) {
+    public CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
+                                                                  final ContextMap current) {
         if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
             final ContextPreservingCancellableCompletableSubscriber s =
                     (ContextPreservingCancellableCompletableSubscriber) subscriber;
@@ -87,7 +90,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
-            final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
+            final CompletableSource.Subscriber subscriber, final ContextMap current) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
             if (s.saved == current) {
@@ -106,7 +109,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
-                                                          final AsyncContextMap current) {
+                                                          final ContextMap current) {
         if (subscriber instanceof ContextPreservingSingleSubscriber) {
             final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
             if (s.saved == current) {
@@ -123,8 +126,8 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber,
-                                                               AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
+                                                               final ContextMap current) {
         if (subscriber instanceof ContextPreservingCancellableSingleSubscriber) {
             final ContextPreservingCancellableSingleSubscriber<T> s =
                     (ContextPreservingCancellableSingleSubscriber<T>) subscriber;
@@ -142,7 +145,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
-            final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
+            final SingleSource.Subscriber<T> subscriber, final ContextMap current) {
         if (subscriber instanceof ContextPreservingSingleSubscriber) {
             final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
             if (s.saved == current) {
@@ -160,7 +163,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
+    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final ContextMap current) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
             if (s.saved == current) {
@@ -177,7 +180,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrapPublisherSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final ContextMap current) {
         if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
             final ContextPreservingSubscriptionSubscriber<T> s =
                     (ContextPreservingSubscriptionSubscriber<T>) subscriber;
@@ -195,7 +198,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
-                                                                    final AsyncContextMap current) {
+                                                                    final ContextMap current) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
             if (s.saved == current) {
@@ -213,12 +216,12 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Executor wrapJdkExecutor(Executor executor) {
+    public Executor wrapJdkExecutor(final Executor executor) {
         return ContextPreservingExecutor.of(executor);
     }
 
     @Override
-    public ExecutorService wrapJdkExecutorService(ExecutorService executor) {
+    public ExecutorService wrapJdkExecutorService(final ExecutorService executor) {
         return ContextPreservingExecutorService.of(executor);
     }
 
@@ -228,42 +231,42 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future, AsyncContextMap current) {
-        return ContextPreservingCompletableFuture.newContextPreservingFuture(future, current);
-    }
-
-    @Override
-    public ScheduledExecutorService wrapJdkScheduledExecutorService(ScheduledExecutorService executor) {
+    public ScheduledExecutorService wrapJdkScheduledExecutorService(final ScheduledExecutorService executor) {
         return ContextPreservingScheduledExecutorService.of(executor);
     }
 
     @Override
-    public Runnable wrapRunnable(final Runnable runnable, final AsyncContextMap contextMap) {
-        return new ContextPreservingRunnable(runnable, contextMap);
+    public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future, final ContextMap current) {
+        return ContextPreservingCompletableFuture.newContextPreservingFuture(future, current);
     }
 
     @Override
-    public <V> Callable<V> wrapCallable(final Callable<V> callable, final AsyncContextMap contextMap) {
-        return new ContextPreservingCallable<>(callable, contextMap);
+    public Runnable wrapRunnable(final Runnable runnable, final ContextMap current) {
+        return new ContextPreservingRunnable(runnable, current);
     }
 
     @Override
-    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final AsyncContextMap contextMap) {
-        return new ContextPreservingConsumer<>(consumer, contextMap);
+    public <V> Callable<V> wrapCallable(final Callable<V> callable, final ContextMap current) {
+        return new ContextPreservingCallable<>(callable, current);
     }
 
     @Override
-    public <T, U> Function<T, U> wrapFunction(Function<T, U> func, AsyncContextMap contextMap) {
-        return new ContextPreservingFunction<>(func, contextMap);
+    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final ContextMap current) {
+        return new ContextPreservingConsumer<>(consumer, current);
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrapBiConsumer(BiConsumer<T, U> consumer, AsyncContextMap contextMap) {
-        return new ContextPreservingBiConsumer<>(consumer, contextMap);
+    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final ContextMap current) {
+        return new ContextPreservingFunction<>(func, current);
     }
 
     @Override
-    public <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func, AsyncContextMap contextMap) {
-        return new ContextPreservingBiFunction<>(func, contextMap);
+    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final ContextMap current) {
+        return new ContextPreservingBiConsumer<>(consumer, current);
+    }
+
+    @Override
+    public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap current) {
+        return new ContextPreservingBiFunction<>(func, current);
     }
 }

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BooleanSupplier;
 
@@ -36,7 +37,7 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> void deliverOnSubscribeAndOnError(SingleSource.Subscriber<? super T> subscriber,
-                                                 AsyncContextMap contextMap,
+                                                 ContextMap contextMap,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
     }
@@ -44,12 +45,12 @@ final class PublishAndSubscribeOnSingles {
     @FunctionalInterface
     private interface HandleSubscribe<T> {
         void handleSubscribe(SingleSource.Subscriber<? super T> subscriber,
-                             AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+                             ContextMap contextMap, AsyncContextProvider contextProvider);
     }
 
     private static <T> void safeHandleSubscribe(final HandleSubscribe handler,
                                         final SingleSource.Subscriber<? super T> subscriber,
-                                        final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                        final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         try {
             handler.handleSubscribe(subscriber, contextMap, contextProvider);
         } catch (Throwable throwable) {
@@ -83,7 +84,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -118,7 +119,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();

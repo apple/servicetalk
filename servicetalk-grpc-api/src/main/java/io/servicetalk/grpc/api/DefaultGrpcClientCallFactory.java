@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncodingRaw;
 import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
-import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_CONTEXT_KEY;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
@@ -380,7 +380,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
      * @return The timeout {@link Duration}, potentially negative or null if no timeout.
      */
     private @Nullable Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
-        Long deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
+        Long deadline = AsyncContext.get(GRPC_DEADLINE_CONTEXT_KEY);
         @Nullable
         Duration contextTimeout = null != deadline ? Duration.ofNanos(deadline - System.nanoTime()) : null;
 

@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -51,7 +52,8 @@ final class OnSubscribeIgnoringSubscriberForOffloading<T> implements Subscriber<
     }
 
     static <T> Subscriber<? super T> wrapWithDummyOnSubscribe(Subscriber<? super T> original,
-               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                                              ContextMap contextMap,
+                                                              AsyncContextProvider contextProvider) {
         Subscriber<? super T> toReturn = contextProvider.wrapPublisherSubscriber(
                 new OnSubscribeIgnoringSubscriberForOffloading<>(original), contextMap);
         // We have created a wrapped Subscriber but we have sent onSubscribe to the original Subscriber

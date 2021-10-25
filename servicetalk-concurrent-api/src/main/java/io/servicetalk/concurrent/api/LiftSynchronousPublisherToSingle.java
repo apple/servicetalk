@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
@@ -43,7 +44,7 @@ final class LiftSynchronousPublisherToSingle<T, R> extends Single<R> implements 
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(customOperator.apply(subscriber), contextMap, contextProvider);
     }
 }

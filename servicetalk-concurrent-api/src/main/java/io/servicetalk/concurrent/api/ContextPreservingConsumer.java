@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
+
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingConsumer<T> implements Consumer<T> {
-    private final AsyncContextMap saved;
+    private final ContextMap saved;
     private final Consumer<T> delegate;
 
-    ContextPreservingConsumer(Consumer<T> delegate, AsyncContextMap current) {
+    ContextPreservingConsumer(Consumer<T> delegate, ContextMap current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
     }
@@ -32,14 +35,14 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
     @Override
     public void accept(T t) {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 delegate.accept(t);
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             slowPath(t);
@@ -47,12 +50,12 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
     }
 
     private void slowPath(T t) {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             delegate.accept(t);
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

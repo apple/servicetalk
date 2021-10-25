@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
+
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingFunction<T, U> implements Function<T, U> {
-    private final AsyncContextMap saved;
+    private final ContextMap saved;
     private final Function<T, U> delegate;
 
-    ContextPreservingFunction(Function<T, U> delegate, AsyncContextMap contextMap) {
+    ContextPreservingFunction(Function<T, U> delegate, ContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
         this.delegate = requireNonNull(delegate);
     }
@@ -32,14 +35,14 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
     @Override
     public U apply(T t) {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 return delegate.apply(t);
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             return slowPath(t);
@@ -47,12 +50,12 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
     }
 
     private U slowPath(T t) {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             return delegate.apply(t);
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

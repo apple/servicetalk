@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AmbSingles.AmbSubscriber;
 import io.servicetalk.concurrent.api.AmbSingles.State;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
@@ -32,7 +33,7 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         State<T> state = new State<>(subscriber);
         try {
             subscriber.onSubscribe(state);

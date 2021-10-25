@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -24,12 +26,18 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * The key-value map stored in the {@link AsyncContext}.
+ *
+ * @deprecated Use {@link ContextMap}.
  */
+@Deprecated
 public interface AsyncContextMap {
+
     /**
      * A key identifies a specific object in a {@link AsyncContextMap}.
      * @param <T> The type of value associated with a {@link AsyncContextMap.Key}.
+     * @deprecated Use {@link ContextMap.Key} with {@link ContextMap}.
      */
+    @Deprecated
     final class Key<T> {
         private final String stringRepresentation;
 
@@ -54,7 +62,9 @@ public interface AsyncContextMap {
          * @param <T> The value type associated with the {@link Key}.
          * @return a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for
          * debugging visibility.
+         * @deprecated Use {@link ContextMap.Key#newKey(String, Class)}.
          */
+        @Deprecated
         public static <T> Key<T> newKey(String toString) {
             return new Key<>(toString);
         }
@@ -66,7 +76,9 @@ public interface AsyncContextMap {
          * In general {@code newKey() != newKey()}.
          * @param <T> The value type associated with the {@link Key}.
          * @return a new instance.
+         * @deprecated Use {@link ContextMap.Key#newKey(String, Class)}.
          */
+        @Deprecated
         public static <T> Key<T> newKey() {
             return new Key<>();
         }
@@ -190,7 +202,7 @@ public interface AsyncContextMap {
      * {@link AsyncContextMap} but modifications to this {@link AsyncContextMap} are not visible in the return value,
      * and visa-versa.
      *
-     * @return an isolated copy of the current map. Tcontents are the same as this {@link AsyncContextMap} but
+     * @return an isolated copy of the current map. The contents are the same as this {@link AsyncContextMap} but
      * modifications to this {@link AsyncContextMap} are not visible in the return value, and visa-versa.
      */
     AsyncContextMap copy();

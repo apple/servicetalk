@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
+
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,23 +120,24 @@ public final class DefaultThreadFactory implements ThreadFactory {
                 '}';
     }
 
-    private static final class AsyncContextHolderThread extends Thread implements AsyncContextMapHolder {
+    private static final class AsyncContextHolderThread extends Thread implements ContextMapHolder {
         @Nullable
-        private AsyncContextMap asyncContextMap;
+        private ContextMap context;
 
         AsyncContextHolderThread(Runnable target, String name) {
             super(target, name);
         }
 
         @Override
-        public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
-            this.asyncContextMap = asyncContextMap;
+        public AsyncContextHolderThread context(@Nullable final ContextMap context) {
+            this.context = context;
+            return this;
         }
 
         @Nullable
         @Override
-        public AsyncContextMap asyncContextMap() {
-            return asyncContextMap;
+        public ContextMap context() {
+            return context;
         }
     }
 }

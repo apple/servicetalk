@@ -17,9 +17,10 @@ package io.servicetalk.http.utils.auth;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -41,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -71,7 +71,14 @@ import static org.mockito.Mockito.when;
 class BasicAuthHttpServiceFilterTest {
 
     private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
-    private static final Key<BasicUserInfo> USER_INFO_KEY = newKey("basicUserInfo");
+    private static final CharSequence USER_ID_AC_HEADER_NAME = newAsciiString("test-userid-ac");
+    private static final CharSequence USER_ID_RC_HEADER_NAME = newAsciiString("test-userid-rc");
+    private static final AsyncContextMap.Key<BasicUserInfo> USER_INFO_KEY =
+            AsyncContextMap.Key.newKey("USER_INFO_KEY");
+    private static final ContextMap.Key<BasicUserInfo> USER_INFO_AC_KEY =
+            ContextMap.Key.newKey("USER_INFO_AC_KEY", BasicUserInfo.class);
+    private static final ContextMap.Key<BasicUserInfo> USER_INFO_RC_KEY =
+            ContextMap.Key.newKey("USER_INFO_RC_KEY", BasicUserInfo.class);
 
     private static final class BasicUserInfo {
 
@@ -92,6 +99,14 @@ class BasicAuthHttpServiceFilterTest {
         BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
         if (userInfo != null) {
             response.headers().set(USER_ID_HEADER_NAME, userInfo.userId());
+        }
+        BasicUserInfo userInfoAc = AsyncContext.get(USER_INFO_AC_KEY);
+        if (userInfoAc != null) {
+            response.headers().set(USER_ID_AC_HEADER_NAME, userInfoAc.userId());
+        }
+        BasicUserInfo userInfoRc = request.context().get(USER_INFO_RC_KEY);
+        if (userInfoRc != null) {
+            response.headers().set(USER_ID_RC_HEADER_NAME, userInfoRc.userId());
         }
         return succeeded(response);
     };
@@ -219,6 +234,8 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(OK, response.status());
 
         assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
 
     @Test
@@ -299,6 +316,8 @@ class BasicAuthHttpServiceFilterTest {
         StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(
                 utf8CredentialsVerifier, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
+                .userInfoAsyncContextKey(USER_INFO_AC_KEY)
+                .userInfoRequestContextKey(USER_INFO_RC_KEY)
                 .setCharsetUtf8(true)
                 .buildServer()
                 .create(HELLO_WORLD_SERVICE);
@@ -309,6 +328,8 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals("Basic realm=\"" + REALM_VALUE + "\", charset=\"UTF-8\"",
                                 response.headers().get(WWW_AUTHENTICATE));
         assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
 
         StreamingHttpRequest request = reqRespFactory.get("/path");
         request.headers().set(AUTHORIZATION, "Basic " + base64("userId:пароль", UTF_8));
@@ -364,6 +385,8 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.headers().get(WWW_AUTHENTICATE));
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
         assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
 
     private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
@@ -376,11 +399,15 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.headers().get(PROXY_AUTHENTICATE));
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
         assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
+        assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
         StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
+                .userInfoAsyncContextKey(USER_INFO_AC_KEY)
+                .userInfoRequestContextKey(USER_INFO_RC_KEY)
                 .buildServer()
                 .create(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
@@ -392,11 +419,15 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(OK, response.status());
 
         assertTrue(response.headers().contains(USER_ID_HEADER_NAME, "userId"));
+        assertTrue(response.headers().contains(USER_ID_AC_HEADER_NAME, "userId"));
+        assertTrue(response.headers().contains(USER_ID_RC_HEADER_NAME, "userId"));
     }
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
         StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
+                .userInfoAsyncContextKey(USER_INFO_AC_KEY)
+                .userInfoRequestContextKey(USER_INFO_RC_KEY)
                 .buildProxy()
                 .create(HELLO_WORLD_SERVICE);
 
@@ -404,6 +435,8 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(OK, response.status());
 
         assertTrue(response.headers().contains(USER_ID_HEADER_NAME, "userId"));
+        assertTrue(response.headers().contains(USER_ID_AC_HEADER_NAME, "userId"));
+        assertTrue(response.headers().contains(USER_ID_RC_HEADER_NAME, "userId"));
     }
 
     private static String base64(String str) {

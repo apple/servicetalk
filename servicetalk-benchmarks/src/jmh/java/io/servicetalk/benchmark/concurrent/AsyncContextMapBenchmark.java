@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.benchmark.concurrent;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap.Key;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Collections.unmodifiableSet;
 
 @Fork(2)
@@ -44,14 +44,14 @@ import static java.util.Collections.unmodifiableSet;
 @Warmup(iterations = 10, time = 2)
 @Measurement(iterations = 10, time = 2)
 public class AsyncContextMapBenchmark {
-    private static final Key<String> K1 = newKey("k1");
-    private static final Key<String> K2 = newKey("k2");
-    private static final Key<String> K3 = newKey("k3");
-    private static final Key<String> K4 = newKey("k4");
-    private static final Key<String> K5 = newKey("k5");
-    private static final Key<String> K6 = newKey("k6");
-    private static final Key<String> K7 = newKey("k7");
-    private static final Key<String> K8 = newKey("k8");
+    private static final Key<String> K1 = newKey("k1", String.class);
+    private static final Key<String> K2 = newKey("k2", String.class);
+    private static final Key<String> K3 = newKey("k3", String.class);
+    private static final Key<String> K4 = newKey("k4", String.class);
+    private static final Key<String> K5 = newKey("k5", String.class);
+    private static final Key<String> K6 = newKey("k6", String.class);
+    private static final Key<String> K7 = newKey("k7", String.class);
+    private static final Key<String> K8 = newKey("k8", String.class);
 
     @Setup(Level.Invocation)
     public final void setup() {
@@ -104,8 +104,8 @@ public class AsyncContextMapBenchmark {
 
     @Benchmark
     public void putGetMultiFour() {
-        AsyncContext.putAll(FourMap.INSTANCE);
-        AsyncContext.removeAll(FourList.INSTANCE);
+        AsyncContext.putAllFromMap(FourMap.INSTANCE);
+        AsyncContext.removeAllPairs(FourList.INSTANCE);
     }
 
     private static final class FourList extends AbstractList<Key<?>> {

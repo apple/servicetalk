@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.CompletableSource.Subscriber;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellableCompletableSubscriber implements Subscriber {
-    final AsyncContextMap saved;
+    final ContextMap saved;
     final Subscriber subscriber;
 
-    ContextPreservingCancellableCompletableSubscriber(Subscriber subscriber, AsyncContextMap current) {
+    ContextPreservingCancellableCompletableSubscriber(Subscriber subscriber, ContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -46,6 +47,6 @@ final class ContextPreservingCancellableCompletableSubscriber implements Subscri
 
     @Override
     public String toString() {
-        return ContextPreservingCancellableCompletableSubscriber.class.getSimpleName() + "(" + subscriber + ')';
+        return ContextPreservingCancellableCompletableSubscriber.class.getSimpleName() + '(' + subscriber + ')';
     }
 }

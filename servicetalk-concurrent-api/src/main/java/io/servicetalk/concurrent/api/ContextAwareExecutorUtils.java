@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
+
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +32,7 @@ final class ContextAwareExecutorUtils {
 
     static <X> Collection<? extends Callable<X>> wrap(Collection<? extends Callable<X>> tasks) {
         List<Callable<X>> wrappedTasks = new ArrayList<>(tasks.size());
-        AsyncContextMap contextMap = INSTANCE.contextMap();
+        ContextMap contextMap = INSTANCE.context();
         for (Callable<X> task : tasks) {
             wrappedTasks.add(new ContextPreservingCallable<>(task, contextMap));
         }
