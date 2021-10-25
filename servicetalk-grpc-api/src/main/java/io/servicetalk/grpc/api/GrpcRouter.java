@@ -69,6 +69,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
@@ -77,7 +78,6 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
 import static io.servicetalk.grpc.api.GrpcUtils.initResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.negotiateAcceptedEncodingRaw;

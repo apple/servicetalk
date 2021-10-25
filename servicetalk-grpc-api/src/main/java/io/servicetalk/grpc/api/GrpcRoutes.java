@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_PROTO_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.compressors;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;

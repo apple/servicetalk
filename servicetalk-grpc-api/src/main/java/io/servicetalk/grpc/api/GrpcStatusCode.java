@@ -142,7 +142,7 @@ public enum GrpcStatusCode {
      * @param errorCode the {@link Http2ErrorCode} to convert.
      * @return the result of the conversion.
      */
-    static GrpcStatusCode fromHttp2ErrorCode(Http2ErrorCode errorCode) {
+    public static GrpcStatusCode fromHttp2ErrorCode(Http2ErrorCode errorCode) {
         final int h2ErrorCode = errorCode.code();
         return h2ErrorCode < 0 || h2ErrorCode >= H2_ERROR_TO_STATUS_CODE_MAP.length ?
                 UNKNOWN : H2_ERROR_TO_STATUS_CODE_MAP[h2ErrorCode];
