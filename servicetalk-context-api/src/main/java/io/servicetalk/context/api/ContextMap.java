@@ -218,7 +218,8 @@ public interface ContextMap {
      * or is mapped to {@code null}.
      *
      * @param key The {@link Key} used to index a new value.
-     * @param computeFunction The function to compute a new value.
+     * @param computeFunction The function to compute a new value. Implementation may invoke this function multiple
+     * times if concurrent threads attempt modifying this context map, result is expected to be idempotent.
      * @param <T> The type of object associated with the {@code key}.
      * @return The current (existing or computed) value associated with the {@code key}, or {@code null} if the computed
      * value is {@code null}.
