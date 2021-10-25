@@ -39,12 +39,17 @@ protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:$protobufVersion"
   }
+
+  //// REMOVE if outside of ServiceTalk gradle project
+  def pluginJar = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
+          "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar")
+  //// REMOVE if outside of ServiceTalk gradle project
+
   plugins {
     servicetalk_grpc {
       //// REMOVE if outside of ServiceTalk gradle project - use "artifact" as demonstrated below
       //// "path" is used only because we want to use the gradle project local version of the plugin.
-      path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
-                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+      path = pluginJar.path
       //// REMOVE if outside of ServiceTalk gradle project - use "artifact" as demonstrated below
 
       // artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all@jar"
@@ -54,6 +59,13 @@ protobuf {
     all().each { task ->
       //// REMOVE if outside of ServiceTalk gradle project
       task.dependsOn(":servicetalk-grpc-protoc:buildExecutable") // use gradle project local grpc-protoc dependency
+
+      // you may need to manually add the artifact name as an input
+      task.inputs
+              .file(pluginJar)
+              .withNormalizer(ClasspathNormalizer)
+              .withPropertyName("servicetalkPluginJar")
+              .withPathSensitivity(PathSensitivity.RELATIVE)
       //// REMOVE if outside of ServiceTalk gradle project
 
       task.plugins {
