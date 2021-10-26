@@ -73,6 +73,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -250,8 +251,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
-        final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
+        // XXX This should probably be somewhere else
+        if (noOffloadsStrategy() == executionContext.executionStrategy()) {
+            ctx.builder.config.tcpConfig().asyncCloseOffload(false);
+        }
+
+        final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
+
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
@@ -449,6 +456,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> asyncCloseOffload(boolean offload) {
+        config.tcpConfig().asyncCloseOffload(offload);
         return this;
     }
 

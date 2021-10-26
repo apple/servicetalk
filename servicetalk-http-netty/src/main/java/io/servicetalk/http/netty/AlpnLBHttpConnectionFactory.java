@@ -90,7 +90,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext,
                             h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
-                            tcpConfig.idleTimeoutMs(),
+                            tcpConfig.isAsyncCloseOffloaded(), tcpConfig.idleTimeoutMs(),
                             new H2ClientParentChannelInitializer(h2Config), connectionObserver,
                             config.allowDropTrailersReadFromTransport());
                 default:

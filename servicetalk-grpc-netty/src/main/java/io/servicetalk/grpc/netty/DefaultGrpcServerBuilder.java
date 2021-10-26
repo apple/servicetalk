@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcBindableService;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -219,10 +220,11 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
 
     private static class ExecutionContextInterceptorHttpServerBuilder implements HttpServerBuilder {
         private final HttpServerBuilder delegate;
-        private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
-                // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy
-                // which is not compatible with gRPC.
-                .executionStrategy(defaultStrategy());
+        private final ExecutionContextBuilder<GrpcExecutionStrategy> contextBuilder =
+                new ExecutionContextBuilder<GrpcExecutionStrategy>()
+                    // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy
+                    // which is not compatible with gRPC.
+                    .executionStrategy(defaultStrategy());
 
         ExecutionContextInterceptorHttpServerBuilder(final HttpServerBuilder delegate) {
             this.delegate = delegate;
@@ -251,7 +253,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
 
         @Override
         public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
-            contextBuilder.executionStrategy(strategy);
+            contextBuilder.executionStrategy(GrpcExecutionStrategy.from(strategy));
             delegate.executionStrategy(strategy);
             return this;
         }
@@ -317,6 +319,11 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
             delegate.allowDropRequestTrailers(allowDrop);
             return this;
+        }
+
+        @Override
+        public HttpServerBuilder asyncCloseOffload(final boolean offload) {
+            return delegate.asyncCloseOffload(offload);
         }
 
         @Override

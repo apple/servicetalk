@@ -103,7 +103,7 @@ class NettyPipelinedConnectionTest {
         CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null, closeHandler, defaultFlushStrategy(), null, channel2 -> {
+                immediate(), null, closeHandler, defaultFlushStrategy(), true, null, channel2 -> {
                     channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelRead(ChannelHandlerContext ctx, Object msg) {

@@ -50,7 +50,7 @@ class NettyChannelPublisherRefCountTest {
         channel = new EmbeddedDuplexChannel(false);
         publisher = DefaultNettyConnection.initChannel(channel,
                         DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        defaultFlushStrategy(), null, channel2 -> { }, offloadAll(), mock(Protocol.class),
+                        defaultFlushStrategy(), true, null, channel2 -> { }, offloadAll(), mock(Protocol.class),
                         NoopConnectionObserver.INSTANCE, true).toFuture().get()
                 .read();
     }

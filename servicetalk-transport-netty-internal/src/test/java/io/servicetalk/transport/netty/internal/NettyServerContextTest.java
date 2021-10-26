@@ -134,7 +134,7 @@ class NettyServerContextTest {
         lenient().when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
         lenient().when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
-                new ExecutionContextBuilder().executor(immediate()).build());
+                new ExecutionContextBuilder().executor(immediate()).build(), true);
     }
 
     @Test

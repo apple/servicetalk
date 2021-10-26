@@ -53,7 +53,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
         channel = new EmbeddedDuplexChannel(false);
         final CloseHandler closeHandler = forPipelinedRequestResponse(isClient, channel.config());
         conn = DefaultNettyConnection.<String, String>initChannel(channel, DEFAULT_ALLOCATOR, immediate(),
-                        null, closeHandler, defaultFlushStrategy(), null,
+                        null, closeHandler, defaultFlushStrategy(), true, null,
                 WIRE_LOGGING_INITIALIZER.andThen(ch -> ch.pipeline().addLast(new ChannelDuplexHandler() {
                     @Override
                     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {

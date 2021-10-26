@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
@@ -93,7 +94,8 @@ public final class TcpServerBinder {
         ServerBootstrap bs = new ServerBootstrap();
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
-        ChannelSet channelSet = new ChannelSet(executionContext.executor());
+        ChannelSet channelSet = new ChannelSet(
+                config.isAsyncCloseOffloaded() ? executionContext.executor() : immediate());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -154,7 +156,7 @@ public final class TcpServerBinder {
                     Throwable cause = f.cause();
                     if (cause == null) {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet,
-                                connectionAcceptor, executionContext));
+                                connectionAcceptor, executionContext, config.isAsyncCloseOffloaded()));
                     } else {
                         close(channel, f.cause());
                         subscriber.onError(f.cause());

@@ -85,6 +85,14 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
                                                            LogLevel logLevel, BooleanSupplier logUserData);
 
     /**
+     * Configures whether the signals for the close {@link io.servicetalk.concurrent.api.Completable} are offloaded.
+     *
+     * @param offload If true then close {@link io.servicetalk.concurrent.api.Completable} will be offloaded.
+     * @return {@code this}
+     */
+    SingleAddressHttpClientBuilder<U, R> asyncCloseOffload(boolean offload);
+
+    /**
      * Configurations of various HTTP protocol versions.
      * <p>
      * <b>Note:</b> the order of specified protocols will reflect on priorities for

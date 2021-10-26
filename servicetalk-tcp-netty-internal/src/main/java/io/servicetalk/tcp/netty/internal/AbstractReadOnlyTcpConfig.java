@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -43,11 +44,14 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
 
+    private final boolean asyncCloseOffload;
+
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig> from) {
         options = nonNullOptions(from.options());
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
+        asyncCloseOffload = from.isAsyncCloseOffloaded();
     }
 
     @SuppressWarnings("rawtypes")
@@ -101,4 +105,13 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
      */
     @Nullable
     public abstract SslContext sslContext();
+
+    /**
+     * Returns true if completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
+     *
+     * @return true if completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
+     */
+    public final boolean isAsyncCloseOffloaded() {
+        return asyncCloseOffload;
+    }
 }

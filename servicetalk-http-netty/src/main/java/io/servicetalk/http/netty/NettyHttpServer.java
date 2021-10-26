@@ -171,7 +171,7 @@ final class NettyHttpServer {
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 httpExecutionContext.ioExecutor(), closeHandler, config.tcpConfig().flushStrategy(),
-                        config.tcpConfig().idleTimeoutMs(),
+                        config.tcpConfig().isAsyncCloseOffloaded(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,

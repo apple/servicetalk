@@ -62,10 +62,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private final SocketAddress listenAddress;
     private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                                             final FlushStrategy flushStrategy,
+                                            final boolean asyncCloseOffload,
                                             @Nullable final Long idleTimeoutMs,
                                             final SocketAddress listenAddress,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
+        super(channel, executionContext, flushStrategy, asyncCloseOffload, idleTimeoutMs, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
     }
 
@@ -127,8 +128,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     KeepAliveManager keepAliveManager = new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy());
                     final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
-                            httpExecutionContext, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
-                            listenAddress, keepAliveManager);
+                            httpExecutionContext, parentFlushStrategy, config.tcpConfig().isAsyncCloseOffloaded(),
+                            config.tcpConfig().idleTimeoutMs(), listenAddress, keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -165,6 +166,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
                                                 connection.flushStrategyHolder.currentStrategy(),
+                                                config.tcpConfig().isAsyncCloseOffloaded(),
                                                 connection.idleTimeoutMs,
                                                 HTTP_2_0,
                                                 connection.sslSession(),

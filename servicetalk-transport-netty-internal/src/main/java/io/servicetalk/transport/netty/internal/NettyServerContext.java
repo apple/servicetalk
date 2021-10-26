@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 
 /**
  * {@link ServerContext} implementation using a netty {@link Channel}.
@@ -66,12 +67,15 @@ public final class NettyServerContext implements ServerContext {
      * @param channelSetCloseable {@link ChannelSet} to wrap.
      * @param closeBefore {@link Completable} which needs to closed first before {@code listenChannel} will be closed.
      * @param executionContext {@link ExecutionContext} used by this server.
+     * @param offloadAsyncClose If true then signals for close {@link Completable} will be offloaded
      * @return A new {@link NettyServerContext} instance.
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
-                                     @Nullable AsyncCloseable closeBefore, ExecutionContext<?> executionContext) {
+                                     @Nullable AsyncCloseable closeBefore, ExecutionContext<?> executionContext,
+                                     boolean offloadAsyncClose) {
         final NettyChannelListenableAsyncCloseable channelCloseable =
-                new NettyChannelListenableAsyncCloseable(listenChannel, executionContext.executor());
+                new NettyChannelListenableAsyncCloseable(listenChannel,
+                        offloadAsyncClose ? executionContext.executor() : immediate());
         final CompositeCloseable closeAsync = closeBefore == null ?
                 newCompositeCloseable().appendAll(channelCloseable, channelSetCloseable) :
                 newCompositeCloseable().appendAll(closeBefore, channelCloseable, channelSetCloseable);
