@@ -36,5 +36,5 @@ public interface GroupKey<Address> {
      * Get the {@link ExecutionContext} to use when looking for or creating a new client.
      * @return the {@link ExecutionContext} to use when looking for or creating a new client.
      */
-    ExecutionContext executionContext();
+    ExecutionContext<?> executionContext();
 }

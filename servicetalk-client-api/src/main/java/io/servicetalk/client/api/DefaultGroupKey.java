@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultGroupKey<Address> implements GroupKey<Address> {
 
     private final Address address;
-    private final ExecutionContext executionContext;
+    private final ExecutionContext<?> executionContext;
 
     /**
      * Create a new instance.
@@ -36,7 +36,7 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
      * @param executionContext The {@link ExecutionContext} to use for {@link #executionContext()}.
      */
     public DefaultGroupKey(final Address address,
-                           final ExecutionContext executionContext) {
+                           final ExecutionContext<?> executionContext) {
         this.address = requireNonNull(address);
         this.executionContext = requireNonNull(executionContext);
     }
@@ -47,7 +47,7 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public ExecutionContext<?> executionContext() {
         return executionContext;
     }
 

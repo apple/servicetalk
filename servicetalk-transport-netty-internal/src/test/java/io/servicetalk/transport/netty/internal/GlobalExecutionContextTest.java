@@ -30,7 +30,7 @@ class GlobalExecutionContextTest {
 
     @Test
     void testGetGlobalExecutionContext() throws InterruptedException {
-        ExecutionContext gec = globalExecutionContext();
+        ExecutionContext<?> gec = globalExecutionContext();
         CountDownLatch scheduleLatch = new CountDownLatch(2);
         gec.executor().schedule(scheduleLatch::countDown, 5, MILLISECONDS);
         NettyIoExecutor ioExecutor = toNettyIoExecutor(gec.ioExecutor());

@@ -45,7 +45,7 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoE
  */
 public final class ExecutionContextExtension implements AfterEachCallback, BeforeEachCallback,
                                                         AfterAllCallback, BeforeAllCallback,
-                                                        ExecutionContext {
+                                                        ExecutionContext<ExecutionStrategy> {
 
     private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
     private static final String EXEC_THREAD_PREFIX = "exec-ctx-rule-exec";
@@ -54,7 +54,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     private final Supplier<BufferAllocator> allocatorSupplier;
     private final Supplier<ExecutionStrategy> executionStrategySupplier;
 
-    private ExecutionContext ctx;
+    private ExecutionContext<ExecutionStrategy> ctx;
     private boolean classLevel;
 
     public ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
@@ -168,7 +168,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     }
 
     private void createContext() {
-        ctx = new DefaultExecutionContext(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get(),
+        ctx = new DefaultExecutionContext<>(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get(),
                 executionStrategySupplier.get());
     }
 

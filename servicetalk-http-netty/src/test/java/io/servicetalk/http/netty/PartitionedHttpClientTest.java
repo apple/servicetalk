@@ -301,9 +301,9 @@ class PartitionedHttpClientTest {
      */
     private static final class Group {
         private final HostAndPort address;
-        private final ExecutionContext executionContext;
+        private final ExecutionContext<?> executionContext;
 
-        Group(final HostAndPort address, final ExecutionContext executionContext) {
+        Group(final HostAndPort address, final ExecutionContext<?> executionContext) {
             this.address = address;
             this.executionContext = executionContext;
         }

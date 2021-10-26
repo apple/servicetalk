@@ -79,7 +79,7 @@ public final class DefaultExecutionContext<ES extends ExecutionStrategy> impleme
             return false;
         }
 
-        final DefaultExecutionContext that = (DefaultExecutionContext) o;
+        final DefaultExecutionContext<?> that = (DefaultExecutionContext<?>) o;
 
         return bufferAllocator.equals(that.bufferAllocator) &&
                 ioExecutor.equals(that.ioExecutor) &&
