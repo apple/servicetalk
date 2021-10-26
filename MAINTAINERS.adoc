@@ -5,6 +5,7 @@ See xref:GOVERNANCE.adoc[Governance Guidelines] for how to become a maintainer. 
 xref:CONTRIBUTING.adoc[Contributor Guidelines] for general contribution guidelines.
 
 == Maintainers (in alphabetical order)
+* link:https://github.com/chemicL[Dariusz Jedrzejczyk]
 * link:https://github.com/idelpivnitskiy[Idel Pivnitskiy]
 * link:https://github.com/bondolo[Mike Duigou]
 * link:https://github.com/NiteshKant[Nitesh Kant]
