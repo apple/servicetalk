@@ -42,7 +42,8 @@ link:https://github.com/apple/servicetalk/pulls?q=is%3Aopen+is%3Apr+label%3A%22h
 some known ideas.
 
 All Pull Requests must be open from a link:https://docs.github.com/en/get-started/quickstart/fork-a-repo[fork] by
-clicking a **Fork** button in the top-right corner of the GitHub page.
+clicking a **Fork** button in the top-right corner of the GitHub page. For minor PRs made by editing files directly
+through GitHub UI the forking happens automatically.
 
 CI will run tests against the PR and post the status back to GitHub.
 
@@ -57,8 +58,6 @@ A good ServiceTalk patch is:
 === Checklist
 Please use the following checklist before pushing your commits or issuing a pull request:
 
-- Did you link:https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository[fork the repository]
-before opening a pull request?
 - Did you rebase your pull request against the `HEAD` of the target branch and fix all conflicts?
 - Does your work build without any failure when you run `./gradlew build` from shell?
 - Does your commit message or pull request description follow our <<Commit Message Template>>?
