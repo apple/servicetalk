@@ -26,6 +26,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -44,6 +45,8 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -57,6 +60,7 @@ import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -71,6 +75,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.valueOf;
+import static java.time.Duration.ofNanos;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
@@ -118,11 +123,20 @@ class MalformedDataAfterHttpMessageTest {
         }
     }
 
-    @Test
-    void afterResponseNextClientRequestSucceeds() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void afterResponseNextClientRequestSucceeds(boolean doOffloading) throws Exception {
         Queue<ConnectionContext> contextQueue = new ArrayBlockingQueue<>(4);
         ServerSocketChannel server = nettyServer(RESPONSE_MSG);
         try (BlockingHttpClient client = stClientBuilder(server.localAddress())
+                .executionStrategy(doOffloading ? defaultStrategy() : noOffloadsStrategy())
+                // ClosedChannelException maybe observed on the second request if write is done before read of the
+                // garbage data, which won't be a RetryableExcepton. We may also see an exception from flush if the read
+                // closed the connection and then attempt to write on the same connection.
+                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                        .maxRetries(MAX_VALUE)
+                        .retryFor((req, cause) -> true)
+                        .buildWithConstantBackoffFullJitter(ofNanos(1)))
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -137,7 +151,13 @@ class MalformedDataAfterHttpMessageTest {
 
             ConnectionContext ctx1 = contextQueue.poll();
             assertThat(ctx1, not(nullValue()));
-            ConnectionContext ctx2 = contextQueue.poll();
+            // RetryingHttpRequesterFilter or AutoRetry may re-issue the request if a failure is seen locally. Verify
+            // the last connection (used for second request) is different from the first.
+            ConnectionContext ctx2 = null;
+            ConnectionContext tmp;
+            while ((tmp = contextQueue.poll()) != null) {
+                ctx2 = tmp;
+            }
             assertThat(ctx2, not(nullValue()));
             assertThat(ctx1, not(equalTo(ctx2)));
             assertThat(contextQueue, empty());
