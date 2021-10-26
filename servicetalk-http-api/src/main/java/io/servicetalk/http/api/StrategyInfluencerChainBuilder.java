@@ -148,12 +148,11 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
      * @return {@link HttpExecutionStrategyInfluencer} which is the head of the influencer chain.
      */
     public HttpExecutionStrategyInfluencer build() {
-        return influencers.stream()
+        HttpExecutionStrategy strategy = influencers.stream()
                 .map(ExecutionStrategyInfluencer::requiredOffloads)
                 .map(HttpExecutionStrategy::from)
-                .reduce(HttpExecutionStrategy::merge)
-                .map(HttpExecutionStrategyInfluencer::newInfluencer)
-                .orElse(HttpExecutionStrategyInfluencer.anyStrategy());
+                .reduce(HttpExecutionStrategies.anyStrategy(), HttpExecutionStrategy::merge);
+        return HttpExecutionStrategyInfluencer.newInfluencer(strategy);
     }
 
     /**

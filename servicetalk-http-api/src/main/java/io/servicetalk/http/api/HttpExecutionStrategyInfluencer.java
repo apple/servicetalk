@@ -57,15 +57,6 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
     }
 
     /**
-     * Returns an influencer which imposes no influence and is compatible ith any strategy.
-     *
-     * @return an influencer which imposes no influence and is compatible ith any strategy.
-     */
-    static HttpExecutionStrategyInfluencer anyStrategy() {
-        return DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY.asInfluencer();
-    }
-
-    /**
      * Creates an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
      *
      * @param requiredStrategy The required strategy of the influencer to be created.

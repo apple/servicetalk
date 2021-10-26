@@ -33,7 +33,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCAT
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.anyStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;

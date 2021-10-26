@@ -42,22 +42,4 @@ public interface ExecutionStrategyInfluencer<S extends ExecutionStrategy> {
     static <S extends ExecutionStrategy> ExecutionStrategyInfluencer<? extends S> newInfluencer(S requiredOffloads) {
         return () -> requiredOffloads;
     }
-
-    /**
-     * Returns an influencer that requires no offloads.
-     *
-     * @return an influencer that requires no offloads.
-     */
-    static ExecutionStrategyInfluencer<?> anyStrategy() {
-        return SpecialExecutionStrategy.NO_OFFLOADS.asInfluencer();
-    }
-
-    /**
-     * Returns an influencer that requires everything to be offloaded.
-     *
-     * @return an influencer that requires everything to be offloaded.
-     */
-    static ExecutionStrategyInfluencer<?> defaultStrategy() {
-        return SpecialExecutionStrategy.OFFLOAD_ALL.asInfluencer();
-    }
 }
