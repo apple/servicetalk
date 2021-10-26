@@ -29,7 +29,7 @@ public final class GrpcHeaderNames {
      * <p>
      * Holds a status code of gRPC operation.
      * <p>
-     * Note: this can be either an HTTP header or a trailers.
+     * Note: this can be either an HTTP header or a trailer.
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/statuscodes.md">Status codes and their use in gRPC</a>
@@ -43,7 +43,7 @@ public final class GrpcHeaderNames {
      * <a href="https://github.com/googleapis/googleapis/blob/master/google/rpc/status.proto">google.rpc.Status</a>
      * proto.
      * <p>
-     * Note: this can be either an HTTP header or a trailers.
+     * Note: this can be either an HTTP header or a trailer.
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      * @see <a href="https://cloud.google.com/apis/design/errors#error_model">Error Model</a>
@@ -55,7 +55,7 @@ public final class GrpcHeaderNames {
      * <p>
      * Defines an arbitrary message to provide more context for the {@link #GRPC_STATUS}.
      * <p>
-     * Note: this can be either an HTTP header or a trailers.
+     * Note: this can be either an HTTP header or a trailer.
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */

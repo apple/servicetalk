@@ -56,6 +56,6 @@ public final class GrpcHeaderValues {
     public static final CharSequence SERVICETALK_USER_AGENT = newAsciiString("servicetalk-grpc/");
 
     private GrpcHeaderValues() {
-        // No instances
+        // No instances.
     }
 }
