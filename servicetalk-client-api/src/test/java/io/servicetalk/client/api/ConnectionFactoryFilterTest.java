@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import javax.annotation.Nullable;
@@ -31,8 +32,9 @@ import static org.hamcrest.Matchers.containsInRelativeOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.Mockito.mock;
 
-public class ConnectionFactoryFilterTest {
+class ConnectionFactoryFilterTest {
     private static final ListenableAsyncCloseable DUMMY_CLOSABLE = new ListenableAsyncCloseable() {
         @Override
         public Completable onClose() {
@@ -49,15 +51,16 @@ public class ConnectionFactoryFilterTest {
     void testAppend() throws Exception {
         Deque<Integer> createOrder = new ArrayDeque<>();
         Deque<Integer> connectOrder = new ArrayDeque<>();
-        class FactoryOrder implements ConnectionFactory<Void, ListenableAsyncCloseable> {
+        class FactoryOrder implements ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> {
             final int order;
-            ConnectionFactory<Void, ListenableAsyncCloseable> original;
-            FactoryOrder(int order, ConnectionFactory<Void, ListenableAsyncCloseable> original) {
+            ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original;
+            FactoryOrder(int order, ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original) {
                 this.order = order;
                 this.original = original;
             }
+
             @Override
-            public Single<ListenableAsyncCloseable> newConnection(final Void unused,
+            public Single<ListenableAsyncCloseable> newConnection(final InetSocketAddress unused,
                                                                   @Nullable final TransportObserver observer) {
                 connectOrder.add(order);
                 return original.newConnection(unused, observer);
@@ -74,7 +77,7 @@ public class ConnectionFactoryFilterTest {
             }
         }
 
-        class FilterOrder implements ConnectionFactoryFilter<Void, ListenableAsyncCloseable> {
+        class FilterOrder implements ConnectionFactoryFilter<InetSocketAddress, ListenableAsyncCloseable> {
 
             final int order;
             FilterOrder(int order) {
@@ -82,22 +85,22 @@ public class ConnectionFactoryFilterTest {
             }
 
             @Override
-            public ConnectionFactory<Void, ListenableAsyncCloseable> create(
-                    final ConnectionFactory<Void, ListenableAsyncCloseable> original) {
+            public ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> create(
+                    final ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original) {
                 createOrder.add(order);
                 return new FactoryOrder(order, original);
             }
-        };
+        }
 
         FilterOrder first = new FilterOrder(1);
         FilterOrder second = new FilterOrder(2);
 
-        ConnectionFactoryFilter<Void, ListenableAsyncCloseable> combined = first.append(second);
+        ConnectionFactoryFilter<InetSocketAddress, ListenableAsyncCloseable> combined = first.append(second);
 
-        ConnectionFactory<Void, ListenableAsyncCloseable> root = new FactoryOrder(999,
-                new ConnectionFactory<Void, ListenableAsyncCloseable>() {
+        ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> root = new FactoryOrder(999,
+                new ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable>() {
             @Override
-            public Single<ListenableAsyncCloseable> newConnection(final Void unused,
+            public Single<ListenableAsyncCloseable> newConnection(final InetSocketAddress unused,
                                                                   @Nullable final TransportObserver observer) {
                 return Single.succeeded(DUMMY_CLOSABLE);
             }
@@ -113,9 +116,10 @@ public class ConnectionFactoryFilterTest {
             }
         });
 
-        ConnectionFactory<Void, ListenableAsyncCloseable> factory = combined.create(root);
+        ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> factory = combined.create(root);
 
-        ListenableAsyncCloseable connection = factory.newConnection(null, null).toFuture().get();
+        ListenableAsyncCloseable connection = factory.newConnection(mock(InetSocketAddress.class),
+                                                            null).toFuture().get();
 
         assertThat(connection, is(sameInstance(DUMMY_CLOSABLE)));
         assertThat(createOrder, is(hasSize(2)));

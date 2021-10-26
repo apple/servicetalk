@@ -29,8 +29,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInRelativeOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.mock;
 
-public class ConnectionAcceptorFilterTest {
+class ConnectionAcceptorFilterTest {
 
     @Test
     void testAppend() throws Exception {
@@ -43,6 +45,7 @@ public class ConnectionAcceptorFilterTest {
                 this.order = order;
                 this.original = original;
             }
+
             @Override
             public Completable accept(ConnectionContext context) {
                 connectOrder.add(order);
@@ -67,7 +70,7 @@ public class ConnectionAcceptorFilterTest {
                 createOrder.add(order);
                 return new AcceptorOrder(order, original);
             }
-        };
+        }
 
         FilterOrder first = new FilterOrder(1);
         FilterOrder second = new FilterOrder(2);
@@ -76,8 +79,10 @@ public class ConnectionAcceptorFilterTest {
 
         ConnectionAcceptor acceptor = combined.create(ConnectionAcceptor.ACCEPT_ALL);
 
-        Void nothing = acceptor.accept(null).toFuture().get();
+        @SuppressWarnings("unused")
+        Void nothing = acceptor.accept(mock(ConnectionContext.class)).toFuture().get();
 
+        assertThat(nothing, is(nullValue()));
         assertThat(createOrder, is(hasSize(2)));
         assertThat(createOrder, is(containsInRelativeOrder(2, 1)));
         assertThat(connectOrder, is(hasSize(2)));

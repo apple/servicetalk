@@ -41,7 +41,7 @@ public class DelegatingConnectionFactoryFilter<ResolvedAddress, C extends Listen
 
     @Override
     public ConnectionFactory<ResolvedAddress, C> create(final ConnectionFactory<ResolvedAddress, C> original) {
-        return delegate().create(original);
+        return delegate.create(original);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class DelegatingConnectionFactoryFilter<ResolvedAddress, C extends Listen
      *
      * @return Delegate {@link ConnectionFactoryFilter}.
      */
-    protected ConnectionFactoryFilter<ResolvedAddress, C> delegate() {
+    protected final ConnectionFactoryFilter<ResolvedAddress, C> delegate() {
         return delegate;
     }
 }
