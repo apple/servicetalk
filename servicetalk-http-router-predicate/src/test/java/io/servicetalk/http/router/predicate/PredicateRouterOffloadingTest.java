@@ -171,7 +171,6 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        // XXX These should not be offloaded
         assertRouteOffloadedAndNotPredicate(GLOBAL_EXECUTOR_NAME_PREFIX);
     }
 

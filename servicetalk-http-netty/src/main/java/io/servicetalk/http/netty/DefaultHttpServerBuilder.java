@@ -72,6 +72,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
@@ -124,27 +125,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             throw new IllegalArgumentException(desc + " required offloading : " + requires);
         }
         return obj;
-    }
-
-    private static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
-            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpServiceFilterFactory original) {
-        requireNonNull(predicate);
-
-        HttpExecutionStrategy originalStrategy = requireNonNull(original).requiredOffloads();
-        return new StrategyInfluencingStreamingServiceFilterFactory() {
-            @Override
-            public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-                return new ConditionalHttpServiceFilter(predicate, original.create(service), service);
-            }
-
-            @Override
-            public HttpExecutionStrategy requiredOffloads() {
-                return originalStrategy;
-            }
-        };
-    }
-
-    private interface StrategyInfluencingStreamingServiceFilterFactory extends StreamingHttpServiceFilterFactory {
     }
 
     @Override
