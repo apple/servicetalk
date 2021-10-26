@@ -39,12 +39,12 @@ import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_DETAILS_BIN;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static java.lang.String.valueOf;
@@ -77,7 +77,7 @@ final class GrpcUtils {
                              @Nullable final CharSequence acceptedEncoding) {
         // The response status is 200 no matter what. Actual status is put in trailers.
         final HttpHeaders headers = response.headers();
-        headers.set(SERVER, GRPC_USER_AGENT);
+        headers.set(SERVER, SERVICETALK_USER_AGENT);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
             headers.set(GRPC_MESSAGE_ENCODING, encoding);

@@ -69,6 +69,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
@@ -86,7 +87,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncodingRaw;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -105,7 +105,7 @@ final class GrpcRouter {
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
-        final StreamingHttpResponse response = newErrorResponse(responseFactory, GRPC_CONTENT_TYPE,
+        final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC,
                 STATUS_UNIMPLEMENTED.asException(), ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);

@@ -69,6 +69,11 @@ import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_DETAILS_BIN;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC_PROTO;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PREFIX;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
@@ -77,9 +82,6 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_CONTENT_TYPE_PREFIX;
-import static io.servicetalk.grpc.internal.GrpcConstants.GRPC_USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static io.servicetalk.http.api.HttpHeaderNames.TE;
@@ -136,7 +138,7 @@ final class GrpcUtils {
         if (null != timeoutValue) {
             headers.set(GRPC_TIMEOUT_HEADER_KEY, timeoutValue);
         }
-        headers.set(USER_AGENT, GRPC_USER_AGENT);
+        headers.set(USER_AGENT, SERVICETALK_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
@@ -328,14 +330,15 @@ final class GrpcUtils {
         CharSequence requestContentType = headers.get(CONTENT_TYPE);
         if (!contentEqualsIgnoreCase(requestContentType, expectedContentType) &&
                 (requestContentType == null ||
-                    !regionMatches(requestContentType, true, 0, GRPC_CONTENT_TYPE, 0, GRPC_CONTENT_TYPE.length()))) {
+                    !regionMatches(requestContentType, true, 0, APPLICATION_GRPC, 0, APPLICATION_GRPC.length()))) {
             throw GrpcStatusException.of(Status.newBuilder().setCode(INTERNAL.value())
                     .setMessage("invalid content-type: " + requestContentType).build());
         }
     }
 
     static CharSequence grpcContentType(CharSequence contentType) {
-        return newAsciiString(GRPC_CONTENT_TYPE_PREFIX + contentType);
+        return GRPC_CONTENT_TYPE_PROTO_SUFFIX.contentEquals(contentType) ? APPLICATION_GRPC_PROTO :
+                newAsciiString(GRPC_CONTENT_TYPE_PREFIX + contentType);
     }
 
     private static void ensureGrpcStatusReceived(final HttpHeaders headers) {
@@ -385,7 +388,7 @@ final class GrpcUtils {
                              @Nullable final CharSequence acceptedEncoding) {
         // The response status is 200 no matter what. Actual status is put in trailers.
         final HttpHeaders headers = response.headers();
-        headers.set(SERVER, GRPC_USER_AGENT);
+        headers.set(SERVER, SERVICETALK_USER_AGENT);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
             headers.set(GRPC_MESSAGE_ENCODING, encoding);
