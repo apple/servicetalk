@@ -19,6 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation platform("io.netty:netty-bom:$nettyVersion")
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-client-api")
