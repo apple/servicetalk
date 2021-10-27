@@ -113,7 +113,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
         }
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
-        return new DefaultStreamingHttpResponse(status(), version(), headers(), context(),
+        return new DefaultStreamingHttpResponse(status(), version(), headers(), context0(),
                 original.payloadHolder().allocator(), payload, payloadInfo,
                 original.payloadHolder().headersFactory());
     }

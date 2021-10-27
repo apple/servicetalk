@@ -26,14 +26,14 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     private static final AtomicIntegerFieldUpdater<DefaultBlockingStreamingHttpServerResponse> metaSentUpdater =
             AtomicIntegerFieldUpdater.newUpdater(DefaultBlockingStreamingHttpServerResponse.class, "metaSent");
     private volatile int metaSent;
-    private final Consumer<HttpResponseMetaData> sendMeta;
+    private final Consumer<DefaultHttpResponseMetaData> sendMeta;
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                                final HttpProtocolVersion version,
                                                final HttpHeaders headers,
                                                final HttpPayloadWriter<Buffer> payloadWriter,
                                                final BufferAllocator allocator,
-                                               final Consumer<HttpResponseMetaData> sendMeta) {
+                                               final Consumer<DefaultHttpResponseMetaData> sendMeta) {
         super(status, version, headers, payloadWriter, allocator);
         this.sendMeta = sendMeta;
     }

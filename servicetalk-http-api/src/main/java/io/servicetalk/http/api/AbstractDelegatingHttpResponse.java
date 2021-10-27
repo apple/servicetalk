@@ -19,6 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, PayloadInfo {
 
@@ -42,6 +43,11 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     @Override
     public HttpHeaders headers() {
         return original.headers();
+    }
+
+    @Nullable
+    final ContextMap context0() {
+        return original.context0();
     }
 
     @Nonnull

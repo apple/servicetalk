@@ -92,6 +92,11 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
         return original.headers();
     }
 
+    @Nullable
+    final ContextMap context0() {
+        return original.context0();
+    }
+
     @Nonnull
     @Override
     public ContextMap context() {

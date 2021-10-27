@@ -71,9 +71,17 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
         return headers;
     }
 
+    /**
+     * An internal overload that returns {@link ContextMap} as-is, without allocating a new one.
+     */
+    @Nullable
+    final ContextMap context0() {
+        return context;
+    }
+
     @Nonnull
     @Override
-    public ContextMap context() {
+    public final ContextMap context() {
         if (context == null) {
             context = new DefaultContextMap();
         }
