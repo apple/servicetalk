@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
 import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
@@ -75,9 +75,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     public <Req, Resp> ClientCall<Req, Resp> newCall(final GrpcSerializationProvider serializationProvider,
             final Class<Req> requestClass, final Class<Resp> responseClass) {
         return newCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -118,9 +118,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -165,9 +165,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newRequestStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -186,9 +186,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newResponseStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -207,9 +207,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newBlockingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -254,9 +254,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newBlockingStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -305,9 +305,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newBlockingRequestStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
@@ -336,9 +336,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
             final Class<Resp> responseClass) {
         return newBlockingResponseStreamingCall(new DefaultMethodDescriptor<>(UNKNOWN_PATH,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()));
     }
