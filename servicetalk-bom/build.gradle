@@ -46,9 +46,17 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git://github.com/apple/servicetalk.git'
-          developerConnection = 'scm:git:ssh://github.com:apple/servicetalk.git'
-          url = 'https://github.com/apple/servicetalk'
+          connection = "scm:git:git://${scmHost}/${scmPath}.git"
+          developerConnection = "scm:git:ssh://${scmHost}:${scmPath}.git"
+          url = "https://${scmHost}/${scmPath}"
+        }
+        issueManagement {
+          system = 'ServiceTalk Issues'
+          url = "${issueManagementUrl}"
+        }
+        ciManagement {
+          system = 'ServiceTalk CI'
+          url = "${ciManagementUrl}"
         }
       }
     }
