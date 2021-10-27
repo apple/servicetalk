@@ -52,7 +52,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
-    final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
+    public final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
         return newClient(clientCallFactory);
     }
 
@@ -65,7 +65,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.
      */
-    final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
+    public final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
             return newBlockingClient(clientCallFactory);
     }
 
