@@ -19,6 +19,7 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoveryStatus;
+import io.servicetalk.client.api.internal.ServiceDiscovererUtils;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
@@ -156,7 +158,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         withDefaults(final Executor executor, final Duration initialDelay, final Duration jitter) {
             // TODO(dj): flip availability might not make sense for EXPIRED
             return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter), evt -> {
-                final ServiceDiscoveryStatus flipped = evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
+                final ServiceDiscoveryStatus flipped = isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
                 return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
             });
         }
@@ -187,7 +189,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                         @Override
                         public ServiceDiscoveryStatus status() {
                             // TODO(dj): flip availability might not make sense for EXPIRED
-                            return evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
+                            return ServiceDiscovererUtils.isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
                         }
                     });
         }
@@ -244,7 +246,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             if (retainedAddresses == NONE_RETAINED) {
                 for (E e : events) {
                     // TODO: consider other events than AVAILABLE and UNAVAILABLE
-                    if (e.status() == AVAILABLE) {
+                    if (isAvailable(e.status())) {
                         activeAddresses.put(e.address(), e);
                     } else {
                         activeAddresses.remove(e.address());

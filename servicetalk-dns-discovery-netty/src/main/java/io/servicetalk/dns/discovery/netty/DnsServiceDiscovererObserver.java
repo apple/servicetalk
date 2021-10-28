@@ -98,7 +98,19 @@ public interface DnsServiceDiscovererObserver {
          * Number of resolved records that became {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable}.
          *
          * @return the number of resolved records that became {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable}
+         * @deprecated Implement and use {@link #nMissing()} method.
          */
-        int nUnavailable();
+        @Deprecated
+        default int nUnavailable() {
+            throw new UnsupportedOperationException("Please implement and use the nMissing() method.");
+        }
+
+        /**
+         * Number of records expected in response but not returned in the query results.
+         * @return number of records missing in the response.
+         */
+        default int nMissing() {
+            return nUnavailable();
+        }
     }
 }

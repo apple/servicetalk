@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withTestExecutor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -242,7 +243,7 @@ class DefaultServiceDiscoveryRetryStrategyTest {
 
     private static ServiceDiscovererEvent<String> flipAvailable(final ServiceDiscovererEvent<String> evt) {
         // TODO: consider other events than AVAILABLE and UNAVAILABLE
-        final ServiceDiscoveryStatus flipped = evt.status() == AVAILABLE ? UNAVAILABLE : AVAILABLE;
+        final ServiceDiscoveryStatus flipped = isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
         return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
     }
 

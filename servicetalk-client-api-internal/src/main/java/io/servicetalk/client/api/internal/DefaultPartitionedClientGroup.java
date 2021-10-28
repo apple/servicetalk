@@ -46,7 +46,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
@@ -108,7 +108,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
         // TODO: consider other events than AVAILABLE and UNAVAILABLE
-        toSource(psdEvents.groupToMany(event -> event.status() == AVAILABLE ?
+        toSource(psdEvents.groupToMany(event -> isAvailable(event.status()) ?
                 partitionMap.add(event.partitionAddress()).iterator() :
                 partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize))
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));
@@ -171,7 +171,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     MutableInt counter = addressCount.computeIfAbsent(evt.address(), __ -> new MutableInt());
                     boolean acceptEvent;
                     // TODO: consider other events than AVAILABLE and UNAVAILABLE
-                    if (evt.status() == AVAILABLE) {
+                    if (isAvailable(evt.status())) {
                         acceptEvent = ++counter.value == 1;
                     } else {
                         acceptEvent = --counter.value == 0;

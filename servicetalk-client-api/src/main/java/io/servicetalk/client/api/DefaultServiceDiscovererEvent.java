@@ -15,8 +15,6 @@
  */
 package io.servicetalk.client.api;
 
-import java.util.Objects;
-
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static java.util.Objects.requireNonNull;
@@ -27,19 +25,17 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
-    private final boolean available;
     private final ServiceDiscoveryStatus status;
 
     /**
      * Create a new instance.
      * @param address The address returned by {@link #address()}.
-     * @param available Value returned by {@link #available}.
+     * @param available Value used to determine {@link #status()}.
      * @deprecated Use {@link #DefaultServiceDiscovererEvent(Object, ServiceDiscoveryStatus)}.
      */
     @Deprecated
     public DefaultServiceDiscovererEvent(T address, boolean available) {
         this.address = requireNonNull(address);
-        this.available = available;
         this.status = available ? AVAILABLE : UNAVAILABLE;
     }
 
@@ -51,7 +47,6 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     public DefaultServiceDiscovererEvent(T address, ServiceDiscoveryStatus status) {
         this.address = requireNonNull(address);
         this.status = requireNonNull(status);
-        this.available = status == AVAILABLE;
     }
 
     @Override
@@ -65,6 +60,11 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     }
 
     @Override
+    public boolean isAvailable() {
+        return AVAILABLE.equals(status);
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -73,12 +73,14 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
             return false;
         }
         final DefaultServiceDiscovererEvent<?> that = (DefaultServiceDiscovererEvent<?>) o;
-        return address.equals(that.address) && status.equals(that.status);
+        return status.equals(that.status) && address.equals(that.address);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(address, status);
+        int result = address.hashCode();
+        result = 31 * result + status.hashCode();
+        return result;
     }
 
     @Override
@@ -86,7 +88,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
         return "DefaultServiceDiscovererEvent{" +
                 "address=" + address +
                 ", status=" + status +
-                ", available=" + available +
+                ", available=" + isAvailable() +
                 '}';
     }
 }

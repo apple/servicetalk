@@ -16,6 +16,7 @@
 package io.servicetalk.client.api;
 
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
@@ -31,22 +32,24 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     /**
      * {@link ServiceDiscoveryStatus Status} of the event instructing the {@link ServiceDiscoverer} what actions
      * to take upon the associated {@link #address() address}.
+     * <p>
+     * Note, the default implementation calls {@link #isAvailable()} to allow frictionless adoption, but once the
+     * implementing class removes the override for the deprecated method {@link #isAvailable()},
+     * it will be also necessary to override {@link #status()}.
      * @return {@link ServiceDiscoveryStatus Status} of the associated {@link #address()}.
      */
     default ServiceDiscoveryStatus status() {
-        throw new UnsupportedOperationException("Method status is not supported by " + getClass().getName());
+        return isAvailable() ? AVAILABLE : UNAVAILABLE;
     }
 
     /**
      * Determine if {@link #address()} is now available or unavailable.
      * @return {@code true} if {@link #address()} is now available or false if the {@link #address()} is now
      * unavailable.
-     * @deprecated Use {@link #status()}. This method will be removed, but in the transition period its default
-     * implementation calls {{@link #status()}} to determine availability – implementors of this interface need to
-     * override {@link #status()}.
+     * @deprecated Implement and use {@link #status()}. This method will be removed.
      */
     @Deprecated
     default boolean isAvailable() {
-        return status() == AVAILABLE;
+        throw new UnsupportedOperationException("Please implement and use the status() method.");
     }
 }

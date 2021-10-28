@@ -72,6 +72,7 @@ import static io.netty.handler.codec.dns.DnsRecordType.SRV;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.defer;
@@ -223,7 +224,7 @@ final class DefaultDnsClient implements DnsClient {
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
                 // TODO: consider other events than AVAILABLE and UNAVAILABLE
-                if (srvEvent.status() == AVAILABLE) {
+                if (isAvailable(srvEvent.status())) {
                     return defer(() -> {
                         final ARecordPublisher aPublisher =
                                 new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);

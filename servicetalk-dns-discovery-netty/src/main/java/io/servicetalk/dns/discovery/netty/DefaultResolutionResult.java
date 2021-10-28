@@ -22,14 +22,14 @@ final class DefaultResolutionResult implements ResolutionResult {
     private final int resolvedRecords;
     private final int ttl;
     private final int nAvailable;
-    private final int nUnavailable;
+    private final int nMissing;
 
     DefaultResolutionResult(final int resolvedRecords, final int ttl,
-                            final int nAvailable, final int nUnavailable) {
+                            final int nAvailable, final int nMissing) {
         this.resolvedRecords = resolvedRecords;
         this.ttl = ttl;
         this.nAvailable = nAvailable;
-        this.nUnavailable = nUnavailable;
+        this.nMissing = nMissing;
     }
 
     @Override
@@ -48,8 +48,8 @@ final class DefaultResolutionResult implements ResolutionResult {
     }
 
     @Override
-    public int nUnavailable() {
-        return nUnavailable;
+    public int nMissing() {
+        return nMissing;
     }
 
     @Override
@@ -58,7 +58,7 @@ final class DefaultResolutionResult implements ResolutionResult {
                 "resolvedRecords=" + resolvedRecords +
                 ", ttl=" + ttl +
                 ", nAvailable=" + nAvailable +
-                ", nUnavailable=" + nUnavailable +
+                ", nUnavailable=" + nMissing +
                 '}';
     }
 }

@@ -15,10 +15,11 @@
  */
 package io.servicetalk.client.api;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Status provided by the Service Discovery system that guides the actions of {@link ServiceDiscoverer} upon the
+ * Status provided by the {@link ServiceDiscoverer} system that guides the actions of {@link LoadBalancer} upon the
  * bound {@link ServiceDiscovererEvent#address()} (via {@link ServiceDiscovererEvent}).
  */
 public final class ServiceDiscoveryStatus {
@@ -29,14 +30,16 @@ public final class ServiceDiscoveryStatus {
     public static final ServiceDiscoveryStatus AVAILABLE = new ServiceDiscoveryStatus("available");
 
     /**
-     * Signifies the {@link ServiceDiscovererEvent#address()} is not available for use in connection establishment.
+     * Signifies the {@link ServiceDiscovererEvent#address()} is not available for use and all currently established
+     * connections should be closed.
      */
     public static final ServiceDiscoveryStatus UNAVAILABLE = new ServiceDiscoveryStatus("unavailable");
 
     /**
-     * Signifies the {@link ServiceDiscovererEvent#address()} is expired and should not be used
-     * for connection establishment. It doesn't necessarily mean that the host should not be used in traffic routing
-     * over already established connections. The implementations can have different policies in that regard.
+     * Signifies the {@link ServiceDiscovererEvent#address()} is expired and should not be used for establishing
+     * new connections. It doesn't necessarily mean that the host should not be used in traffic routing over already
+     * established connections as long as they are kept open by the remote peer. The implementations can have different
+     * policies in that regard.
      */
     public static final ServiceDiscoveryStatus EXPIRED = new ServiceDiscoveryStatus("expired");
 
@@ -46,7 +49,7 @@ public final class ServiceDiscoveryStatus {
         if (name.isEmpty()) {
             throw new IllegalArgumentException("ServiceDiscoveryStatus name cannot be empty");
         }
-        this.name = name;
+        this.name = name.toLowerCase(Locale.ENGLISH);
     }
 
     /**
@@ -55,7 +58,7 @@ public final class ServiceDiscoveryStatus {
      * @return {@link ServiceDiscoveryStatus} representing the status for given name.
      */
     public static ServiceDiscoveryStatus of(final String name) {
-        switch (name) {
+        switch (name.toLowerCase(Locale.ENGLISH)) {
             case "available":
                 return AVAILABLE;
             case "unavailable":
@@ -81,6 +84,13 @@ public final class ServiceDiscoveryStatus {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hashCode(name);
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceDiscoveryStatus{" +
+                "name='" + name + '\'' +
+                '}';
     }
 }

@@ -59,7 +59,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -232,7 +232,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                         (List<Host<ResolvedAddress, C>>) oldHosts;
 
                                 if (eagerConnectionShutdown) {
-                                    if (event.status() == AVAILABLE) {
+                                    if (isAvailable(event.status())) {
                                         return addHostToList(oldHostsTyped, addr, false);
                                     } else {
                                         return listWithHostRemoved(oldHostsTyped, host -> {
@@ -243,7 +243,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                             return match;
                                         });
                                     }
-                                } else if (event.status() == AVAILABLE) {
+                                } else if (isAvailable(event.status())) {
                                     return addHostToList(oldHostsTyped, addr, true);
                                 } else if (oldHostsTyped.isEmpty()) {
                                     return emptyList();
@@ -255,7 +255,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: now using {} addresses: {}.",
                             targetResource, usedAddresses.size(), usedAddresses);
 
-                    if (event.status() == AVAILABLE) {
+                    if (isAvailable(event.status())) {
                         if (usedAddresses.size() == 1) {
                             eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                         }

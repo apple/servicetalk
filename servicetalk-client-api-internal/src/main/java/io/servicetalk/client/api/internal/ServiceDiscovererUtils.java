@@ -140,6 +140,15 @@ public final class ServiceDiscovererUtils {
     }
 
     /**
+     * Utility method to determine the {@code status} is in fact the {@link ServiceDiscoveryStatus#AVAILABLE} status.
+     * @param status {@link ServiceDiscoveryStatus} to compare.
+     * @return whether the argument is the {{@link ServiceDiscoveryStatus#AVAILABLE}} status.
+     */
+    public static boolean isAvailable(final ServiceDiscoveryStatus status) {
+        return AVAILABLE.equals(status);
+    }
+
+    /**
      * Represents an operation that accepts two {@code int}-valued arguments and returns no result.
      */
     @FunctionalInterface
