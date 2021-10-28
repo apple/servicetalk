@@ -58,7 +58,7 @@ final class DefaultResolutionResult implements ResolutionResult {
                 "resolvedRecords=" + resolvedRecords +
                 ", ttl=" + ttl +
                 ", nAvailable=" + nAvailable +
-                ", nUnavailable=" + nMissing +
+                ", nMissing=" + nMissing +
                 '}';
     }
 }
