@@ -25,7 +25,7 @@ import java.time.Duration;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public abstract class GrpcClientBuilder<U, R> {
+public interface GrpcClientBuilder<U, R> {
 
     /**
      * Initializes the underlying {@link SingleAddressHttpClientBuilder} used for the transport layer.
@@ -33,7 +33,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param <R> resolved address
      */
     @FunctionalInterface
-    public interface HttpInitializer<U, R> {
+    interface HttpInitializer<U, R> {
 
         /**
          * Configures the underlying {@link SingleAddressHttpClientBuilder}.
@@ -61,10 +61,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param initializer Initializes the underlying HTTP transport builder.
      * @return {@code this}.
      */
-    public GrpcClientBuilder<U, R> initializeHttp(HttpInitializer<U, R> initializer) {
-        throw new UnsupportedOperationException("Initializing the GrpcClientBuilder using this method is not yet" +
-                " supported by " + getClass().getName());
-    }
+    GrpcClientBuilder<U, R> initializeHttp(HttpInitializer<U, R> initializer);
 
     /**
      * Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
@@ -73,7 +70,7 @@ public abstract class GrpcClientBuilder<U, R> {
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.
      */
-    public abstract GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
+    GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     /**
      * Builds a <a href="https://www.grpc.io">gRPC</a> client.
@@ -84,9 +81,7 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @return A <a href="https://www.grpc.io">gRPC</a> client.
      */
-    public final <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory) {
-        return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
-    }
+    <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory);
 
     /**
      * Builds a blocking <a href="https://www.grpc.io">gRPC</a> client.
@@ -97,15 +92,6 @@ public abstract class GrpcClientBuilder<U, R> {
      *
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
      */
-    public final <BlockingClient extends BlockingGrpcClient<?>> BlockingClient
-    buildBlocking(GrpcClientFactory<?, BlockingClient> clientFactory) {
-        return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
-    }
-
-    /**
-     * Create a new {@link GrpcClientCallFactory}.
-     *
-     * @return A new {@link GrpcClientCallFactory}.
-     */
-    protected abstract GrpcClientCallFactory newGrpcClientCallFactory();
+    <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
+            GrpcClientFactory<?, BlockingClient> clientFactory);
 }

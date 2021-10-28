@@ -16,8 +16,11 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.BlockingGrpcClient;
+import io.servicetalk.grpc.api.GrpcClient;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
+import io.servicetalk.grpc.api.GrpcClientFactory;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
@@ -48,7 +51,7 @@ import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
+final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     /**
      * A function which determines the timeout for a given request.
@@ -81,7 +84,17 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    protected GrpcClientCallFactory newGrpcClientCallFactory() {
+    public <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory) {
+        return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
+    }
+
+    @Override
+    public <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
+            GrpcClientFactory<?, BlockingClient> clientFactory) {
+        return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
+    }
+
+    private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         httpInitializer.initialize(builder);

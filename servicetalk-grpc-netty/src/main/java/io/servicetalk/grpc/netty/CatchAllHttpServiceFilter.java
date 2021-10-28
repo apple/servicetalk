@@ -27,7 +27,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.netty.GrpcUtils.newErrorResponse;
 
 final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory {
@@ -59,7 +59,7 @@ final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFacto
 
     private static StreamingHttpResponse convertToGrpcErrorResponse(
             final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory, final Throwable cause) {
-        return newErrorResponse(responseFactory, GRPC_CONTENT_TYPE, cause, ctx.executionContext().bufferAllocator());
+        return newErrorResponse(responseFactory, APPLICATION_GRPC, cause, ctx.executionContext().bufferAllocator());
     }
 
     @Override

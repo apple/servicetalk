@@ -41,6 +41,7 @@ import java.util.Map;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
@@ -56,7 +57,6 @@ import static java.util.Collections.unmodifiableMap;
  */
 @Deprecated
 public final class ProtoBufSerializationProviderBuilder {
-    private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence APPLICATION_GRPC_PROTO = newAsciiString("application/grpc+proto");
 
     private final Map<Class<? extends MessageLite>, Parser<? extends MessageLite>> types = new HashMap<>();
@@ -262,7 +262,7 @@ public final class ProtoBufSerializationProviderBuilder {
         private void addContentHeaders(final HttpHeaders headers) {
             headers.set(CONTENT_TYPE, APPLICATION_GRPC_PROTO);
             if (!identity().equals(codec)) {
-                headers.set(GRPC_MESSAGE_ENCODING_KEY, codec.name());
+                headers.set(GRPC_MESSAGE_ENCODING, codec.name());
             }
         }
     }

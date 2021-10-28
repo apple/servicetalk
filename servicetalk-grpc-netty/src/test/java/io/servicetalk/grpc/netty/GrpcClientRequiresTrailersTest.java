@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -71,7 +72,7 @@ class GrpcClientRequiresTrailersTest {
                             resp.transform(new StatelessTrailersTransformer<Buffer>() {
                                 @Override
                                 protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                                    trailers.remove("grpc-status");
+                                    trailers.remove(GRPC_STATUS);
                                     return hasTrailers ? trailers.set("some-trailer", "some-value") : trailers;
                                 }
                             });
