@@ -133,7 +133,7 @@ final class ProjectUtils {
     return createTask(project, sourceSet.getTaskName(null, "sourcesJar"), Jar) {
       description = "Assembles a Jar archive containing the $sourceSet.name sources."
       group = JavaBasePlugin.DOCUMENTATION_GROUP
-      appendix = sourceSet.name == "main" ? null : sourceSet.name
+      archiveAppendix = sourceSet.name == "main" ? null : sourceSet.name
       classifier = "sources"
       addManifestAttributes(project, manifest)
       from sourceSet.allSource
@@ -164,7 +164,7 @@ final class ProjectUtils {
     createTask(project, sourceSet.getTaskName(null, "javadocJar"), Jar) {
       description = "Assembles a Jar archive containing the $sourceSet.name Javadoc."
       group = JavaBasePlugin.DOCUMENTATION_GROUP
-      appendix = sourceSet.name == "main" ? null : sourceSet.name
+      archiveAppendix = sourceSet.name == "main" ? null : sourceSet.name
       classifier = "javadoc"
       addManifestAttributes(project, manifest)
       from javadocTask
