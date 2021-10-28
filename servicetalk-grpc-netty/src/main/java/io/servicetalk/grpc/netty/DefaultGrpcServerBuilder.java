@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcBindableService;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -27,6 +27,7 @@ import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -49,12 +50,14 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
@@ -62,7 +65,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
+final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
 
@@ -73,10 +76,9 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     private GrpcServerBuilder.HttpInitializer directCallInitializer = builder -> {
         // no-op
     };
-    private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
-            // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy which is
-            // not compatible with gRPC.
-            .executionStrategy(defaultStrategy());
+
+    @Nullable
+    private ExecutionContextInterceptorHttpServerBuilder interceptorBuilder;
 
     /**
      * A duration greater than zero or null for no timeout.
@@ -102,50 +104,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder protocols(final HttpProtocolConfig... protocols) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.protocols(protocols));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(config));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.sslConfig(defaultConfig, sniMap));
-        return this;
-    }
-
-    @Override
-    public <T> GrpcServerBuilder socketOption(final SocketOption<T> option, final T value) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.socketOption(option, value));
-        return this;
-    }
-
-    @Override
-    public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.listenSocketOption(option, value));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
-                                               final BooleanSupplier logUserData) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.enableWireLogging(loggerName, logLevel, logUserData));
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.transportObserver(transportObserver));
-        return this;
-    }
-
-    @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
         directCallInitializer = directCallInitializer.append(builder -> builder
                 .lifecycleObserver(new GrpcToHttpLifecycleObserverBridge(lifecycleObserver)));
@@ -153,74 +111,57 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder drainRequestPayloadBody(boolean enable) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.drainRequestPayloadBody(enable));
-        return this;
+    public Single<ServerContext> listen(GrpcBindableService<?>... services) {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
+                .map(GrpcBindableService::bindService)
+                .toArray(GrpcServiceFactory<?>[]::new);
+        return listen(factories);
     }
 
     @Override
-    public GrpcServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.appendConnectionAcceptorFilter(factory));
-        return this;
+    public Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
+        return doListen(GrpcServiceFactory.merge(serviceFactories));
     }
 
     @Override
-    public GrpcServerBuilder executor(final Executor executor) {
-        contextBuilder.executor(executor);
-        directCallInitializer = directCallInitializer.append(builder -> builder.executor(executor));
-        return this;
+    public ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
+        return awaitResult(listen(serviceFactories).toFuture());
     }
 
     @Override
-    public GrpcServerBuilder ioExecutor(final IoExecutor ioExecutor) {
-        contextBuilder.ioExecutor(ioExecutor);
-        directCallInitializer = directCallInitializer.append(builder -> builder.ioExecutor(ioExecutor));
-        return this;
+    public ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
+                .map(GrpcBindableService::bindService)
+                .toArray(GrpcServiceFactory<?>[]::new);
+        return listenAndAwait(factories);
     }
 
-    @Override
-    public GrpcServerBuilder bufferAllocator(final BufferAllocator allocator) {
-        contextBuilder.bufferAllocator(allocator);
-        directCallInitializer = directCallInitializer.append(builder -> builder.bufferAllocator(allocator));
-        return this;
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     *
+     * @param serviceFactory {@link GrpcServiceFactory} to create a <a href="https://www.grpc.io">gRPC</a> service.
+     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * throws an {@link Exception} if the server could not be started.
+     */
+    private Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
+        interceptorBuilder = preBuild();
+        return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }
 
-    @Override
-    public GrpcServerBuilder executionStrategy(final GrpcExecutionStrategy strategy) {
-        contextBuilder.executionStrategy(strategy);
-        directCallInitializer = directCallInitializer.append(builder -> builder.executionStrategy(strategy));
-        return this;
-    }
+    private ExecutionContextInterceptorHttpServerBuilder preBuild() {
+        final ExecutionContextInterceptorHttpServerBuilder interceptor =
+                new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
 
-    @Override
-    protected Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
-        return serviceFactory.bind(this, contextBuilder.build());
-    }
+        interceptor.appendNonOffloadingServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
 
-    @Override
-    protected void doAppendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder -> builder.appendServiceFilter(factory));
-    }
+        directCallInitializer.initialize(interceptor);
+        initializer.initialize(interceptor);
 
-    @Override
-    protected void doAppendHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                             final StreamingHttpServiceFilterFactory factory) {
-        directCallInitializer = directCallInitializer.append(builder ->
-                builder.appendServiceFilter(predicate, factory));
-    }
-
-    private HttpServerBuilder preBuild() {
-        final HttpServerBuilder httpServerBuilder = httpServerBuilderSupplier.get();
-
-        appendCatchAllFilter(httpServerBuilder);
-
-        directCallInitializer.initialize(httpServerBuilder);
-        initializer.initialize(httpServerBuilder);
-
-        httpServerBuilder.appendServiceFilter(
+        interceptor.appendServiceFilter(
                 new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
-        return httpServerBuilder;
+        return interceptor;
     }
 
     private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
@@ -265,21 +206,176 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     public Single<ServerContext> bind(final HttpService service) {
-        return preBuild().listen(service);
+        return interceptorBuilder.listen(service);
     }
 
     @Override
     public Single<ServerContext> bindStreaming(final StreamingHttpService service) {
-        return preBuild().listenStreaming(service);
+        return interceptorBuilder.listenStreaming(service);
     }
 
     @Override
     public Single<ServerContext> bindBlocking(final BlockingHttpService service) {
-        return preBuild().listenBlocking(service);
+        return interceptorBuilder.listenBlocking(service);
     }
 
     @Override
     public Single<ServerContext> bindBlockingStreaming(final BlockingStreamingHttpService service) {
-        return preBuild().listenBlockingStreaming(service);
+        return interceptorBuilder.listenBlockingStreaming(service);
+    }
+
+    private static class ExecutionContextInterceptorHttpServerBuilder implements HttpServerBuilder {
+        private final HttpServerBuilder delegate;
+        private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
+                // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy
+                // which is not compatible with gRPC.
+                .executionStrategy(defaultStrategy());
+
+        ExecutionContextInterceptorHttpServerBuilder(final HttpServerBuilder delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
+            contextBuilder.ioExecutor(ioExecutor);
+            delegate.ioExecutor(ioExecutor);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder executor(final Executor executor) {
+            contextBuilder.executor(executor);
+            delegate.executor(executor);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
+            contextBuilder.bufferAllocator(allocator);
+            delegate.bufferAllocator(allocator);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+            contextBuilder.executionStrategy(strategy);
+            delegate.executionStrategy(strategy);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
+            delegate.protocols(protocols);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder sslConfig(final ServerSslConfig config) {
+            delegate.sslConfig(config);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig,
+                                           final Map<String, ServerSslConfig> sniMap) {
+            delegate.sslConfig(defaultConfig, sniMap);
+            return this;
+        }
+
+        @Override
+        public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
+            delegate.socketOption(option, value);
+            return this;
+        }
+
+        @Override
+        public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+            delegate.listenSocketOption(option, value);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder enableWireLogging(final String loggerName,
+                                                   final LogLevel logLevel,
+                                                   final BooleanSupplier logUserData) {
+            delegate.enableWireLogging(loggerName, logLevel, logUserData);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
+            delegate.transportObserver(transportObserver);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
+            delegate.lifecycleObserver(lifecycleObserver);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
+            delegate.drainRequestPayloadBody(enable);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
+            delegate.allowDropRequestTrailers(allowDrop);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+            delegate.appendConnectionAcceptorFilter(factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+            delegate.appendNonOffloadingServiceFilter(factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                  final StreamingHttpServiceFilterFactory factory) {
+            delegate.appendNonOffloadingServiceFilter(predicate, factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+            delegate.appendServiceFilter(factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                     final StreamingHttpServiceFilterFactory factory) {
+            delegate.appendServiceFilter(predicate, factory);
+            return this;
+        }
+
+        @Override
+        public Single<ServerContext> listen(final HttpService service) {
+            return delegate.listen(service);
+        }
+
+        @Override
+        public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+            return delegate.listenStreaming(service);
+        }
+
+        @Override
+        public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+            return delegate.listenBlocking(service);
+        }
+
+        @Override
+        public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+            return delegate.listenBlockingStreaming(service);
+        }
     }
 }

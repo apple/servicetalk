@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
@@ -25,27 +24,17 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-
-import javax.annotation.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A factory for binding a <a href="https://www.grpc.io">gRPC</a> service to a server using a {@link ServerBinder}.
  *
- * @param <Filter> Type for service filter
  * @param <Service> Type for service
- * @param <FilterFactory> Type for filter factory
  */
-public abstract class GrpcServiceFactory<Filter extends Service, Service extends GrpcService,
-        FilterFactory extends GrpcServiceFilterFactory<Filter, Service>> {
+public abstract class GrpcServiceFactory<Service extends GrpcService> {
 
     private final GrpcRoutes<Service> routes;
-    @Nullable
-    private FilterFactory filterFactory;
 
     /**
      * Creates new instance.
@@ -56,17 +45,19 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
         this.routes = routes;
     }
 
+    /**
+     * Merges multiple {@link GrpcServiceFactory factories} into a single instance.
+     * @param factories instanes of {@link GrpcServiceFactory} to merge.
+     * @return An aggregate {@link GrpcServiceFactory}.
+     */
     @SuppressWarnings("unchecked")
-    static GrpcServiceFactory<?, ?, ?> merge(final GrpcServiceFactory<?, ?, ?>... factories) {
+    public static GrpcServiceFactory<?> merge(final GrpcServiceFactory<?>... factories) {
         if (factories.length == 1) {
             return factories[0];
         }
         final GrpcRoutes<?>[] routes = new GrpcRoutes[factories.length];
         for (int i = 0; i < factories.length; i++) {
-            final GrpcServiceFactory factory = factories[i];
-            if (factory.filterFactory != null) {
-                factory.applyFilterToRoutes(factory.filterFactory);
-            }
+            final GrpcServiceFactory<?> factory = factories[i];
             routes[i] = factory.routes;
         }
         return new MergedServiceFactory(routes);
@@ -82,10 +73,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * the server could not be started.
      */
     public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
-        if (filterFactory != null) {
-            applyFilterToRoutes(filterFactory);
-        }
-
         GrpcExecutionContext useContext = executionContext instanceof GrpcExecutionContext ?
                 (GrpcExecutionContext) executionContext :
                 new DefaultGrpcExecutionContext(executionContext instanceof HttpExecutionContext ?
@@ -101,68 +88,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
                 );
 
         return routes.bind(binder, useContext);
-    }
-
-    /**
-     * Appends the passed {@link FilterFactory} to this factory.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     filter1.append(filter2).append(filter3)
-     * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
-     * </pre>
-     *
-     * @param before the factory to apply before this factory is applied
-     * @return {@code this}
-     * @deprecated gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
-     * {@link StreamingHttpServiceFilterFactory} and if the access to the decoded payload is necessary, then performing
-     * that logic can be done in the particular {@link GrpcService service implementation}.
-     * Please use
-     * {@link io.servicetalk.http.api.HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
-     * upon the {@code builder} obtained using
-     * {@link GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)} if HTTP filters are acceptable
-     * in your use case.
-     */
-    @Deprecated
-    public GrpcServiceFactory<Filter, Service, FilterFactory> appendServiceFilter(FilterFactory before) {
-        requireNonNull(before);
-        if (filterFactory == null) {
-            filterFactory = before;
-        } else {
-            this.filterFactory = appendServiceFilterFactory(filterFactory, before);
-        }
-        return this;
-    }
-
-    /**
-     * Appends the passed {@link FilterFactory} to this service factory.
-     *
-     * @param existing Existing {@link FilterFactory}.
-     * @param append {@link FilterFactory} to append to {@code existing}.
-     * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
-     * factory
-     * @deprecated gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
-     * {@link StreamingHttpServiceFilterFactory} and if the access to the decoded payload is necessary, then performing
-     * that logic can be done in the particular {@link GrpcService service implementation}.
-     * Please use
-     * {@link io.servicetalk.http.api.HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)}
-     * upon the {@code builder} obtained using
-     * {@link GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)} if HTTP filters are acceptable
-     * in your use case.
-     */
-    @Deprecated
-    protected abstract FilterFactory appendServiceFilterFactory(FilterFactory existing, FilterFactory append);
-
-    private void applyFilterToRoutes(final FilterFactory filterFactory) {
-        // We will call the routes again to register the new filtered routes, so clear the existing routes and return
-        // them in AllGrpcRoutes.
-        final AllGrpcRoutes streamingRoutes = routes.drainToStreamingRoutes();
-        final Service fromRoutes = routes.newServiceFromRoutes(streamingRoutes);
-        final Filter filter = filterFactory.create(fromRoutes);
-        routes.registerRoutes(filter);
     }
 
     /**
@@ -221,12 +146,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
         @SuppressWarnings("unchecked")
         MergedServiceFactory(final GrpcRoutes... routes) {
             super(GrpcRoutes.merge(routes));
-        }
-
-        @Override
-        protected GrpcServiceFilterFactory appendServiceFilterFactory(final GrpcServiceFilterFactory existing,
-                                                                      final GrpcServiceFilterFactory append) {
-            throw new UnsupportedOperationException("Merged service factory can not register routes.");
         }
     }
 }

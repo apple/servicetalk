@@ -22,7 +22,6 @@ import io.servicetalk.encoding.api.Identity;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
@@ -36,17 +35,9 @@ import static java.util.Objects.requireNonNull;
  * factory represents.
  * @param <BlockingClient> Blocking <a href="https://www.grpc.io">gRPC</a> service that any client
  * built from this builder represents.
- * @param <Filter> Type for client filter
- * @param <FilterableClient> Type of filterable client.
- * @param <FilterFactory> Type of {@link GrpcClientFilterFactory}
  */
 public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient>,
-        BlockingClient extends BlockingGrpcClient<Client>,
-        Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
-        FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> {
-
-    @Nullable
-    private FilterFactory filterFactory;
+        BlockingClient extends BlockingGrpcClient<Client>> {
 
     @Deprecated
     private List<ContentCodec> supportedCodings = emptyList();
@@ -61,11 +52,8 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
-    final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
-        if (filterFactory == null) {
-            return newClient(clientCallFactory);
-        }
-        return newClient(newFilter(newClient(clientCallFactory), filterFactory));
+    public final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
+        return newClient(clientCallFactory);
     }
 
     /**
@@ -77,39 +65,8 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.
      */
-    final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
-        if (filterFactory == null) {
+    public final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
             return newBlockingClient(clientCallFactory);
-        }
-        return newClient(newFilter(
-                newBlockingClient(clientCallFactory).asClient(), filterFactory))
-                .asBlockingClient();
-    }
-
-    /**
-     * Appends the passed {@link FilterFactory} to this factory.
-     *
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     filter1.append(filter2).append(filter3)
-     * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
-     * </pre>
-     *
-     * @param before the factory to apply before this factory is applied
-     * @return {@code this}
-     */
-    public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
-    appendClientFilter(FilterFactory before) {
-        if (filterFactory == null) {
-            filterFactory = before;
-        } else {
-            this.filterFactory = appendClientFilterFactory(filterFactory, requireNonNull(before));
-        }
-        return this;
     }
 
     /**
@@ -121,7 +78,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link io.servicetalk.encoding.api.BufferEncoder}s and {@link io.servicetalk.encoding.api.BufferDecoderGroup}.
      */
     @Deprecated
-    public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
+    public GrpcClientFactory<Client, BlockingClient>
     supportedMessageCodings(List<ContentCodec> codings) {
         this.supportedCodings = unmodifiableList(new ArrayList<>(codings));
         return this;
@@ -146,7 +103,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @param bufferDecoderGroup The supported {@link BufferDecoderGroup} for this client.
      * @return {@code this}
      */
-    public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory> bufferDecoderGroup(
+    public GrpcClientFactory<Client, BlockingClient> bufferDecoderGroup(
             BufferDecoderGroup bufferDecoderGroup) {
         this.bufferDecoderGroup = requireNonNull(bufferDecoderGroup);
         return this;
@@ -161,16 +118,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     }
 
     /**
-     * Appends the passed {@link FilterFactory} to this client factory.
-     *
-     * @param existing Existing {@link FilterFactory}.
-     * @param append {@link FilterFactory} to append to {@code existing}.
-     * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
-     * factory
-     */
-    protected abstract FilterFactory appendClientFilterFactory(FilterFactory existing, FilterFactory append);
-
-    /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>
      * {@link Client} contract using the passed {@link GrpcClientCallFactory}.
      *
@@ -180,24 +127,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
     protected abstract Client newClient(GrpcClientCallFactory clientCallFactory);
-
-    /**
-     * Create a new {@link Filter} using the passed {@link Client} and {@link FilterFactory}.
-     *
-     * @param client {@link Client} to use for creating a {@link Filter} through the {@link FilterFactory}.
-     * @param filterFactory {@link FilterFactory}
-     * @return A {@link Filter} filtering the passed {@link Client}.
-     */
-    protected abstract Filter newFilter(Client client, FilterFactory filterFactory);
-
-    /**
-     * Create a new {@link Client} using the passed {@link FilterableClient}.
-     *
-     * @param filterableClient {@link FilterableClient} to create a {@link Client} from.
-     * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
-     * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
-     */
-    protected abstract Client newClient(FilterableClient filterableClient);
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>

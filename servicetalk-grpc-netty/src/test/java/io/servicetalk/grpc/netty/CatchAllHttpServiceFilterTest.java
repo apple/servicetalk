@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
-
-import io.servicetalk.grpc.api.GrpcServerBuilder.CatchAllHttpServiceFilter;
+package io.servicetalk.grpc.netty;
 
 import org.junit.jupiter.api.Test;
 

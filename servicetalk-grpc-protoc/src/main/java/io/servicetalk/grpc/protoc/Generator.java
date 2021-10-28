@@ -67,12 +67,10 @@ import static io.servicetalk.grpc.protoc.Types.Completable;
 import static io.servicetalk.grpc.protoc.Types.ContentCodec;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.EmptyBufferDecoderGroup;
-import static io.servicetalk.grpc.protoc.Types.FilterableGrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
-import static io.servicetalk.grpc.protoc.Types.GrpcClientFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionStrategy;
@@ -83,15 +81,11 @@ import static io.servicetalk.grpc.protoc.Types.GrpcPayloadWriter;
 import static io.servicetalk.grpc.protoc.Types.GrpcRouteExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.GrpcSerializationProvider;
-import static io.servicetalk.grpc.protoc.Types.GrpcServerBuilder;
 import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
-import static io.servicetalk.grpc.protoc.Types.GrpcServiceFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcStatusException;
 import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
-import static io.servicetalk.grpc.protoc.Types.HttpInitializer;
-import static io.servicetalk.grpc.protoc.Types.HttpServerBuilder;
 import static io.servicetalk.grpc.protoc.Types.Identity;
 import static io.servicetalk.grpc.protoc.Types.Objects;
 import static io.servicetalk.grpc.protoc.Types.ProtoBufSerializationProviderBuilder;
@@ -104,7 +98,6 @@ import static io.servicetalk.grpc.protoc.Types.ResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.Route;
 import static io.servicetalk.grpc.protoc.Types.Single;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
-import static io.servicetalk.grpc.protoc.Types.StreamingHttpServiceFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
 import static io.servicetalk.grpc.protoc.Words.ASYNC_METHOD_DESCRIPTORS;
 import static io.servicetalk.grpc.protoc.Words.BLOCKING_METHOD_DESCRIPTORS;
@@ -115,7 +108,6 @@ import static io.servicetalk.grpc.protoc.Words.COMMENT_PRE_TAG;
 import static io.servicetalk.grpc.protoc.Words.Call;
 import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
-import static io.servicetalk.grpc.protoc.Words.Filter;
 import static io.servicetalk.grpc.protoc.Words.INSTANCE;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_DEPRECATED;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_PARAM;
@@ -129,8 +121,6 @@ import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
 import static io.servicetalk.grpc.protoc.Words.addService;
-import static io.servicetalk.grpc.protoc.Words.append;
-import static io.servicetalk.grpc.protoc.Words.appendServiceFilter;
 import static io.servicetalk.grpc.protoc.Words.bind;
 import static io.servicetalk.grpc.protoc.Words.bufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Words.bufferEncoders;
@@ -142,9 +132,7 @@ import static io.servicetalk.grpc.protoc.Words.closeAsyncGracefully;
 import static io.servicetalk.grpc.protoc.Words.closeGracefully;
 import static io.servicetalk.grpc.protoc.Words.closeable;
 import static io.servicetalk.grpc.protoc.Words.ctx;
-import static io.servicetalk.grpc.protoc.Words.delegate;
 import static io.servicetalk.grpc.protoc.Words.executionContext;
-import static io.servicetalk.grpc.protoc.Words.existing;
 import static io.servicetalk.grpc.protoc.Words.factory;
 import static io.servicetalk.grpc.protoc.Words.initSerializationProvider;
 import static io.servicetalk.grpc.protoc.Words.isSupportedMessageCodingsEmpty;
@@ -212,15 +200,10 @@ final class Generator {
         final ClassName serviceClass;
         final ClassName blockingServiceClass;
         final ClassName serviceFactoryClass;
-        final ClassName serviceFilterClass;
-        final ClassName serviceFilterFactoryClass;
 
         final List<ClientMetaData> clientMetaDatas;
         final ClassName clientClass;
-        final ClassName filterableClientClass;
         final ClassName blockingClientClass;
-        final ClassName clientFilterClass;
-        final ClassName clientFilterFactoryClass;
 
         private State(final ServiceDescriptorProto serviceProto, String name, int serviceIndex) {
             this.serviceProto = serviceProto;
@@ -231,16 +214,11 @@ final class Generator {
             serviceClass = ClassName.bestGuess(name);
             blockingServiceClass = ClassName.bestGuess(Blocking + name);
             serviceFactoryClass = serviceClass.peerClass(Service + Factory);
-            serviceFilterClass = serviceClass.peerClass(serviceClass.simpleName() + Filter);
-            serviceFilterFactoryClass = serviceFilterClass.peerClass(serviceFilterClass.simpleName() + Factory);
 
             // Filled in during addClientMetadata()
             clientMetaDatas = new ArrayList<>(serviceProto.getMethodCount());
             clientClass = ClassName.bestGuess(sanitizeIdentifier(serviceProto.getName(), false) + "Client");
-            filterableClientClass = clientClass.peerClass("Filterable" + clientClass.simpleName());
             blockingClientClass = clientClass.peerClass(Blocking + clientClass.simpleName());
-            clientFilterClass = clientClass.peerClass(clientClass.simpleName() + Filter);
-            clientFilterFactoryClass = clientFilterClass.peerClass(clientFilterClass.simpleName() + Factory);
         }
     }
 
@@ -278,14 +256,10 @@ final class Generator {
 
         addServiceRpcInterfaces(state, serviceClassBuilder);
         addServiceInterfaces(state, serviceClassBuilder);
-        addServiceFilter(state, serviceClassBuilder);
-        addServiceFilterFactory(state, serviceClassBuilder);
         addServiceFactory(state, serviceClassBuilder);
 
         addClientMetadata(state, serviceClassBuilder);
         addClientInterfaces(state, serviceClassBuilder);
-        addClientFilter(state, serviceClassBuilder);
-        addClientFilterFactory(state, serviceClassBuilder);
         addClientFactory(state, serviceClassBuilder);
 
         return serviceClassBuilder;
@@ -465,52 +439,6 @@ final class Generator {
                 .addType(newServiceInterfaceSpec(state, true));
     }
 
-    private TypeSpec.Builder addServiceFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final TypeSpec.Builder classSpecBuilder =
-                newFilterDelegateCommonMethods(state.serviceFilterClass, state.serviceClass)
-                        .addJavadoc(JAVADOC_DEPRECATED + " gRPC Service Filters will be removed in future release" +
-                                " of ServiceTalk. We encourage the use of {@link $T}" +
-                                " and if the access to the decoded payload is necessary, then performing that logic" +
-                                " can be done in the particular {@link $T service implementation}." +
-                                " Please use {@link $T#appendServiceFilter($T)}" +
-                                " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
-                                " if HTTP filters are acceptable in your use case." + lineSeparator(),
-                                StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
-                        .addAnnotation(Deprecated.class);
-
-        state.serviceProto.getMethodList().forEach(methodProto ->
-                classSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class), false,
-                        (n, b) -> b.addAnnotation(Override.class)
-                                .addParameter(GrpcServiceContext, ctx, FINAL)
-                                .addStatement("return $L.$L($L, $L)", delegate, n, ctx, request))));
-
-        serviceClassBuilder.addType(classSpecBuilder.build());
-
-        return serviceClassBuilder;
-    }
-
-    private static TypeSpec.Builder addServiceFilterFactory(final State state,
-                                                            final TypeSpec.Builder serviceClassBuilder) {
-        serviceClassBuilder.addType(interfaceBuilder(state.serviceFilterFactoryClass)
-                .addJavadoc(JAVADOC_DEPRECATED + " gRPC Service Filters will be removed in future release" +
-                        " of ServiceTalk. We encourage the use of {@link $T}" +
-                        " and if the access to the decoded payload is necessary, then performing that logic" +
-                        " can be done in the particular {@link $T service implementation}." +
-                        " Please use {@link $T#appendServiceFilter($T)}" +
-                        " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
-                        " if HTTP filters are acceptable in your use case." + lineSeparator(),
-                        StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                        StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
-                .addAnnotation(Deprecated.class)
-                .addModifiers(PUBLIC)
-                .addSuperinterface(ParameterizedTypeName.get(GrpcServiceFilterFactory, state.serviceFilterClass,
-                        state.serviceClass))
-                .build());
-
-        return serviceClassBuilder;
-    }
-
     /**
      * Add the ServiceFactory class
      *
@@ -674,8 +602,7 @@ final class Generator {
 
         final TypeSpec.Builder serviceFactoryClassSpecBuilder = classBuilder(state.serviceFactoryClass)
                 .addModifiers(PUBLIC, STATIC, FINAL)
-                .superclass(ParameterizedTypeName.get(GrpcServiceFactory, state.serviceFilterClass, state.serviceClass,
-                        state.serviceFilterFactoryClass))
+                .superclass(ParameterizedTypeName.get(GrpcServiceFactory, state.serviceClass))
                 // Add ServiceFactory constructors for blocking and async services with and without content codings and
                 // execution strategy
                 .addMethod(constructorBuilder()
@@ -760,42 +687,6 @@ final class Generator {
                         .addParameter(builderClass, builder, FINAL)
                         .addStatement("super($L)", builder)
                         .build())
-                .addMethod(methodBuilder(appendServiceFilter)
-                        .addJavadoc(JAVADOC_DEPRECATED + " gRPC Service Filters will be removed in future release" +
-                                        " of ServiceTalk. We encourage the use of {@link $T} and if the access" +
-                                        " to the decoded payload is necessary, then performing that logic" +
-                                        " can be done in the particular {@link $T service implementation}." +
-                                        " Please use {@link $T#appendServiceFilter($T)}" +
-                                        " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
-                                        " if HTTP filters are acceptable in your use case." + lineSeparator(),
-                                StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.serviceFactoryClass)
-                        .addParameter(state.serviceFilterFactoryClass, factory, FINAL)
-                        .addStatement("super.$L($L)", appendServiceFilter, factory)
-                        .addStatement("return this")
-                        .build())
-                .addMethod(methodBuilder(appendServiceFilter + Factory)
-                        .addJavadoc(JAVADOC_DEPRECATED + " gRPC Service Filters will be removed in future release" +
-                                        " of ServiceTalk. We encourage the use of {@link $T} and if the access" +
-                                        " to the decoded payload is necessary, then performing that logic" +
-                                        " can be done in the particular {@link $T service implementation}." +
-                                        " Please use {@link $T#appendServiceFilter($T)}" +
-                                        " upon the {@code builder} obtained using {@link $T#initializeHttp($T)}" +
-                                        " if HTTP filters are acceptable in your use case." + lineSeparator(),
-                                StreamingHttpServiceFilterFactory, GrpcService, HttpServerBuilder,
-                                StreamingHttpServiceFilterFactory, GrpcServerBuilder, HttpInitializer)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.serviceFilterFactoryClass)
-                        .addParameter(state.serviceFilterFactoryClass, existing, FINAL)
-                        .addParameter(state.serviceFilterFactoryClass, append, FINAL)
-                        .addStatement("return $L -> $L.create($L.create($L))", service, existing, append, service)
-                        .build())
                 .addType(serviceBuilderType);
 
         serviceClassBuilder.addType(serviceFactoryClassSpecBuilder.build());
@@ -877,12 +768,7 @@ final class Generator {
     private TypeSpec.Builder addClientInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder clientSpecBuilder = interfaceBuilder(state.clientClass)
                 .addModifiers(PUBLIC)
-                .addSuperinterface(state.filterableClientClass)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClient, state.blockingClientClass));
-
-        final TypeSpec.Builder filterableClientSpecBuilder = interfaceBuilder(state.filterableClientClass)
-                .addModifiers(PUBLIC)
-                .addSuperinterface(FilterableGrpcClient);
 
         final TypeSpec.Builder blockingClientSpecBuilder = interfaceBuilder(state.blockingClientClass)
                 .addModifiers(PUBLIC)
@@ -899,9 +785,7 @@ final class Generator {
                                     extractJavaDocComments(state, methodIndex, b);
                                 }
                                 return b;
-                            }));
-
-            filterableClientSpecBuilder
+                            }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
@@ -917,9 +801,7 @@ final class Generator {
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
-                            }));
-
-            filterableClientSpecBuilder
+                            }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
@@ -969,44 +851,7 @@ final class Generator {
                             }));
         }
 
-        serviceClassBuilder.addType(clientSpecBuilder.build())
-                .addType(filterableClientSpecBuilder.build())
-                .addType(blockingClientSpecBuilder.build());
-
-        return serviceClassBuilder;
-    }
-
-    private TypeSpec.Builder addClientFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
-                state.filterableClientClass)
-                .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
-                .addMethod(newDelegatingMethodSpec(executionContext, delegate, GrpcExecutionContext, null));
-
-        state.clientMetaDatas.forEach(clientMetaData ->
-                classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                        false, (n, b) -> b.addAnnotation(Deprecated.class)
-                        .addAnnotation(Override.class)
-                        .addParameter(clientMetaData.className, metadata)
-                        .addStatement("return $L.$L($L, $L)", delegate, n, metadata, request))));
-
-        state.clientMetaDatas.forEach(clientMetaData ->
-                classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                        false, (n, b) -> b.addAnnotation(Override.class)
-                        .addParameter(GrpcClientMetadata, metadata)
-                        .addStatement("return $L.$L($L, $L)", delegate, n, metadata, request))));
-
-        serviceClassBuilder.addType(classSpecBuilder.build());
-
-        return serviceClassBuilder;
-    }
-
-    private static TypeSpec.Builder addClientFilterFactory(final State state,
-                                                           final TypeSpec.Builder serviceClassBuilder) {
-        serviceClassBuilder.addType(interfaceBuilder(state.clientFilterFactoryClass)
-                .addModifiers(PUBLIC)
-                .addSuperinterface(ParameterizedTypeName.get(GrpcClientFilterFactory, state.clientFilterClass,
-                        state.filterableClientClass))
-                .build());
+        serviceClassBuilder.addType(clientSpecBuilder.build()).addType(blockingClientSpecBuilder.build());
 
         return serviceClassBuilder;
     }
@@ -1014,8 +859,6 @@ final class Generator {
     private TypeSpec.Builder addClientFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final ClassName clientFactoryClass = state.clientClass.peerClass("Client" + Factory);
         final ClassName defaultClientClass = clientFactoryClass.peerClass(Default + state.clientClass.simpleName());
-        final ClassName filterableClientToClientClass = clientFactoryClass.peerClass(
-                state.filterableClientClass.simpleName() + To + state.clientClass.simpleName());
         final ClassName defaultBlockingClientClass = clientFactoryClass.peerClass(Default +
                 state.blockingClientClass.simpleName());
         final ClassName clientToBlockingClientClass = clientFactoryClass.peerClass(state.clientClass.simpleName() + To +
@@ -1023,16 +866,7 @@ final class Generator {
 
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)
-                .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass,
-                        state.clientFilterClass, state.filterableClientClass, state.clientFilterFactoryClass))
-                .addMethod(methodBuilder("appendClientFilterFactory")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientFilterFactoryClass)
-                        .addParameter(state.clientFilterFactoryClass, existing, FINAL)
-                        .addParameter(state.clientFilterFactoryClass, append, FINAL)
-                        .addStatement("return $L -> $L.create($L.create($L))", client, existing, append, client)
-                        .build())
+                .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass))
                 .addMethod(methodBuilder("newClient")
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
@@ -1040,21 +874,6 @@ final class Generator {
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
                         .addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
                                 supportedMessageCodings, bufferDecoderGroup)
-                        .build())
-                .addMethod(methodBuilder("newFilter")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientFilterClass)
-                        .addParameter(state.clientClass, client, FINAL)
-                        .addParameter(state.clientFilterFactoryClass, factory, FINAL)
-                        .addStatement("return $L.create($L)", factory, client)
-                        .build())
-                .addMethod(methodBuilder("newClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        .addParameter(state.filterableClientClass, client, FINAL)
-                        .addStatement("return new $T($L)", filterableClientToClientClass, client)
                         .build())
                 .addMethod(methodBuilder("newBlockingClient")
                         .addModifiers(PROTECTED)
@@ -1065,8 +884,6 @@ final class Generator {
                                 supportedMessageCodings, bufferDecoderGroup)
                         .build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
-                .addType(newFilterableClientToClientClassSpec(state, filterableClientToClientClass,
-                        clientToBlockingClientClass))
                 .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
                 .addType(newClientToBlockingClientClassSpec(state, clientToBlockingClientClass));
 
@@ -1361,52 +1178,6 @@ final class Generator {
         }
     }
 
-    private TypeSpec newFilterableClientToClientClassSpec(final State state,
-                                                          final ClassName filterableClientToClientClass,
-                                                          final ClassName clientToBlockingClientClass) {
-        final TypeSpec.Builder typeSpecBuilder = classBuilder(filterableClientToClientClass)
-                .addModifiers(PRIVATE, STATIC, FINAL)
-                .addSuperinterface(state.clientClass)
-                .addField(state.filterableClientClass, client, PRIVATE, FINAL)
-                .addMethod(constructorBuilder()
-                        .addModifiers(PRIVATE)
-                        .addParameter(state.filterableClientClass, client, FINAL)
-                        .addStatement("this.$L = $L", client, client)
-                        .build())
-                .addMethod(methodBuilder("asBlockingClient")
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T(this)", clientToBlockingClientClass)
-                        .build())
-                .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
-                .addMethod(newDelegatingCompletableMethodSpec(onClose, client))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsync, client))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, client));
-
-        state.clientMetaDatas.forEach(clientMetaData -> typeSpecBuilder
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        // Keep using clientMetaData.className until the class is removed, after it is removed switch to
-                        // DefaultGrpcClientMetadata.INSTANCE. This is because we don't know if the underlying
-                        // ClientCall object was generated with the MethodDescriptor or not, if it wasn't then we need
-                        // to grab the path() from the metadata.
-                        (n, b) -> b.addAnnotation(Override.class)
-                                   .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE,
-                                           request)))
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        (n, b) -> b.addAnnotation(Deprecated.class)
-                                .addAnnotation(Override.class)
-                                .addParameter(clientMetaData.className, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)", client, n, metadata, request)))
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
-                        (n, b) -> b.addAnnotation(Override.class)
-                                .addParameter(GrpcClientMetadata, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)", client, n, metadata, request))));
-
-        return typeSpecBuilder.build();
-    }
-
     private TypeSpec newClientToBlockingClientClassSpec(final State state,
                                                         final ClassName clientToBlockingClientClass) {
         final TypeSpec.Builder typeSpecBuilder = classBuilder(clientToBlockingClientClass)
@@ -1468,8 +1239,7 @@ final class Generator {
 
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addModifiers(PUBLIC)
-                .addSuperinterface(ParameterizedTypeName.get(GrpcBindableService,
-                        state.serviceFilterClass, state.serviceClass, state.serviceFilterFactoryClass));
+                .addSuperinterface(ParameterizedTypeName.get(GrpcBindableService, state.serviceClass));
 
         state.serviceRpcInterfaces.stream()
                 .filter(e -> e.blocking == blocking)
@@ -1500,26 +1270,6 @@ final class Generator {
                 .build());
 
         return interfaceSpecBuilder.build();
-    }
-
-    private static TypeSpec.Builder newFilterDelegateCommonMethods(final ClassName filterClass,
-                                                                   final ClassName filteredClass) {
-        return classBuilder(filterClass)
-                .addModifiers(PUBLIC, STATIC)
-                .addSuperinterface(filteredClass)
-                .addField(filteredClass, delegate, PRIVATE, FINAL)
-                .addMethod(constructorBuilder()
-                        .addModifiers(PROTECTED)
-                        .addParameter(filteredClass, delegate, FINAL)
-                        .addStatement("this.$L = $L", delegate, delegate)
-                        .build())
-                .addMethod(methodBuilder(delegate)
-                        .addModifiers(PROTECTED)
-                        .returns(filteredClass)
-                        .addStatement("return $L", delegate)
-                        .build())
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsync, delegate))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, delegate));
     }
 
     private static String routeName(final MethodDescriptorProto methodProto) {
