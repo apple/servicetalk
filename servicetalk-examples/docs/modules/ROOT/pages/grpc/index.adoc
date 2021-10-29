@@ -127,7 +127,7 @@ condition on the server.
 
 [#execution-strategy]
 == Execution Strategy
-The gRPC implementation can be configured to execute all or some of the routes for a server without offloading. Using the IO Executor for executing routes is appropriate only if there is no possibility that the route implementation will block.
+The gRPC implementation can be configured to execute all or some of the routes for a server without offloading. Using the `IoExecutor` for executing routes is appropriate only if there is no possibility that the route implementation will block.
 
 The example demonstrates the impact of different route execution strategy configuration mechanisms.
 

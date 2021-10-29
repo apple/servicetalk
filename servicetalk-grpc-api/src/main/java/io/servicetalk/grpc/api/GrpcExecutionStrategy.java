@@ -31,12 +31,17 @@ public interface GrpcExecutionStrategy extends HttpExecutionStrategy {
      * @return New {@link GrpcExecutionStrategy} using the passed {@link HttpExecutionStrategy}.
      */
     static GrpcExecutionStrategy from(HttpExecutionStrategy httpExecutionStrategy) {
-        return httpExecutionStrategy instanceof GrpcExecutionStrategy ?
-                (GrpcExecutionStrategy) httpExecutionStrategy :
-                HttpExecutionStrategies.noOffloadsStrategy().equals(httpExecutionStrategy) ?
-                        GrpcExecutionStrategies.noOffloadsStrategy() :
-                        HttpExecutionStrategies.defaultStrategy().equals(httpExecutionStrategy) ?
-                                GrpcExecutionStrategies.defaultStrategy() :
-                                new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
+        GrpcExecutionStrategy result;
+        if (httpExecutionStrategy instanceof GrpcExecutionStrategy) {
+            result = (GrpcExecutionStrategy) httpExecutionStrategy;
+        } else if (HttpExecutionStrategies.noOffloadsStrategy() == httpExecutionStrategy) {
+            result = GrpcExecutionStrategies.noOffloadsStrategy();
+        } else if (HttpExecutionStrategies.defaultStrategy() == httpExecutionStrategy) {
+            result = GrpcExecutionStrategies.defaultStrategy();
+        } else {
+            result = new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
+        }
+
+        return result;
     }
 }

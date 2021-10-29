@@ -28,11 +28,12 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,7 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -54,7 +54,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
@@ -63,13 +62,16 @@ import static org.hamcrest.Matchers.is;
 
 class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
+    private static final String EXECUTOR_THREAD_NAME_PREFIX = "http-server-executor";
     private static final HttpExecutionStrategy[] SERVER_STRATEGIES = new HttpExecutionStrategy[] {
             defaultStrategy(), noOffloadsStrategy() };
 
     private static final HttpExecutionStrategy[] ROUTE_STRATEGIES = new HttpExecutionStrategy[] {
             null, defaultStrategy(), noOffloadsStrategy(), customStrategyBuilder().offloadSend().build() };
 
-    private static final IoExecutor IO_EXECUTOR = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
+    @RegisterExtension
+    private static final ExecutionContextExtension EXECUTION_CONTEXT =
+            ExecutionContextExtension.cached(IO_EXECUTOR_THREAD_NAME_PREFIX, EXECUTOR_THREAD_NAME_PREFIX);
     private OffloadingTesterService routeService;
     private ServerContext server;
 
@@ -91,7 +93,8 @@ class HttpServerOverrideOffloadingTest {
         StreamingHttpService router = route.thenRouteTo(routeService).buildStreaming();
 
         server = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(IO_EXECUTOR)
+                .ioExecutor(EXECUTION_CONTEXT.ioExecutor())
+                .executor(EXECUTION_CONTEXT.executor())
                 .executionStrategy(serverStrategy)
                 .listenStreamingAndAwait(router);
         return HttpClients.forSingleAddress(serverHostAndPort(server)).build();
@@ -99,7 +102,7 @@ class HttpServerOverrideOffloadingTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(server).closeAsyncGracefully().toFuture().get();
+        server.closeGracefully();
     }
 
     @ParameterizedTest(name = "serverStrategy={0} routeStrategy={1}")
@@ -115,7 +118,8 @@ class HttpServerOverrideOffloadingTest {
 
     private static final class OffloadingTesterService implements StreamingHttpService {
 
-        private final @Nullable HttpExecutionStrategy usingStrategy;
+        @Nullable
+        private final HttpExecutionStrategy usingStrategy;
         private final AtomicInteger invoked = new AtomicInteger();
         private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
 

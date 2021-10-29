@@ -18,10 +18,6 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.DefaultHttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -73,21 +69,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * the server could not be started.
      */
     public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
-        GrpcExecutionContext useContext = executionContext instanceof GrpcExecutionContext ?
-                (GrpcExecutionContext) executionContext :
-                new DefaultGrpcExecutionContext(executionContext instanceof HttpExecutionContext ?
-                        (HttpExecutionContext) executionContext :
-                        new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
-                                executionContext.ioExecutor(),
-                                executionContext.executor(),
-                                executionContext.executionStrategy() instanceof HttpExecutionStrategy ?
-                                        GrpcExecutionStrategy.from(
-                                                (HttpExecutionStrategy) executionContext.executionStrategy()) :
-                                        HttpExecutionStrategies.defaultStrategy()
-                        )
-                );
-
-        return routes.bind(binder, useContext);
+        return routes.bind(binder, GrpcExecutionContext.from(executionContext));
     }
 
     /**

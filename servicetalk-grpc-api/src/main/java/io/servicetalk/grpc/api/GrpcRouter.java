@@ -72,8 +72,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
@@ -309,7 +309,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, newInfluencer(executionStrategy, executionContext)),
+                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -513,7 +513,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, newInfluencer(executionStrategy, executionContext)),
+                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -583,7 +583,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, newInfluencer(executionStrategy, executionContext)),
+                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -659,7 +659,7 @@ final class GrpcRouter {
                     });
         }
 
-        private static HttpExecutionStrategyInfluencer newInfluencer(
+        private static HttpExecutionStrategyInfluencer newInfluencer(String path,
                 @Nullable GrpcExecutionStrategy routeStrategy, GrpcExecutionContext ctx) {
             return strategy -> {
                 GrpcExecutionStrategy baseStrategy = routeStrategy == null || defaultStrategy() == routeStrategy ?
@@ -667,8 +667,8 @@ final class GrpcRouter {
                         routeStrategy;
 
                 HttpExecutionStrategy useStrategy = baseStrategy.merge(strategy);
-                LOGGER.debug("route strategy: ctx={} route={} api={} use={}",
-                        ctx.executionStrategy(), routeStrategy, strategy, useStrategy);
+                LOGGER.debug("route strategy for path={} : ctx={} route={} api={} use={}",
+                        path, ctx.executionStrategy(), routeStrategy, strategy, useStrategy);
 
                 return useStrategy;
             };

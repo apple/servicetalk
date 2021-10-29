@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
  * Start the {@link ExecutionStrategyServer} first.
  */
 public final class ExecutionStrategyClient {
-    private static void sayHello(int port) {
+    private static void sayHello(int port) throws Exception {
         try (Greeter.GreeterClient client =
                      GrpcClients.forAddress("localhost", port).build(new Greeter.ClientFactory())) {
             client.sayHello(HelloRequest.newBuilder().setName("World").build())
@@ -37,16 +37,18 @@ public final class ExecutionStrategyClient {
                     // exiting before the response has been processed. This isn't typical usage for an asynchronous API
                     // but is useful for demonstration purposes.
                     .toFuture().get();
-        } catch (Exception all) {
-            if (all instanceof RuntimeException) {
-                throw (RuntimeException) all;
-            } else {
-                throw new RuntimeException("Unexpected exception", all);
-            }
         }
     }
+
     public static void main(String... args) {
         // Execute the same client request for each of the server variations.
-        IntStream.rangeClosed(8080,8088).forEach(ExecutionStrategyClient::sayHello);
+        IntStream.rangeClosed(8080, 8088).forEach(port -> {
+            try {
+                ExecutionStrategyClient.sayHello(port);
+            } catch (Throwable all) {
+                System.err.println("\nUnexpected throwable for port: " + port);
+                all.printStackTrace(System.err);
+            }
+        });
     }
 }

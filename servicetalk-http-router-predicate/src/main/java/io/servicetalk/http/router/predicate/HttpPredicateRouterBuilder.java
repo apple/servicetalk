@@ -67,7 +67,6 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * If no routes match, a default service is used, which returns a 404 response.
  *
- * @see InOrderRouter
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
     private final List<Route> routes = new ArrayList<>();

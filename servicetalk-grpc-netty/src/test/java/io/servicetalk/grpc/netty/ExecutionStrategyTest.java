@@ -299,7 +299,6 @@ class ExecutionStrategyTest {
         if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS && routeApi != RouteApi.TEST) {
             switch (routeStrategy) {
                 case BLOCKING_DEFAULT:
-                case BLOCKING_CLASS_EXEC_ID:
                 case BLOCKING_CLASS_NO_OFFLOADS:
                 case BLOCKING_METHOD_NO_OFFLOADS:
                 case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
