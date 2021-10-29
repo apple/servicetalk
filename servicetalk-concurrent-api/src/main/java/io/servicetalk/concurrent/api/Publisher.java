@@ -1712,7 +1712,6 @@ public abstract class Publisher<T> {
      * avoided by trampolining the call stack onto an Executor. For example:
      *   {@code retryWhen((i, cause) -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
-     * <p>
      * This method provides a means to retry an operation under certain failure conditions and in sequential programming
      * is similar to:
      * <pre>{@code
@@ -1763,7 +1762,6 @@ public abstract class Publisher<T> {
      * avoided by trampolining the call stack onto an Executor. For example:
      *   {@code retryWhen((i, cause) -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
-     * <p>
      * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
      * and in sequential programming is similar to:
      * <pre>{@code
@@ -1850,7 +1848,6 @@ public abstract class Publisher<T> {
      * avoided by trampolining the call stack onto an Executor. For example:
      *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
-     * <p>
      * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
      * sequential programming is similar to:
      * <pre>{@code
