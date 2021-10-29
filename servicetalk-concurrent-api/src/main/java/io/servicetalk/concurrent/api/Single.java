@@ -829,7 +829,7 @@ public abstract class Single<T> {
      * {@code true}.
      * <pre>
      * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an Executor. For example:
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
      *   {@code retryWhen((i, cause) -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
      * This method provides a means to retry an operation under certain failure conditions and in sequential programming
@@ -869,7 +869,7 @@ public abstract class Single<T> {
      * {@link Single} terminates with that error.
      * <pre>
      * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an Executor. For example:
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
      *   {@code retryWhen((i, cause) -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
      * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
@@ -910,7 +910,7 @@ public abstract class Single<T> {
      * Re-subscribes to this {@link Single} when it completes and the passed {@link IntPredicate} returns {@code true}.
      * <pre>
      * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an Executor. For example:
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
      *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
      * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
@@ -939,7 +939,7 @@ public abstract class Single<T> {
      * {@link Single} emits an error.
      * <pre>
      * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an Executor. For example:
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
      *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
      * </pre>
      * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
