@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -468,8 +469,7 @@ final class DefaultDnsClient implements DnsClient {
             if (subscription != null) {
                 deliverErrorFromSource(subscriber, new DuplicateSubscribeException(subscription, subscriber));
             } else if (closed) {
-                deliverErrorFromSource(subscriber, new ClosedServiceDiscovererException(DefaultDnsClient.this +
-                        " has been closed!"));
+                deliverErrorFromSource(subscriber, new ClosedDnsServiceDiscovererException());
             } else {
                 subscription = newSubscription(subscriber);
                 try {
@@ -564,8 +564,7 @@ final class DefaultDnsClient implements DnsClient {
 
                 if (closed) {
                     // best effort check to cleanup state after close.
-                    handleTerminalError0(new ClosedServiceDiscovererException(DefaultDnsClient.this +
-                            " has been closed!"));
+                    handleTerminalError0(new ClosedDnsServiceDiscovererException());
                 } else {
                     final DnsResolutionObserver resolutionObserver = newResolutionObserver();
                     LOGGER.trace("DnsClient {}, querying DNS for {}", DefaultDnsClient.this, AbstractDnsPublisher.this);
@@ -897,13 +896,9 @@ final class DefaultDnsClient implements DnsClient {
         }
     }
 
-    private static final class ClosedServiceDiscovererException extends RuntimeException
+    private static final class ClosedDnsServiceDiscovererException extends ClosedChannelException
             implements RejectedSubscribeError {
-        private static final long serialVersionUID = 1411660766942024081L;
-
-        ClosedServiceDiscovererException(final String message) {
-            super(message);
-        }
+        private static final long serialVersionUID = -8092675984257002148L;
     }
 
     private static final class SrvAddressRemovedException extends RuntimeException {

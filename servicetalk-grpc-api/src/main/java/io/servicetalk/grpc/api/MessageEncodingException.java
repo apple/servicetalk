@@ -15,10 +15,18 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.serializer.api.SerializationException;
+
 /**
  * Exception thrown when a message was encoded with an unsupported encoder.
+ *
+ * @deprecated This exception type was thrown only by {@code ProtoBufSerializationProviderBuilder} that was deprecated
+ * and will be removed in future releases. Use {@link SerializationException} instead that can be thrown by a new
+ * implementation.
  */
+@Deprecated
 public final class MessageEncodingException extends RuntimeException {
+    private static final long serialVersionUID = 4146293629657567572L;
 
     private final String encoding;
 
