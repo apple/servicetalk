@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.Collection;
@@ -26,7 +27,13 @@ import java.util.Collection;
  *
  * @param <ResolvedAddress> The type of address after resolution.
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
+ * @see io.servicetalk.concurrent.api.RetryStrategies
+ * @see SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)
+ * @deprecated Use standard mechanisms for retrying using
+ * {@link io.servicetalk.concurrent.api.Completable#retryWhen(BiIntFunction)} on the {@link Publisher} returned from
+ * {@link ServiceDiscoverer#discover(Object)} instead.
  */
+@Deprecated
 @FunctionalInterface
 public interface ServiceDiscoveryRetryStrategy<ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> {
 

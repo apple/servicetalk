@@ -22,7 +22,9 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
@@ -291,9 +293,25 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
+     * @deprecated Use {@link #retryServiceDiscoveryErrors(BiIntFunction)} preferably with the standard utilities from
+     * {@link io.servicetalk.concurrent.api.RetryStrategies}.
+     */
+    @Deprecated
+    default SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting ServiceDiscoveryRetryStrategy" +
+                " is not supported by " + getClass().getName());
+    }
+
+    /**
+     * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * @return {@code this}.
+     * @see DefaultServiceDiscoveryRetryStrategy.Builder
+     * @see io.servicetalk.concurrent.api.RetryStrategies
      */
     SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
 
     /**
      * Sets a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
