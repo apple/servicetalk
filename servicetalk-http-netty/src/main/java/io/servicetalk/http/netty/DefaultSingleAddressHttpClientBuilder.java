@@ -236,10 +236,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
                 HttpExecutionContext executionContext) {
-            BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy != null ?
-                    serviceDiscovererRetryStrategy : deprecatedServiceDiscovererRetryStrategy == null ?
-                    retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
-                            SD_RETRY_STRATEGY_JITTER, executionContext.executor()) : null;
+            BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+            if (sdRetryStrategy == null && deprecatedServiceDiscovererRetryStrategy == null) {
+                sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
+                        SD_RETRY_STRATEGY_JITTER, executionContext.executor());
+            }
             return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus),
                     sdRetryStrategy,
                     deprecatedServiceDiscovererRetryStrategy == null ?

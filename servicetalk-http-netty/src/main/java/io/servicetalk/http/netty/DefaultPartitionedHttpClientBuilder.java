@@ -94,10 +94,11 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
         final HttpExecutionContext executionContext = buildContext.builder.build().executionContext();
-        BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy != null ?
-                serviceDiscovererRetryStrategy : deprecatedServiceDiscovererRetryStrategy == null ?
-                        retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
-                                SD_RETRY_STRATEGY_JITTER, executionContext.executor()) : null;
+        BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+        if (sdRetryStrategy == null && deprecatedServiceDiscovererRetryStrategy == null) {
+            sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
+                    SD_RETRY_STRATEGY_JITTER, executionContext.executor());
+        }
         ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
                 new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(
                         serviceDiscoverer,
