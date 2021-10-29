@@ -17,6 +17,7 @@ package io.servicetalk.grpc.api;
 
 import com.google.rpc.Status;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -88,7 +89,7 @@ public final class GrpcStatus {
         try {
             return fromCodeValue(parseInt(codeValue));
         } catch (NumberFormatException e) {
-            return UNKNOWN.status();
+            return UNKNOWN.status().withDescription("Status code value not a number: " + codeValue);
         }
     }
 
@@ -100,7 +101,7 @@ public final class GrpcStatus {
      */
     public static GrpcStatus fromCodeValue(int codeValue) {
         return codeValue < 0 || codeValue >= INT_TO_GRPC_STATUS_MAP.length ?
-                UNKNOWN.status() : INT_TO_GRPC_STATUS_MAP[codeValue];
+                UNKNOWN.status().withDescription("Unknown code: " + codeValue) : INT_TO_GRPC_STATUS_MAP[codeValue];
     }
 
     /**
@@ -176,6 +177,13 @@ public final class GrpcStatus {
     @Nullable
     public String description() {
         return description;
+    }
+
+    public GrpcStatus withDescription(String description) {
+        if (Objects.equals(this.description, description)) {
+            return this;
+        }
+        return new GrpcStatus(this.code, this.cause, description);
     }
 
     @Override
