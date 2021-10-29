@@ -16,15 +16,17 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 
 /**
  * A factory to create different {@link GrpcExecutionStrategy}.
  */
 public final class GrpcExecutionStrategies {
 
-    private static final DefaultGrpcExecutionStrategy NO_OFFLOADS =
+    private static final DefaultGrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+
+    private static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
 
     private GrpcExecutionStrategies() {
         // No instances
@@ -36,7 +38,7 @@ public final class GrpcExecutionStrategies {
      * @return Default {@link GrpcExecutionStrategy}.
      */
     public static GrpcExecutionStrategy defaultStrategy() {
-        return Builder.DEFAULT;
+        return DEFAULT_GRPC_EXECUTION_STRATEGY;
     }
 
     /**
@@ -45,7 +47,7 @@ public final class GrpcExecutionStrategies {
      * @return {@link GrpcExecutionStrategy} that disables all offloads.
      */
     public static GrpcExecutionStrategy noOffloadsStrategy() {
-        return NO_OFFLOADS;
+        return NEVER_OFFLOAD_STRATEGY;
     }
 
     /**
@@ -58,12 +60,9 @@ public final class GrpcExecutionStrategies {
     }
 
     /**
-     * A builder to build an {@link HttpExecutionStrategy}.
+     * A builder to build an {@link GrpcExecutionStrategy}.
      */
     public static final class Builder {
-
-        static final GrpcExecutionStrategy DEFAULT =
-                new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
 
         private final HttpExecutionStrategies.Builder httpBuilder = HttpExecutionStrategies.customStrategyBuilder();
 

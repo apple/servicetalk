@@ -18,8 +18,8 @@ package io.servicetalk.http.utils;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -37,9 +37,8 @@ import static java.util.Objects.requireNonNull;
  * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">Encodes</a> the
  * {@link StreamingHttpRequest#requestTarget()} for each outgoing request.
  */
-public final class RequestTargetEncoderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                                      StreamingHttpConnectionFilterFactory,
-                                                                      HttpExecutionStrategyInfluencer {
+public final class RequestTargetEncoderHttpRequesterFilter implements
+        StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
     private final Charset charset;
 
     /**
@@ -90,8 +89,8 @@ public final class RequestTargetEncoderHttpRequesterFilter implements StreamingH
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

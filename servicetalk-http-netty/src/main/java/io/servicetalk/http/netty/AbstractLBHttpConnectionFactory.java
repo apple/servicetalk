@@ -24,7 +24,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -48,7 +48,10 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final ReadOnlyHttpClientConfig config;
     final HttpExecutionContext executionContext;
     final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc;
-    final HttpExecutionStrategyInfluencer strategyInfluencer;
+    /**
+     * Computed execution strategy of the connection factory and connection filters.
+     */
+    final HttpExecutionStrategy chainStrategy;
     final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
     private final Function<FilterableStreamingHttpConnection,
             FilterableStreamingHttpLoadBalancedConnection> protocolBinding;
@@ -57,7 +60,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
-            final HttpExecutionStrategyInfluencer strategyInfluencer,
+            final HttpExecutionStrategy chainStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
@@ -65,7 +68,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactoryFunc = requireNonNull(reqRespFactoryFunc);
-        this.strategyInfluencer = strategyInfluencer;
+        this.chainStrategy = chainStrategy;
         filterableConnectionFactory = connectionFactoryFilter.create(
                 new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
                     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
@@ -100,8 +103,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
             final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
         return filterableConnectionFactory.newConnection(resolvedAddress, observer)
                 .map(conn -> {
-                    FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
-                            connectionFilterFunction.create(conn) : conn;
+                    FilterableStreamingHttpConnection filteredConnection =
+                            connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
                     ConnectionContext ctx = filteredConnection.connectionContext();
                     Completable onClosing;
                     if (ctx instanceof NettyConnectionContext) {
@@ -111,10 +114,17 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     }
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
                             newConcurrencyController(filteredConnection, onClosing),
-                            executionContext.executionStrategy(), strategyInfluencer);
+                            executionContext.executionStrategy(), chainStrategy);
                 });
     }
 
+    /**
+     * The ultimate source of connections before filtering.
+     *
+     * @param resolvedAddress address of the connection
+     * @param observer Observer on the connection state.
+     * @return the connection instance.
+     */
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
             ResolvedAddress resolvedAddress, TransportObserver observer);
 

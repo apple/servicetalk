@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
@@ -43,11 +43,11 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
-            final HttpExecutionStrategyInfluencer strategyInfluencer,
+            final HttpExecutionStrategy chainStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, connectionFilterFunction, version -> reqRespFactory, strategyInfluencer,
+        super(config, executionContext, connectionFilterFunction, version -> reqRespFactory, chainStrategy,
                 connectionFactoryFilter, protocolBinding);
     }
 

@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -34,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -66,8 +66,7 @@ import static java.util.Objects.requireNonNull;
  * @param <UserInfo> a type for authenticated user info object
  * @see Builder
  */
-public final class BasicAuthHttpServiceFilter<UserInfo>
-        implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttpServiceFilterFactory {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -79,7 +78,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
      * @param <UserInfo> a type for authenticated user info object
      */
     public interface CredentialsVerifier<UserInfo> extends BiFunction<String, String, Single<UserInfo>>,
-                                                           AsyncCloseable {
+                                                           AsyncCloseable,
+                                                           ExecutionStrategyInfluencer<HttpExecutionStrategy> {
         /**
          * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme
          * credentials.
@@ -91,6 +91,11 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
          */
         @Override
         Single<UserInfo> apply(String userId, String password);
+
+        @Override
+        default HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.offloadAll();
+        }
     }
 
     /**
@@ -217,7 +222,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
     }
 
     private final CredentialsVerifier<UserInfo> credentialsVerifier;
-    private final HttpExecutionStrategyInfluencer influencer;
     private final String realm;
     private final boolean proxy;
     @Nullable
@@ -234,9 +238,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
         this.proxy = proxy;
         this.userInfoKey = userInfoKey;
         this.utf8 = utf8;
-        influencer = credentialsVerifier instanceof HttpExecutionStrategyInfluencer ?
-                (HttpExecutionStrategyInfluencer) credentialsVerifier :
-                defaultStreamingInfluencer();
     }
 
     @Override
@@ -245,8 +246,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return influencer.influenceStrategy(strategy);
+    public HttpExecutionStrategy requiredOffloads() {
+        return credentialsVerifier.requiredOffloads();
     }
 
     private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpServiceFilter {

@@ -37,7 +37,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -46,7 +45,7 @@ import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStra
  */
 public final class ExecutionContextExtension implements AfterEachCallback, BeforeEachCallback,
                                                         AfterAllCallback, BeforeAllCallback,
-                                                        ExecutionContext {
+                                                        ExecutionContext<ExecutionStrategy> {
 
     private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
     private static final String EXEC_THREAD_PREFIX = "exec-ctx-rule-exec";
@@ -55,13 +54,13 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     private final Supplier<BufferAllocator> allocatorSupplier;
     private final Supplier<ExecutionStrategy> executionStrategySupplier;
 
-    private ExecutionContext ctx;
+    private ExecutionContext<ExecutionStrategy> ctx;
     private boolean classLevel;
 
     public ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
                                      final Supplier<IoExecutor> ioExecutorSupplier,
                                      final Supplier<Executor> executorSupplier) {
-        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_FROM_IO_STRATEGY);
+        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, ExecutionStrategy::offloadAll);
     }
 
     private ExecutionContextExtension(final Supplier<BufferAllocator> allocatorSupplier,
@@ -169,7 +168,7 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
     }
 
     private void createContext() {
-        ctx = new DefaultExecutionContext(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get(),
+        ctx = new DefaultExecutionContext<>(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get(),
                 executionStrategySupplier.get());
     }
 

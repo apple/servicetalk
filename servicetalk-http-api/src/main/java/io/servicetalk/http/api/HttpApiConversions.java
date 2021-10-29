@@ -35,10 +35,24 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link ReservedHttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static ReservedHttpConnection toReservedConnection(ReservedStreamingHttpConnection original,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToReservedHttpConnection(original, influencer);
+        return new ReservedStreamingHttpConnectionToReservedHttpConnection(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link ReservedHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedHttpConnection toReservedConnection(ReservedStreamingHttpConnection original,
+                                                              HttpExecutionStrategy strategy) {
+        return new ReservedStreamingHttpConnectionToReservedHttpConnection(original, strategy);
     }
 
     /**
@@ -48,10 +62,26 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link ReservedBlockingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static ReservedBlockingHttpConnection toReservedBlockingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(original, influencer);
+        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(original,
+                                                                                   influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedBlockingHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting
+     * {@link ReservedBlockingHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedBlockingHttpConnection toReservedBlockingConnection(
+            ReservedStreamingHttpConnection original, HttpExecutionStrategy strategy) {
+        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(original, strategy);
     }
 
     /**
@@ -61,10 +91,25 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link ReservedBlockingStreamingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static ReservedBlockingStreamingHttpConnection toReservedBlockingStreamingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToBlockingStreaming(original, influencer);
+        return new ReservedStreamingHttpConnectionToBlockingStreaming(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedBlockingStreamingHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting
+     * {@link ReservedBlockingStreamingHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedBlockingStreamingHttpConnection toReservedBlockingStreamingConnection(
+            ReservedStreamingHttpConnection original, HttpExecutionStrategy strategy) {
+        return new ReservedStreamingHttpConnectionToBlockingStreaming(original, strategy);
     }
 
     /**
@@ -74,10 +119,23 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link HttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static HttpConnection toConnection(StreamingHttpConnection original,
                                               HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToHttpConnection(original, influencer);
+        return new StreamingHttpConnectionToHttpConnection(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link HttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link HttpConnection}
+     * @return The conversion result.
+     */
+    public static HttpConnection toConnection(StreamingHttpConnection original, HttpExecutionStrategy strategy) {
+        return new StreamingHttpConnectionToHttpConnection(original, strategy);
     }
 
     /**
@@ -87,10 +145,24 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link BlockingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
-    public static BlockingHttpConnection toBlockingConnection(
-            StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToBlockingHttpConnection(original, influencer);
+    @Deprecated
+    public static BlockingHttpConnection toBlockingConnection(StreamingHttpConnection original,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpConnectionToBlockingHttpConnection(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link BlockingHttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link BlockingHttpConnection}
+     * @return The conversion result.
+     */
+    public static BlockingHttpConnection toBlockingConnection(StreamingHttpConnection original,
+                                                              HttpExecutionStrategy strategy) {
+        return new StreamingHttpConnectionToBlockingHttpConnection(original, strategy);
     }
 
     /**
@@ -100,10 +172,25 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link BlockingStreamingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
             StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, influencer);
+        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link BlockingStreamingHttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param strategy required strategy for the service when invoking the resulting
+     * {@link BlockingStreamingHttpConnection}
+     * @return The conversion result.
+     */
+    public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
+            StreamingHttpConnection original, HttpExecutionStrategy strategy) {
+        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, strategy);
     }
 
     /**
@@ -113,9 +200,22 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link HttpClient}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToHttpClient(original, influencer);
+        return new StreamingHttpClientToHttpClient(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link HttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link HttpClient}
+     * @return The conversion result.
+     */
+    public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategy strategy) {
+        return new StreamingHttpClientToHttpClient(original, strategy);
     }
 
     /**
@@ -125,10 +225,23 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link BlockingHttpClient}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static BlockingHttpClient toBlockingClient(StreamingHttpClient original,
                                                       HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToBlockingHttpClient(original, influencer);
+        return new StreamingHttpClientToBlockingHttpClient(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link BlockingHttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link BlockingHttpClient}
+     * @return The conversion result.
+     */
+    public static BlockingHttpClient toBlockingClient(StreamingHttpClient original, HttpExecutionStrategy strategy) {
+        return new StreamingHttpClientToBlockingHttpClient(original, strategy);
     }
 
     /**
@@ -138,10 +251,24 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
      * {@link BlockingStreamingHttpClient}
      * @return The conversion result.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static BlockingStreamingHttpClient toBlockingStreamingClient(StreamingHttpClient original,
                                                                         HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToBlockingStreamingHttpClient(original, influencer);
+        return new StreamingHttpClientToBlockingStreamingHttpClient(original, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link BlockingStreamingHttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link BlockingStreamingHttpClient}
+     * @return The conversion result.
+     */
+    public static BlockingStreamingHttpClient toBlockingStreamingClient(StreamingHttpClient original,
+                                                                        HttpExecutionStrategy strategy) {
+        return new StreamingHttpClientToBlockingStreamingHttpClient(original, strategy);
     }
 
     /**
@@ -151,10 +278,23 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new ServiceToStreamingService(service, influencer);
+        return new ServiceToStreamingService(service, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link HttpService} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     */
+    public static ServiceAdapterHolder toStreamingHttpService(HttpService service, HttpExecutionStrategy strategy) {
+        return new ServiceToStreamingService(service, strategy);
     }
 
     /**
@@ -163,11 +303,25 @@ public final class HttpApiConversions {
      * @param service The {@link BlockingStreamingHttpService} to convert.
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
+     */
+    @Deprecated
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new BlockingStreamingToStreamingService(service, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
-                                                              HttpExecutionStrategyInfluencer influencer) {
-        return new BlockingStreamingToStreamingService(service, influencer);
+                                                              HttpExecutionStrategy strategy) {
+        return new BlockingStreamingToStreamingService(service, strategy);
     }
 
     /**
@@ -177,10 +331,24 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new BlockingToStreamingService(service, influencer);
+        return new BlockingToStreamingService(service, influencer.requiredOffloads());
+    }
+
+    /**
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     */
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
+                                                              HttpExecutionStrategy strategy) {
+        return new BlockingToStreamingService(service, strategy);
     }
 
     /**

@@ -62,7 +62,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     final CC connection;
     private final HttpConnectionContext connectionContext;
-    private final HttpExecutionContext executionContext;
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
@@ -75,7 +74,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                                     final boolean allowDropTrailersReadFromTransport) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
-        this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing().publishOn(executionContext.executor()))
@@ -126,16 +124,19 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             }
 
             if (strategy.isSendOffloaded()) {
-                flatRequest = flatRequest.subscribeOn(executionContext.executor(),
+                flatRequest = flatRequest.subscribeOn(connectionContext.executionContext().executor(),
                         IoThreadFactory.IoThread::currentThreadIsIoThread);
             }
             Single<StreamingHttpResponse> resp = invokeClient(flatRequest, determineFlushStrategyForApi(request));
             if (strategy.isMetadataReceiveOffloaded()) {
-                resp = resp.publishOn(executionContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread);
+                resp = resp.publishOn(
+                        connectionContext.executionContext().executor(),
+                        IoThreadFactory.IoThread::currentThreadIsIoThread);
             }
             if (strategy.isDataReceiveOffloaded()) {
                 resp = resp.map(response ->
-                        response.transformMessageBody(payload -> payload.publishOn(executionContext.executor(),
+                        response.transformMessageBody(payload -> payload.publishOn(
+                                connectionContext.executionContext().executor(),
                                 IoThreadFactory.IoThread::currentThreadIsIoThread)));
             }
 
@@ -151,7 +152,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     @Override
     public final HttpExecutionContext executionContext() {
-        return executionContext;
+        return connectionContext.executionContext();
     }
 
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream,
@@ -159,7 +160,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),
-                executionContext.bufferAllocator(), pub, allowDropTrailersReadFromTransport, headersFactory);
+                connectionContext.executionContext().bufferAllocator(), pub,
+                allowDropTrailersReadFromTransport, headersFactory);
     }
 
     @Override

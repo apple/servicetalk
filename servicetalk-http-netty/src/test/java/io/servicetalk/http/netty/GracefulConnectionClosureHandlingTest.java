@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -35,6 +36,7 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
@@ -224,9 +226,10 @@ class GracefulConnectionClosureHandlingTest {
                 .executor(CLIENT_CTX.executor())
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy())
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
-                .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
-                        new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
+                        cf -> initiateClosureFromClient ? new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf,
+                        ExecutionStrategy.anyStrategy()))
                 .buildStreaming();
         connection = client.reserveConnection(client.get("/")).toFuture().get();
         connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();

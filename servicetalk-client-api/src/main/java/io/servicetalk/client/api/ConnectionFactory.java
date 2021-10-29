@@ -26,6 +26,8 @@ import javax.annotation.Nullable;
  *
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
+ *
+ * @see ConnectionFactoryFilter
  */
 public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
         extends ListenableAsyncCloseable {

@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,8 +30,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 /**
  * Clears the {@link AsyncContext} for a new request.
  */
-final class ClearAsyncContextHttpServiceFilter implements
-                                               StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+final class ClearAsyncContextHttpServiceFilter implements StreamingHttpServiceFilterFactory {
 
     static final ClearAsyncContextHttpServiceFilter CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER =
             new ClearAsyncContextHttpServiceFilter();
@@ -54,8 +53,8 @@ final class ClearAsyncContextHttpServiceFilter implements
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

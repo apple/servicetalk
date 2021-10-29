@@ -99,7 +99,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+    final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
         }

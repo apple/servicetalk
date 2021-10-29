@@ -127,7 +127,7 @@ final class NettyHttpServer {
         }
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
-        // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
+        // We disable auto read so that we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
@@ -215,7 +215,7 @@ final class NettyHttpServer {
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public ExecutionContext<?> executionContext() {
             return delegate.executionContext();
         }
 
