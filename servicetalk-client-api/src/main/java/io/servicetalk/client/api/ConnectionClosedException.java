@@ -19,6 +19,7 @@ package io.servicetalk.client.api;
  * Thrown when the connection is no longer available.
  */
 public class ConnectionClosedException extends RuntimeException {
+    private static final long serialVersionUID = -2133048420662985692L;
 
     /**
      * Creates a new instance.
