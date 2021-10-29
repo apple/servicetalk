@@ -70,26 +70,38 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         return timeoutForRequest.influenceStrategy(strategy);
     }
 
+    /**
+     * Returns the response single for the provided request which will be completed within the specified timeout or
+     * generate an error with a timeout exception. The timer begins when the {@link Single} is subscribed. The timeout
+     * action, if it occurs, will execute on the filter's chosen timeout executor, or if none is specified, the executor
+     * from the request or connection context or, if neither are specified, the global executor.
+     *
+     * @param request The request requiring a response.
+     * @param responseFunction Function which generates the response.
+     * @param contextExecutor Executor from the request/connection context to be used for the timeout terminal signal if
+     * no specific timeout executor is defined for filter.
+     * @return response single
+     */
     final Single<StreamingHttpResponse> withTimeout(final StreamingHttpRequest request,
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction,
-            @Nullable final Executor executor) {
+            @Nullable final Executor contextExecutor) {
 
-        // timeoutExecutor → request/connection executor → global default executor
-        final Executor useExecutor = null != timeoutExecutor ? timeoutExecutor : executor;
+        // timeoutExecutor → context executor → global default executor
+        final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
 
         return Single.defer(() -> {
             final Duration timeout = timeoutForRequest.apply(request);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                final Single<StreamingHttpResponse> timeoutResponse = useExecutor == null ?
-                        response.timeout(timeout) : response.timeout(timeout, useExecutor);
+                final Single<StreamingHttpResponse> timeoutResponse = useForTimeout == null ?
+                        response.timeout(timeout) : response.timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
                     final long deadline = System.nanoTime() + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
                         final Duration remaining = ofNanos(deadline - System.nanoTime());
-                        return (useExecutor == null ?
-                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, useExecutor))
+                        return (useForTimeout == null ?
+                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, useForTimeout))
                                 .onErrorMap(TimeoutException.class, t ->
                                         new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
                                                 "ms", t))
