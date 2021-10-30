@@ -88,7 +88,7 @@ public final class GrpcStatus {
         try {
             return fromCodeValue(parseInt(codeValue));
         } catch (NumberFormatException e) {
-            return UNKNOWN.status();
+            return new GrpcStatus(UNKNOWN, null, "Status code value not a number: " + codeValue);
         }
     }
 
@@ -100,7 +100,7 @@ public final class GrpcStatus {
      */
     public static GrpcStatus fromCodeValue(int codeValue) {
         return codeValue < 0 || codeValue >= INT_TO_GRPC_STATUS_MAP.length ?
-                UNKNOWN.status() : INT_TO_GRPC_STATUS_MAP[codeValue];
+                new GrpcStatus(UNKNOWN, null, "Unknown code: " + codeValue) : INT_TO_GRPC_STATUS_MAP[codeValue];
     }
 
     /**
