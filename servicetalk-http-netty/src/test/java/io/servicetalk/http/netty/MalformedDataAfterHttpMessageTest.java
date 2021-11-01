@@ -131,8 +131,8 @@ class MalformedDataAfterHttpMessageTest {
         try (BlockingHttpClient client = stClientBuilder(server.localAddress())
                 .executionStrategy(doOffloading ? defaultStrategy() : noOffloadsStrategy())
                 // ClosedChannelException maybe observed on the second request if write is done before read of the
-                // garbage data, which won't be a RetryableExcepton. We may also see an exception from flush if the read
-                // closed the connection and then attempt to write on the same connection.
+                // garbage data, which won't be a RetryableException. We may also see an exception from flush if the
+                // read closed the connection and then attempt to write on the same connection.
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .maxRetries(MAX_VALUE)
                         .retryFor((req, cause) -> true)
