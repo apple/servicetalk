@@ -51,6 +51,7 @@ import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
@@ -141,7 +142,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return succeeded(response);
-                }, strategy -> strategy).adaptor();
+                }, anyStrategy()).adaptor();
                 break;
             case AsyncStreaming:
                 newService = (ctx, request, responseFactory) -> {
@@ -155,7 +156,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return response;
-                }, strategy -> strategy).adaptor();
+                }, anyStrategy()).adaptor();
                 break;
             case BlockingStreaming:
                 newService = toStreamingHttpService((ctx, request, response) -> {
@@ -165,7 +166,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                             writer.write(chunk);
                         }
                     }
-                }, strategy -> strategy).adaptor();
+                }, anyStrategy()).adaptor();
                 break;
             default:
                 throw new IllegalStateException("Unknown api: " + api);
