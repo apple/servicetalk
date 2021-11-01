@@ -40,8 +40,7 @@ import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
  */
 @Deprecated
 public final class ContentCodingHttpRequesterFilter
-        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
-                   HttpExecutionStrategyInfluencer {
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     private final List<ContentCodec> supportedCodings;
     @Nullable
@@ -86,9 +85,9 @@ public final class ContentCodingHttpRequesterFilter
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private Single<StreamingHttpResponse> codecTransformBidirectionalIfNeeded(final StreamingHttpRequester delegate,

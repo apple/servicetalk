@@ -29,7 +29,8 @@ import io.servicetalk.transport.api.ConnectionInfo;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromCodeValue;
 import static java.util.Objects.requireNonNull;
 
@@ -121,9 +122,6 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
 
     private static final class GrpcToHttpResponseObserver implements HttpResponseObserver {
 
-        private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
-        private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
-
         private final GrpcResponseObserver observer;
 
         GrpcToHttpResponseObserver(final GrpcResponseObserver observer, final HttpResponseMetaData responseMetaData) {
@@ -168,11 +166,11 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
             if (headers == null) {
                 return null;
             }
-            final CharSequence statusStr = headers.get(GRPC_STATUS_CODE_TRAILER);
+            final CharSequence statusStr = headers.get(GRPC_STATUS);
             if (statusStr == null) {
                 return null;
             }
-            return new GrpcStatus(fromCodeValue(statusStr), null, headers.get(GRPC_STATUS_MESSAGE_TRAILER));
+            return new GrpcStatus(fromCodeValue(statusStr), null, headers.get(GRPC_STATUS_MESSAGE));
         }
     }
 }

@@ -17,10 +17,10 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.ConnectException;
@@ -47,6 +47,11 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
 
     private LimitingConnectionFactoryFilter(final ConnectionLimiter<ResolvedAddress, C> limiter) {
         this.limiter = limiter;
+    }
+
+    @Override
+    public ExecutionStrategy requiredOffloads() {
+        return ExecutionStrategy.anyStrategy();
     }
 
     /**
@@ -131,15 +136,14 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         }
     }
 
-    private static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
-            implements ConnectionFactory<ResolvedAddress, C> {
+    private static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable> extends
+            DelegatingConnectionFactory<ResolvedAddress, C> {
 
-        private final ConnectionFactory<ResolvedAddress, ? extends C> original;
-        private final ConnectionLimiter<ResolvedAddress, ? extends C> limiter;
+        private final ConnectionLimiter<ResolvedAddress, C> limiter;
 
-        private LimitingFilter(final ConnectionFactory<ResolvedAddress, ? extends C> original,
-                               final ConnectionLimiter<ResolvedAddress, ? extends C> limiter) {
-            this.original = original;
+        private LimitingFilter(final ConnectionFactory<ResolvedAddress, C> original,
+                               final ConnectionLimiter<ResolvedAddress, C> limiter) {
+            super(original);
             this.limiter = limiter;
         }
 
@@ -150,23 +154,13 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
                 @Override
                 protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                     if (limiter.isConnectAllowed(resolvedAddress)) {
-                        toSource(original.newConnection(resolvedAddress, observer))
+                        toSource(delegate().newConnection(resolvedAddress, observer))
                                 .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
                     } else {
                         deliverErrorFromSource(subscriber, limiter.newConnectionRefusedException(resolvedAddress));
                     }
                 }
             };
-        }
-
-        @Override
-        public Completable onClose() {
-            return original.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return original.closeAsync();
         }
     }
 

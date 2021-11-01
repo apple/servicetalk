@@ -33,6 +33,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCAT
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
@@ -67,7 +68,7 @@ class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
     void service(final StreamingHttpService service) {
         super.service(toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(allocator.fromAscii(request.payloadBody().toString(US_ASCII))),
-                strategy -> strategy).adaptor());
+                anyStrategy())).adaptor());
     }
 
     @ParameterizedTest(name = "{index}: protocol={0}, allocator={1}")

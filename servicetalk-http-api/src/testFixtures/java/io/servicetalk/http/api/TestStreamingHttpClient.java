@@ -28,7 +28,6 @@ import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public final class TestStreamingHttpClient {
 
@@ -98,17 +97,18 @@ public final class TestStreamingHttpClient {
                         .map(rc -> new ReservedStreamingHttpConnection() {
                             @Override
                             public ReservedHttpConnection asConnection() {
-                                return toReservedConnection(this, s -> s);
+                                return toReservedConnection(this, HttpExecutionStrategies.anyStrategy());
                             }
 
                             @Override
                             public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                                return toReservedBlockingStreamingConnection(this, s -> s);
+                                return toReservedBlockingStreamingConnection(this,
+                                        HttpExecutionStrategies.anyStrategy());
                             }
 
                             @Override
                             public ReservedBlockingHttpConnection asBlockingConnection() {
-                                return toReservedBlockingConnection(this, s -> s);
+                                return toReservedBlockingConnection(this, HttpExecutionStrategies.anyStrategy());
                             }
 
                             @Override
@@ -208,27 +208,27 @@ public final class TestStreamingHttpClient {
 
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return filterChain.request(defaultStrategy(), request);
+                return filterChain.request(HttpExecutionStrategies.defaultStrategy(), request);
             }
 
             @Override
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-                return reserveConnection(defaultStrategy(), metaData);
+                return reserveConnection(HttpExecutionStrategies.defaultStrategy(), metaData);
             }
 
             @Override
             public HttpClient asClient() {
-                return toClient(this, strategy -> strategy);
+                return toClient(this, HttpExecutionStrategies.anyStrategy());
             }
 
             @Override
             public BlockingStreamingHttpClient asBlockingStreamingClient() {
-                return toBlockingStreamingClient(this, strategy -> strategy);
+                return toBlockingStreamingClient(this, HttpExecutionStrategies.anyStrategy());
             }
 
             @Override
             public BlockingHttpClient asBlockingClient() {
-                return toBlockingClient(this, strategy -> strategy);
+                return toBlockingClient(this, HttpExecutionStrategies.anyStrategy());
             }
         };
     }

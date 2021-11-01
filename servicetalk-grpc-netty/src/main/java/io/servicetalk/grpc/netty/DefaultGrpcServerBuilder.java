@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcBindableService;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -49,20 +50,24 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
+final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
 
@@ -108,7 +113,41 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    protected Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
+    public Single<ServerContext> listen(GrpcBindableService<?>... services) {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
+                .map(GrpcBindableService::bindService)
+                .toArray(GrpcServiceFactory<?>[]::new);
+        return listen(factories);
+    }
+
+    @Override
+    public Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
+        return doListen(GrpcServiceFactory.merge(serviceFactories));
+    }
+
+    @Override
+    public ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
+        return awaitResult(listen(serviceFactories).toFuture());
+    }
+
+    @Override
+    public ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
+        GrpcServiceFactory<?>[] factories = Arrays.stream(services)
+                .map(GrpcBindableService::bindService)
+                .toArray(GrpcServiceFactory<?>[]::new);
+        return listenAndAwait(factories);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     *
+     * @param serviceFactory {@link GrpcServiceFactory} to create a <a href="https://www.grpc.io">gRPC</a> service.
+     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * throws an {@link Exception} if the server could not be started.
+     */
+    private Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }
@@ -117,7 +156,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         final ExecutionContextInterceptorHttpServerBuilder interceptor =
                 new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
 
-        appendCatchAllFilter(interceptor);
+        interceptor.appendNonOffloadingServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
 
         directCallInitializer.initialize(interceptor);
         initializer.initialize(interceptor);
@@ -128,15 +167,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
-        return new TimeoutFromRequest() {
-            /**
-             * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
-             *
-             * @param request The HTTP request to be used as source of the GRPC timeout header
-             * @return The non-negative timeout duration which may be null
-             */
-            @Override
-            public @Nullable Duration apply(HttpRequestMetaData request) {
+        return toTimeoutFromRequest((HttpRequestMetaData request) -> {
+                /*
+                * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
+                *
+                * @param request The HTTP request to be used as source of the GRPC timeout header
+                * @return The non-negative timeout duration which may be null
+                */
                 @Nullable
                 Duration requestTimeout = readTimeoutHeader(request);
                 @Nullable
@@ -157,14 +194,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
                 }
 
                 return timeout;
-            }
-
-            @Override
-            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                // We don't block so have no influence on strategy.
-                return strategy;
-            }
-        };
+            }, anyStrategy());
     }
 
     @Override

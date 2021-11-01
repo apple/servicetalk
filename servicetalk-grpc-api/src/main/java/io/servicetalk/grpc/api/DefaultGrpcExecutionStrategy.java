@@ -28,6 +28,11 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     }
 
     @Override
+    public boolean hasOffloads() {
+        return delegate.hasOffloads();
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return delegate.isMetadataReceiveOffloaded();
     }

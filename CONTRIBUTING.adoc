@@ -32,12 +32,20 @@ For more information about which contributions are applicable for the ServiceTal
 xref:GOVERNANCE.adoc[Governance].
 
 === Opening a Pull Request
-We love pull requests! For minor changes, feel free to open up a PR directly. For larger feature development and any
-changes that may require community discussion, we ask that you discuss your ideas on a
-link:https://github.com/apple/servicetalk/issues[GitHub issue] prior to opening a PR, and then reference that issue
-within your PR comment.
+We love Pull Requests! For minor changes, like typos or small bug fixes, feel free to open up a Pull Request (PR)
+directly. For larger feature development and any changes that may require community discussion, we ask that you discuss
+your ideas on a link:https://github.com/apple/servicetalk/issues[GitHub issue] prior to opening a PR, and then reference
+that issue within your PR comment. You can also check all existing
+link:https://github.com/apple/servicetalk/issues[issues] or
+link:https://github.com/apple/servicetalk/pulls?q=is%3Aopen+is%3Apr+label%3A%22good+first+issue%22[good first issue] /
+link:https://github.com/apple/servicetalk/pulls?q=is%3Aopen+is%3Apr+label%3A%22help+wanted%22[help wanted] labels for
+some known ideas.
 
-CI will run tests against the PR and post the status back to github.
+All Pull Requests must be open from a link:https://docs.github.com/en/get-started/quickstart/fork-a-repo[fork] by
+clicking a **Fork** button in the top-right corner of the GitHub page. For minor PRs made by editing files directly
+through GitHub UI the forking happens automatically.
+
+CI will run tests against the PR and post the status back to GitHub.
 
 === Writing a Patch
 A good ServiceTalk patch is:
@@ -50,7 +58,7 @@ A good ServiceTalk patch is:
 === Checklist
 Please use the following checklist before pushing your commits or issuing a pull request:
 
-- Did you rebase your pull request against the HEAD of the target branch and fix all conflicts?
+- Did you rebase your pull request against the `HEAD` of the target branch and fix all conflicts?
 - Does your work build without any failure when you run `./gradlew build` from shell?
 - Does your commit message or pull request description follow our <<Commit Message Template>>?
 

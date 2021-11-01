@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
@@ -30,6 +31,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
@@ -98,17 +100,18 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                 return delegate().handle(ctx, request, responseFactory);
             }
         });
-        connectionFactoryFilter(factory -> new DelegatingConnectionFactory<InetSocketAddress,
-                FilterableStreamingHttpConnection>(factory) {
-            @Override
-            public Single<FilterableStreamingHttpConnection> newConnection(InetSocketAddress inetSocketAddress,
-                                                                           @Nullable TransportObserver observer) {
-                return defer(() -> {
-                    newConnectionsCounter.incrementAndGet();
-                    return delegate().newConnection(inetSocketAddress, observer);
-                });
-            }
-        });
+        connectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
+                factory -> new DelegatingConnectionFactory<InetSocketAddress,
+                        FilterableStreamingHttpConnection>(factory) {
+                    @Override
+                    public Single<FilterableStreamingHttpConnection> newConnection(InetSocketAddress inetSocketAddress,
+                              @Nullable TransportObserver observer) {
+                        return defer(() -> {
+                            newConnectionsCounter.incrementAndGet();
+                            return delegate().newConnection(inetSocketAddress, observer);
+                        });
+                    }
+                }, ExecutionStrategy.anyStrategy()));
         setUp(CACHED, CACHED_SERVER);
     }
 

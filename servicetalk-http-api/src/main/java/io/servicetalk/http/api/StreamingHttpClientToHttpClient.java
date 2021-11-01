@@ -29,14 +29,13 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpExecutionContext context;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpClientToHttpClient(final StreamingHttpClient client,
-                                    final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY);
+    StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
+        this.strategy = DEFAULT_CONNECTION_STRATEGY.merge(strategy);
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return StreamingHttpClientToHttpClient.this.strategy;
             }
         };
         reqRespFactory = toAggregated(client);
@@ -118,9 +117,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         private final HttpRequestResponseFactory reqRespFactory;
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(final ReservedStreamingHttpConnection connection,
-                                                                final HttpExecutionStrategyInfluencer influencer) {
-            this(connection, influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY),
-                    toAggregated(connection));
+                                                                final HttpExecutionStrategy strategy) {
+            this(connection, DEFAULT_CONNECTION_STRATEGY.merge(strategy), toAggregated(connection));
         }
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(final ReservedStreamingHttpConnection connection,
@@ -128,13 +126,13 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
                                                                 final HttpRequestResponseFactory reqRespFactory) {
             this.strategy = strategy;
             this.connection = requireNonNull(connection);
-            final HttpConnectionContext originalCtx = connection.connectionContext();
             executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
                 @Override
                 public HttpExecutionStrategy executionStrategy() {
-                    return strategy;
+                    return ReservedStreamingHttpConnectionToReservedHttpConnection.this.strategy;
                 }
             };
+            final HttpConnectionContext originalCtx = connection.connectionContext();
             context = new DelegatingHttpConnectionContext(originalCtx) {
                 @Override
                 public HttpExecutionContext executionContext() {

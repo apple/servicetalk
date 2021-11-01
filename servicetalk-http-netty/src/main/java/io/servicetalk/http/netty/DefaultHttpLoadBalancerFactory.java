@@ -28,18 +28,15 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import java.util.Collection;
 
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
@@ -49,15 +46,15 @@ import static java.util.Objects.requireNonNull;
  * @param <ResolvedAddress> The type of address after resolution.
  */
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
-        implements HttpLoadBalancerFactory<ResolvedAddress>, HttpExecutionStrategyInfluencer {
+        implements HttpLoadBalancerFactory<ResolvedAddress> {
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-    private final HttpExecutionStrategyInfluencer strategyInfluencer;
+    private final HttpExecutionStrategy strategy;
 
     DefaultHttpLoadBalancerFactory(
             final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-            final HttpExecutionStrategyInfluencer strategyInfluencer) {
+            final HttpExecutionStrategy strategy) {
         this.rawFactory = rawFactory;
-        this.strategyInfluencer = strategyInfluencer;
+        this.strategy = strategy;
     }
 
     @Override
@@ -82,8 +79,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategyInfluencer.influenceStrategy(strategy);
+    public HttpExecutionStrategy requiredOffloads() {
+        return strategy;
     }
 
     /**
@@ -94,13 +91,13 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
      */
     public static final class Builder<ResolvedAddress> {
         private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-        private final HttpExecutionStrategyInfluencer strategyInfluencer;
+        private final HttpExecutionStrategy strategy;
 
         private Builder(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-                final HttpExecutionStrategyInfluencer strategyInfluencer) {
+                final HttpExecutionStrategy strategy) {
             this.rawFactory = rawFactory;
-            this.strategyInfluencer = strategyInfluencer;
+            this.strategy = strategy;
         }
 
         /**
@@ -109,7 +106,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategyInfluencer);
+            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
         }
 
         /**
@@ -136,18 +133,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         @SuppressWarnings("deprecation")
         public static <ResolvedAddress> Builder<ResolvedAddress> from(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
-            final HttpExecutionStrategyInfluencer strategyInfluencer;
-            if (rawFactory instanceof HttpExecutionStrategyInfluencer) {
-                strategyInfluencer = (HttpExecutionStrategyInfluencer) rawFactory;
-            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory
-                    || rawFactory instanceof RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory) {
-                strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
-            } else {
-                // user provided load balancer assumed to be blocking unless it implements
-                // HttpExecutionStrategyInfluencer
-                strategyInfluencer = defaultStreamingInfluencer();
-            }
-            return new Builder<>(rawFactory, strategyInfluencer);
+            final HttpExecutionStrategy strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
+            return new Builder<>(rawFactory, strategy);
         }
     }
 

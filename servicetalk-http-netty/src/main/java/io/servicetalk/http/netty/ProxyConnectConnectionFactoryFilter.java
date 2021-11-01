@@ -21,8 +21,8 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
@@ -50,7 +50,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
  * @param <C> The type of connections created by this factory.
  */
 final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends FilterableStreamingHttpConnection>
-        implements ConnectionFactoryFilter<ResolvedAddress, C>, HttpExecutionStrategyInfluencer {
+        implements ConnectionFactoryFilter<ResolvedAddress, C> {
 
     private final String connectAddress;
 
@@ -60,6 +60,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
     @Override
     public ConnectionFactory<ResolvedAddress, C> create(final ConnectionFactory<ResolvedAddress, C> original) {
+
         return new ProxyFilter(original);
     }
 
@@ -124,8 +125,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

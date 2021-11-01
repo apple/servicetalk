@@ -42,6 +42,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
@@ -69,6 +70,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
@@ -77,7 +79,6 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
 import static io.servicetalk.grpc.api.GrpcUtils.initResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.negotiateAcceptedEncodingRaw;
@@ -105,7 +106,7 @@ final class GrpcRouter {
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
-        final StreamingHttpResponse response = newErrorResponse(responseFactory, GRPC_CONTENT_TYPE,
+        final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC,
                 STATUS_UNIMPLEMENTED.asException(), ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);
@@ -121,7 +122,7 @@ final class GrpcRouter {
         this.blockingStreamingRoutes = unmodifiableMap(blockingStreamingRoutes);
     }
 
-    Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+    Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         final CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
         populateRoutes(executionContext, allRoutes, routes, closeable);
@@ -155,7 +156,7 @@ final class GrpcRouter {
         });
     }
 
-    private static void populateRoutes(final ExecutionContext executionContext,
+    private static void populateRoutes(final ExecutionContext<?> executionContext,
                                        final Map<String, StreamingHttpService> allRoutes,
                                        final Map<String, RouteProvider> routes,
                                        final CompositeCloseable closeable) {
@@ -301,7 +302,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -491,7 +492,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -558,7 +559,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -759,14 +760,14 @@ final class GrpcRouter {
 
     static final class RouteProvider implements AsyncCloseable {
 
-        private final Function<ExecutionContext, ServiceAdapterHolder> routeProvider;
+        private final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider;
         private final Supplier<StreamingRoute<?, ?>> toStreamingConverter;
         private final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter;
         private final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter;
         private final Supplier<Route<?, ?>> toRouteConverter;
         private final AsyncCloseable closeable;
 
-        RouteProvider(final Function<ExecutionContext, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider,
                       final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
                       final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
                       final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
@@ -780,7 +781,7 @@ final class GrpcRouter {
             this.closeable = closeable;
         }
 
-        RouteProvider(final Function<ExecutionContext, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider,
                       final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
                       final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
                       final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
@@ -790,7 +791,7 @@ final class GrpcRouter {
                     toResponseStreamingRouteConverter, toRouteConverter, toAsyncCloseable(closeable));
         }
 
-        ServiceAdapterHolder buildRoute(ExecutionContext executionContext) {
+        ServiceAdapterHolder buildRoute(ExecutionContext<?> executionContext) {
             return routeProvider.apply(executionContext);
         }
 

@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
@@ -27,7 +27,7 @@ import java.util.function.BooleanSupplier;
 /**
  * An {@link StreamingHttpServiceFilterFactory} implementation which offloads filters using a provided strategy.
  */
-final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
 
     private final HttpExecutionStrategy strategy;
     private final StreamingHttpServiceFilterFactory offloaded;
@@ -53,8 +53,8 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory, HttpE
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // no influence
-        return strategy;
+    public HttpExecutionStrategy requiredOffloads() {
+        // We do our own offloading
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

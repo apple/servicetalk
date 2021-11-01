@@ -64,6 +64,16 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingForRaw;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ACCEPT_ENCODING;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_DETAILS_BIN;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC_PROTO;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PREFIX;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
@@ -83,16 +93,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
-    private static final String GRPC_CONTENT_TYPE_PREFIX = "application/grpc";
-    static final String GRPC_PROTO_CONTENT_TYPE = "+proto";
-    static final CharSequence GRPC_CONTENT_TYPE = newAsciiString(GRPC_CONTENT_TYPE_PREFIX);
-    private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
-    private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
-    private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
-    // TODO (nkant): add project version
-    private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
-    private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
-    private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 
@@ -138,14 +138,14 @@ final class GrpcUtils {
         if (null != timeoutValue) {
             headers.set(GRPC_TIMEOUT_HEADER_KEY, timeoutValue);
         }
-        headers.set(USER_AGENT, GRPC_USER_AGENT);
+        headers.set(USER_AGENT, SERVICETALK_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
-            headers.set(GRPC_MESSAGE_ENCODING_KEY, encoding);
+            headers.set(GRPC_MESSAGE_ENCODING, encoding);
         }
         if (acceptedEncoding != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
         }
     }
 
@@ -190,6 +190,9 @@ final class GrpcUtils {
         return response;
     }
 
+    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.newErrorResponse
+    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
+    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
                                                   final CharSequence contentType, final Throwable cause,
                                                   final BufferAllocator allocator) {
@@ -212,19 +215,25 @@ final class GrpcUtils {
         setStatus(trailers, STATUS_OK, null, null);
     }
 
+    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.setStatus
+    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
+    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           @Nullable final BufferAllocator allocator) {
-        trailers.set(GRPC_STATUS_CODE_TRAILER, valueOf(status.code().value()));
+        trailers.set(GRPC_STATUS, valueOf(status.code().value()));
         if (status.description() != null) {
-            trailers.set(GRPC_STATUS_MESSAGE_TRAILER, status.description());
+            trailers.set(GRPC_STATUS_MESSAGE, status.description());
         }
         if (details != null) {
             assert allocator != null;
-            trailers.set(GRPC_STATUS_DETAILS_TRAILER,
+            trailers.set(GRPC_STATUS_DETAILS_BIN,
                     newAsciiString(allocator.wrap(Base64.getEncoder().encode(details.toByteArray()))));
         }
     }
 
+    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.setStatus
+    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
+    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
@@ -234,6 +243,9 @@ final class GrpcUtils {
         }
     }
 
+    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.toGrpcStatus
+    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
+    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static GrpcStatus toGrpcStatus(Throwable cause) {
         final GrpcStatus status;
         if (cause instanceof Http2Exception) {
@@ -318,14 +330,15 @@ final class GrpcUtils {
         CharSequence requestContentType = headers.get(CONTENT_TYPE);
         if (!contentEqualsIgnoreCase(requestContentType, expectedContentType) &&
                 (requestContentType == null ||
-                    !regionMatches(requestContentType, true, 0, GRPC_CONTENT_TYPE, 0, GRPC_CONTENT_TYPE.length()))) {
+                    !regionMatches(requestContentType, true, 0, APPLICATION_GRPC, 0, APPLICATION_GRPC.length()))) {
             throw GrpcStatusException.of(Status.newBuilder().setCode(INTERNAL.value())
                     .setMessage("invalid content-type: " + requestContentType).build());
         }
     }
 
     static CharSequence grpcContentType(CharSequence contentType) {
-        return newAsciiString(GRPC_CONTENT_TYPE_PREFIX + contentType);
+        return GRPC_CONTENT_TYPE_PROTO_SUFFIX.contentEquals(contentType) ? APPLICATION_GRPC_PROTO :
+                newAsciiString(GRPC_CONTENT_TYPE_PREFIX + contentType);
     }
 
     private static void ensureGrpcStatusReceived(final HttpHeaders headers) {
@@ -333,7 +346,7 @@ final class GrpcUtils {
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
             throw new GrpcStatus(UNKNOWN, null, "Response does not contain " +
-                    GRPC_STATUS_CODE_TRAILER + " header or trailer").asException();
+                    GRPC_STATUS + " header or trailer").asException();
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
@@ -344,14 +357,14 @@ final class GrpcUtils {
     static <T> T readGrpcMessageEncodingRaw(final HttpHeaders headers, final T identityEncoder,
                                             final List<T> supportedEncoders,
                                             final Function<T, CharSequence> messageEncodingFunc) {
-        final CharSequence encoding = headers.get(GRPC_MESSAGE_ENCODING_KEY);
+        final CharSequence encoding = headers.get(GRPC_MESSAGE_ENCODING);
         if (encoding == null || contentEqualsIgnoreCase(Identity.identityEncoder().encodingName(), encoding)) {
             return identityEncoder;
         }
         final T result = encodingForRaw(supportedEncoders, messageEncodingFunc, encoding);
         if (result == null) {
             throw GrpcStatusException.of(Status.newBuilder().setCode(UNIMPLEMENTED.value())
-                    .setMessage("Invalid " + GRPC_MESSAGE_ENCODING_KEY + ": " + encoding).build());
+                    .setMessage("Invalid " + GRPC_MESSAGE_ENCODING + ": " + encoding).build());
         }
 
         return result;
@@ -361,30 +374,33 @@ final class GrpcUtils {
                                               final T identityEncoder,
                                               final List<T> supportedEncoders,
                                               final Function<T, CharSequence> messageEncodingFunc) {
-        T result = HeaderUtils.negotiateAcceptedEncodingRaw(headers.get(GRPC_ACCEPT_ENCODING_KEY),
+        T result = HeaderUtils.negotiateAcceptedEncodingRaw(headers.get(GRPC_MESSAGE_ACCEPT_ENCODING),
                 supportedEncoders, messageEncodingFunc);
         return result == null ? identityEncoder : result;
     }
 
+    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.initResponse
+    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
+    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void initResponse(final HttpResponseMetaData response,
                              final CharSequence contentType,
                              @Nullable final CharSequence encoding,
                              @Nullable final CharSequence acceptedEncoding) {
         // The response status is 200 no matter what. Actual status is put in trailers.
         final HttpHeaders headers = response.headers();
-        headers.set(SERVER, GRPC_USER_AGENT);
+        headers.set(SERVER, SERVICETALK_USER_AGENT);
         headers.set(CONTENT_TYPE, contentType);
         if (encoding != null) {
-            headers.set(GRPC_MESSAGE_ENCODING_KEY, encoding);
+            headers.set(GRPC_MESSAGE_ENCODING, encoding);
         }
         if (acceptedEncoding != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
         }
     }
 
     @Nullable
     private static GrpcStatusCode extractGrpcStatusCodeFromHeaders(final HttpHeaders headers) {
-        final CharSequence statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
+        final CharSequence statusCode = headers.get(GRPC_STATUS);
         if (statusCode == null) {
             return null;
         }
@@ -397,13 +413,13 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER));
+        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE));
         return grpcStatus.asException(new StatusSupplier(headers, grpcStatus));
     }
 
     @Nullable
     private static Status getStatusDetails(final HttpHeaders headers) {
-        final CharSequence details = headers.get(GRPC_STATUS_DETAILS_TRAILER);
+        final CharSequence details = headers.get(GRPC_STATUS_DETAILS_BIN);
         if (details == null) {
             return null;
         }

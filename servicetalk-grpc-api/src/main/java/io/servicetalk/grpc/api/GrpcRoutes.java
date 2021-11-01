@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcUtils.GRPC_PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
 import static io.servicetalk.grpc.api.GrpcUtils.compressors;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
@@ -99,7 +99,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+    final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
         }
@@ -219,9 +219,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         addRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -265,9 +265,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         addRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -308,9 +308,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         addStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -355,9 +355,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -399,9 +399,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addRequestStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -448,9 +448,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addRequestStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        true, true, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -493,9 +493,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addResponseStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -542,9 +542,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addResponseStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, true, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, true, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -586,9 +586,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         addBlockingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -634,9 +634,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         addBlockingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -679,9 +679,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -728,9 +728,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -773,9 +773,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingRequestStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -822,9 +822,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingRequestStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        true, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        false, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -869,9 +869,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingResponseStreamingRoute(serviceClass, new DefaultMethodDescriptor<>(path, methodName,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);
@@ -918,9 +918,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         addBlockingResponseStreamingRoute(executionStrategy, new DefaultMethodDescriptor<>(path,
-                        false, false, requestClass, GRPC_PROTO_CONTENT_TYPE,
+                        false, false, requestClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, requestClass), defaultToInt(),
-                        true, false, responseClass, GRPC_PROTO_CONTENT_TYPE,
+                        true, false, responseClass, GRPC_CONTENT_TYPE_PROTO_SUFFIX,
                         serializerDeserializer(serializationProvider, responseClass), defaultToInt()),
                 decompressors(serializationProvider.supportedMessageCodings()),
                 compressors(serializationProvider.supportedMessageCodings()), route);

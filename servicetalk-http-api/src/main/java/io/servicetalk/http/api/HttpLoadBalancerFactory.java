@@ -44,4 +44,10 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
      */
     FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             FilterableStreamingHttpConnection connection);
+
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        // "safe" default -- implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
+    }
 }

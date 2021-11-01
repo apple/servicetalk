@@ -41,8 +41,13 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
         this.routes = routes;
     }
 
+    /**
+     * Merges multiple {@link GrpcServiceFactory factories} into a single instance.
+     * @param factories instanes of {@link GrpcServiceFactory} to merge.
+     * @return An aggregate {@link GrpcServiceFactory}.
+     */
     @SuppressWarnings("unchecked")
-    static GrpcServiceFactory<?> merge(final GrpcServiceFactory<?>... factories) {
+    public static GrpcServiceFactory<?> merge(final GrpcServiceFactory<?>... factories) {
         if (factories.length == 1) {
             return factories[0];
         }
@@ -63,7 +68,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         return routes.bind(binder, executionContext);
     }
 

@@ -82,7 +82,7 @@ for (location in ["local", "remote"]) {
     outputs.file outputFile
 
     classpath = configurations.nuValidator
-    main = "nu.validator.client.SimpleCommandLineValidator"
+    mainClass = "nu.validator.client.SimpleCommandLineValidator"
     args "--also-check-css"
     args "--also-check-svg"
     args "--filterpattern", '(.*)Consider adding “lang=(.*)'

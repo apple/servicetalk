@@ -28,14 +28,13 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     private final HttpExecutionContext context;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client,
-                                            final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY);
+    StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
+        this.strategy = DEFAULT_BLOCKING_CONNECTION_STRATEGY.merge(strategy);
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return StreamingHttpClientToBlockingHttpClient.this.strategy;
             }
         };
         reqRespFactory = toAggregated(client);
@@ -103,9 +102,8 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         private final HttpRequestResponseFactory reqRespFactory;
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(
-                final ReservedStreamingHttpConnection connection, final HttpExecutionStrategyInfluencer influencer) {
-            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
-                    toAggregated(connection));
+                final ReservedStreamingHttpConnection connection, final HttpExecutionStrategy strategy) {
+            this(connection, DEFAULT_BLOCKING_CONNECTION_STRATEGY.merge(strategy), toAggregated(connection));
         }
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(

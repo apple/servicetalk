@@ -27,8 +27,8 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
     static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
     private final BlockingHttpService original;
 
-    BlockingToStreamingService(final BlockingHttpService original, HttpExecutionStrategyInfluencer influencer) {
-        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+    BlockingToStreamingService(final BlockingHttpService original, HttpExecutionStrategy strategy) {
+        super(DEFAULT_STRATEGY.merge(strategy));
         this.original = requireNonNull(original);
     }
 

@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -39,8 +39,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
 final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                     StreamingHttpConnectionFilterFactory,
-                                                     HttpExecutionStrategyInfluencer {
+                                                     StreamingHttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
@@ -77,9 +76,9 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

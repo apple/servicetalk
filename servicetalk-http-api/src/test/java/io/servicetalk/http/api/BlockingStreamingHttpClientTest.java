@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toClient;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -120,17 +121,17 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
         @Override
         public HttpClient asClient() {
-            return toClient(this, strategy -> strategy);
+            return toClient(this, anyStrategy());
         }
 
         @Override
         public BlockingStreamingHttpClient asBlockingStreamingClient() {
-            return toBlockingStreamingClient(this, strategy -> strategy);
+            return toBlockingStreamingClient(this, anyStrategy());
         }
 
         @Override
         public BlockingHttpClient asBlockingClient() {
-            return toBlockingClient(this, strategy -> strategy);
+            return toBlockingClient(this, anyStrategy());
         }
     }
 }

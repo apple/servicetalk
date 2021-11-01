@@ -21,8 +21,6 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
-import org.gradle.external.javadoc.JavadocOptionFileOption
-import org.gradle.external.javadoc.internal.JavadocOptionFileWriterContext
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -106,9 +104,17 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
                 }
               }
               scm {
-                connection = 'scm:git:git://github.com/apple/servicetalk.git'
-                developerConnection = 'scm:git:ssh://github.com:apple/servicetalk.git'
-                url = 'https://github.com/apple/servicetalk'
+                connection = "scm:git:git://${scmHost}/${scmPath}.git"
+                developerConnection = "scm:git:ssh://${scmHost}:${scmPath}.git"
+                url = "https://${scmHost}/${scmPath}"
+              }
+              issueManagement {
+                system = 'ServiceTalk Issues'
+                url = "${issueManagementUrl}"
+              }
+              ciManagement {
+                system = 'ServiceTalk CI'
+                url = "${ciManagementUrl}"
               }
             }
           }

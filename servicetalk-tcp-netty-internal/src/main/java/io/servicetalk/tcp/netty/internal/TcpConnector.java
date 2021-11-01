@@ -85,7 +85,7 @@ public final class TcpConnector {
      */
     public static <C extends ListenableAsyncCloseable> Single<C> connect(
             @Nullable final SocketAddress localAddress, final Object resolvedRemoteAddress,
-            final ReadOnlyTcpClientConfig config, final boolean autoRead, final ExecutionContext executionContext,
+            final ReadOnlyTcpClientConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
             final BiFunction<Channel, ConnectionObserver, Single<? extends C>> connectionFactory,
             final TransportObserver observer) {
         requireNonNull(resolvedRemoteAddress);
@@ -125,7 +125,7 @@ public final class TcpConnector {
 
     private static Future<?> connect0(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
                                       ReadOnlyTcpClientConfig config, boolean autoRead,
-                                      ExecutionContext executionContext,
+                                      ExecutionContext<?> executionContext,
                                       Consumer<? super Channel> subscriber) {
         // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added
         // to the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.

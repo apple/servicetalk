@@ -18,10 +18,10 @@ package io.servicetalk.transport.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory of {@link DelegatingConnectionAcceptor}.
+ * A factory of {@link ConnectionAcceptor}.
  */
 @FunctionalInterface
-public interface ConnectionAcceptorFactory {
+public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<ExecutionStrategy> {
 
     /**
      * Create a {@link ConnectionAcceptor} using the provided {@link ConnectionAcceptor}.
@@ -50,7 +50,8 @@ public interface ConnectionAcceptorFactory {
      */
     default ConnectionAcceptorFactory append(ConnectionAcceptorFactory before) {
         requireNonNull(before);
-        return service -> create(before.create(service));
+        return withStrategy(service -> create(before.create(service)),
+                this.requiredOffloads().merge(before.requiredOffloads()));
     }
 
     /**
@@ -60,5 +61,33 @@ public interface ConnectionAcceptorFactory {
      */
     static ConnectionAcceptorFactory identity() {
         return original -> original;
+    }
+
+    @Override
+    default ExecutionStrategy requiredOffloads() {
+        // "safe" default -- implementations are expected to override
+        return ExecutionStrategy.offloadAll();
+    }
+
+    /**
+     * Wraps a {@link ConnectionAcceptorFactory} to return a specific execution strategy.
+     *
+     * @param original factory to be wrapped.
+     * @param strategy execution strategy for the wrapped factory
+     * @return wrapped {@link ConnectionAcceptorFactory}
+     */
+    static ConnectionAcceptorFactory withStrategy(ConnectionAcceptorFactory original, ExecutionStrategy strategy) {
+        return new ConnectionAcceptorFactory() {
+
+            @Override
+            public ConnectionAcceptor create(final ConnectionAcceptor acceptor) {
+                return original.create(acceptor);
+            }
+
+            @Override
+            public ExecutionStrategy requiredOffloads() {
+                return strategy;
+            }
+        };
     }
 }

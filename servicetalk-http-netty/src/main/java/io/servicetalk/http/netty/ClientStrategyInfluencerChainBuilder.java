@@ -17,73 +17,54 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
-
 final class ClientStrategyInfluencerChainBuilder {
 
-    private final StrategyInfluencerChainBuilder connFactoryChain;
-    private final StrategyInfluencerChainBuilder connFilterChain;
-    private final StrategyInfluencerChainBuilder clientChain;
+    private HttpExecutionStrategy connFactoryChain;
+    private HttpExecutionStrategy connFilterChain;
+    private HttpExecutionStrategy clientChain;
 
     ClientStrategyInfluencerChainBuilder() {
-        connFactoryChain = new StrategyInfluencerChainBuilder();
-        connFilterChain = new StrategyInfluencerChainBuilder();
-        clientChain = new StrategyInfluencerChainBuilder();
+        connFactoryChain = HttpExecutionStrategies.anyStrategy();
+        connFilterChain = HttpExecutionStrategies.anyStrategy();
+        clientChain = HttpExecutionStrategies.anyStrategy();
     }
 
     private ClientStrategyInfluencerChainBuilder(ClientStrategyInfluencerChainBuilder from) {
-        connFactoryChain = from.connFactoryChain.copy();
-        connFilterChain = from.connFilterChain.copy();
-        clientChain = from.clientChain.copy();
+        connFactoryChain = from.connFactoryChain;
+        connFilterChain = from.connFilterChain;
+        clientChain = from.clientChain;
     }
 
     void add(StreamingHttpClientFilterFactory clientFilter) {
-        if (!clientChain.appendIfInfluencer(clientFilter)) {
-            // If the filter is not influencing strategy, then the default is to offload all.
-            clientChain.append(defaultStreamingInfluencer());
-        }
+        clientChain = clientChain.merge(clientFilter.requiredOffloads());
     }
 
     void add(HttpLoadBalancerFactory<?> lb) {
-        if (!clientChain.prependIfInfluencer(lb)) {
-            // If the load balancer is not influencing strategy, then the default is to offload all.
-            clientChain.prepend(defaultStreamingInfluencer());
-        }
+        clientChain = clientChain.merge(lb.requiredOffloads());
     }
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
-        if (!connFactoryChain.appendIfInfluencer(connectionFactoryFilter)) {
-            // If the filter is not influencing strategy, then the default is to offload all.
-            connFactoryChain.append(defaultStreamingInfluencer());
-        }
+        connFactoryChain =
+                connFactoryChain.merge(HttpExecutionStrategy.from(connectionFactoryFilter.requiredOffloads()));
     }
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
-        if (!connFilterChain.appendIfInfluencer(connectionFilter)) {
-            // If the filter is not influencing strategy, then the default is to offload all.
-            connFilterChain.append(defaultStreamingInfluencer());
-        }
+        connFilterChain =
+                connFilterChain.merge(HttpExecutionStrategy.from(connectionFilter.requiredOffloads()));
     }
 
-    HttpExecutionStrategyInfluencer buildForClient(HttpExecutionStrategy transportStrategy) {
-        StrategyInfluencerChainBuilder forClient = new StrategyInfluencerChainBuilder();
-        forClient.append(buildForConnectionFactory(transportStrategy));
-        forClient.append(clientChain.build());
-        return forClient.build();
+    HttpExecutionStrategy buildForClient(HttpExecutionStrategy transportStrategy) {
+        return clientChain.merge(buildForConnectionFactory(transportStrategy));
     }
 
-    HttpExecutionStrategyInfluencer buildForConnectionFactory(HttpExecutionStrategy transportStrategy) {
-        StrategyInfluencerChainBuilder forConnFactory = new StrategyInfluencerChainBuilder();
-        forConnFactory.append(connFilterChain.build());
-        forConnFactory.append(connFactoryChain.build(transportStrategy));
-        return forConnFactory.build();
+    HttpExecutionStrategy buildForConnectionFactory(HttpExecutionStrategy transportStrategy) {
+        return connFilterChain.merge(connFactoryChain.merge(transportStrategy));
     }
 
     ClientStrategyInfluencerChainBuilder copy() {

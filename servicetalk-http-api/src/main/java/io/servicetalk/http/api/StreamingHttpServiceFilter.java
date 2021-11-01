@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * An implementation of {@link StreamingHttpService} that delegates all methods to the provided
  * {@link StreamingHttpService}.
+ *
+ * @see StreamingHttpServiceFilterFactory
  */
 public class StreamingHttpServiceFilter implements StreamingHttpService {
 
@@ -41,6 +43,11 @@ public class StreamingHttpServiceFilter implements StreamingHttpService {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         return delegate.handle(ctx, request, responseFactory);
+    }
+
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return delegate.requiredOffloads();
     }
 
     @Override

@@ -25,7 +25,6 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
@@ -35,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
@@ -50,20 +50,20 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
                    // be an influencer hence we can try to correctly delegate when possible.
                    // Reserved connection given to the user will use the correct strategy and influencer chain since
                    // we wrap before returning to the user.
-                   HttpExecutionStrategyInfluencer {
+                   ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     private final ReservableRequestConcurrencyController limiter;
     private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
     private final HttpExecutionStrategy streamingStrategy;
-    private final HttpExecutionStrategyInfluencer strategyInfluencer;
+    private final HttpExecutionStrategy chainStrategy;
 
     LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
                                         HttpExecutionStrategy streamingStrategy,
-                                        HttpExecutionStrategyInfluencer strategyInfluencer) {
+                                        HttpExecutionStrategy chainStrategy) {
         this.filteredConnection = filteredConnection;
         this.limiter = requireNonNull(limiter);
         this.streamingStrategy = streamingStrategy;
-        this.strategyInfluencer = strategyInfluencer;
+        this.chainStrategy = chainStrategy;
     }
 
     @Override
@@ -139,22 +139,22 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
 
     @Override
     public ReservedHttpConnection asConnection() {
-        return toReservedConnection(this, strategyInfluencer);
+        return toReservedConnection(this, chainStrategy);
     }
 
     @Override
     public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return toReservedBlockingStreamingConnection(this, strategyInfluencer);
+        return toReservedBlockingStreamingConnection(this, chainStrategy);
     }
 
     @Override
     public ReservedBlockingHttpConnection asBlockingConnection() {
-        return toReservedBlockingConnection(this, strategyInfluencer);
+        return toReservedBlockingConnection(this, chainStrategy);
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategyInfluencer.influenceStrategy(strategy);
+    public HttpExecutionStrategy requiredOffloads() {
+        return chainStrategy;
     }
 
     @Override

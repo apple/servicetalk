@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -47,14 +46,14 @@ import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
-    private final HttpExecutionStrategyInfluencer strategyInfluencer;
+    private final HttpExecutionStrategy chainStrategy;
     private final HttpExecutionStrategy strategy;
 
     FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategyFromBuilder,
-                             HttpExecutionStrategyInfluencer strategyInfluencer) {
+                HttpExecutionStrategy chainStrategy) {
         strategy = strategyFromBuilder;
         client = filteredClient;
-        this.strategyInfluencer = strategyInfluencer;
+        this.chainStrategy = chainStrategy;
     }
 
     @Override
@@ -69,17 +68,17 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     @Override
     public HttpClient asClient() {
-        return toClient(this, strategyInfluencer);
+        return toClient(this, chainStrategy);
     }
 
     @Override
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return toBlockingStreamingClient(this, strategyInfluencer);
+        return toBlockingStreamingClient(this, chainStrategy);
     }
 
     @Override
     public BlockingHttpClient asBlockingClient() {
-        return toBlockingClient(this, strategyInfluencer);
+        return toBlockingClient(this, chainStrategy);
     }
 
     @Override
@@ -88,17 +87,17 @@ final class FilterableClientToClient implements StreamingHttpClient {
         return client.reserveConnection(strategy, metaData).map(rc -> new ReservedStreamingHttpConnection() {
             @Override
             public ReservedHttpConnection asConnection() {
-                return toReservedConnection(this, strategyInfluencer);
+                return toReservedConnection(this, chainStrategy);
             }
 
             @Override
             public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                return toReservedBlockingStreamingConnection(this, strategyInfluencer);
+                return toReservedBlockingStreamingConnection(this, chainStrategy);
             }
 
             @Override
             public ReservedBlockingHttpConnection asBlockingConnection() {
-                return toReservedBlockingConnection(this, strategyInfluencer);
+                return toReservedBlockingConnection(this, chainStrategy);
             }
 
             @Override

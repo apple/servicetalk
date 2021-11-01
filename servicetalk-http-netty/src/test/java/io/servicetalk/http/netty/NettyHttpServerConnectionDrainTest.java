@@ -165,7 +165,7 @@ class NettyHttpServerConnectionDrainTest {
             }
 
             @Override
-            public ExecutionContext executionContext() {
+            public ExecutionContext<?> executionContext() {
                 return serverContext.executionContext();
             }
 

@@ -24,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
  * limited stacktrace details for the user.
  */
 public final class StacklessClosedChannelException extends ClosedChannelException {
+    private static final long serialVersionUID = -5021225720136487769L;
 
     private StacklessClosedChannelException() { }
 

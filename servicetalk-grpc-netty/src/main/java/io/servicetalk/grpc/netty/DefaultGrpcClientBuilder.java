@@ -16,13 +16,17 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.BlockingGrpcClient;
+import io.servicetalk.grpc.api.GrpcClient;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
+import io.servicetalk.grpc.api.GrpcClientFactory;
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -41,35 +45,19 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
-import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
+final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     /**
      * A function which determines the timeout for a given request.
      */
-    private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR = new TimeoutFromRequest() {
-        /**
-         * Return the timeout duration extracted from the GRPC timeout HTTP header if present
-         *
-         * @param request The HTTP request to be used as source of the timeout filter duration.
-         * @return The non-negative timeout duration which may be null
-         * @throws IllegalArgumentException if the timeout value is malformed
-         */
-        public @Nullable Duration apply(HttpRequestMetaData request) {
-            return readTimeoutHeader(request);
-        }
-
-        @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            // we do not block and have no influence on strategy
-            return strategy;
-        }
-    };
+    private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR =
+            toTimeoutFromRequest(DeadlineUtils::readTimeoutHeader, HttpExecutionStrategies.anyStrategy());
 
     @Nullable
     private Duration defaultTimeout;
@@ -96,7 +84,17 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    protected GrpcClientCallFactory newGrpcClientCallFactory() {
+    public <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory) {
+        return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
+    }
+
+    @Override
+    public <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
+            GrpcClientFactory<?, BlockingClient> clientFactory) {
+        return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
+    }
+
+    private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         httpInitializer.initialize(builder);
@@ -105,8 +103,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         return GrpcClientCallFactory.from(builder.buildStreaming(), timeout);
     }
 
-    static final class CatchAllHttpClientFilter implements StreamingHttpClientFilterFactory,
-                                                           HttpExecutionStrategyInfluencer {
+    static final class CatchAllHttpClientFilter implements StreamingHttpClientFilterFactory {
 
         static final StreamingHttpClientFilterFactory INSTANCE = new CatchAllHttpClientFilter();
 
@@ -159,8 +156,9 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;    // no influence since we do not block
+        public HttpExecutionStrategy requiredOffloads() {
+            // no influence since we do not block
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }
