@@ -49,9 +49,9 @@ import static java.util.stream.Collectors.toList;
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
  * @see io.servicetalk.concurrent.api.RetryStrategies
  * @see SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)
- * @deprecated Use standard mechanisms for retrying using
- * {@link io.servicetalk.concurrent.api.Completable#retryWhen(BiIntFunction)} on the {@link Publisher} returned from
- * {@link ServiceDiscoverer#discover(Object)} instead.
+ * @deprecated Use {@link SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)}
+ * or {@link PartitionedHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)} combined with common utilities
+ * from {@link io.servicetalk.concurrent.api.RetryStrategies} or provide your own {@link BiIntFunction retry strategy}.
  */
 @Deprecated
 public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,

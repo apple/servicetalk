@@ -95,7 +95,9 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
-     *
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(BiIntFunction)} if it was called before.
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
@@ -111,13 +113,19 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} if it was called before.
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
      * @see io.servicetalk.concurrent.api.RetryStrategies
      */
-    PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
+    default PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting BiIntFunction" +
+                " is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.

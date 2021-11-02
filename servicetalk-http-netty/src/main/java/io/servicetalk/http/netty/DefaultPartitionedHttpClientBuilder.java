@@ -289,13 +289,15 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy) {
         this.deprecatedServiceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.serviceDiscovererRetryStrategy = null;
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-        this.serviceDiscovererRetryStrategy = retryStrategy;
+        this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.deprecatedServiceDiscovererRetryStrategy = null;
         return this;
     }
 

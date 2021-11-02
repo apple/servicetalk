@@ -555,6 +555,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy) {
         this.deprecatedServiceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.serviceDiscovererRetryStrategy = null;
         return this;
     }
 
@@ -562,6 +563,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.deprecatedServiceDiscovererRetryStrategy = null;
         return this;
     }
 
