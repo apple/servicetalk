@@ -249,8 +249,8 @@ public interface ContextMap {
      * @throws IllegalArgumentException if any value type does not match with its corresponding {@link Key#type()}.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
      * or {@code value} and the implementation doesn't support {@code null} keys or values.
-     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to put all entries.
+     * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
+     * modified while attempting to put all entries.
      * @throws UnsupportedOperationException if this method is not supported.
      */
     default void putAll(final ContextMap map) {
@@ -268,8 +268,8 @@ public interface ContextMap {
      * @throws IllegalArgumentException if any value type does not match with its corresponding {@link Key#type()}.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
      * or {@code value} and the implementation doesn't support {@code null} keys or values.
-     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to put all entries.
+     * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
+     * modified while attempting to put all entries.
      * @throws UnsupportedOperationException if this method is not supported.
      */
     default void putAll(final Map<Key<?>, Object> map) {
