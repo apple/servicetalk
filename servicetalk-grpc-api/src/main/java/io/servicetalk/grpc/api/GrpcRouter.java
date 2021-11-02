@@ -42,9 +42,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -73,7 +71,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -661,8 +658,9 @@ final class GrpcRouter {
         }
 
         private static HttpExecutionStrategy pathStrategy(String path,
-                                                          @Nullable GrpcExecutionStrategy routeStrategy, GrpcExecutionContext ctx) {
-                GrpcExecutionStrategy useStrategy = routeStrategy == null ?  ctx.executionStrategy() : routeStrategy;
+                                                          @Nullable GrpcExecutionStrategy routeStrategy,
+                                                          GrpcExecutionContext ctx) {
+                GrpcExecutionStrategy useStrategy = routeStrategy == null ? ctx.executionStrategy() : routeStrategy;
 
                 LOGGER.debug("route strategy for path={} : ctx={} route={} use={}",
                         path, ctx.executionStrategy(), routeStrategy, useStrategy);

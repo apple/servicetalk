@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -288,7 +289,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
             routes.add(new Route(predicate, route, routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
-            strategy = HttpExecutionStrategies.defaultStrategy();
+            strategy = defaultStrategy();
             return HttpPredicateRouterBuilder.this;
         }
     }
