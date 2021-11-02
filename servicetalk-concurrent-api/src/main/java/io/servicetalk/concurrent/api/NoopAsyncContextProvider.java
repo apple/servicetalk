@@ -55,53 +55,53 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
-                                                        final ContextMap current) {
+                                                        final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
-                                                                  final ContextMap current) {
+                                                                  final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
-            final CompletableSource.Subscriber subscriber, final ContextMap current) {
+            final CompletableSource.Subscriber subscriber, final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
-                                                          final ContextMap current) {
+                                                          final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
-                                                               final ContextMap current) {
+                                                               final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
-            final SingleSource.Subscriber<T> subscriber, final ContextMap current) {
+            final SingleSource.Subscriber<T> subscriber, final ContextMap context) {
         return subscriber;
     }
 
     @Override
-    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final ContextMap current) {
+    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final ContextMap context) {
         return subscriber;
     }
 
     @Override
-    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final ContextMap current) {
+    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final ContextMap context) {
         return subscriber;
     }
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
-                                                                    final ContextMap current) {
+                                                                    final ContextMap context) {
         return subscriber;
     }
 
@@ -127,38 +127,38 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future,
-                                                          final ContextMap current) {
+                                                          final ContextMap context) {
         return future;
     }
 
     @Override
-    public Runnable wrapRunnable(final Runnable runnable, final ContextMap current) {
+    public Runnable wrapRunnable(final Runnable runnable, final ContextMap context) {
         return runnable;
     }
 
     @Override
-    public <V> Callable<V> wrapCallable(final Callable<V> callable, final ContextMap current) {
+    public <V> Callable<V> wrapCallable(final Callable<V> callable, final ContextMap context) {
         return callable;
     }
 
     @Override
-    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final ContextMap current) {
+    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final ContextMap context) {
         return consumer;
     }
 
     @Override
-    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final ContextMap current) {
+    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final ContextMap context) {
         return func;
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final ContextMap current) {
+    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final ContextMap context) {
         return consumer;
     }
 
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func,
-                                                        final ContextMap current) {
+                                                        final ContextMap context) {
         return func;
     }
 

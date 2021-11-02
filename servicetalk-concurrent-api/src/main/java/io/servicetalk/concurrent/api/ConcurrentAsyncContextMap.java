@@ -26,6 +26,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+// FIXME: 0.42 - rename to ConcurrentContextMap
 final class ConcurrentAsyncContextMap implements ContextMap {
 
     private final ConcurrentMap<Key<?>, Object> theMap;

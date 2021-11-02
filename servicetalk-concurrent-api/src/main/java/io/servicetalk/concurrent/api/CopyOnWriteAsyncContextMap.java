@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  * pairs in a single {@link ContextMap}. Common {@link ContextMap.Key}-value paris are (tracing, MDC, auth, 3-custom
  * user entries).
  */
+// FIXME: 0.42 - rename to CopyOnWriteContextMap
 final class CopyOnWriteAsyncContextMap implements ContextMap {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteAsyncContextMap.class, CopyAsyncContextMap.class, "map");

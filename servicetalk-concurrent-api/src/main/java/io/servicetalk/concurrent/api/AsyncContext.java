@@ -202,8 +202,8 @@ public final class AsyncContext {
      * Convenience method for to put all the key-value pairs into the current context from another {@link ContextMap}.
      *
      * @param map contains the key-value pairs that will be added.
-     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to put all entries.
+     * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
+     * modified while attempting to put all entries.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
      * or {@code value} and the underlying {@link ContextMap} implementation doesn't support {@code null} keys or
      * values.
@@ -219,8 +219,8 @@ public final class AsyncContext {
      * Convenience method for to put all the key/value pairs into the current context.
      *
      * @param map contains the key/value pairs that will be added.
-     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to put all entries.
+     * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
+     * modified while attempting to put all entries.
      * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
      * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
@@ -237,8 +237,8 @@ public final class AsyncContext {
      * Convenience method for to put all the key-value pairs into the current context.
      *
      * @param map contains the key-value pairs that will be added.
-     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to put all entries.
+     * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
+     * modified while attempting to put all entries.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
      * or {@code value} and the underlying {@link ContextMap} implementation doesn't support {@code null} keys or
      * values.
@@ -246,6 +246,7 @@ public final class AsyncContext {
      * implementation.
      * @see ContextMap#putAll(Map)
      */
+    // FIXME: 0.42 - add putAll(Map) alias method and consider deprecating putAllFromMap(Map)
     public static void putAllFromMap(final Map<ContextMap.Key<?>, Object> map) {
         context().putAll(map);
     }
@@ -313,6 +314,7 @@ public final class AsyncContext {
      * implementation.
      * @see ContextMap#removeAll(Iterable)
      */
+    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllPairs(Iterable)
     public static boolean removeAllPairs(final Iterable<ContextMap.Key<?>> keys) {
         return context().removeAll(keys);
     }
@@ -491,6 +493,7 @@ public final class AsyncContext {
      * @throws NullPointerException if {@code consumer} is null.
      * @see ContextMap#forEach(BiPredicate)
      */
+    // FIXME: 0.42 - add forEach(BiPredicate) alias method and consider deprecating forEachPair(BiPredicate)
     @Nullable
     public static ContextMap.Key<?> forEachPair(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
         return context().forEach(consumer);
