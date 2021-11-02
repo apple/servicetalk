@@ -31,8 +31,10 @@ public final class EmptyBuffer implements Buffer {
      */
     public static final EmptyBuffer EMPTY_BUFFER = new EmptyBuffer();
 
-    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0).asReadOnlyBuffer();
     private static final byte[] EMPTY_BYTES = {};
+
+    static final int EMPTY_BUFFER_HASH_CODE = 1;
 
     private EmptyBuffer() {
         // No instances, use the static instance.
@@ -754,6 +756,11 @@ public final class EmptyBuffer implements Buffer {
     }
 
     @Override
+    public String toString() {
+        return EmptyBuffer.class.getSimpleName();
+    }
+
+    @Override
     public String toString(Charset charset) {
         return "";
     }
@@ -784,6 +791,16 @@ public final class EmptyBuffer implements Buffer {
     public int forEachByteDesc(int index, int length, ByteProcessor processor) {
         checkIndex(index, length);
         return -1;
+    }
+
+    @Override
+    public int hashCode() {
+        return EMPTY_BUFFER_HASH_CODE;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return this == obj || (obj instanceof Buffer && ((Buffer) obj).readableBytes() == 0);
     }
 
     private static void checkIndex(int index) {
