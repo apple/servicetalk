@@ -17,7 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
-rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") }.each {
+rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") &&
+                                          !it.name.equals("grpc") && !it.name.equals("http") }.each {
   dependencies.constraints.add("api", it)
 }
 
