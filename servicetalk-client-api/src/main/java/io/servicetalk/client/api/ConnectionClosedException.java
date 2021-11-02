@@ -17,7 +17,11 @@ package io.servicetalk.client.api;
 
 /**
  * Thrown when the connection is no longer available.
+ *
+ * @deprecated There is no code that can throw this exception. We will remove it and create a new exception type if
+ * there is a use-case in future releases.
  */
+@Deprecated
 public class ConnectionClosedException extends RuntimeException {
     private static final long serialVersionUID = -2133048420662985692L;
 

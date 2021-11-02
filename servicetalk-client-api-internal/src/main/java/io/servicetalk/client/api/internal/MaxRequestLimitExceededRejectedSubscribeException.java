@@ -20,7 +20,11 @@ import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 
 /**
  * Exception raised when more concurrent requests have been issued on a connection than is allowed.
+ *
+ * @deprecated There is no code that can throw this exception. We will remove it and create a new exception type if
+ * there is a use-case in future releases.
  */
+@Deprecated
 public final class MaxRequestLimitExceededRejectedSubscribeException extends MaxRequestLimitExceededException
         implements RejectedSubscribeError {
 

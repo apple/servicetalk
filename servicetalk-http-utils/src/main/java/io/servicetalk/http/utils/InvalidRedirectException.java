@@ -17,7 +17,11 @@ package io.servicetalk.http.utils;
 
 /**
  * Throws when redirect could not be performed.
+ *
+ * @deprecated There is no code that can throw this exception. We will remove it and create a new exception type if
+ * there is a use-case in future releases.
  */
+@Deprecated
 public final class InvalidRedirectException extends RuntimeException {
     private static final long serialVersionUID = -3339327100606339327L;
 
