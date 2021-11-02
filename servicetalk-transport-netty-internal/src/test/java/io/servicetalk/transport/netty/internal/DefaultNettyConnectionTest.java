@@ -75,7 +75,7 @@ import static org.mockito.Mockito.when;
 class DefaultNettyConnectionTest {
 
     private static final String TRAILER_MSG = "Trailer";
-    private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG);
+    private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG).asReadOnly();
     private TestPublisher<Buffer> publisher;
     private TestCompletableSubscriber writeListener = new TestCompletableSubscriber();
     private final TestCompletableSubscriber secondWriteListener = new TestCompletableSubscriber();
