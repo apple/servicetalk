@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getRouteExecutionStrategyAnnotation;
 import static java.util.Collections.emptyMap;
 import static org.glassfish.jersey.model.Parameter.Source.ENTITY;
@@ -131,11 +132,10 @@ final class JerseyRouteExecutionStrategyUtils {
         }
     }
 
-    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META = customStrategyBuilder()
-            .offloadReceiveMetadata().build();
-    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND = customStrategyBuilder()
-            .offloadReceiveMetadata().offloadSend().build();
-    private static final HttpExecutionStrategy OFFLOAD_ALL = customStrategyBuilder().offloadAll().build();
+    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META =
+            customStrategyBuilder().offloadReceiveMetadata().build();
+    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND =
+            customStrategyBuilder().offloadReceiveMetadata().offloadSend().build();
 
     private JerseyRouteExecutionStrategyUtils() {
         // no instances
@@ -204,7 +204,7 @@ final class JerseyRouteExecutionStrategyUtils {
             return OFFLOAD_RECEIVE_META_AND_SEND;
         } else {
             // default to async-streaming, as it has the most aggressive offloading strategy
-            return OFFLOAD_ALL;
+            return offloadAll();
         }
     }
 

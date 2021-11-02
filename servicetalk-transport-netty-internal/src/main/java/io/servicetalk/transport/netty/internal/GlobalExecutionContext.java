@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.EventLoopGroup;
@@ -29,8 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.OffloadFromIOExecutionStrategy.OFFLOAD_FROM_IO_STRATEGY;
 
 /**
  * ServiceTalk's shared {@link ExecutionContext} with reasonable defaults for APIs when a user doesn't provide one.
@@ -51,19 +52,19 @@ public final class GlobalExecutionContext {
      *
      * @return the singleton instance
      */
-    public static ExecutionContext globalExecutionContext() {
+    public static ExecutionContext<ExecutionStrategy> globalExecutionContext() {
         return GlobalExecutionContextInitializer.INSTANCE;
     }
 
     private static final class GlobalExecutionContextInitializer {
 
-        static final ExecutionContext INSTANCE;
+        static final ExecutionContext<ExecutionStrategy> INSTANCE;
 
         static {
             final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(GlobalIoExecutor.NAME_PREFIX));
             final Executor executor = new GlobalExecutor(newCachedThreadExecutor(
                     new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX)));
-            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_FROM_IO_STRATEGY);
+            INSTANCE = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR, ioExecutor, executor, offloadAll());
             LOGGER.debug("Initialized GlobalExecutionContext");
         }
 

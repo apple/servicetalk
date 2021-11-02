@@ -77,7 +77,7 @@ public class TcpServer {
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext bind(ExecutionContext executionContext, int port,
+    public ServerContext bind(ExecutionContext<?> executionContext, int port,
                               @Nullable ConnectionAcceptor connectionAcceptor,
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
@@ -100,7 +100,7 @@ public class TcpServer {
 
     // Visible to allow tests to override.
     ChannelInitializer getChannelInitializer(final Function<NettyConnection<Buffer, Buffer>, Completable> service,
-                                             final ExecutionContext executionContext) {
+                                             final ExecutionContext<?> executionContext) {
         return channel -> channel.pipeline().addLast(BufferHandler.INSTANCE);
     }
 

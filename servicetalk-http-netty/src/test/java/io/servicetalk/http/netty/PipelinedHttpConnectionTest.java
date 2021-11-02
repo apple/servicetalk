@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -80,7 +81,7 @@ class PipelinedHttpConnectionTest {
     void setup() {
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
-        when(connection.executionContext()).thenReturn(ctx);
+        when(connection.executionContext()).thenReturn((ExecutionContext) ctx);
         when(connection.protocol()).thenReturn(HTTP_1_1);
         when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
@@ -103,7 +104,7 @@ class PipelinedHttpConnectionTest {
     void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
         when(connection.protocol()).thenReturn(HTTP_1_1);
-        when(connection.executionContext()).thenReturn(ctx);
+        when(connection.executionContext()).thenReturn((ExecutionContext) ctx);
         when(connection.write(any())).thenReturn(completed());
         when(connection.write(any(), any(), any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));

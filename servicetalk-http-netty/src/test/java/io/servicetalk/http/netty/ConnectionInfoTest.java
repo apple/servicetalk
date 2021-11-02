@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -26,6 +26,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -70,7 +71,7 @@ class ConnectionInfoTest extends AbstractNettyHttpServerTest {
     }
 
     private static final class CtxInterceptingServiceFilterFactory implements StreamingHttpServiceFilterFactory,
-                                                                              HttpExecutionStrategyInfluencer {
+            ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
         final BlockingQueue<String> queue = new LinkedBlockingDeque<>();
 
@@ -88,8 +89,9 @@ class ConnectionInfoTest extends AbstractNettyHttpServerTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;
+        public HttpExecutionStrategy requiredOffloads() {
+            // No influence since we do not block.
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }

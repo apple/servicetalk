@@ -24,6 +24,8 @@ import java.io.IOException;
  * A proxy response exception, that indicates an unexpected response status from a proxy.
  */
 public final class ProxyResponseException extends IOException implements RetryableException {
+    private static final long serialVersionUID = -1021287419155443499L;
+
     private final HttpResponseStatus status;
 
     ProxyResponseException(final String message, final HttpResponseStatus status) {

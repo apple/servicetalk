@@ -130,8 +130,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                                 executionContext.bufferAllocator()),
                         executionContext, partitionMapFactory);
         return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy(),
-                buildContext.builder.buildStrategyInfluencerForClient(
-                        executionContext.executionStrategy()));
+                buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -176,7 +175,6 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-
             return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 

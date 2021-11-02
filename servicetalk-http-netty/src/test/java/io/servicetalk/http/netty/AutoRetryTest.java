@@ -31,6 +31,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
@@ -119,6 +120,11 @@ class AutoRetryTest {
                 final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return new InspectingLoadBalancer<>(rr.newLoadBalancer(eventPublisher, connectionFactory));
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            return ExecutionStrategy.anyStrategy();
         }
     }
 

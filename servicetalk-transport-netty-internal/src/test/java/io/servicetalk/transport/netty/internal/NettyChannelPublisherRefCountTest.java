@@ -31,9 +31,9 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -50,7 +50,7 @@ class NettyChannelPublisherRefCountTest {
         channel = new EmbeddedDuplexChannel(false);
         publisher = DefaultNettyConnection.initChannel(channel,
                         DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        defaultFlushStrategy(), null, channel2 -> { }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class),
+                        defaultFlushStrategy(), null, channel2 -> { }, offloadAll(), mock(Protocol.class),
                         NoopConnectionObserver.INSTANCE, true).toFuture().get()
                 .read();
     }

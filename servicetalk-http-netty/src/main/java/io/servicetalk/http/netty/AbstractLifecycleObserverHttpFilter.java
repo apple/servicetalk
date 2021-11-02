@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
@@ -36,6 +36,7 @@ import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpExchangeObser
 import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpRequestObserver;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
+abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);
     static final Key<Consumer<ConnectionInfo>> ON_CONNECTION_SELECTED_CONSUMER =
@@ -154,8 +155,9 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
     }
 
     @Override
-    public final HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategy;    // no influence since we do not block and the observer is not expected to block either
+    public final HttpExecutionStrategy requiredOffloads() {
+        // no influence since we do not block and the observer is not expected to block either
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private static final class ExchangeContext implements TerminalSignalConsumer {

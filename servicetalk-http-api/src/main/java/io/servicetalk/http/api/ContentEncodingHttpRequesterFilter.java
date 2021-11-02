@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  * other filters that expect to manipulate the original payload.
  */
 public final class ContentEncodingHttpRequesterFilter implements
-          StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory, HttpExecutionStrategyInfluencer {
+            StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
     private final BufferDecoderGroup decompressors;
 
     /**
@@ -78,9 +78,9 @@ public final class ContentEncodingHttpRequesterFilter implements
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private Single<StreamingHttpResponse> applyEncodingAndDecoding(final StreamingHttpRequester delegate,

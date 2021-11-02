@@ -25,8 +25,8 @@ import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -48,8 +48,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                          StreamingHttpConnectionFilterFactory,
-                                                          HttpExecutionStrategyInfluencer {
+                                                          StreamingHttpConnectionFilterFactory {
 
     private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
@@ -109,9 +108,9 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     /**

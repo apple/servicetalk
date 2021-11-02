@@ -85,6 +85,13 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
 
+        when(serviceA.requiredOffloads()).thenCallRealMethod();
+        when(serviceB.requiredOffloads()).thenCallRealMethod();
+        when(serviceC.requiredOffloads()).thenCallRealMethod();
+        when(serviceD.requiredOffloads()).thenCallRealMethod();
+        when(serviceE.requiredOffloads()).thenCallRealMethod();
+        when(fallbackService.requiredOffloads()).thenCallRealMethod();
+
         when(serviceA.handle(any(), eq(request), any())).thenReturn(responseA);
         when(serviceB.handle(any(), eq(request), any())).thenReturn(responseB);
         when(serviceC.handle(any(), eq(request), any())).thenReturn(responseC);

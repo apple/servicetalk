@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -57,8 +57,7 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
  * therefore will not see the {@link Span} for the current request/response.
  */
 public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
-        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
-                   HttpExecutionStrategyInfluencer {
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     /**
      * Create a new instance.
@@ -127,9 +126,9 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,

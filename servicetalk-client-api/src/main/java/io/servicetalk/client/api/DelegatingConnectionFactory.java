@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link ConnectionFactory} that delegates all methods to another {@link ConnectionFactory}.
  *
- * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
+ * @param <ResolvedAddress> The type of resolved addresses that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
 public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
@@ -68,7 +68,7 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
      *
      * @return Delegate {@link ConnectionFactory}.
      */
-    protected ConnectionFactory<ResolvedAddress, C> delegate() {
+    protected final ConnectionFactory<ResolvedAddress, C> delegate() {
         return delegate;
     }
 }

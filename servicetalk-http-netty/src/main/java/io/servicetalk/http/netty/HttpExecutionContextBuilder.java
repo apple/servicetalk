@@ -15,77 +15,20 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
-final class HttpExecutionContextBuilder {
-
-    private final ExecutionContextBuilder executionContextBuilder;
-    private HttpExecutionStrategy strategy = defaultStrategy();
-
-    HttpExecutionContextBuilder(final HttpExecutionContextBuilder from) {
-        executionContextBuilder = new ExecutionContextBuilder(from.executionContextBuilder);
-        strategy = from.strategy;
-    }
+final class HttpExecutionContextBuilder extends ExecutionContextBuilder<HttpExecutionStrategy> {
 
     HttpExecutionContextBuilder() {
-        executionContextBuilder = new ExecutionContextBuilder();
-        // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy which is not
-        // compatible with HTTP.
-        executionContextBuilder.executionStrategy(defaultStrategy());
     }
 
-    /**
-     * Sets the {@link IoExecutor} to use.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     */
-    public HttpExecutionContextBuilder ioExecutor(IoExecutor ioExecutor) {
-        executionContextBuilder.ioExecutor(ioExecutor);
-        return this;
-    }
-
-    /**
-     * Sets the {@link Executor} to use.
-     *
-     * @param executor {@link Executor} to use.
-     * @return {@code this}.
-     */
-    public HttpExecutionContextBuilder executor(Executor executor) {
-        executionContextBuilder.executor(executor);
-        return this;
-    }
-
-    /**
-     * Sets the {@link BufferAllocator} to use.
-     *
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public HttpExecutionContextBuilder bufferAllocator(BufferAllocator allocator) {
-        executionContextBuilder.bufferAllocator(allocator);
-        return this;
-    }
-
-    /**
-     * Sets the {@link HttpExecutionStrategy} to use.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @return {@code this}.
-     */
-    public HttpExecutionContextBuilder executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        executionContextBuilder.executionStrategy(strategy);
-        return this;
+    HttpExecutionContextBuilder(final HttpExecutionContextBuilder from) {
+        super(from);
     }
 
     /**
@@ -93,8 +36,12 @@ final class HttpExecutionContextBuilder {
      *
      * @return {@link HttpExecutionContext}.
      */
+    @Override
     public HttpExecutionContext build() {
-        ExecutionContext ctx = executionContextBuilder.build();
-        return new DefaultHttpExecutionContext(ctx.bufferAllocator(), ctx.ioExecutor(), ctx.executor(), strategy);
+        return new DefaultHttpExecutionContext(
+                allocator == null ? defaultContextSupplier.get().bufferAllocator() : allocator,
+                ioExecutor == null ? defaultContextSupplier.get().ioExecutor() : ioExecutor,
+                executor == null ? defaultContextSupplier.get().executor() : executor,
+                strategy == null ? defaultStrategy() : strategy);
     }
 }

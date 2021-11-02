@@ -50,9 +50,9 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -107,7 +107,7 @@ class NettyChannelPublisherTest {
                         closeHandler.protocolPayloadEndInbound(ctx);
                     }
                 }
-            }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+            }), offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }
@@ -155,7 +155,7 @@ class NettyChannelPublisherTest {
                             super.read(ctx);
                         }
                     });
-                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+                }, offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

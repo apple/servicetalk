@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -196,14 +197,14 @@ class ExecutionStrategyInContextTest {
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {
-            expectedServerStrategy = customStrategyBuilder().offloadAll().build();
+            expectedServerStrategy = HttpExecutionStrategies.offloadAll();
             serverBuilder.executionStrategy(expectedServerStrategy);
         }
         context = serverStarter.apply(serverBuilder).toFuture().get();
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 forSingleAddress(serverHostAndPort(context));
         if (customStrategy) {
-            expectedClientStrategy = customStrategyBuilder().offloadAll().build();
+            expectedClientStrategy = HttpExecutionStrategies.offloadAll();
             clientBuilder.executionStrategy(expectedClientStrategy);
         }
         return clientBuilder;

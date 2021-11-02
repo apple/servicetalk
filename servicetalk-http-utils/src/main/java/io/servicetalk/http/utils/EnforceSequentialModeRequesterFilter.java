@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -43,8 +43,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
  * sequential execution of the request and response. This filter helps to enforce that behavior.
  */
 public final class EnforceSequentialModeRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                                   StreamingHttpConnectionFilterFactory,
-                                                                   HttpExecutionStrategyInfluencer {
+                                                                   StreamingHttpConnectionFilterFactory {
 
     /**
      * Singleton instance of {@link EnforceSequentialModeRequesterFilter}.
@@ -91,7 +90,8 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategy;    // No influence since we do not block
+    public HttpExecutionStrategy requiredOffloads() {
+        // No influence since we do not block.
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

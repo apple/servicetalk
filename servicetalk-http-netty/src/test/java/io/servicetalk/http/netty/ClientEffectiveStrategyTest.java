@@ -28,19 +28,22 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -60,6 +63,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.RequestPayloadSubscription;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseData;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseMeta;
@@ -81,7 +85,7 @@ class ClientEffectiveStrategyTest {
         noUserStrategyWithFilter(clientType -> new Params(clientType, Offloads.ALL,
                 false, true, false, false,
                 InvokingThreadsRecorder::noStrategy)),
-        noUserStrategyWithLB(clientType -> new Params(clientType, Offloads.ALL,
+        noUserStrategyWithLB(clientType -> new Params(clientType, Offloads.DEFAULT,
                 false, false, true, false,
                 InvokingThreadsRecorder::noStrategy)),
         noUserStrategyWithCF(clientType -> new Params(clientType, Offloads.ALL,
@@ -93,7 +97,7 @@ class ClientEffectiveStrategyTest {
         userStrategyWithFilter(clientType -> new Params(clientType, Offloads.ALL,
                 true, true, false, false,
                 () -> userStrategyNoVerify(defaultStrategy()))),
-        userStrategyWithLB(clientType -> new Params(clientType, Offloads.ALL,
+        userStrategyWithLB(clientType -> new Params(clientType, Offloads.DEFAULT,
                 true, false, true, false,
                 () -> userStrategyNoVerify(defaultStrategy()))),
         userStrategyWithCF(clientType -> new Params(clientType, Offloads.ALL,
@@ -267,8 +271,19 @@ class ClientEffectiveStrategyTest {
                         clientBuilder.ioExecutor(ioExecutor);
                         clientBuilder.appendClientFilter(new ClientInvokingThreadRecorder(invokingThreadsRecorder));
                         if (addConnectionFilter) {
-                            clientBuilder.appendConnectionFilter(connection ->
-                                    new StreamingHttpConnectionFilter(connection) { });
+                            clientBuilder.appendConnectionFilter(new StreamingHttpConnectionFilterFactory() {
+                                @Override
+                                public StreamingHttpConnectionFilter create(
+                                        final FilterableStreamingHttpConnection connection) {
+                                    return new StreamingHttpConnectionFilter(connection) { };
+                                }
+
+                                @Override
+                                public HttpExecutionStrategy requiredOffloads() {
+                                    // require full offloading
+                                    return offloadAll();
+                                }
+                            });
                         }
                         if (addLoadBalancer) {
                             clientBuilder.loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
@@ -276,14 +291,25 @@ class ClientEffectiveStrategyTest {
                         }
                         if (addFilter) {
                             // Our filter factory does not implement influenceStrategy, it will default to offload-all.
-                            clientBuilder.appendClientFilter(client -> new StreamingHttpClientFilter(client) { });
+                            clientBuilder.appendClientFilter(new StreamingHttpClientFilterFactory() {
+                                @Override
+                                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                                    return new StreamingHttpClientFilter(client) { };
+                                }
+
+                                @Override
+                                public HttpExecutionStrategy requiredOffloads() {
+                                    // require full offloading
+                                    return offloadAll();
+                                }
+                            });
                         }
                     });
         }
     }
 
     private static final class ClientInvokingThreadRecorder
-            implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
+            implements StreamingHttpClientFilterFactory {
 
         private final InvokingThreadsRecorder<ClientOffloadPoint> holder;
 
@@ -292,9 +318,9 @@ class ClientEffectiveStrategyTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            // Don't influence strategy
-            return strategy;
+        public HttpExecutionStrategy requiredOffloads() {
+            // No influence since we do not block.
+            return HttpExecutionStrategies.anyStrategy();
         }
 
         @Override
@@ -325,6 +351,11 @@ class ClientEffectiveStrategyTest {
             return new RoundRobinLoadBalancerFactory
                     .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
                     .newLoadBalancer(eventPublisher, connectionFactory);
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            return ExecutionStrategy.anyStrategy();
         }
     }
 

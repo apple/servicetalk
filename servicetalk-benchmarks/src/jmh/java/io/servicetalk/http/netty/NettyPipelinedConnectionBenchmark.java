@@ -239,7 +239,7 @@ public class NettyPipelinedConnectionBenchmark {
             }
 
             @Override
-            public ExecutionContext executionContext() {
+            public ExecutionContext<?> executionContext() {
                 return GlobalExecutionContext.globalExecutionContext();
             }
 

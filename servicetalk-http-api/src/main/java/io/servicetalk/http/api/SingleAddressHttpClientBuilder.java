@@ -171,6 +171,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     @Override
     SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
+    @Override
     SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override

@@ -36,6 +36,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.SharedExecutor;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -527,6 +528,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
                     new HealthCheckConfig(SharedExecutor.getInstance(),
                             DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            // We do not block
+            return ExecutionStrategy.anyStrategy();
         }
     }
 

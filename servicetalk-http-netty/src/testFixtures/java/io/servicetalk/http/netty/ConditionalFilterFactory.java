@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -48,6 +49,11 @@ public final class ConditionalFilterFactory
         return new ConditionalHttpConnectionFilter(predicate, predicateFactory.create(connection), connection);
     }
 
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return predicateFactory.requiredOffloads();
+    }
+
     public FilterFactory append(FilterFactory append) {
         StreamingHttpClientFilterFactory clientFactory = appendClientFilterFactory(this, append);
         StreamingHttpConnectionFilterFactory connectionFactory = appendConnectionFilterFactory(this, append);
@@ -77,6 +83,11 @@ public final class ConditionalFilterFactory
                 @Override
                 public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
                     return original.create(connection);
+                }
+
+                @Override
+                public HttpExecutionStrategy requiredOffloads() {
+                    return original.requiredOffloads();
                 }
             };
         }

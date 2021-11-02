@@ -48,13 +48,13 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public boolean hasOffloads() {
-        return delegate.hasOffloads();
+    public String toString() {
+        return delegate.toString();
     }
 
     @Override
-    public String toString() {
-        return delegate.toString();
+    public boolean hasOffloads() {
+        return delegate.hasOffloads();
     }
 
     @Override
@@ -74,14 +74,11 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        return delegate.merge(other);
+        HttpExecutionStrategy merged = delegate.merge(other);
+        return merged == delegate ? this : new JerseyRouteExecutionStrategy(merged, executor);
     }
 
     public Executor executor() {
         return executor;
-    }
-
-    private Executor executor(Executor fallback) {
-        return null != executor ? executor : fallback;
     }
 }

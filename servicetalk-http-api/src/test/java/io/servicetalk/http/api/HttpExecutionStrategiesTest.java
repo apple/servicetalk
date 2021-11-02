@@ -21,7 +21,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -33,21 +32,12 @@ import static org.mockito.Mockito.when;
 class HttpExecutionStrategiesTest {
 
     @Test
-    void mergeNoOffloads() {
-        HttpExecutionStrategy strategy = customStrategyBuilder().offloadAll().build();
-        HttpExecutionStrategy merged = strategy.merge(noOffloadsStrategy());
-        assertThat("merge did not return noOffloadsStrategy.", merged, is(noOffloadsStrategy()));
-        merged = noOffloadsStrategy().merge(strategy);
-        assertThat("merge did not return noOffloadsStrategy.", merged, is(noOffloadsStrategy()));
-    }
-
-    @Test
     void mergeDefaultStrategy() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadAll().build();
         HttpExecutionStrategy merged = strategy.merge(defaultStrategy());
-        assertThat("merge returned defaultStrategy.", merged, not(defaultStrategy()));
+        assertThat("merge returned defaultStrategy.", merged, sameInstance(strategy));
         merged = defaultStrategy().merge(strategy);
-        assertThat("merge returned defaultStrategy.", merged, not(defaultStrategy()));
+        assertThat("merge returned defaultStrategy.", merged, sameInstance(strategy));
     }
 
     @Test
@@ -108,6 +98,59 @@ class HttpExecutionStrategiesTest {
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadAll().build();
         HttpExecutionStrategy strat2 = newMockStrategyOffloadAll();
         HttpExecutionStrategy result = difference(strat1, strat2);
+        assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    @Test
+    void missingRightNoOffload() {
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy strat2 = noOffloadsStrategy();
+        HttpExecutionStrategy result = strat1.missing(strat2);
+        assertThat("Unexpected diff.", result, is(sameInstance(HttpExecutionStrategies.anyStrategy())));
+    }
+
+    @Test
+    void missingLeftNoOffload() {
+        HttpExecutionStrategy strat1 = noOffloadsStrategy();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy result = strat1.missing(strat2);
+        assertThat("Unexpected diff.", result, is(sameInstance(strat2)));
+    }
+
+    @Test
+    void missingLeftAndRightDiffOffload() {
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadSend().build();
+        HttpExecutionStrategy result = strat1.missing(strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(false));
+    }
+
+    @Test
+    void missingLeftNoOffloadAndRightAllOffloads() {
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadNone().build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadAll().build();
+        HttpExecutionStrategy result = strat1.missing(strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(true));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(true));
+    }
+
+    @Test
+    void missingEqualButDifferentInstances() {
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadAll().build();
+        HttpExecutionStrategy strat2 = newMockStrategyOffloadAll();
+        HttpExecutionStrategy result = difference(strat1, strat2);
+        assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    @Test
+    void missingLeftAndRightEqual() {
+        HttpExecutionStrategy strat = customStrategyBuilder().offloadSend().build();
+        HttpExecutionStrategy result = difference(strat, strat);
         assertThat("Unexpected diff.", result, is(nullValue()));
     }
 

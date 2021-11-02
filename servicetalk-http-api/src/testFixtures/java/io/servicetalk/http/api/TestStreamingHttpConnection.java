@@ -146,17 +146,17 @@ public final class TestStreamingHttpConnection {
 
             @Override
             public HttpConnection asConnection() {
-                return toConnection(this, strategy -> strategy);
+                return toConnection(this, HttpExecutionStrategies.anyStrategy());
             }
 
             @Override
             public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                return toBlockingStreamingConnection(this, strategy -> strategy);
+                return toBlockingStreamingConnection(this, HttpExecutionStrategies.anyStrategy());
             }
 
             @Override
             public BlockingHttpConnection asBlockingConnection() {
-                return toBlockingConnection(this, strategy -> strategy);
+                return toBlockingConnection(this, HttpExecutionStrategies.anyStrategy());
             }
         };
     }

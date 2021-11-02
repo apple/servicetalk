@@ -67,7 +67,7 @@ public class DelegatingConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public ExecutionContext<?> executionContext() {
         return delegate.executionContext();
     }
 

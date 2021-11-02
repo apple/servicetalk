@@ -29,13 +29,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client,
-                                                     final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
+                                                     final HttpExecutionStrategy strategy) {
+        this.strategy = DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY.merge(strategy);
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return StreamingHttpClientToBlockingStreamingHttpClient.this.strategy;
             }
         };
         reqRespFactory = toBlockingStreaming(client);
@@ -107,8 +107,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
         ReservedStreamingHttpConnectionToBlockingStreaming(final ReservedStreamingHttpConnection connection,
-                                                           final HttpExecutionStrategyInfluencer influencer) {
-            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY),
+                                                           final HttpExecutionStrategy strategy) {
+            this(connection, DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY.merge(strategy),
                     toBlockingStreaming(connection));
         }
 
@@ -123,7 +123,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
             executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
                 @Override
                 public HttpExecutionStrategy executionStrategy() {
-                    return strategy;
+                    return ReservedStreamingHttpConnectionToBlockingStreaming.this.strategy;
                 }
             };
             context = new DelegatingHttpConnectionContext(originalCtx) {
