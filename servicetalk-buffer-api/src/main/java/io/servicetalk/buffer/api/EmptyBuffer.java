@@ -805,7 +805,7 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof Buffer && ((Buffer) obj).readableBytes() == 0;
+        return this == obj || (obj instanceof Buffer && ((Buffer) obj).readableBytes() == 0);
     }
 
     private static void checkIndex(int index) {
