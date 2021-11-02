@@ -53,8 +53,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.util.ReferenceCountUtil.release;
@@ -126,7 +126,7 @@ class MalformedDataAfterHttpMessageTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void afterResponseNextClientRequestSucceeds(boolean doOffloading) throws Exception {
-        Queue<ConnectionContext> contextQueue = new ArrayBlockingQueue<>(4);
+        Queue<ConnectionContext> contextQueue = new LinkedBlockingQueue<>();
         ServerSocketChannel server = nettyServer(RESPONSE_MSG);
         try (BlockingHttpClient client = stClientBuilder(server.localAddress())
                 .executionStrategy(doOffloading ? defaultStrategy() : noOffloadsStrategy())
