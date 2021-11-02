@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 
 /**
  * A factory to create different {@link GrpcExecutionStrategy}.
@@ -61,7 +60,7 @@ public final class GrpcExecutionStrategies {
     }
 
     /**
-     * A builder to build an {@link HttpExecutionStrategy}.
+     * A builder to build an {@link GrpcExecutionStrategy}.
      */
     public static final class Builder {
 

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
@@ -23,6 +24,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -98,7 +100,9 @@ class ResponseCancelTest {
                                 });
                     }
                 })
-                .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
+                .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
+                        original -> new CountingConnectionFactory(original, connectionCount),
+                        HttpExecutionStrategies.anyStrategy()))
                 .build();
     }
 

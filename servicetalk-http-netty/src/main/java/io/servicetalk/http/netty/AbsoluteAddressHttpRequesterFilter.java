@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -38,8 +38,7 @@ import static java.util.Objects.requireNonNull;
  * for.
  */
 final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                          StreamingHttpConnectionFilterFactory,
-                                                          HttpExecutionStrategyInfluencer {
+                                                          StreamingHttpConnectionFilterFactory {
     private final String scheme;
     private final String authority;
 
@@ -79,9 +78,9 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

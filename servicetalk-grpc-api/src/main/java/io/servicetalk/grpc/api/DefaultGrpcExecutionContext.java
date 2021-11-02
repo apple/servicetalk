@@ -18,13 +18,12 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcExecutionContext implements GrpcExecutionContext {
-    private final ExecutionContext delegate;
+    private final HttpExecutionContext delegate;
     private final GrpcExecutionStrategy strategy;
 
     DefaultGrpcExecutionContext(HttpExecutionContext httpExecutionContext) {

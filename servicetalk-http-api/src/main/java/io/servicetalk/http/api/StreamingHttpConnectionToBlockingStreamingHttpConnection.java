@@ -30,14 +30,14 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToBlockingStreamingHttpConnection(final StreamingHttpConnection connection,
-                                                             final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
+                                                             final HttpExecutionStrategy strategy) {
+        this.strategy = DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY.merge(strategy);
         this.connection = connection;
         final HttpConnectionContext originalCtx = connection.connectionContext();
         executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return StreamingHttpConnectionToBlockingStreamingHttpConnection.this.strategy;
             }
         };
         context = new DelegatingHttpConnectionContext(originalCtx) {

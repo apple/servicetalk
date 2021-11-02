@@ -42,6 +42,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -309,7 +310,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
+                    }, pathStrategy(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -513,7 +514,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
+                    }, pathStrategy(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -583,7 +584,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, newInfluencer(methodDescriptor.httpPath(), executionStrategy, executionContext)),
+                    }, pathStrategy(methodDescriptor.httpPath(), executionStrategy, executionContext)),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -659,19 +660,14 @@ final class GrpcRouter {
                     });
         }
 
-        private static HttpExecutionStrategyInfluencer newInfluencer(String path,
-                @Nullable GrpcExecutionStrategy routeStrategy, GrpcExecutionContext ctx) {
-            return strategy -> {
-                GrpcExecutionStrategy baseStrategy = routeStrategy == null || defaultStrategy() == routeStrategy ?
-                        ctx.executionStrategy() :
-                        routeStrategy;
+        private static HttpExecutionStrategy pathStrategy(String path,
+                                                          @Nullable GrpcExecutionStrategy routeStrategy, GrpcExecutionContext ctx) {
+                GrpcExecutionStrategy useStrategy = routeStrategy == null ?  ctx.executionStrategy() : routeStrategy;
 
-                HttpExecutionStrategy useStrategy = baseStrategy.merge(strategy);
-                LOGGER.debug("route strategy for path={} : ctx={} route={} api={} use={}",
-                        path, ctx.executionStrategy(), routeStrategy, strategy, useStrategy);
+                LOGGER.debug("route strategy for path={} : ctx={} route={} use={}",
+                        path, ctx.executionStrategy(), routeStrategy, useStrategy);
 
                 return useStrategy;
-            };
         }
 
         /**

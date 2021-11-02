@@ -44,6 +44,8 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -74,6 +76,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
+@Execution(ExecutionMode.CONCURRENT)
 class PredicateRouterOffloadingTest {
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
     private static final String EXECUTOR_NAME_PREFIX = "router-executor";

@@ -68,7 +68,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         return routes.bind(binder, GrpcExecutionContext.from(executionContext));
     }
 

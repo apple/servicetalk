@@ -22,8 +22,8 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -61,8 +61,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  */
 public final class RedirectingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                             StreamingHttpConnectionFilterFactory,
-                                                             HttpExecutionStrategyInfluencer {
+                                                             StreamingHttpConnectionFilterFactory {
 
     private static final RedirectConfig DEFAULT_CONFIG = new RedirectConfigBuilder().build();
 
@@ -143,8 +142,8 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return strategy;
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

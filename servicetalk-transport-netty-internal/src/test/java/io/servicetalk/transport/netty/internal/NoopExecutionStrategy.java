@@ -24,4 +24,9 @@ final class NoopExecutionStrategy implements ExecutionStrategy {
     private NoopExecutionStrategy() {
         // Singleton
     }
+
+    @Override
+    public boolean hasOffloads() {
+        return false;
+    }
 }

@@ -28,8 +28,8 @@ final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
     private final HttpService original;
 
-    ServiceToStreamingService(final HttpService original, HttpExecutionStrategyInfluencer influencer) {
-        super(influencedStrategy(influencer, DEFAULT_STRATEGY));
+    ServiceToStreamingService(final HttpService original, HttpExecutionStrategy strategy) {
+        super(DEFAULT_STRATEGY.merge(strategy));
         this.original = requireNonNull(original);
     }
 

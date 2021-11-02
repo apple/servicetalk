@@ -77,7 +77,7 @@ final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
+    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext<?> executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         return connect(executionContext, address).toFuture().get();
     }
@@ -89,7 +89,8 @@ final class TcpClient {
      * @param address to connect.
      * @return New {@link NettyConnection}.
      */
-    public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
+    public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext<?> executionContext,
+                                                           SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 (channel, connectionObserver) -> initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
@@ -109,7 +110,7 @@ final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext,
+    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext<?> executionContext,
                                                                  SocketAddress address)
             throws Exception {
         assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());

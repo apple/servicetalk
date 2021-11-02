@@ -17,12 +17,16 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.oio.api.PayloadWriter;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
+
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
 
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 @FunctionalInterface
-public interface BlockingStreamingHttpService extends GracefulAutoCloseable {
+public interface BlockingStreamingHttpService extends
+            ExecutionStrategyInfluencer<HttpExecutionStrategy>, GracefulAutoCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -34,6 +38,11 @@ public interface BlockingStreamingHttpService extends GracefulAutoCloseable {
      */
     void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
                 BlockingStreamingHttpServerResponse response) throws Exception;
+
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        return OFFLOAD_NONE_STRATEGY;
+    }
 
     @Override
     default void close() throws Exception {

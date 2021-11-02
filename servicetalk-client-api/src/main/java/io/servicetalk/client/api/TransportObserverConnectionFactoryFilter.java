@@ -17,6 +17,7 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.util.function.Function;
@@ -75,5 +76,10 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
                        newObserver == null ? originalObserver : combine(originalObserver, newObserver));
             }
         };
+    }
+
+    @Override
+    public ExecutionStrategy requiredOffloads() {
+        return ExecutionStrategy.anyStrategy();
     }
 }

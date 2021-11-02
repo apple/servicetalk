@@ -87,7 +87,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX =
+    final ExecutionContextExtension serverCtx =
             ExecutionContextExtension.cached("stserverio", "serverctx");
 
     protected RouterApi api;
@@ -109,8 +109,8 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 String.class).toLowerCase().contains("servicetalk");
 
         HttpServerBuilder httpServerBuilder = serverBuilder
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .bufferAllocator(SERVER_CTX.bufferAllocator());
+                .ioExecutor(serverCtx.ioExecutor())
+                .bufferAllocator(serverCtx.bufferAllocator());
 
         switch (api) {
             case ASYNC_AGGREGATED:
@@ -155,7 +155,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     void configureBuilders(final HttpServerBuilder serverBuilder,
                            final HttpJerseyRouterBuilder jerseyRouterBuilder) {
-        serverBuilder.executor(SERVER_CTX.executor()).executionStrategy(defaultStrategy());
+        serverBuilder.executor(serverCtx.executor()).executionStrategy(defaultStrategy());
     }
 
     @AfterEach

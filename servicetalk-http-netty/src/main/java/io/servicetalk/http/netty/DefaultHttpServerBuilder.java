@@ -22,8 +22,8 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -41,6 +41,8 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
@@ -62,9 +64,9 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -75,6 +77,8 @@ import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpServerBuilder implements HttpServerBuilder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpServerBuilder.class);
 
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
@@ -98,37 +102,26 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     private static StreamingHttpService buildService(Stream<StreamingHttpServiceFilterFactory> filters,
-                                             StreamingHttpService service) {
+                                                     StreamingHttpService service) {
         return filters
                 .reduce((prev, filter) -> svc -> prev.create(filter.create(svc)))
                 .map(factory -> (StreamingHttpService) factory.create(service))
                 .orElse(service);
     }
 
-    private static HttpExecutionStrategyInfluencer buildInfluencer(List<StreamingHttpServiceFilterFactory> filters,
-                                                           HttpExecutionStrategyInfluencer defaultInfluence) {
+    private static HttpExecutionStrategy computeRequiredStrategy(List<StreamingHttpServiceFilterFactory> filters,
+                                                                 HttpExecutionStrategy defaultStrategy) {
         return filters.stream()
-                .map(filter -> filter instanceof HttpExecutionStrategyInfluencer ?
-                        (HttpExecutionStrategyInfluencer) filter :
-                        defaultStreamingInfluencer())
-                .distinct()
-                .reduce(defaultInfluence,
-                        (prev, influencer) -> strategy -> influencer.influenceStrategy(prev.influenceStrategy(strategy))
-                );
-    }
-
-    private static HttpExecutionStrategy influenceStrategy(Object anything, HttpExecutionStrategy strategy) {
-        return anything instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) anything).influenceStrategy(strategy) :
-                strategy;
+                .map(ExecutionStrategyInfluencer::requiredOffloads)
+                .map(HttpExecutionStrategy::from)
+                .reduce(defaultStrategy, HttpExecutionStrategy::merge);
     }
 
     private static <T> T checkNonOffloading(String desc, HttpExecutionStrategy assumeStrategy, T obj) {
-        requireNonNull(obj);
-        HttpExecutionStrategy requires = obj instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) obj).influenceStrategy(noOffloadsStrategy()) :
+        HttpExecutionStrategy requires = obj instanceof ExecutionStrategyInfluencer ?
+                HttpExecutionStrategy.from(((ExecutionStrategyInfluencer<?>) obj).requiredOffloads()) :
                 assumeStrategy;
-        if (requires.isMetadataReceiveOffloaded() || requires.isDataReceiveOffloaded() || requires.isSendOffloaded()) {
+        if (requires.hasOffloads()) {
             throw new IllegalArgumentException(desc + " required offloading : " + requires);
         }
         return obj;
@@ -260,7 +253,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<ServerContext> listen(final HttpService service) {
-        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+        return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
@@ -270,12 +263,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+        return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
     public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service, strategyInfluencer(service)));
+        return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     private HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
@@ -327,7 +320,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      */
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
-                connectionAcceptorFactory.create(ACCEPT_ALL);
+           connectionAcceptorFactory.create(ACCEPT_ALL);
 
         final StreamingHttpService filteredService;
         HttpExecutionContext serviceContext;
@@ -353,15 +346,24 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
+        LOGGER.info("Service {} and filters using strategy {}", rawService, strategy);
+
         return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody);
     }
 
-    private HttpExecutionStrategyInfluencer strategyInfluencer(Object service) {
-        HttpExecutionStrategyInfluencer influencer =
-                buildInfluencer(serviceFilters, strategy -> influenceStrategy(service, strategy));
-        HttpExecutionStrategy useStrategy = influencer.influenceStrategy(strategy);
+    private HttpExecutionStrategy computeServiceStrategy(Object service) {
+        HttpExecutionStrategy serviceStrategy = requiredOffloads(service, anyStrategy());
+        HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
+        return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
+    }
 
-        return s -> s.merge(useStrategy);
+    private static HttpExecutionStrategy requiredOffloads(Object anything, HttpExecutionStrategy defaultOffloads) {
+        if (anything instanceof ExecutionStrategyInfluencer) {
+            ExecutionStrategy requiredOffloads = ((ExecutionStrategyInfluencer<?>) anything).requiredOffloads();
+            return HttpExecutionStrategy.from(requiredOffloads);
+        } else {
+            return defaultOffloads;
+        }
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
@@ -380,7 +382,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * Internal filter that makes sure we handle all exceptions from user-defined service and filters.
      */
     private static final class ExceptionMapperServiceFilter
-            implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+            implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new ExceptionMapperServiceFilter();
 
@@ -432,8 +434,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;    // no influence since we do not block
+        public HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.anyStrategy();    // no influence since we do not block
         }
     }
 
@@ -441,8 +443,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * Internal filter that correctly sets {@link HttpHeaderNames#CONNECTION} header value based on the requested
      * keep-alive policy.
      */
-    private static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                                 HttpExecutionStrategyInfluencer {
+    private static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new KeepAliveServiceFilter();
 
@@ -469,8 +470,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;    // no influence since we do not block
+        public HttpExecutionStrategy requiredOffloads() {
+            // no influence since we do not block
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }

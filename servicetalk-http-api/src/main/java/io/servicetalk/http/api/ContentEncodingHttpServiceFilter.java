@@ -52,8 +52,7 @@ import static java.util.Objects.requireNonNull;
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
  * other filters that expect to see/manipulate the original payload.
  */
-public final class ContentEncodingHttpServiceFilter
-        implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+public final class ContentEncodingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final BufferDecoderGroup decompressors;
     private final List<BufferEncoder> compressors;
 
@@ -129,9 +128,9 @@ public final class ContentEncodingHttpServiceFilter
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence - no blocking
-        return strategy;
+    public HttpExecutionStrategy requiredOffloads() {
+        // No influence since we do not block.
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private static boolean isPassThrough(final HttpRequestMethod method, final StreamingHttpResponse response) {

@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -40,14 +39,14 @@ import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 final class FilterableConnectionToConnection implements StreamingHttpConnection {
     private final FilterableStreamingHttpConnection filteredConnection;
     private final HttpExecutionStrategy streamingStrategy;
-    private final HttpExecutionStrategyInfluencer strategyInfluencer;
+    private final HttpExecutionStrategy chainStrategy;
 
     FilterableConnectionToConnection(final FilterableStreamingHttpConnection filteredConnection,
                                      final HttpExecutionStrategy streamingStrategy,
-                                     final HttpExecutionStrategyInfluencer strategyInfluencer) {
+                                     final HttpExecutionStrategy chainStrategy) {
         this.filteredConnection = filteredConnection;
         this.streamingStrategy = streamingStrategy;
-        this.strategyInfluencer = strategyInfluencer;
+        this.chainStrategy = chainStrategy;
     }
 
     @Override
@@ -57,17 +56,17 @@ final class FilterableConnectionToConnection implements StreamingHttpConnection 
 
     @Override
     public HttpConnection asConnection() {
-        return toConnection(this, strategyInfluencer);
+        return toConnection(this, chainStrategy);
     }
 
     @Override
     public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return toBlockingStreamingConnection(this, strategyInfluencer);
+        return toBlockingStreamingConnection(this, chainStrategy);
     }
 
     @Override
     public BlockingHttpConnection asBlockingConnection() {
-        return toBlockingConnection(this, strategyInfluencer);
+        return toBlockingConnection(this, chainStrategy);
     }
 
     @Override

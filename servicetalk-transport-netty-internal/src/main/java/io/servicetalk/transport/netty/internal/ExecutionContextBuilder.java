@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -31,22 +32,40 @@ import static java.util.Objects.requireNonNull;
  * A builder of {@link ExecutionContext}. If any of the components of {@link ExecutionContext} is not provided, then
  * the corresponding component from {@link GlobalExecutionContext} will be chosen. If none of the components are
  * provided then {@link GlobalExecutionContext#globalExecutionContext()} will be returned.
+ *
+ * @param <ES> The type of execution strategy for the resulting context
  */
-public final class ExecutionContextBuilder {
+public class ExecutionContextBuilder<ES extends ExecutionStrategy> {
+
+    protected final Supplier<ExecutionContext<ES>> defaultContextSupplier;
 
     @Nullable
-    private IoExecutor ioExecutor;
+    protected IoExecutor ioExecutor;
     @Nullable
-    private Executor executor;
+    protected Executor executor;
     @Nullable
-    private BufferAllocator allocator;
+    protected BufferAllocator allocator;
     @Nullable
-    private ExecutionStrategy strategy;
+    protected ES strategy;
 
     /**
      * New instance.
      */
     public ExecutionContextBuilder() {
+        // Do not refer to globalExecutionContext() unless someone builds an ExecutionContext with defaults.
+        // This is to make sure we do not eagerly initialize the resources used by the globalExecutionContext()
+        // XXX This raw cast is due to global execution strategy being incompatible with <ES>
+        this.defaultContextSupplier = () -> (ExecutionContext) globalExecutionContext();
+    }
+
+    /**
+     * New instance.
+     *
+     * @param defaultContext context to be used for uninitialized members or to be returned from build if all
+     * members are uninitialized.
+     */
+    public ExecutionContextBuilder(ExecutionContext<ES> defaultContext) {
+        this.defaultContextSupplier = () -> requireNonNull(defaultContext);
     }
 
     /**
@@ -54,7 +73,8 @@ public final class ExecutionContextBuilder {
      *
      * @param other existing {@link ExecutionContextBuilder} to copy the config from.
      */
-    public ExecutionContextBuilder(ExecutionContextBuilder other) {
+    public ExecutionContextBuilder(ExecutionContextBuilder<ES> other) {
+        defaultContextSupplier = other.defaultContextSupplier;
         ioExecutor = other.ioExecutor;
         executor = other.executor;
         allocator = other.allocator;
@@ -67,7 +87,7 @@ public final class ExecutionContextBuilder {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    public ExecutionContextBuilder ioExecutor(IoExecutor ioExecutor) {
+    public ExecutionContextBuilder<ES> ioExecutor(IoExecutor ioExecutor) {
         this.ioExecutor = requireNonNull(ioExecutor);
         return this;
     }
@@ -78,7 +98,7 @@ public final class ExecutionContextBuilder {
      * @param executor {@link Executor} to use.
      * @return {@code this}.
      */
-    public ExecutionContextBuilder executor(Executor executor) {
+    public ExecutionContextBuilder<ES> executor(Executor executor) {
         this.executor = requireNonNull(executor);
         return this;
     }
@@ -89,7 +109,7 @@ public final class ExecutionContextBuilder {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    public ExecutionContextBuilder bufferAllocator(BufferAllocator allocator) {
+    public ExecutionContextBuilder<ES> bufferAllocator(BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
         return this;
     }
@@ -100,26 +120,26 @@ public final class ExecutionContextBuilder {
      * @param strategy {@link ExecutionStrategy} to use.
      * @return {@code this}.
      */
-    public ExecutionContextBuilder executionStrategy(ExecutionStrategy strategy) {
+    public ExecutionContextBuilder<ES> executionStrategy(ES strategy) {
         this.strategy = requireNonNull(strategy);
         return this;
     }
 
     /**
-     * Builds a new {@link ExecutionContext} or return {@link GlobalExecutionContext#globalExecutionContext()} if none
-     * of the components are set in this builder.
+     * Builds a new {@link ExecutionContext} or return the default context if none of the components are set in this
+     * builder.
      *
      * @return {@link ExecutionContext}.
      */
-    public ExecutionContext build() {
-        // Do not refer to globalExecutionContext() unless someone builds an ExecutionContext with defaults.
-        // This is to make sure we do not eagerly initialize the resources used by the globalExecutionContext()
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public ExecutionContext<ES> build() {
         if (ioExecutor == null && executor == null && allocator == null && strategy == null) {
-            return globalExecutionContext();
+            return defaultContextSupplier.get();
         }
-        return new DefaultExecutionContext(allocator == null ? globalExecutionContext().bufferAllocator() : allocator,
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
-                executor == null ? globalExecutionContext().executor() : executor,
-                strategy == null ? globalExecutionContext().executionStrategy() : strategy);
+        return new DefaultExecutionContext(
+                allocator == null ? defaultContextSupplier.get().bufferAllocator() : allocator,
+                ioExecutor == null ? defaultContextSupplier.get().ioExecutor() : ioExecutor,
+                executor == null ? defaultContextSupplier.get().executor() : executor,
+                strategy == null ? defaultContextSupplier.get().executionStrategy() : strategy);
     }
 }

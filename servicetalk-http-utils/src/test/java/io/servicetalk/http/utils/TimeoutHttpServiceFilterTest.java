@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -50,11 +51,14 @@ public class TimeoutHttpServiceFilterTest extends AbstractTimeoutHttpFilterTest 
 
     private static Single<StreamingHttpResponse> applyFilter(TimeoutHttpServiceFilter filterFactory,
                                                              Single<StreamingHttpResponse> responseSingle) {
+        HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
+        HttpServiceContext serviceContext = mock(HttpServiceContext.class);
+        when(serviceContext.executionContext()).thenReturn(executionContext);
         StreamingHttpService service = mock(StreamingHttpService.class);
         when(service.handle(any(), any(), any())).thenReturn(responseSingle);
 
         StreamingHttpServiceFilter filter = filterFactory.create(service);
-        return filter.handle(mock(HttpServiceContext.class), mock(StreamingHttpRequest.class),
+        return filter.handle(serviceContext, mock(StreamingHttpRequest.class),
                 mock(StreamingHttpResponseFactory.class));
     }
 }
