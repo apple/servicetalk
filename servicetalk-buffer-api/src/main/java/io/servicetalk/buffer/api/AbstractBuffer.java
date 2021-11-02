@@ -33,6 +33,7 @@ package io.servicetalk.buffer.api;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER_HASH_CODE;
 import static java.lang.Double.longBitsToDouble;
 import static java.lang.Float.intBitsToFloat;
 import static java.lang.Short.reverseBytes;
@@ -590,7 +591,7 @@ abstract class AbstractBuffer implements Buffer {
         final int longCount = aLen >>> 3;
         final int byteCount = aLen & 3;
 
-        int hashCode = 1;
+        int hashCode = EMPTY_BUFFER_HASH_CODE;
         int arrayIndex = readerIndex;
         // TODO(scott): take into account endianness? we currently don't have order() on Buffer.
         for (int i = longCount; i > 0; --i) {
