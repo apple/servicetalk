@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -74,8 +75,6 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
     private static final ContextMap.Key<List<String>> SERVER_REQUEST_KEY =
             newKey("SERVER_REQUEST_KEY", generify(List.class));
     private static final ContextMap.Key<String> SERVER_RESPONSE_KEY = newKey("SERVER_RESPONSE_KEY", String.class);
-    private static final String REQUEST_CONTEXT_VALUE = "REQUEST_CONTEXT_VALUE";
-    private static final String RESPONSE_CONTEXT_VALUE = "RESPONSE_CONTEXT_VALUE";
     private static final String CONTEXT_HEADER = "context-header";
 
     private enum Api {
@@ -99,7 +98,6 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                 try {
                     assertThat(requestCtxValue, is(notNullValue()));
                     assertThat(requestCtxValue, hasSize(1));
-                    assertThat(requestCtxValue, contains(REQUEST_CONTEXT_VALUE));
                     request.addHeader(CONTEXT_HEADER, requestCtxValue.get(0));
                 } catch (Throwable t) {
                     asyncError.add(t);
@@ -118,7 +116,6 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                 CharSequence requestCtxValue = request.headers().get(CONTEXT_HEADER);
                 try {
                     assertThat(requestCtxValue, is(notNullValue()));
-                    assertThat(requestCtxValue, is(contentEqualTo(REQUEST_CONTEXT_VALUE)));
                     request.context().put(SERVER_REQUEST_KEY, singletonList(requestCtxValue.toString()));
                 } catch (Throwable t) {
                     asyncError.add(t);
@@ -178,7 +175,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
         try {
             List<String> requestCtxValue = request.context().get(SERVER_REQUEST_KEY);
             assertThat(requestCtxValue, is(notNullValue()));
-            response.context().put(SERVER_RESPONSE_KEY, requestCtxValue.get(0) + '-' + RESPONSE_CONTEXT_VALUE);
+            response.context().put(SERVER_RESPONSE_KEY, requestCtxValue.get(0));
         } catch (Throwable t) {
             asyncError.add(t);
         }
@@ -187,58 +184,69 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
     @Test
     void testAsyncAggregated() throws Exception {
         setUp(Api.AsyncAggregated);
+        String requestContextValue = randomString(10);
         HttpClient client = streamingHttpClient().asClient();
         HttpRequest request = client.get(SVC_ECHO);
-        request.context().put(CLIENT_REQUEST_KEY, singletonList(REQUEST_CONTEXT_VALUE));
+        request.context().put(CLIENT_REQUEST_KEY, singletonList(requestContextValue));
         HttpResponse response = client.request(request).toFuture().get();
         assertResponse(response.toStreamingResponse(), HTTP_1_1, OK, 0);
-        assertContext(request, response);
+        assertContext(requestContextValue, request, response);
     }
 
     @Test
     void testAsyncStreaming() throws Exception {
         setUp(Api.AsyncStreaming);
+        String requestContextValue = randomString(10);
         StreamingHttpClient client = streamingHttpClient();
         StreamingHttpRequest request = client.get(SVC_ECHO);
-        request.context().put(CLIENT_REQUEST_KEY, singletonList(REQUEST_CONTEXT_VALUE));
+        request.context().put(CLIENT_REQUEST_KEY, singletonList(requestContextValue));
         StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, 0);
-        assertContext(request, response);
+        assertContext(requestContextValue, request, response);
     }
 
     @Test
     void testBlockingAggregated() throws Exception {
         setUp(Api.BlockingAggregated);
+        String requestContextValue = randomString(10);
         BlockingHttpClient client = streamingHttpClient().asBlockingClient();
         HttpRequest request = client.get(SVC_ECHO);
-        request.context().put(CLIENT_REQUEST_KEY, singletonList(REQUEST_CONTEXT_VALUE));
+        request.context().put(CLIENT_REQUEST_KEY, singletonList(requestContextValue));
         HttpResponse response = client.request(request);
         assertResponse(response.toStreamingResponse(), HTTP_1_1, OK, 0);
-        assertContext(request, response);
+        assertContext(requestContextValue, request, response);
     }
 
     @Test
     void testBlockingStreaming() throws Exception {
         setUp(Api.BlockingStreaming);
+        String requestContextValue = randomString(10);
         BlockingStreamingHttpClient client = streamingHttpClient().asBlockingStreamingClient();
         BlockingStreamingHttpRequest request = client.get(SVC_ECHO);
-        request.context().put(CLIENT_REQUEST_KEY, singletonList(REQUEST_CONTEXT_VALUE));
+        request.context().put(CLIENT_REQUEST_KEY, singletonList(requestContextValue));
         BlockingStreamingHttpResponse response = client.request(request);
         assertResponse(response.toStreamingResponse(), HTTP_1_1, OK, 0);
-        assertContext(request, response);
+        assertContext(requestContextValue, request, response);
     }
 
-    void assertContext(HttpRequestMetaData request, HttpResponseMetaData response) {
+    void assertContext(String expectedValue, HttpRequestMetaData request, HttpResponseMetaData response) {
         assertNoAsyncErrors("Unexpected context propagation", asyncError);
         assertThat("Unexpected request context after exchange: " + request.context(),
-                request.context().get(CLIENT_REQUEST_KEY), contains(contentEqualTo(REQUEST_CONTEXT_VALUE)));
+                request.context().get(CLIENT_REQUEST_KEY), contains(contentEqualTo(expectedValue)));
         assertThat("Unexpected response context after exchange: " + response.context(),
-                response.context().get(CLIENT_RESPONSE_KEY),
-                is(contentEqualTo(REQUEST_CONTEXT_VALUE + '-' + RESPONSE_CONTEXT_VALUE)));
+                response.context().get(CLIENT_RESPONSE_KEY), is(contentEqualTo(expectedValue)));
     }
 
     @SuppressWarnings("unchecked")
     private static <T> Class<T> generify(Class<?> clazz) {
         return (Class<T>) clazz;
+    }
+
+    private static String randomString(final int length) {
+        final StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append((char) ThreadLocalRandom.current().nextInt('a', 'z' + 1));
+        }
+        return sb.toString();
     }
 }
