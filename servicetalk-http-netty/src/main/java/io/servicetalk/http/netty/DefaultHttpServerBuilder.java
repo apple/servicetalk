@@ -345,9 +345,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        LOGGER.info("Service {} and filters using strategy {}", rawService, strategy);
-
-        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody);
+        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody)
+                .afterOnSuccess(serverContext -> {
+                    LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
+                });
     }
 
     private HttpExecutionStrategy computeServiceStrategy(Object service) {

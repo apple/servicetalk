@@ -32,7 +32,7 @@ import static java.time.Duration.ofSeconds;
  *
  * @see <a href="https://grpc.io/blog/deadlines/">gRPC and Deadlines</a>
  */
-public class DeadlineServer {
+public final class DeadlineServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 // Set default timeout for completion of RPC calls made to this server

@@ -69,7 +69,7 @@ final class InOrderRouter implements StreamingHttpService {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
                 HttpExecutionContext useContext = ctx.executionContext();
-                if (null != strategy && strategy.hasOffloads()) {
+                if (null != strategy && useContext.executionStrategy().missing(strategy).hasOffloads()) {
                     // Additional offloading needed
                     service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(strategy,
                             useContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread, service);

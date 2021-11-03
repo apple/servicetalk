@@ -36,6 +36,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.AbstractResourceTest.assumeSafeToDisableOffloading;
 import static java.util.Collections.singleton;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
 class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
@@ -145,5 +146,14 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
             sendAndAssertResponse(get("/single-string"), OK, TEXT_PLAIN,
                     stringContainsInOrder(singleton("stserverio")), String::length);
         });
+    }
+
+    @ParameterizedTest
+    @EnumSource(RouterApi.class)
+    void noOffloadsOverrideIsSupported(RouterApi api) throws Exception {
+        setUp(api);
+        runTwiceToEnsureEndpointCache(
+                () -> sendAndAssertResponse(get("/cs-string"), OK, TEXT_PLAIN,
+                        not(stringContainsInOrder(singleton("stserverio"))), String::length));
     }
 }

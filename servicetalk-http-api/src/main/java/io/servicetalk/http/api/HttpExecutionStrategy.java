@@ -63,7 +63,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
     HttpExecutionStrategy merge(HttpExecutionStrategy other);
 
     /**
-     * Return An execution strategy which contains only the additional offloads present in other that were not present
+     * Returns an execution strategy which contains only the additional offloads present in other that were not present
      * in this execution strategy.
      *
      * @param other An execution strategy

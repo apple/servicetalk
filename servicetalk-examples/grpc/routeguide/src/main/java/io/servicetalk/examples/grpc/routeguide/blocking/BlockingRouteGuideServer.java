@@ -55,7 +55,7 @@ import static io.servicetalk.examples.grpc.routeguide.FeaturesFinder.randomFeatu
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-public class BlockingRouteGuideServer {
+public final class BlockingRouteGuideServer {
     public static void main(String[] args) throws Exception {
         FeaturesFinder featuresFinder = args.length > 0 ?
                 fromJson(RouteGuideServer.class.getResource(args[0])) :

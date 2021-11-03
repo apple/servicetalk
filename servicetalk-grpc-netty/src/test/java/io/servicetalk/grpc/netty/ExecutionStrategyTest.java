@@ -89,7 +89,6 @@ class ExecutionStrategyTest {
         public GrpcExecutionStrategy get(final String id) {
             switch (id) {
                 case "route":
-                case "filter":
                     return defaultStrategy();
                 default:
                     throw new IllegalArgumentException("Unknown id: " + id);
@@ -298,6 +297,7 @@ class ExecutionStrategyTest {
     private boolean isDeadlockConfig() {
         if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS) {
             switch (routeStrategy) {
+                case BLOCKING_DEFAULT:
                 case BLOCKING_CLASS_NO_OFFLOADS:
                 case BLOCKING_METHOD_NO_OFFLOADS:
                 case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
@@ -414,26 +414,23 @@ class ExecutionStrategyTest {
                 break;
             case NO_OFFLOADS:
                 switch (routeStrategy) {
-                    case ASYNC_DEFAULT:
                     case ASYNC_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
+                            case TEST_RESPONSE_STREAM:
                                 expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
                                         NULL, NULL, globalThreadName(), globalThreadName());
                                 break;
-                            case TEST_RESPONSE_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), ioThreadName(),
-                                        NULL, NULL, ioThreadName(), ioThreadName());
-                                break;
                             case TEST_BI_DI_STREAM:
                             case TEST_REQUEST_STREAM:
-                                expected = new ThreadInfo(globalExecutorName(), ioThreadName(),
-                                        ioThreadName(), ioThreadName(), ioThreadName(), ioThreadName());
+                                expected = new ThreadInfo(globalExecutorName(), globalThreadName(),
+                                        globalThreadName(), globalThreadName(), globalThreadName(), globalThreadName());
                                 break;
                             default:
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
+                    case ASYNC_DEFAULT:
                     case ASYNC_CLASS_NO_OFFLOADS:
                     case ASYNC_METHOD_NO_OFFLOADS:
                     case ASYNC_SERVICE_FACTORY_NO_OFFLOADS:
@@ -452,7 +449,6 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
-                    case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
@@ -466,6 +462,7 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
+                    case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_NO_OFFLOADS:
                     case BLOCKING_METHOD_NO_OFFLOADS:
                     case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
