@@ -34,17 +34,4 @@ abstract class AbstractServiceAdapterHolder implements StreamingHttpService, Ser
     public HttpExecutionStrategy serviceInvocationStrategy() {
         return serviceInvocationStrategy;
     }
-
-    /**
-     * If the influencer returns default then apply our own default otherwise use the strategy provided by influencer.
-     *
-     * @param influencer the strategy influencer
-     * @param defaultStrategy our default strategy
-     * @return the strategy to use.
-     */
-    static HttpExecutionStrategy influencedStrategy(HttpExecutionStrategyInfluencer influencer,
-                                                    HttpExecutionStrategy defaultStrategy) {
-        HttpExecutionStrategy influenced = influencer.influenceStrategy(HttpExecutionStrategies.defaultStrategy());
-        return HttpExecutionStrategies.defaultStrategy() == influenced ? defaultStrategy : influenced;
-    }
 }

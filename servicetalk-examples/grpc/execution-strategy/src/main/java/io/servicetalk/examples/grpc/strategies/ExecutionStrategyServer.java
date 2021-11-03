@@ -139,7 +139,8 @@ public class ExecutionStrategyServer {
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder()
                             .sayHello(noOffloadsStrategy(),
-                                    (ctx, request) -> getReplySingle(request, "no offloading server, no offloading route"))
+                                    (ctx, request) ->
+                                            getReplySingle(request, "no offloading server, no offloading route"))
                             .build());
             closeEverything.prepend(noOffloadsServerRoute);
             System.out.println("noOffloadsServerRoute: " + noOffloadsServerRoute.listenAddress());

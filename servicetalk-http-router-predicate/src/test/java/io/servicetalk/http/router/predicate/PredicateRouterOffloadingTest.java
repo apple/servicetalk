@@ -23,7 +23,6 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -65,7 +64,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_AGGREGATED;
-import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_STREAMING;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.BLOCKING_AGGREGATED;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -153,7 +151,7 @@ class PredicateRouterOffloadingTest {
         serverBuilder.executionStrategy(noOffloadsStrategy()).executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread)
-                        .executionStrategy(HttpExecutionStrategies.customStrategyBuilder().offloadAll().build()),
+                        .executionStrategy(defaultStrategy()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -173,11 +171,7 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        if (routeServiceType != ASYNC_STREAMING) {
-            assertRouteOffloadedAndNotPredicate(GLOBAL_EXECUTOR_NAME_PREFIX);
-        } else {
-            assertRouteAndPredicateNotOffloaded();
-        }
+        assertRouteAndPredicateNotOffloaded();
     }
 
     @ParameterizedTest

@@ -19,7 +19,6 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpCookiePair;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
@@ -175,7 +174,8 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private class RouteContinuationImpl implements RouteContinuation {
 
-        private HttpExecutionStrategy strategy = HttpExecutionStrategies.anyStrategy();
+        @Nullable
+        private HttpExecutionStrategy strategy;
 
         @Override
         public RouteContinuation andMethod(final HttpRequestMethod method) {
@@ -277,19 +277,19 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         private HttpExecutionStrategy serviceOffloads(final Object service) {
-            HttpExecutionStrategy serviceStrategy = service instanceof ExecutionStrategyInfluencer ?
-                    HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
-                    defaultStrategy();
-            return strategy.merge(serviceStrategy);
+            return null != strategy ?
+                    strategy : service instanceof ExecutionStrategyInfluencer ?
+                        HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
+                        defaultStrategy();
         }
 
         private RouteStarter thenRouteTo0(final StreamingHttpService route,
                                           @Nullable final HttpExecutionStrategy routeStrategy) {
             assert predicate != null;
-            routes.add(new Route(predicate, route, routeStrategy));
+            routes.add(new Route(predicate, route, null == strategy ? null : routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
-            strategy = defaultStrategy();
+            strategy = null;
             return HttpPredicateRouterBuilder.this;
         }
     }
