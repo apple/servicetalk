@@ -17,7 +17,11 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import static java.util.Objects.requireNonNull;
@@ -49,5 +53,35 @@ final class DefaultGrpcExecutionContext implements GrpcExecutionContext {
     @Override
     public GrpcExecutionStrategy executionStrategy() {
         return strategy;
+    }
+
+    /**
+     * Converts to {@link GrpcExecutionContext} from the passed {@link ExecutionContext}, casting or wrapping as
+     * needed.
+     *
+     * @param executionContext source {@link ExecutionContext}.
+     *
+     * @return a {@link GrpcExecutionContext} using the passed {@link ExecutionContext}.
+     */
+    static GrpcExecutionContext from(ExecutionContext<?> executionContext) {
+        GrpcExecutionContext result;
+        if (executionContext instanceof GrpcExecutionContext) {
+            result = (GrpcExecutionContext) executionContext;
+        } else if (executionContext instanceof HttpExecutionContext) {
+            result = new DefaultGrpcExecutionContext((HttpExecutionContext) executionContext);
+        } else {
+            HttpExecutionStrategy httpExecutionStrategy =
+                    executionContext.executionStrategy() instanceof HttpExecutionStrategy ?
+                            GrpcExecutionStrategy.from((HttpExecutionStrategy) executionContext.executionStrategy()) :
+                            HttpExecutionStrategies.defaultStrategy();
+            result = new DefaultGrpcExecutionContext(new DefaultHttpExecutionContext(
+                    executionContext.bufferAllocator(),
+                    executionContext.ioExecutor(),
+                    executionContext.executor(),
+                    httpExecutionStrategy
+            ));
+        }
+
+        return result;
     }
 }
