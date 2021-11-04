@@ -23,17 +23,19 @@ import static java.util.Objects.requireNonNull;
 /**
  * An {@link ExecutionContext} implementation that delegates all calls to a provided {@link ExecutionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
+ *
+ * @param <ES> type of the execution strategy used.
  */
-public class DelegatingExecutionContext implements ExecutionContext {
+public class DelegatingExecutionContext<ES extends ExecutionStrategy> implements ExecutionContext<ES> {
 
-    private final ExecutionContext delegate;
+    private final ExecutionContext<? extends ES> delegate;
 
     /**
      * New instance.
      *
      * @param delegate {@link ExecutionContext} to delegate all calls.
      */
-    public DelegatingExecutionContext(final ExecutionContext delegate) {
+    public DelegatingExecutionContext(final ExecutionContext<? extends ES> delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
@@ -42,7 +44,7 @@ public class DelegatingExecutionContext implements ExecutionContext {
      *
      * @return the {@link ExecutionContext} that this class delegates to.
      */
-    protected final ExecutionContext delegate() {
+    protected final ExecutionContext<? extends ES> delegate() {
         return delegate;
     }
 
@@ -62,7 +64,7 @@ public class DelegatingExecutionContext implements ExecutionContext {
     }
 
     @Override
-    public ExecutionStrategy executionStrategy() {
+    public ES executionStrategy() {
         return delegate.executionStrategy();
     }
 }

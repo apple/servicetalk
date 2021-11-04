@@ -39,7 +39,7 @@ public interface ServerContext extends ServerListenContext, ListenableAsyncClose
      *
      * @return {@link ExecutionContext} used by this server.
      */
-    ExecutionContext executionContext();
+    ExecutionContext<?> executionContext();
 
     /**
      * Blocks and awaits shutdown of the server this {@link ServerContext} represents.

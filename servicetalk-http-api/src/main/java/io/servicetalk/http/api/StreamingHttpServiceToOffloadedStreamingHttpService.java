@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static java.util.function.Function.identity;
 
 /**
@@ -53,8 +52,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
                                                 final StreamingHttpResponseFactory responseFactory) {
         // We compute the difference between the ExecutionStrategy from the current ExecutionContext and
         // this ExecutionStrategy to understand if we need to offload more than we already offloaded:
-        final HttpExecutionStrategy diff =
-                difference(ctx.executionContext().executionStrategy(), strategy);
+        final HttpExecutionStrategy additionalOffloads = ctx.executionContext().executionStrategy().missing(strategy);
 
         Executor useExecutor = null != executor ? executor : ctx.executionContext().executor();
 
@@ -62,15 +60,16 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
         final HttpServiceContext wrappedCtx =
                 new ExecutionContextOverridingServiceContext(ctx, strategy, useExecutor);
 
-        if (diff == null) {
+        if (!additionalOffloads.hasOffloads()) {
+            // No additional offloading needed.
             return delegate.handle(wrappedCtx, request, responseFactory);
         } else {
-            if (diff.isDataReceiveOffloaded()) {
+            if (additionalOffloads.isDataReceiveOffloaded()) {
                 request = request.transformMessageBody(p ->
                         p.publishOn(useExecutor, shouldOffload));
             }
             final Single<StreamingHttpResponse> resp;
-            if (diff.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
+            if (additionalOffloads.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
                 final StreamingHttpRequest r = request;
                 resp = useExecutor.submit(
                                 () -> delegate.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
@@ -79,7 +78,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
             } else {
                 resp = delegate.handle(wrappedCtx, request, responseFactory);
             }
-            return diff.isSendOffloaded() ?
+            return additionalOffloads.isSendOffloaded() ?
                     // This is different as compared to invokeService() where we just offload once on
                     // the flattened (meta + data) stream. In this case, we need to preserve the service
                     // contract and hence have to offload both meta and data separately.

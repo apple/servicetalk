@@ -61,7 +61,9 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
+import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
@@ -165,15 +167,13 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
-        return new TimeoutFromRequest() {
-            /**
-             * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
-             *
-             * @param request The HTTP request to be used as source of the GRPC timeout header
-             * @return The non-negative timeout duration which may be null
-             */
-            @Override
-            public @Nullable Duration apply(HttpRequestMetaData request) {
+        return toTimeoutFromRequest((HttpRequestMetaData request) -> {
+                /*
+                * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
+                *
+                * @param request The HTTP request to be used as source of the GRPC timeout header
+                * @return The non-negative timeout duration which may be null
+                */
                 @Nullable
                 Duration requestTimeout = readTimeoutHeader(request);
                 @Nullable
@@ -194,14 +194,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                 }
 
                 return timeout;
-            }
-
-            @Override
-            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                // We don't block so have no influence on strategy.
-                return strategy;
-            }
-        };
+            }, anyStrategy());
     }
 
     @Override

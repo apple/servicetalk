@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -46,7 +46,6 @@ import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
-import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HttpAuthConnectionFactoryClientTest {
@@ -87,21 +86,18 @@ class HttpAuthConnectionFactoryClientTest {
         assertEquals(OK, response.status());
     }
 
-    private static final class TestHttpAuthConnectionFactory<ResolvedAddress>
-            implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+    private static final class TestHttpAuthConnectionFactory<ResolvedAddress,
+            C extends FilterableStreamingHttpConnection>
+            extends DelegatingConnectionFactory<ResolvedAddress, C> {
 
-        private final ConnectionFactory<ResolvedAddress,
-                ? extends FilterableStreamingHttpConnection> delegate;
-
-        TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress,
-            ? extends FilterableStreamingHttpConnection> delegate) {
-            this.delegate = requireNonNull(delegate);
+        TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress, C> delegate) {
+            super(delegate);
         }
 
         @Override
-        public Single<FilterableStreamingHttpConnection> newConnection(
+        public Single<C> newConnection(
                 final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
-            return delegate.newConnection(resolvedAddress, observer).flatMap(cnx ->
+            return super.newConnection(resolvedAddress, observer).flatMap(cnx ->
                     cnx.request(defaultStrategy(),
                             newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
@@ -122,21 +118,6 @@ class HttpAuthConnectionFactoryClientTest {
                                         "failed auth"));
                             })
             );
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
         }
     }
 

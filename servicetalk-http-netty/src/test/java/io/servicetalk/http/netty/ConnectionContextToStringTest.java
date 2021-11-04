@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
@@ -44,7 +45,7 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
     void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(ctx.toString(), textSerializerUtf8()),
-                strategy -> strategy)).adaptor());
+                HttpExecutionStrategies.anyStrategy())).adaptor());
     }
 
     @ParameterizedTest(name = "protocol={0}")

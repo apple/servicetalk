@@ -48,13 +48,12 @@ import static java.util.Collections.emptyList;
  * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
  *
  * <p>
- * Append this filter before others that are expected to to see compressed content for this request/response, and after
+ * Append this filter before others that are expected to see compressed content for this request/response, and after
  * other filters that expect to see/manipulate the original payload.
  * @deprecated Use {@link ContentEncodingHttpServiceFilter}.
  */
 @Deprecated
-public final class ContentCodingHttpServiceFilter
-        implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+public final class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ContentCodingHttpServiceFilter.class);
 
@@ -129,9 +128,9 @@ public final class ContentCodingHttpServiceFilter
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence - no blocking
-        return strategy;
+    public HttpExecutionStrategy requiredOffloads() {
+        // No influence since we do not block.
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,

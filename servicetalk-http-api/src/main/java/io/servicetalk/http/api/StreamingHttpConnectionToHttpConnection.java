@@ -35,14 +35,14 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
-                                            final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY);
+                                            final HttpExecutionStrategy strategy) {
+        this.strategy = DEFAULT_CONNECTION_STRATEGY.merge(strategy);
         this.connection = connection;
         final HttpConnectionContext originalCtx = connection.connectionContext();
         executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return StreamingHttpConnectionToHttpConnection.this.strategy;
             }
         };
         context = new DelegatingHttpConnectionContext(originalCtx) {

@@ -25,14 +25,18 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round robin strategy
@@ -65,7 +69,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
     static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
-    static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
+    static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = false;
     static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
@@ -95,6 +99,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
                 eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+    }
+
+    @Override
+    public ExecutionStrategy requiredOffloads() {
+        // We do not block
+        return ExecutionStrategy.anyStrategy();
     }
 
     /**
@@ -215,8 +225,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     }
 
     static final class SharedExecutor {
-        private static final Executor INSTANCE = Executors.newFixedSizeExecutor(1,
-                new DefaultThreadFactory("round-robin-load-balancer-executor"));
+        private static final Executor INSTANCE = Executors.from(
+                new ThreadPoolExecutor(1, 1, 60, SECONDS,
+                        new LinkedBlockingQueue<>(),
+                        new DefaultThreadFactory("round-robin-load-balancer-executor")));
 
         private SharedExecutor() {
         }

@@ -16,12 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
@@ -153,7 +154,7 @@ class HttpServerFilterOrderTest {
     }
 
     private static class NonOffloadingFilterFactory implements StreamingHttpServiceFilterFactory,
-                                                               HttpExecutionStrategyInfluencer {
+                                                               ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
         private final StreamingHttpService filter;
 
@@ -169,8 +170,9 @@ class HttpServerFilterOrderTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;
+        public HttpExecutionStrategy requiredOffloads() {
+            // No influence since we do not block.
+            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }

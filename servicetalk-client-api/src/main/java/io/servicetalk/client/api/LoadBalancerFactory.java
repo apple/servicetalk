@@ -16,6 +16,8 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.util.Collection;
 
@@ -28,7 +30,8 @@ import static java.util.function.Function.identity;
  * @param <C> The type of connection.
  */
 @FunctionalInterface
-public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection> {
+public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection> extends
+            ExecutionStrategyInfluencer<ExecutionStrategy> {
 
     /**
      * Create a new {@link LoadBalancer}.
@@ -72,5 +75,11 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
             Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return newLoadBalancer(eventPublisher.flatMapConcatIterable(identity()), connectionFactory);
+    }
+
+    @Override
+    default ExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
+        return ExecutionStrategy.offloadAll();
     }
 }

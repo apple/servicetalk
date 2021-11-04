@@ -22,10 +22,10 @@ import io.servicetalk.transport.api.IoExecutor;
 
 public class ExecutionContextToHttpExecutionContext implements HttpExecutionContext {
 
-    private final ExecutionContext delegate;
+    private final ExecutionContext<?> delegate;
     private final HttpExecutionStrategy strategy;
 
-    public ExecutionContextToHttpExecutionContext(final ExecutionContext delegate,
+    public ExecutionContextToHttpExecutionContext(final ExecutionContext<?> delegate,
                                                   final HttpExecutionStrategy strategy) {
         this.delegate = delegate;
         this.strategy = strategy;

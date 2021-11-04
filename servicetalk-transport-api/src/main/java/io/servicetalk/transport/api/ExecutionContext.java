@@ -21,17 +21,19 @@ import io.servicetalk.concurrent.api.Executor;
 
 /**
  * Context related to execution and allocation.
+ *
+ * @param <ES> The type of Execution Strategy used.
  */
-public interface ExecutionContext {
+public interface ExecutionContext<ES extends ExecutionStrategy> {
     /**
      * Return the {@link BufferAllocator} that can be used to allocate {@link Buffer}s if needed.
-     * @return the {@link BufferAllocator} to use
+     * @return the {@link BufferAllocator} to use for allocating {@link Buffer}s.
      */
     BufferAllocator bufferAllocator();
 
     /**
      * Get the {@link IoExecutor} that is used to handle the IO.
-     * @return The {@link IoExecutor} that is used to handle the.
+     * @return The {@link IoExecutor} that is used to handle the IO.
      */
     IoExecutor ioExecutor();
 
@@ -46,5 +48,5 @@ public interface ExecutionContext {
      *
      * @return The {@link ExecutionStrategy} associated with this context.
      */
-    ExecutionStrategy executionStrategy();
+    ES executionStrategy();
 }

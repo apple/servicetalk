@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
+
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,13 +24,14 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A chain of {@link HttpExecutionStrategyInfluencer}.
+ * A chain of {@link ExecutionStrategyInfluencer}.
+ *
+ * @deprecated Merge {@link io.servicetalk.transport.api.ExecutionStrategy} directly instead.
  */
-public final class StrategyInfluencerChainBuilder {
+@Deprecated
+public final class StrategyInfluencerChainBuilder implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
-    private static final HttpExecutionStrategyInfluencer NO_INFLUENCE = other -> other;
-
-    private final Deque<HttpExecutionStrategyInfluencer> influencers;
+    private final Deque<ExecutionStrategyInfluencer<?>> influencers;
 
     /**
      * Creates a new instance.
@@ -40,10 +43,19 @@ public final class StrategyInfluencerChainBuilder {
     /**
      * Creates a new instance.
      *
-     * @param influencers {@link List} of {@link HttpExecutionStrategyInfluencer}s.
+     * @param influencers {@link List} of {@link ExecutionStrategyInfluencer}s.
      */
-    private StrategyInfluencerChainBuilder(Deque<HttpExecutionStrategyInfluencer> influencers) {
+    private StrategyInfluencerChainBuilder(Deque<ExecutionStrategyInfluencer<?>> influencers) {
         this.influencers = new LinkedList<>(influencers);
+    }
+
+    /**
+     * Adds the passed {@link ExecutionStrategyInfluencer} to the head of this chain.
+     *
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to add.
+     */
+    public void prepend(ExecutionStrategyInfluencer<?> influencer) {
+        influencers.addFirst(requireNonNull(influencer));
     }
 
     /**
@@ -52,22 +64,31 @@ public final class StrategyInfluencerChainBuilder {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to add.
      */
     public void prepend(HttpExecutionStrategyInfluencer influencer) {
-        influencers.addFirst(requireNonNull(influencer));
+        prepend((ExecutionStrategyInfluencer<?>) influencer);
     }
 
     /**
      * If the passed {@code mayBeInfluencer} is an {@link HttpExecutionStrategyInfluencer} then add it to the head of
      * this chain.
      *
-     * @param mayBeInfluencer An object which may be an {@link HttpExecutionStrategyInfluencer}.
+     * @param mayBeInfluencer An object which may be an {@link ExecutionStrategyInfluencer}.
      * @return {@code true} if the passed {@code mayBeInfluencer} was added to the chain.
      */
     public boolean prependIfInfluencer(Object mayBeInfluencer) {
-        if (mayBeInfluencer instanceof HttpExecutionStrategyInfluencer) {
-            prepend((HttpExecutionStrategyInfluencer) mayBeInfluencer);
+        if (mayBeInfluencer instanceof ExecutionStrategyInfluencer) {
+            prepend((ExecutionStrategyInfluencer<?>) mayBeInfluencer);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Append another {@link ExecutionStrategyInfluencer} to this chain.
+     *
+     * @param next {@link ExecutionStrategyInfluencer} to append.
+     */
+    public void append(ExecutionStrategyInfluencer<?> next) {
+        influencers.addLast(requireNonNull(next));
     }
 
     /**
@@ -76,18 +97,18 @@ public final class StrategyInfluencerChainBuilder {
      * @param next {@link HttpExecutionStrategyInfluencer} to append.
      */
     public void append(HttpExecutionStrategyInfluencer next) {
-        influencers.addLast(requireNonNull(next));
+        append((ExecutionStrategyInfluencer<?>) next);
     }
 
     /**
-     * If the passed {@code mayBeInfluencer} is an {@link HttpExecutionStrategyInfluencer} then add it to this chain.
+     * If the passed {@code mayBeInfluencer} is an {@link ExecutionStrategyInfluencer} then add it to this chain.
      *
-     * @param mayBeInfluencer An object which may be an {@link HttpExecutionStrategyInfluencer}.
+     * @param mayBeInfluencer A reference which may be an {@link ExecutionStrategyInfluencer}.
      * @return {@code true} if the passed {@code mayBeInfluencer} was added to the chain.
      */
     public boolean appendIfInfluencer(Object mayBeInfluencer) {
-        if (mayBeInfluencer instanceof HttpExecutionStrategyInfluencer) {
-            append((HttpExecutionStrategyInfluencer) mayBeInfluencer);
+        if (mayBeInfluencer instanceof ExecutionStrategyInfluencer) {
+            append((ExecutionStrategyInfluencer<?>) mayBeInfluencer);
             return true;
         }
         return false;
@@ -105,7 +126,7 @@ public final class StrategyInfluencerChainBuilder {
 
     /**
      * Builds this chain and returns the head {@link HttpExecutionStrategyInfluencer} for the chain. Invoking
-     * {@link HttpExecutionStrategyInfluencer#influenceStrategy(HttpExecutionStrategy)} on the returned
+     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()} on the returned
      * {@link HttpExecutionStrategyInfluencer} will invoke the method on the entire chain before returning.
      *
      * @param transportStrategy {@link HttpExecutionStrategy} for the transport, typically specified by the user in the
@@ -114,34 +135,37 @@ public final class StrategyInfluencerChainBuilder {
      */
     public HttpExecutionStrategyInfluencer build(HttpExecutionStrategy transportStrategy) {
         requireNonNull(transportStrategy);
-        HttpExecutionStrategyInfluencer influencer = build0();
-        return strategy -> transportStrategy.merge(influencer.influenceStrategy(strategy));
+        HttpExecutionStrategy influenced = influencers.isEmpty() ?
+                transportStrategy :
+                transportStrategy.merge(requiredOffloads());
+        return HttpExecutionStrategyInfluencer.newInfluencer(influenced);
     }
 
     /**
-     * Builds this chain and returns the head {@link HttpExecutionStrategyInfluencer} for the chain. Invoking
-     * {@link HttpExecutionStrategyInfluencer#influenceStrategy(HttpExecutionStrategy)} on the returned
-     * {@link HttpExecutionStrategyInfluencer} will invoke the method on the entire chain before returning.
+     * Builds this chain and returns a computed {@link HttpExecutionStrategyInfluencer} that reflects the strategy of
+     * the entire chain.
      *
      * @return {@link HttpExecutionStrategyInfluencer} which is the head of the influencer chain.
      */
     public HttpExecutionStrategyInfluencer build() {
-        return build0();
+        HttpExecutionStrategy strategy = influencers.stream()
+                .map(ExecutionStrategyInfluencer::requiredOffloads)
+                .map(HttpExecutionStrategy::from)
+                .reduce(HttpExecutionStrategies.anyStrategy(), HttpExecutionStrategy::merge);
+        return HttpExecutionStrategyInfluencer.newInfluencer(strategy);
     }
 
-    private HttpExecutionStrategyInfluencer build0() {
-        if (influencers.isEmpty()) {
-            return NO_INFLUENCE;
-        }
-        HttpExecutionStrategyInfluencer head = NO_INFLUENCE;
-        for (HttpExecutionStrategyInfluencer influencer : influencers) {
-            if (head == NO_INFLUENCE) {
-                head = influencer;
-            } else {
-                HttpExecutionStrategyInfluencer prev = head;
-                head = strategy -> influencer.influenceStrategy(prev.influenceStrategy(strategy));
-            }
-        }
-        return head;
+    /**
+     * Builds this chain and returns computed {@link HttpExecutionStrategy} for the entire chain.
+     *
+     * @return computed {@link HttpExecutionStrategy} of the influencer chain.
+     */
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return influencers.stream()
+                .map(ExecutionStrategyInfluencer::requiredOffloads)
+                .map(HttpExecutionStrategy::from)
+                .reduce(HttpExecutionStrategy::merge)
+                .orElse(HttpExecutionStrategies.anyStrategy());
     }
 }
