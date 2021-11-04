@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -257,18 +258,19 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
                     () -> {
                         try {
                             offloadExecutor.execute(task);
-                        } catch (Throwable t) {
-                            LOGGER.error("Unexpected exception while offloading scheduled task: {} to executor: {}. " +
-                                            "Will execute the task on {} thread.",
-                                    task, offloadExecutor, Thread.currentThread().getName(), t);
-                            // If the offloadExecutor failed to execute, we fallback to the scheduler thread for
-                            // best-effort attempt at actually executing the task.
+                        } catch (RejectedExecutionException e) {
+                            LOGGER.error("Executor {} rejected a scheduled task: {}. Fallback to executing the task " +
+                                            "on the current scheduler thread: {}",
+                                    offloadExecutor, task, Thread.currentThread().getName(), e);
                             try {
                                 task.run();
                             } catch (Throwable taskFailure) {
-                                LOGGER.error("Scheduled task {} threw exception during fallback to scheduler executor.",
+                                LOGGER.error("Scheduled task {} threw an exception on the scheduler thread.",
                                         task, taskFailure);
                             }
+                        } catch (Throwable t) {
+                            LOGGER.error("Unexpected exception while offloading scheduled task: {} to executor: {}.",
+                                    task, offloadExecutor, t);
                         }
                     }, delay, unit);
             // Schedulers are only used to generate a tick and should not execute any user code (unless the
