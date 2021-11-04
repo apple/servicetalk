@@ -680,7 +680,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
                                     " {} time(s). Threshold reached, triggering health check for this host.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
-                    healthCheck.schedule();
+                    healthCheck.schedule(cause);
                     break;
                 }
             }
@@ -841,9 +841,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         private static final class HealthCheck<ResolvedAddress, C extends LoadBalancedConnection>
                 extends DelayedCancellable {
-            private static final Exception RESCHEDULE_SIGNAL = ThrowableUtils.unknownStackTrace(
-                    new ConnectionRejectedException("Connection rejected during health check."),
-                    HealthCheck.class, "run()");
             private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
             private final Host<ResolvedAddress, C> host;
 
@@ -853,18 +850,42 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 this.host = host;
             }
 
-            public void schedule() {
+            public void schedule(final Throwable originalCause) {
                 assert host.healthCheckConfig != null;
                 delayedCancellable(
+                        // Use retry strategy to utilize jitter.
                         retryWithConstantBackoffFullJitter(cause -> true,
+
                                 host.healthCheckConfig.healthCheckInterval,
                                 host.healthCheckConfig.executor)
-                                .apply(0, RESCHEDULE_SIGNAL)
-                                .concat(reconnect()
+                                .apply(0, originalCause)
+                                .concat(connectionFactory.newConnection(host.address, null)
+                                        // There is no risk for StackOverflowError because result of each connection
+                                        // attempt will be invoked on IoExecutor as a new task.
                                         .retryWhen(retryWithConstantBackoffFullJitter(
-                                                cause -> cause == RESCHEDULE_SIGNAL,
+                                                cause -> {
+                                                    LOGGER.debug("Load balancer for {}: health check failed for {}.",
+                                                            host.targetResource, host, cause);
+                                                    return true;
+                                                },
                                                 host.healthCheckConfig.healthCheckInterval,
                                                 host.healthCheckConfig.executor)))
+                                .flatMapCompletable(newCnx -> {
+                                    if (host.addConnection(newCnx)) {
+                                        host.markHealthy(this);
+                                        LOGGER.debug("Load balancer for {}: health check passed for {}.",
+                                                host.targetResource, host);
+                                        return completed();
+                                    } else {
+                                        // This happens only if the host is closed, no need to mark as healthy.
+                                        LOGGER.debug("Load balancer for {}: health check finished for {}, but the " +
+                                                        "host rejected a new connection {}. Closing it now.",
+                                                host.targetResource, host, newCnx);
+                                        return newCnx.closeAsync();
+                                    }
+                                })
+                                // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside
+                                // subscribe(): SimpleCompletableSubscriber.
                                 .onErrorComplete(t -> {
                                     LOGGER.error("Load balancer for {}: health check terminated with " +
                                             "an unexpected error for {}. Marking this host as ACTIVE as a fallback " +
@@ -873,28 +894,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                     return true;
                                 })
                                 .subscribe());
-            }
-
-            public Completable reconnect() {
-                return connectionFactory.newConnection(host.address, null)
-                        .onErrorMap(cause -> {
-                            LOGGER.debug("Load balancer for {}: health check failed for {}.",
-                                    host.targetResource, host, cause);
-                            return RESCHEDULE_SIGNAL;
-                        })
-                        .flatMapCompletable(newCnx -> {
-                            if (host.addConnection(newCnx)) {
-                                host.markHealthy(this);
-                                LOGGER.debug("Load balancer for {}: health check passed for {}.",
-                                        host.targetResource, host);
-                                return completed();
-                            } else {
-                                LOGGER.debug("Load balancer for {}: health check finished for {}, but the host " +
-                                        "rejected a new connection {}. Closing it now.",
-                                        host.targetResource, host, newCnx);
-                                return newCnx.closeAsync();
-                            }
-                        });
             }
 
             @Override
