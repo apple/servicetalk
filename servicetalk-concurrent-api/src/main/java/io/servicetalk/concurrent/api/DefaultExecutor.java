@@ -17,6 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -225,6 +228,8 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
 
     private static final class SingleThreadedScheduler implements InternalScheduler {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(SingleThreadedScheduler.class);
+
         private final java.util.concurrent.Executor offloadExecutor;
 
         SingleThreadedScheduler(final java.util.concurrent.Executor offloadExecutor) {
@@ -249,11 +254,27 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
             // When using the global scheduler, offload timer ticks to the user specified Executor since user code
             // executed on the timer tick can block.
             ScheduledFuture<?> future = GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.schedule(
-                    () -> offloadExecutor.execute(task), delay, unit);
-            // Schedulers are only used to generate a tick and do not execute any user code. This means they will never
-            // run any blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the
-            // user upon creation in the scheduler. User code (completion of Completable on tick) will be executed on
-            // the configured executor and not the Scheduler thread.
+                    () -> {
+                        try {
+                            offloadExecutor.execute(task);
+                        } catch (Throwable t) {
+                            LOGGER.error("Unexpected exception while offloading scheduled task: {} to executor: {}.",
+                                    task, offloadExecutor, t);
+                            // If the offloadExecutor failed to execute, we fallback to the scheduler thread for
+                            // best-effort attempt at actually executing the task.
+                            try {
+                                task.run();
+                            } catch (Throwable taskFailure) {
+                                LOGGER.error("Scheduled task {} threw exception during fallback to scheduler executor.",
+                                        task, taskFailure);
+                            }
+                        }
+                    }, delay, unit);
+            // Schedulers are only used to generate a tick and should not execute any user code (unless the
+            // offloadExecutor throws). This means they will never run any blocking code and hence it does not matter
+            // whether we use the interruptOnCancel as sent by the user upon creation in the scheduler. User code
+            // (completion of Completable on tick) will be executed on the configured executor and not the Scheduler
+            // thread.
             return () -> future.cancel(true);
         }
     }
