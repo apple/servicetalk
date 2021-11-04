@@ -172,7 +172,7 @@ public final class ProtoBufSerializationProviderBuilder {
             @SuppressWarnings("unchecked")
             HttpSerializer<T> httpSerializer = serializersForType.get(codec);
             if (httpSerializer == null) {
-                throw new MessageEncodingException(codec.name().toString());
+                throw new MessageEncodingException("Unknown encoding: " + codec.name());
             }
             return httpSerializer;
         }
@@ -186,7 +186,7 @@ public final class ProtoBufSerializationProviderBuilder {
             @SuppressWarnings("unchecked")
             HttpDeserializer<T> httpSerializer = deserializersForType.get(codec);
             if (httpSerializer == null) {
-                throw new MessageEncodingException(codec.name().toString());
+                throw new MessageEncodingException("Unknown encoding: " + codec.name());
             }
             return httpSerializer;
         }
