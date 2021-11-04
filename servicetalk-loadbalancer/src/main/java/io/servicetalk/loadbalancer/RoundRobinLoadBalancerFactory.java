@@ -29,11 +29,14 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round robin strategy
@@ -222,8 +225,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     }
 
     static final class SharedExecutor {
-        private static final Executor INSTANCE = Executors.newFixedSizeExecutor(1,
-                new DefaultThreadFactory("round-robin-load-balancer-executor"));
+        private static final Executor INSTANCE = Executors.from(
+                new ThreadPoolExecutor(1, 1, 60, SECONDS,
+                        new LinkedBlockingQueue<>(),
+                        new DefaultThreadFactory("round-robin-load-balancer-executor")));
 
         private SharedExecutor() {
         }
