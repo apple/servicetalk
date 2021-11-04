@@ -258,8 +258,9 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
                         try {
                             offloadExecutor.execute(task);
                         } catch (Throwable t) {
-                            LOGGER.error("Unexpected exception while offloading scheduled task: {} to executor: {}.",
-                                    task, offloadExecutor, t);
+                            LOGGER.error("Unexpected exception while offloading scheduled task: {} to executor: {}. " +
+                                            "Will execute the task on {} thread.",
+                                    task, offloadExecutor, Thread.currentThread().getName(), t);
                             // If the offloadExecutor failed to execute, we fallback to the scheduler thread for
                             // best-effort attempt at actually executing the task.
                             try {
