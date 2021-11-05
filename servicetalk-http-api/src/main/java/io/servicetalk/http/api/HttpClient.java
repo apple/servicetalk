@@ -17,17 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
-public interface HttpClient extends
-                            HttpRequester, GracefulAutoCloseable, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -92,11 +89,5 @@ public interface HttpClient extends
     @Override
     default void closeGracefully() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
-    }
-
-    @Override
-    default HttpExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to override
-        return OFFLOAD_ALL_STRATEGY;
     }
 }
