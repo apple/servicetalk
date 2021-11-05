@@ -546,6 +546,31 @@ public abstract class Completable {
     }
 
     /**
+     * Once this {@link Completable} is terminated successfully, subscribe to each {@link Completable} in {@code nexts}
+     * in a sequential fashion after termination, and the final terminal signals is propagated to the returned
+     * {@link Completable}. Any error from this {@link Completable} or from {@code nexts} {@link Completable} are
+     * propagated to the returned {@link Completable}.
+     * <p>
+     * This method provide equivalent functionality as:
+     * <pre>{@code
+     *   Completable original = ...;
+     *   Completable[] nexts  = ...;
+     *   Completable result = original;
+     *   for (int i = 0; i < nexts.length; ++i) {
+     *       result = result.concat(nexts[i]);
+     *   }
+     *   return result;
+     * }</pre>
+     *
+     * @param nexts {@link Completable}s to subscribe after this {@link Completable} terminates successfully.
+     * @return A {@link Completable} that emits the terminal signal of {@code nexts} {@link Completable}s, after this
+     * {@link Completable} has terminated successfully.
+     */
+    public final Completable concat(Completable... nexts) {
+        return new CompletableConcatWithCompletables(this, nexts);
+    }
+
+    /**
      * Once this {@link Completable} is terminated successfully, subscribe to {@code next} {@link Single}
      * and propagate the result to the returned {@link Single}. Any error from this {@link Completable} or {@code next}
      * {@link Single} are propagated to the returned {@link Single}.
