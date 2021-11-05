@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,13 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.Identity;
 
 import java.util.function.BiFunction;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static java.lang.System.lineSeparator;
@@ -26,7 +29,7 @@ import static java.lang.System.lineSeparator;
 /**
  * Meta data shared between requests and responses.
  */
-public interface HttpMetaData {
+public interface HttpMetaData extends ContextMapHolder {
 
     /**
      * Returns the protocol version of this {@link HttpMetaData}.
@@ -197,5 +200,34 @@ public interface HttpMetaData {
     default String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
         return toString() + lineSeparator()
                 + headers().toString(headerFilter);
+    }
+
+    /**
+     * A context associated with this {@link HttpMetaData}.
+     * <p>
+     * Context can be used to associate a state with a request or response message without serializing its state on the
+     * wire.
+     *
+     * @return a context associated with this {@link HttpMetaData}.
+     */
+    @Nonnull
+    @Override
+    default ContextMap context() {
+        throw new UnsupportedOperationException("Method context() is not supported by " + getClass().getName());
+    }
+
+    /**
+     * Sets a context for this {@link HttpMetaData}.
+     * <p>
+     * Context can be used to associate a state with a request or response message without serializing its state on the
+     * wire.
+     *
+     * @param context the new context for this {@link HttpMetaData}.
+     * @return {@code this}.
+     */
+    @Override
+    default HttpMetaData context(ContextMap context) {
+        throw new UnsupportedOperationException("Method context(ContextMap) is not supported by " +
+                getClass().getName());
     }
 }

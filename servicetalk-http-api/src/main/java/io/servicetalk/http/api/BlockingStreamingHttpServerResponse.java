@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.context.api.ContextMap;
 
 import java.io.OutputStream;
 
@@ -45,7 +46,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
                                         final HttpHeaders headers,
                                         final HttpPayloadWriter<Buffer> payloadWriter,
                                         final BufferAllocator allocator) {
-        super(status, version, headers);
+        super(status, version, headers, null);
         this.payloadWriter = requireNonNull(payloadWriter);
         this.allocator = requireNonNull(allocator);
     }
@@ -148,6 +149,12 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     @Override
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpServerResponse context(final ContextMap context) {
+        super.context(context);
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
@@ -46,6 +47,12 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public BlockingStreamingHttpRequest encoding(final ContentCodec encoding) {
         original.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest context(final ContextMap context) {
+        original.context(context);
         return this;
     }
 

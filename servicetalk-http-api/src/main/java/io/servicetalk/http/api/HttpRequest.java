@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
@@ -192,6 +193,12 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     @Override
     default HttpRequest setTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.setTrailers(trailers);
+        return this;
+    }
+
+    @Override
+    default HttpRequest context(ContextMap context) {
+        HttpRequestMetaData.super.context(context);
         return this;
     }
 }

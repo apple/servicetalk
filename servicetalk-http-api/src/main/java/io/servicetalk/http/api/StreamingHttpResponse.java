@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.function.Function;
@@ -211,6 +212,12 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     @Override
     default StreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
         HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse context(ContextMap context) {
+        HttpResponseMetaData.super.context(context);
         return this;
     }
 }
