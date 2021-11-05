@@ -313,7 +313,6 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * Note, calling this method will unset the value provided via
      * {@link #retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} if it was called before.
      * @return {@code this}.
-     * @see DefaultServiceDiscoveryRetryStrategy.Builder
      * @see io.servicetalk.concurrent.api.RetryStrategies
      */
     default SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(

@@ -33,7 +33,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -241,12 +240,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         SD_RETRY_STRATEGY_JITTER, executionContext.executor());
             }
             return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus),
-                    sdRetryStrategy,
-                    deprecatedServiceDiscovererRetryStrategy == null ?
-                            DefaultServiceDiscoveryRetryStrategy.Builder
-                                    .<R>withDefaults(executionContext.executor(),
-                                            SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
-                            deprecatedServiceDiscovererRetryStrategy);
+                    sdRetryStrategy, deprecatedServiceDiscovererRetryStrategy);
         }
     }
 
@@ -751,14 +745,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             extends DelegatingServiceDiscoverer<U, R, E> {
         @Nullable
         private final BiIntFunction<Throwable, ? extends Completable> retryStrategy;
+        @Nullable
         private final ServiceDiscoveryRetryStrategy<R, E> deprecatedRetryStrategy;
 
         RetryingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate,
                                   @Nullable final BiIntFunction<Throwable, ? extends Completable> retryStrategy,
-                                  final ServiceDiscoveryRetryStrategy<R, E> deprecatedRetryStrategy) {
+                                  @Nullable final ServiceDiscoveryRetryStrategy<R, E> deprecatedRetryStrategy) {
             super(delegate);
+            if (retryStrategy == null && deprecatedRetryStrategy == null) {
+                throw new NullPointerException("retryStrategy and deprecatedRetryStrategy can't both be null");
+            }
             this.retryStrategy = retryStrategy;
-            this.deprecatedRetryStrategy = requireNonNull(deprecatedRetryStrategy);
+            this.deprecatedRetryStrategy = deprecatedRetryStrategy;
         }
 
         @Override

@@ -97,9 +97,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
      * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
      * @see io.servicetalk.concurrent.api.RetryStrategies
      * @see SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)
-     * @deprecated Use standard mechanisms for retrying using
-     * {@link io.servicetalk.concurrent.api.Completable#retryWhen(BiIntFunction)} on the {@link Publisher} returned from
-     * {@link ServiceDiscoverer#discover(Object)} instead.
+     * @deprecated Use standard mechanisms for retrying using {@link io.servicetalk.concurrent.api.RetryStrategies}
+     * combined with {@link SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)}.
      */
     @Deprecated
     public static final class Builder<ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> {

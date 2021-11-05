@@ -118,7 +118,6 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
      * {@link #retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} if it was called before.
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
-     * @see DefaultServiceDiscoveryRetryStrategy.Builder
      * @see io.servicetalk.concurrent.api.RetryStrategies
      */
     default PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
