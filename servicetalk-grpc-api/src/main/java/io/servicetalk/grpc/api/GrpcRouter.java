@@ -59,6 +59,9 @@ import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +72,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -98,6 +100,8 @@ import static java.util.Collections.unmodifiableMap;
  * implementation of a <a href="https://www.grpc.io">gRPC</a> method.
  */
 final class GrpcRouter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouter.class);
+
     private final Map<String, RouteProvider> routes;
     private final Map<String, RouteProvider> streamingRoutes;
     private final Map<String, RouteProvider> blockingRoutes;
@@ -168,8 +172,11 @@ final class GrpcRouter {
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
             final GrpcExecutionStrategy routeStrategy = executionStrategies.getOrDefault(path, null);
+            final HttpExecutionStrategy missing = null == routeStrategy ?
+                    HttpExecutionStrategies.noOffloadsStrategy() :
+                    executionContext.executionStrategy().missing(routeStrategy);
             verifyNoOverrides(allRoutes.put(path,
-                    null != routeStrategy && executionContext.executionStrategy().missing(routeStrategy).hasOffloads() ?
+                    null != routeStrategy && missing.hasOffloads() ?
                               StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
                                   adapterHolder.serviceInvocationStrategy(),
                                   executionContext.executor(),
@@ -177,6 +184,8 @@ final class GrpcRouter {
                                   route) :
                               route),
                     path, emptyMap());
+            LOGGER.debug("route strategy for path={} : ctx={} route={} → using={}",
+                    path, executionContext.executionStrategy(), routeStrategy, missing);
         }
     }
 
@@ -383,7 +392,9 @@ final class GrpcRouter {
 
                             @Override
                             public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionStrategy == null ? defaultStrategy() : executionStrategy;
+                                return executionStrategy == null ?
+                                        HttpExecutionStrategies.defaultStrategy() :
+                                        executionStrategy;
                             }
                         };
                     }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),

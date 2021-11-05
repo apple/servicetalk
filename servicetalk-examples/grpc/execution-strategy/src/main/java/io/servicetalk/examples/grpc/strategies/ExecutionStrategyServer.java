@@ -29,6 +29,7 @@ import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.grpc.examples.strategies.Greeter;
+import io.grpc.examples.strategies.Greeter.GreeterService;
 import io.grpc.examples.strategies.HelloReply;
 import io.grpc.examples.strategies.HelloRequest;
 
@@ -54,36 +55,35 @@ public final class ExecutionStrategyServer {
             // executor will be closed last, servers are prepended before executor.
             closeEverything.append(executor);
 
-            // default config
+            // Default server configuration.
             // -> route offloaded to global executor
-            System.out.printf("\n%d : defaultServer\n", port);
+            System.out.printf("\n%d : default server\n", port);
             ServerContext defaultServer = GrpcServers.forPort(port++)
-                    .listenAndAwait((Greeter.GreeterService)
+                    .listenAndAwait((GreeterService)
                             (ctx, request) -> getReplySingle(request, "default server"));
             closeEverything.prepend(defaultServer);
 
-            // No offloads strategy specified for all routes by configuration of async server.
+            // No offloads strategy specified on the server, async route does not override its strategy.
             // -> no offloading, route executed on IoExecutor
-            System.out.printf("\n%d : asyncServer\n", port);
+            System.out.printf("\n%d : no offloading server, async route\n", port);
             ServerContext asyncServer = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
-                    .listenAndAwait((Greeter.GreeterService)
-                            (ctx, request) -> getReplySingle(request, "no offloading server"));
+                    .listenAndAwait((GreeterService)
+                            (ctx, request) -> getReplySingle(request, "no offloading server, async route"));
             closeEverything.prepend(asyncServer);
 
-            // No offloads strategy specified for all routes by configuration of blocking server.
+            // No offloads strategy specified on the server, blocking route does not override its strategy.
             // -> no offloading, route executed on IoExecutor
-            System.out.printf("\n%d : blockingServer\n", port);
+            System.out.printf("\n%d : no offloading server, blocking route\n", port);
             ServerContext blockingServer = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
                     .listenAndAwait((Greeter.BlockingGreeterService)
-                            (ctx, request) -> getReply(request, "server blocking"));
+                            (ctx, request) -> getReply(request, "no offloading server, blocking route"));
             closeEverything.prepend(blockingServer);
 
-            // No offloads strategy specified for all routes by configuration of streaming server.
-            // Route attempts to use default strategy
+            // No offloads strategy specified on the server, route overrides it to use the default strategy.
             // -> route offloaded to global executor
-            System.out.printf("\n%d : noOffloadsServerRouteOffloads\n", port);
+            System.out.printf("\n%d : no offloading server, default offloading for the route\n", port);
             ServerContext noOffloadsServerRouteOffloads = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder()
@@ -93,10 +93,9 @@ public final class ExecutionStrategyServer {
                             .build());
             closeEverything.prepend(noOffloadsServerRouteOffloads);
 
-            // No offloads strategy specified for all routes by configuration of streaming server.
-            // Route uses custom strategy
+            // No offloads strategy specified on the server, route overrides it to use a custom strategy.
             // -> route offloaded to global executor
-            System.out.printf("\n%d: noOffloadsServerRouteOffloadCustom\n", port);
+            System.out.printf("\n%d: no offloading server, custom offloading for the route\n", port);
             ServerContext noOffloadsServerRouteOffloadCustom = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(CUSTOM_STRATEGY,
@@ -105,37 +104,37 @@ public final class ExecutionStrategyServer {
                             .build());
             closeEverything.prepend(noOffloadsServerRouteOffloadCustom);
 
-            // Server custom executor, routes are offloaded to executor
+            // Server with a default strategy but a custom executor, route does not override its strategy.
             // -> route offloaded to custom executor
-            System.out.printf("\n%d : customExecutorServer\n", port);
+            System.out.printf("\n%d : server with a default offloading and a custom executor\n", port);
             ServerContext customExecutorServer = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executor(executor))
-                    .listenAndAwait((Greeter.GreeterService) (ctx, request) ->
+                    .listenAndAwait((GreeterService) (ctx, request) ->
                                     getReplySingle(request, "server with a default offloading and a custom executor"));
             closeEverything.prepend(customExecutorServer);
 
-            // Server has default configuration
-            // Route attempts to use no offloads strategy, which is ignored.
+            // Server has default configuration, route attempts to use no offloads strategy, which is ignored.
             // (Too late, already offloaded at the server level)
             // -> route offloaded to global executor
-            System.out.printf("\n%d : noOffloadsRoute\n", port);
+            System.out.printf("\n%d : default server, no offloading route\n", port);
             ServerContext noOffloadsRoute = GrpcServers.forPort(port++)
                     .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(noOffloadsStrategy(),
                                     (ctx, request) -> getReplySingle(request, "default server, no offloading route"))
                             .build());
             closeEverything.prepend(noOffloadsRoute);
 
-            // Route attempts no offloads strategy via annotation, which is ignored. (Too late, already offloaded)
+            // Server has default configuration, route attempts to use no offloads strategy via annotation, which is
+            // ignored. (Too late, already offloaded at the server level)
             // -> route offloaded to global executor
-            System.out.printf("\n%d : noOffloadsAnnotation\n", port);
+            System.out.printf("\n%d : default server, no offloading (annotation) route\n", port);
             ServerContext noOffloadsAnnotation = GrpcServers.forPort(port++)
                     .listenAndAwait(new NoOffloadsGreeterService());
             closeEverything.prepend(noOffloadsAnnotation);
 
-            // No offloads strategy specified for all routes by configuration of streaming server.
-            // Route attempts to use no offloads strategy, which is redundant.
+            // No offloads strategy specified on the server, route overrides it to also use no offloads strategy,
+            // which is redundant.
             // -> no offloading, route executed on IoExecutor
-            System.out.printf("\n%d : noOffloadsServerRoute\n", port);
+            System.out.printf("\n%d : no offloading server, no offloading route\n", port);
             ServerContext noOffloadsServerRoute = GrpcServers.forPort(port++)
                     .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder()
@@ -159,7 +158,7 @@ public final class ExecutionStrategyServer {
         return HelloReply.newBuilder().setMessage(reply).build();
     }
 
-    private static class NoOffloadsGreeterService implements Greeter.GreeterService {
+    private static class NoOffloadsGreeterService implements GreeterService {
 
         @Override
         @NoOffloadsRouteExecutionStrategy
