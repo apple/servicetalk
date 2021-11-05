@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThreadFactory.NettyIoThread> {
     private static final AtomicInteger factoryCount = new AtomicInteger();
+
     private final AtomicInteger threadCount = new AtomicInteger();
     private final String namePrefix;
     private final boolean daemon;
@@ -81,6 +82,16 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
             t.setPriority(NORM_PRIORITY);
         }
         return t;
+    }
+
+    @Override
+    public String toString() {
+        return NettyIoThreadFactory.class.getSimpleName() +
+                "{namePrefix='" + namePrefix + '\'' +
+                ", daemon=" + daemon +
+                ", threadGroup=" + threadGroup +
+                ", threadCount=" + threadCount +
+                '}';
     }
 
     static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
