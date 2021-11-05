@@ -78,6 +78,17 @@ public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
         return t;
     }
 
+    @Override
+    public String toString() {
+        return IoThreadFactory.class.getSimpleName() +
+                "{namePrefix='" + namePrefix + '\'' +
+                ", daemon=" + daemon +
+                ", priority=" + priority +
+                ", threadGroup=" + threadGroup +
+                ", threadCount=" + threadCount +
+                '}';
+    }
+
     static final class NettyIoThread extends FastThreadLocalThread
             implements io.servicetalk.transport.api.IoThreadFactory.IoThread {
 
