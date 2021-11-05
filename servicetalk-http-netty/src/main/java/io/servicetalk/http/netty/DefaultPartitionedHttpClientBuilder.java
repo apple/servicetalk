@@ -27,6 +27,7 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -55,6 +56,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
@@ -67,7 +69,10 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
-    private ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
+    private ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>>
+            deprecatedServiceDiscovererRetryStrategy;
+    @Nullable
+    private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
     @Nullable
@@ -89,14 +94,20 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
         final HttpExecutionContext executionContext = buildContext.builder.build().executionContext();
+        BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+        if (sdRetryStrategy == null && deprecatedServiceDiscovererRetryStrategy == null) {
+            sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
+                    SD_RETRY_STRATEGY_JITTER, executionContext.executor());
+        }
         ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
                 new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(
                         serviceDiscoverer,
-                        serviceDiscovererRetryStrategy == null ?
+                        sdRetryStrategy,
+                        deprecatedServiceDiscovererRetryStrategy == null ?
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
                                         executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
                                         SD_RETRY_STRATEGY_JITTER).build() :
-                                serviceDiscovererRetryStrategy);
+                                deprecatedServiceDiscovererRetryStrategy);
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
@@ -277,7 +288,16 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
     @Override
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy) {
+        this.deprecatedServiceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.serviceDiscovererRetryStrategy = null;
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.deprecatedServiceDiscovererRetryStrategy = null;
         return this;
     }
 
