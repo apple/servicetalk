@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -41,7 +42,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.oio.api.internal.PayloadWriterUtils.safeClose;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -79,8 +79,8 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                         ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 try {
-                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
-                        final StreamingHttpResponse result;
+                    final Consumer<DefaultHttpResponseMetaData> sendMeta = (metaData) -> {
+                        final DefaultStreamingHttpResponse result;
                         try {
                             // transfer-encoding takes precedence over content-length.
                             // > When a message does not have a Transfer-Encoding header field, a
@@ -114,8 +114,9 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                     tiCancellable.cancel();
                                 }
                             });
-                            result = newTransportResponse(metaData.status(), metaData.version(), metaData.headers(),
-                                    ctx.executionContext().bufferAllocator(), messageBody, false, ctx.headersFactory());
+                            result = new DefaultStreamingHttpResponse(metaData.status(), version, headers,
+                                    metaData.context0(), ctx.executionContext().bufferAllocator(), messageBody,
+                                    forTransportReceive(false, version, headers), ctx.headersFactory());
                         } catch (Throwable t) {
                             subscriber.onError(t);
                             throw t;

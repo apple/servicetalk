@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+/**
+ * ServiceTalk Context API.
+ */
+@ElementsAreNonnullByDefault
+package io.servicetalk.context.api;
 
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpResponseStatus.OK;
-
-public class DefaultHttpResponseMetaDataTest extends AbstractHttpResponseMetaDataTest<DefaultHttpResponseMetaData> {
-
-    @Override
-    protected void createFixture() {
-        fixture = new DefaultHttpResponseMetaData(OK, HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders(), null);
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * An HTTP response. The payload is represented as a single {@link Object}.
@@ -167,6 +168,12 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     @Override
     default HttpResponse setTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.setTrailers(trailers);
+        return this;
+    }
+
+    @Override
+    default HttpResponse context(ContextMap context) {
+        HttpResponseMetaData.super.context(context);
         return this;
     }
 }

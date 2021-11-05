@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -25,14 +26,14 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     private static final AtomicIntegerFieldUpdater<DefaultBlockingStreamingHttpServerResponse> metaSentUpdater =
             AtomicIntegerFieldUpdater.newUpdater(DefaultBlockingStreamingHttpServerResponse.class, "metaSent");
     private volatile int metaSent;
-    private final Consumer<HttpResponseMetaData> sendMeta;
+    private final Consumer<DefaultHttpResponseMetaData> sendMeta;
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                                final HttpProtocolVersion version,
                                                final HttpHeaders headers,
                                                final HttpPayloadWriter<Buffer> payloadWriter,
                                                final BufferAllocator allocator,
-                                               final Consumer<HttpResponseMetaData> sendMeta) {
+                                               final Consumer<DefaultHttpResponseMetaData> sendMeta) {
         super(status, version, headers, payloadWriter, allocator);
         this.sendMeta = sendMeta;
     }
@@ -95,6 +96,12 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         checkSent();
         return super.addSetCookie(name, value);
+    }
+
+    @Override
+    public BlockingStreamingHttpServerResponse context(final ContextMap context) {
+        checkSent();
+        return super.context(context);
     }
 
     private void checkSent() {

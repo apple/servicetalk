@@ -22,7 +22,9 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
@@ -288,13 +290,36 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
-     *
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(BiIntFunction)} if it was called before.
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
+     * @deprecated Use {@link #retryServiceDiscoveryErrors(BiIntFunction)} preferably with the standard utilities from
+     * {@link io.servicetalk.concurrent.api.RetryStrategies}.
      */
-    SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
+    @Deprecated
+    default SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting ServiceDiscoveryRetryStrategy" +
+                " is not supported by " + getClass().getName());
+    }
+
+    /**
+     * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} if it was called before.
+     * @return {@code this}.
+     * @see io.servicetalk.concurrent.api.RetryStrategies
+     */
+    default SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting BiIntFunction" +
+                " is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.

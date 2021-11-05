@@ -21,6 +21,7 @@ dependencies {
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-concurrent")
+  api project(":servicetalk-context-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-utils-internal")

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
+import io.servicetalk.context.api.ContextMap;
 
 import java.io.InputStream;
 import java.util.function.Function;
@@ -280,6 +281,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     @Override
     default BlockingStreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
         HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse context(ContextMap context) {
+        HttpResponseMetaData.super.context(context);
         return this;
     }
 }

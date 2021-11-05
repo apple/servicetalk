@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public final class StreamingHttpResponses {
     public static StreamingHttpResponse newResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator, null, forUserCreated(),
+        return new DefaultStreamingHttpResponse(status, version, headers, null, allocator, null, forUserCreated(),
                 headersFactory);
     }
 
@@ -66,7 +66,7 @@ public final class StreamingHttpResponses {
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final Publisher<Object> messageBody,
             final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator, messageBody,
+        return new DefaultStreamingHttpResponse(status, version, headers, null, allocator, messageBody,
                 forTransportReceive(requireTrailerHeader, version, headers), headersFactory);
     }
 }

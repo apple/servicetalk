@@ -36,7 +36,6 @@ public final class DefaultThreadFactory implements ThreadFactory {
     private final String namePrefix;
     private final boolean daemon;
     private final int priority;
-    @SuppressWarnings("unused")
     private final AtomicInteger threadCount = new AtomicInteger();
 
     /**
@@ -106,6 +105,16 @@ public final class DefaultThreadFactory implements ThreadFactory {
             t.setPriority(priority);
         }
         return t;
+    }
+
+    @Override
+    public String toString() {
+        return DefaultThreadFactory.class.getSimpleName() +
+                "{namePrefix='" + namePrefix + '\'' +
+                ", daemon=" + daemon +
+                ", priority=" + priority +
+                ", threadCount=" + threadCount +
+                '}';
     }
 
     private static final class AsyncContextHolderThread extends Thread implements AsyncContextMapHolder {
