@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package io.servicetalk.http.api;
+
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * Meta data associated with an HTTP response.
@@ -84,6 +86,12 @@ public interface HttpResponseMetaData extends HttpMetaData {
     @Override
     default HttpResponseMetaData addSetCookie(final CharSequence name, final CharSequence value) {
         HttpMetaData.super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpResponseMetaData context(ContextMap context) {
+        HttpMetaData.super.context(context);
         return this;
     }
 }

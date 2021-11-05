@@ -23,6 +23,7 @@ dependencies {
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-context-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-serialization-api")
   api project(":servicetalk-serializer-api")

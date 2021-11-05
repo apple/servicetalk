@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
@@ -43,6 +44,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
@@ -83,6 +85,12 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     @Override
     public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
         return delegate.toString(headerFilter);
+    }
+
+    @Nonnull
+    @Override
+    public ContextMap context() {
+        return delegate.context();
     }
 
     @Override
@@ -464,6 +472,12 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     @Override
     public StreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
         delegate.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest context(final ContextMap context) {
+        delegate.context(context);
         return this;
     }
 }

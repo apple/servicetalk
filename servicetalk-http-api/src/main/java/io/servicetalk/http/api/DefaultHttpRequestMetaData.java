@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
@@ -61,8 +62,9 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private BufferEncoder encoder;
 
     DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
-                               final HttpProtocolVersion version, final HttpHeaders headers) {
-        super(version, headers);
+                               final HttpProtocolVersion version, final HttpHeaders headers,
+                               @Nullable final ContextMap context) {
+        super(version, headers, context);
         this.method = requireNonNull(method);
         this.requestTarget = requireNonNull(requestTarget);
     }
@@ -89,6 +91,12 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public HttpRequestMetaData contentEncoding(@Nullable final BufferEncoder encoder) {
         this.encoder = encoder;
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData context(final ContextMap context) {
+        super.context(context);
         return this;
     }
 
