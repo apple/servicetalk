@@ -22,7 +22,7 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
  */
 public final class GrpcExecutionStrategies {
 
-    private static final DefaultGrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
+    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
 
     private static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =

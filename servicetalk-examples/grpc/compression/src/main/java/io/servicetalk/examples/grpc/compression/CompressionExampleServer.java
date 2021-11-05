@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
  * A simple extension of the gRPC "Hello World" example which demonstrates
  * compression of the request and response bodies.
  */
-public class CompressionExampleServer {
+public final class CompressionExampleServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 .listenAndAwait(new Greeter.ServiceFactory.Builder()

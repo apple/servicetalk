@@ -29,6 +29,10 @@ final class Route {
 
     private final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final StreamingHttpService service;
+
+    /**
+     * Strategy to use for the route or null to use context strategy.
+     */
     @Nullable
     private final HttpExecutionStrategy routeStrategy;
 

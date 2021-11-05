@@ -15,9 +15,11 @@
  */
 package io.servicetalk.http.router.predicate;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -25,27 +27,33 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
@@ -54,85 +62,113 @@ import static org.hamcrest.Matchers.is;
 
 class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
+    private static final String EXECUTOR_THREAD_NAME_PREFIX = "http-server-executor";
+    private static final HttpExecutionStrategy[] SERVER_STRATEGIES = new HttpExecutionStrategy[] {
+            defaultStrategy(), noOffloadsStrategy() };
 
-    private final IoExecutor ioExecutor;
-    private final OffloadingTesterService service1;
-    private final OffloadingTesterService service2;
-    private final HttpClient client;
-    private final ServerContext server;
+    private static final HttpExecutionStrategy[] ROUTE_STRATEGIES = new HttpExecutionStrategy[] {
+            null, defaultStrategy(), noOffloadsStrategy(), customStrategyBuilder().offloadSend().build() };
 
-    HttpServerOverrideOffloadingTest() throws Exception {
-        ioExecutor = createIoExecutor(IO_EXECUTOR_THREAD_NAME_PREFIX);
-        Predicate<Thread> isIOThread = HttpServerOverrideOffloadingTest::isInServerEventLoop;
-        service1 = new OffloadingTesterService(isIOThread.negate());
-        service2 = new OffloadingTesterService(isIOThread);
+    @RegisterExtension
+    private static final ExecutionContextExtension EXECUTION_CONTEXT =
+            ExecutionContextExtension.cached(IO_EXECUTOR_THREAD_NAME_PREFIX, EXECUTOR_THREAD_NAME_PREFIX);
+    private OffloadingTesterService routeService;
+    private ServerContext server;
+
+    @SuppressWarnings("unused")
+    static Stream<Arguments> cases() {
+        return Arrays.stream(SERVER_STRATEGIES)
+                .flatMap(serverOffloads -> Arrays.stream(ROUTE_STRATEGIES)
+                        .map(strategy -> Arguments.of(serverOffloads, strategy)));
+    }
+
+    HttpClient setup(HttpExecutionStrategy serverStrategy,
+                     @Nullable HttpExecutionStrategy routeStrategy) throws Exception {
+        routeService = new OffloadingTesterService(routeStrategy);
+        RouteContinuation route = new HttpPredicateRouterBuilder()
+                .whenPathStartsWith("/service");
+        if (null != routeStrategy) {
+            route = route.executionStrategy(routeService.usingStrategy());
+        }
+        StreamingHttpService router = route.thenRouteTo(routeService).buildStreaming();
+
         server = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(ioExecutor)
-                .executionStrategy(noOffloadsStrategy())
-                .listenStreamingAndAwait(new HttpPredicateRouterBuilder()
-                        .whenPathStartsWith("/service1").executionStrategy(noOffloadsStrategy())
-                        .thenRouteTo(service1)
-                        .whenPathStartsWith("/service2").executionStrategy(defaultStrategy())
-                        .thenRouteTo(service2).buildStreaming());
-        client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
+                .ioExecutor(EXECUTION_CONTEXT.ioExecutor())
+                .executor(EXECUTION_CONTEXT.executor())
+                .executionStrategy(serverStrategy)
+                .listenStreamingAndAwait(router);
+        return HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, server, ioExecutor).closeAsync().toFuture().get();
+        server.closeGracefully();
     }
 
-    private static boolean isInServerEventLoop(Thread thread) {
-        return thread.getName().startsWith(IO_EXECUTOR_THREAD_NAME_PREFIX);
-    }
-
-    @Test
-    void notOffloaded() throws Exception {
-        client.request(client.get("/service1")).toFuture().get();
-        assertThat("Service-1 unexpected invocation count.", service1.invoked.get(), is(1));
-        assertNoAsyncErrors("Service-1, unexpected errors: " + service1.errors, service1.errors);
-    }
-
-    @Test
-    void offloaded() throws Exception {
-        client.request(client.get("/service2")).toFuture().get();
-        assertThat("Service-2 unexpected invocation count.", service2.invoked.get(), is(1));
-        assertNoAsyncErrors("Service-2, unexpected errors: " + service2.errors, service2.errors);
+    @ParameterizedTest(name = "serverStrategy={0} routeStrategy={1}")
+    @MethodSource("cases")
+    void test(HttpExecutionStrategy serverStrategy, @Nullable HttpExecutionStrategy routeStrategy) throws Exception {
+        try (HttpClient client = setup(serverStrategy, routeStrategy)) {
+            Buffer payload = client.executionContext().bufferAllocator().fromAscii("hello");
+            client.request(client.post("/service").payloadBody(payload)).toFuture().get();
+        }
+        assertThat("Route unexpected invocation count.", routeService.invoked.get(), is(1));
+        assertNoAsyncErrors("Route, unexpected errors: " + routeService.errors, routeService.errors);
     }
 
     private static final class OffloadingTesterService implements StreamingHttpService {
 
+        @Nullable
+        private final HttpExecutionStrategy usingStrategy;
         private final AtomicInteger invoked = new AtomicInteger();
-        private final Predicate<Thread> isInvalidThread;
         private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
 
-        private OffloadingTesterService(final Predicate<Thread> isInvalidThread) {
-            this.isInvalidThread = isInvalidThread;
+        private OffloadingTesterService(@Nullable final HttpExecutionStrategy usingStrategy) {
+            this.usingStrategy = usingStrategy;
+        }
+
+        HttpExecutionStrategy usingStrategy() {
+            return usingStrategy;
         }
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory responseFactory) {
+            boolean offloading = ctx.executionContext().executionStrategy() != noOffloadsStrategy() ||
+                    defaultStrategy() != usingStrategy;
+            boolean expectReadMetaOffload = offloading &&
+                    (ctx.executionContext().executionStrategy().isMetadataReceiveOffloaded() ||
+                    (null != usingStrategy && usingStrategy.isMetadataReceiveOffloaded()));
+            boolean expectReadDataOffload = offloading &&
+                    (ctx.executionContext().executionStrategy().isDataReceiveOffloaded() ||
+                    (null != usingStrategy && usingStrategy.isDataReceiveOffloaded()));
+            boolean expectSendOffload = offloading &&
+                    (ctx.executionContext().executionStrategy().isSendOffloaded() ||
+                    (null != usingStrategy && usingStrategy.isSendOffloaded()));
+            boolean handleOnIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
             invoked.incrementAndGet();
             Processor cp = newCompletableProcessor();
-            if (isInvalidThread.test(currentThread())) {
+            if ((!offloading && !handleOnIoThread) || (expectReadMetaOffload && handleOnIoThread)) {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
             toSource(request.payloadBody().beforeOnNext(__ -> {
-                if (isInvalidThread.test(currentThread())) {
+                boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
+                if ((!offloading && !onIoThread) || (expectReadDataOffload && onIoThread)) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
                 }
             }).beforeOnComplete(() -> {
-                if (isInvalidThread.test(currentThread())) {
+                boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
+                if ((!offloading && !onIoThread) || (expectReadDataOffload && onIoThread)) {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));
                 }
             }).ignoreElements()).subscribe(cp);
             return succeeded(responseFactory.ok().payloadBody(from("Hello"), appSerializerUtf8FixLen())
                     .transformPayloadBody(p -> p.beforeRequest(__ -> {
-                        if (isInvalidThread.test(currentThread())) {
+                        boolean onIoThread = IoThreadFactory.IoThread.currentThreadIsIoThread();
+                        if ((!offloading && !onIoThread) || (expectSendOffload && onIoThread)) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +
                                     "request-n. Thread: " + currentThread()));
                         }

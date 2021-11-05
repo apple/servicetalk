@@ -28,7 +28,7 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 /**
  * An example server that shows {@link GrpcLifecycleObserver} usage.
  */
-public class LifecycleObserverServer {
+public final class LifecycleObserverServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 .lifecycleObserver(GrpcLifecycleObservers.logging("servicetalk-examples-grpc-observer-logger", TRACE))

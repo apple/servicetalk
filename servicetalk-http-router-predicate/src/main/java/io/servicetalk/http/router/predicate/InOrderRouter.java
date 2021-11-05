@@ -17,8 +17,8 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -32,10 +32,9 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 /**
- * An {@link StreamingHttpService} implementation which routes requests to a number of other
+ * A {@link StreamingHttpService} implementation which routes requests to a number of other
  * {@link StreamingHttpService}s based on predicates.
  * <p>
  * The predicates from the specified {@link Route}s are evaluated in order, and the service from the
@@ -58,7 +57,7 @@ final class InOrderRouter implements StreamingHttpService {
         this.routes = routes.toArray(new Route[0]);
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
-                .mergeAll(routes.stream().map(Route::service).collect(toList()));
+                .mergeAll(routes.stream().map(Route::service).toArray(StreamingHttpService[]::new));
     }
 
     @Override
@@ -69,10 +68,11 @@ final class InOrderRouter implements StreamingHttpService {
             if (pair.predicate().test(ctx, request)) {
                 StreamingHttpService service = pair.service();
                 final HttpExecutionStrategy strategy = pair.routeStrategy();
-                if (strategy != null) {
-                    Executor executor = ctx.executionContext().executor();
+                HttpExecutionContext useContext = ctx.executionContext();
+                if (null != strategy && useContext.executionStrategy().missing(strategy).hasOffloads()) {
+                    // Additional offloading needed
                     service = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(strategy,
-                            executor, IoThreadFactory.IoThread::currentThreadIsIoThread, service);
+                            useContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread, service);
                 }
                 return service.handle(ctx, request, factory);
             }

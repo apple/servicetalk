@@ -64,7 +64,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -346,13 +345,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        LOGGER.info("Service {} and filters using strategy {}", rawService, strategy);
-
-        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody);
+        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody)
+                .afterOnSuccess(serverContext -> {
+                    LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
+                });
     }
 
     private HttpExecutionStrategy computeServiceStrategy(Object service) {
-        HttpExecutionStrategy serviceStrategy = requiredOffloads(service, anyStrategy());
+        HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
         HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
         return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
     }

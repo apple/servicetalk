@@ -45,6 +45,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:compression",
         "servicetalk-examples:grpc:errors",
         "servicetalk-examples:grpc:deadline",
+        "servicetalk-examples:grpc:execution-strategy",
         "servicetalk-examples:grpc:observer",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
@@ -106,6 +107,7 @@ project(":servicetalk-examples:grpc:protoc-options").name = "servicetalk-example
 project(":servicetalk-examples:grpc:compression").name = "servicetalk-examples-grpc-compression"
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
 project(":servicetalk-examples:grpc:deadline").name = "servicetalk-examples-grpc-deadline"
+project(":servicetalk-examples:grpc:execution-strategy").name = "servicetalk-examples-grpc-execution-strategy"
 project(":servicetalk-examples:grpc:observer").name = "servicetalk-examples-grpc-observer"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"

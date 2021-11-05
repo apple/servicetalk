@@ -56,9 +56,11 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceToOffloadedStreamingHttpService;
 import io.servicetalk.oio.api.PayloadWriter;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -89,7 +91,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -99,10 +100,13 @@ import static java.util.Collections.unmodifiableMap;
  * implementation of a <a href="https://www.grpc.io">gRPC</a> method.
  */
 final class GrpcRouter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouter.class);
+
     private final Map<String, RouteProvider> routes;
     private final Map<String, RouteProvider> streamingRoutes;
     private final Map<String, RouteProvider> blockingRoutes;
     private final Map<String, RouteProvider> blockingStreamingRoutes;
+    private final Map<String, GrpcExecutionStrategy> executionStrategies;
 
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
@@ -115,20 +119,22 @@ final class GrpcRouter {
     private GrpcRouter(final Map<String, RouteProvider> routes,
                        final Map<String, RouteProvider> streamingRoutes,
                        final Map<String, RouteProvider> blockingRoutes,
-                       final Map<String, RouteProvider> blockingStreamingRoutes) {
+                       final Map<String, RouteProvider> blockingStreamingRoutes,
+                       final Map<String, GrpcExecutionStrategy> executionStrategies) {
         this.routes = unmodifiableMap(routes);
         this.streamingRoutes = unmodifiableMap(streamingRoutes);
         this.blockingRoutes = unmodifiableMap(blockingRoutes);
         this.blockingStreamingRoutes = unmodifiableMap(blockingStreamingRoutes);
+        this.executionStrategies = unmodifiableMap(executionStrategies);
     }
 
-    Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
+    Single<ServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
         final CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
-        populateRoutes(executionContext, allRoutes, routes, closeable);
-        populateRoutes(executionContext, allRoutes, streamingRoutes, closeable);
-        populateRoutes(executionContext, allRoutes, blockingRoutes, closeable);
-        populateRoutes(executionContext, allRoutes, blockingStreamingRoutes, closeable);
+        populateRoutes(executionContext, allRoutes, routes, closeable, executionStrategies);
+        populateRoutes(executionContext, allRoutes, streamingRoutes, closeable, executionStrategies);
+        populateRoutes(executionContext, allRoutes, blockingRoutes, closeable, executionStrategies);
+        populateRoutes(executionContext, allRoutes, blockingStreamingRoutes, closeable, executionStrategies);
 
         // TODO: Optimize to bind a specific programming model service based on routes
         return binder.bindStreaming(new StreamingHttpService() {
@@ -156,21 +162,30 @@ final class GrpcRouter {
         });
     }
 
-    private static void populateRoutes(final ExecutionContext<?> executionContext,
+    private static void populateRoutes(final GrpcExecutionContext executionContext,
                                        final Map<String, StreamingHttpService> allRoutes,
                                        final Map<String, RouteProvider> routes,
-                                       final CompositeCloseable closeable) {
+                                       final CompositeCloseable closeable,
+                                       final Map<String, GrpcExecutionStrategy> executionStrategies) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
             final String path = entry.getKey();
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
+            final GrpcExecutionStrategy routeStrategy = executionStrategies.getOrDefault(path, null);
+            final HttpExecutionStrategy missing = null == routeStrategy ?
+                    HttpExecutionStrategies.noOffloadsStrategy() :
+                    executionContext.executionStrategy().missing(routeStrategy);
             verifyNoOverrides(allRoutes.put(path,
-                            StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                                    adapterHolder.serviceInvocationStrategy(),
-                                    executionContext.executor(),
-                                    IoThreadFactory.IoThread::currentThreadIsIoThread,
-                                    route)),
+                    null != routeStrategy && missing.hasOffloads() ?
+                              StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
+                                  adapterHolder.serviceInvocationStrategy(),
+                                  executionContext.executor(),
+                                  IoThreadFactory.IoThread::currentThreadIsIoThread,
+                                  route) :
+                              route),
                     path, emptyMap());
+            LOGGER.debug("route strategy for path={} : ctx={} route={} → using={}",
+                    path, executionContext.executionStrategy(), routeStrategy, missing);
         }
     }
 
@@ -250,6 +265,9 @@ final class GrpcRouter {
             }
         }
 
+        /**
+         * async aggregated
+         */
         <Req, Resp> void addRoute(MethodDescriptor<Req, Resp> methodDescriptor,
                                   BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
                                   @Nullable GrpcExecutionStrategy executionStrategy, Route<Req, Resp> route) {
@@ -302,7 +320,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -312,6 +330,9 @@ final class GrpcRouter {
             executionStrategies.put(methodDescriptor.httpPath(), executionStrategy);
         }
 
+        /**
+         * async streaming bi-directional
+         */
         <Req, Resp> void addStreamingRoute(
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
@@ -371,7 +392,9 @@ final class GrpcRouter {
 
                             @Override
                             public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionStrategy == null ? defaultStrategy() : executionStrategy;
+                                return executionStrategy == null ?
+                                        HttpExecutionStrategies.defaultStrategy() :
+                                        executionStrategy;
                             }
                         };
                     }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
@@ -383,6 +406,9 @@ final class GrpcRouter {
             executionStrategies.put(methodDescriptor.httpPath(), executionStrategy);
         }
 
+        /**
+         * async streaming request
+         */
         <Req, Resp> void addRequestStreamingRoute(
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
@@ -407,6 +433,9 @@ final class GrpcRouter {
                     });
         }
 
+        /**
+         * async streaming response
+         */
         <Req, Resp> void addResponseStreamingRoute(
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
@@ -443,6 +472,9 @@ final class GrpcRouter {
                     });
         }
 
+        /**
+         * synchronous aggregate
+         */
         <Req, Resp> void addBlockingRoute(
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
@@ -492,7 +524,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -502,6 +534,9 @@ final class GrpcRouter {
             executionStrategies.put(methodDescriptor.httpPath(), executionStrategy);
         }
 
+        /**
+         * synchronous streaming
+         */
         <Req, Resp> void addBlockingStreamingRoute(
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
@@ -559,7 +594,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.anyStrategy() : executionStrategy),
+                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -641,7 +676,8 @@ final class GrpcRouter {
          * @return {@link GrpcRouter}.
          */
         public GrpcRouter build() {
-            return new GrpcRouter(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes);
+            return new GrpcRouter(
+                    routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes, executionStrategies);
         }
     }
 
@@ -760,14 +796,14 @@ final class GrpcRouter {
 
     static final class RouteProvider implements AsyncCloseable {
 
-        private final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider;
+        private final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider;
         private final Supplier<StreamingRoute<?, ?>> toStreamingConverter;
         private final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter;
         private final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter;
         private final Supplier<Route<?, ?>> toRouteConverter;
         private final AsyncCloseable closeable;
 
-        RouteProvider(final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
                       final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
                       final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
                       final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
@@ -781,7 +817,7 @@ final class GrpcRouter {
             this.closeable = closeable;
         }
 
-        RouteProvider(final Function<ExecutionContext<?>, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
                       final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
                       final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
                       final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
@@ -791,7 +827,7 @@ final class GrpcRouter {
                     toResponseStreamingRouteConverter, toRouteConverter, toAsyncCloseable(closeable));
         }
 
-        ServiceAdapterHolder buildRoute(ExecutionContext<?> executionContext) {
+        ServiceAdapterHolder buildRoute(GrpcExecutionContext executionContext) {
             return routeProvider.apply(executionContext);
         }
 

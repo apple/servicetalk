@@ -26,7 +26,7 @@ import static java.util.Arrays.asList;
 /**
  * JAX-RS Hello World {@link Application}.
  */
-public class HelloWorldJaxRsApplication extends Application {
+public final class HelloWorldJaxRsApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         return new HashSet<>(asList(

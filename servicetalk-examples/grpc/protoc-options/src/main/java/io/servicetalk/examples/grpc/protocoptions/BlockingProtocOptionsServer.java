@@ -20,7 +20,7 @@ import io.servicetalk.grpc.netty.GrpcServers;
 import io.grpc.examples.helloworld.GreeterSt.BlockingGreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 
-public class BlockingProtocOptionsServer {
+public final class BlockingProtocOptionsServer {
     public static void main(String[] args) throws Exception {
         GrpcServers.forPort(8080)
                 .listenAndAwait((BlockingGreeterService) (ctx, request) ->

@@ -25,7 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Simple mock/simulated Zipkin server.
  */
-public class ZipkinServerSimulator {
+public final class ZipkinServerSimulator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipkinServerSimulator.class);
 
     public static void main(String[] args) throws Exception {

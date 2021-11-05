@@ -89,7 +89,6 @@ class ExecutionStrategyTest {
         public GrpcExecutionStrategy get(final String id) {
             switch (id) {
                 case "route":
-                case "filter":
                     return defaultStrategy();
                 default:
                     throw new IllegalArgumentException("Unknown id: " + id);
@@ -298,6 +297,7 @@ class ExecutionStrategyTest {
     private boolean isDeadlockConfig() {
         if (contextStrategy == ContextExecutionStrategy.NO_OFFLOADS) {
             switch (routeStrategy) {
+                case BLOCKING_DEFAULT:
                 case BLOCKING_CLASS_NO_OFFLOADS:
                 case BLOCKING_METHOD_NO_OFFLOADS:
                 case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
@@ -312,7 +312,7 @@ class ExecutionStrategyTest {
         return false;
     }
 
-    @ParameterizedTest(name = "context={0} route={1}, api={2}, filterConfiguration={3}")
+    @ParameterizedTest(name = "context={0} route={1}, api={2}")
     @MethodSource("data")
     void testRoute(ContextExecutionStrategy contextExecutionStrategy,
                    RouteExecutionStrategy routeStrategy,
@@ -414,7 +414,6 @@ class ExecutionStrategyTest {
                 break;
             case NO_OFFLOADS:
                 switch (routeStrategy) {
-                    case ASYNC_DEFAULT:
                     case ASYNC_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
@@ -431,6 +430,7 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
+                    case ASYNC_DEFAULT:
                     case ASYNC_CLASS_NO_OFFLOADS:
                     case ASYNC_METHOD_NO_OFFLOADS:
                     case ASYNC_SERVICE_FACTORY_NO_OFFLOADS:
@@ -449,7 +449,6 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
-                    case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_EXEC_ID:
                         switch (routeApi) {
                             case TEST:
@@ -463,6 +462,7 @@ class ExecutionStrategyTest {
                                 throw new IllegalStateException("Unknown route API: " + routeApi);
                         }
                         break;
+                    case BLOCKING_DEFAULT:
                     case BLOCKING_CLASS_NO_OFFLOADS:
                     case BLOCKING_METHOD_NO_OFFLOADS:
                     case BLOCKING_SERVICE_FACTORY_NO_OFFLOADS:
