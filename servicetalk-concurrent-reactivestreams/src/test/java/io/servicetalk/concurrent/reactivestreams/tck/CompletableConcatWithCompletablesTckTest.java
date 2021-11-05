@@ -19,12 +19,19 @@ import io.servicetalk.concurrent.api.Completable;
 
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 import static io.servicetalk.concurrent.api.Completable.completed;
 
 @Test
 public class CompletableConcatWithCompletablesTckTest extends AbstractCompletableOperatorTckTest {
+    private static final Completable[] COMPLETABLES = new Completable[100];
+    static {
+        Arrays.fill(COMPLETABLES, completed());
+    }
+
     @Override
     protected Completable composeCompletable(Completable completable) {
-        return completable.concat(completed(), completed());
+        return completable.concat(COMPLETABLES);
     }
 }

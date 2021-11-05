@@ -567,7 +567,7 @@ public abstract class Completable {
      * {@link Completable} has terminated successfully.
      */
     public final Completable concat(Completable... nexts) {
-        return new CompletableConcatWithCompletables(this, nexts);
+        return nexts.length == 0 ? this : new CompletableConcatWithCompletables(this, nexts);
     }
 
     /**

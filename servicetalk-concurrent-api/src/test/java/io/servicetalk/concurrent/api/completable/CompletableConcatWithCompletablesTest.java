@@ -27,6 +27,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
+
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -54,9 +56,7 @@ class CompletableConcatWithCompletablesTest {
 
     private void initNexts(int num) {
         nexts = new TestCompletable[num];
-        for (int i = 0; i < nexts.length; ++i) {
-            nexts[i] = new TestCompletable();
-        }
+        Arrays.setAll(nexts, i -> new TestCompletable());
     }
 
     @Test
@@ -74,8 +74,12 @@ class CompletableConcatWithCompletablesTest {
         toSource(source.concat(nexts)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
-        for (final TestCompletable next : nexts) {
-            next.onComplete();
+        for (int i = 0; i < nexts.length; ++i) {
+            assertTrue(nexts[i].isSubscribed());
+            if (i + 1 < nexts.length) {
+                assertFalse(nexts[i + 1].isSubscribed());
+            }
+            nexts[i].onComplete();
         }
         subscriber.awaitOnComplete();
     }
@@ -100,14 +104,18 @@ class CompletableConcatWithCompletablesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2})
+    @ValueSource(ints = {1, 2, 100})
     void testSourceSuccessNextError(int num) {
         initNexts(num);
         toSource(source.concat(nexts)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        assertThat("No subscribe for the next item", nexts[0].isSubscribed(), is(true));
         nexts[0].onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        for (int i = 1; i < nexts.length; ++i) {
+            assertFalse(nexts[i].isSubscribed());
+        }
     }
 
     @ParameterizedTest
