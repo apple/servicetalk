@@ -95,10 +95,6 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
             ServiceDiscoverer<U, R, SDE> serviceDiscoverer);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, SDE> retryStrategy);
-
-    @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 

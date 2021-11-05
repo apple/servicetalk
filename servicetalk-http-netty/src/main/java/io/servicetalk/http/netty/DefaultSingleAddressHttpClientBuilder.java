@@ -27,12 +27,12 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -73,6 +73,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -108,7 +109,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
     @Nullable
-    private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
+    private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> deprecatedServiceDiscovererRetryStrategy;
+    @Nullable
+    private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
@@ -147,6 +150,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         influencerChainBuilder = from.influencerChainBuilder.copy();
         loadBalancerFactory = from.loadBalancerFactory;
         serviceDiscoverer = from.serviceDiscoverer;
+        deprecatedServiceDiscovererRetryStrategy = from.deprecatedServiceDiscovererRetryStrategy;
         serviceDiscovererRetryStrategy = from.serviceDiscovererRetryStrategy;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
@@ -187,19 +191,30 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
-        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
+        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
         private final SdStatusCompletable sdStatus;
+
+        @Nullable
+        private final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>>
+                deprecatedServiceDiscovererRetryStrategy;
+        @Nullable
+        private final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
         @Nullable
         private final U proxyAddress;
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext executionContext,
-                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd, final SdStatusCompletable sdStatus,
+                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd,
+                @Nullable final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy,
+                @Nullable final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>>
+                        deprecatedServiceDiscovererRetryStrategy,
                 @Nullable final U proxyAddress) {
             this.builder = builder;
             this.executionContext = executionContext;
-            this.serviceDiscoverer = sd;
-            this.sdStatus = sdStatus;
+            this.sd = sd;
+            this.sdStatus = new SdStatusCompletable();
+            this.serviceDiscovererRetryStrategy = serviceDiscovererRetryStrategy;
+            this.deprecatedServiceDiscovererRetryStrategy = deprecatedServiceDiscovererRetryStrategy;
             this.proxyAddress = proxyAddress;
         }
 
@@ -216,6 +231,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         StreamingHttpClient build() {
             return buildStreaming(this);
+        }
+
+        ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
+                HttpExecutionContext executionContext) {
+            BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+            if (sdRetryStrategy == null && deprecatedServiceDiscovererRetryStrategy == null) {
+                sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
+                        SD_RETRY_STRATEGY_JITTER, executionContext.executor());
+            }
+            return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus),
+                    sdRetryStrategy, deprecatedServiceDiscovererRetryStrategy);
         }
     }
 
@@ -234,7 +260,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<R>>> sdEvents =
-                    ctx.serviceDiscoverer.discover(ctx.address());
+                    ctx.serviceDiscoverer(ctx.executionContext).discover(ctx.address());
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
@@ -373,14 +399,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-        final SdStatusCompletable sdStatus = new SdStatusCompletable();
-        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
-                new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(serviceDiscoverer, sdStatus),
-                        serviceDiscovererRetryStrategy == null ?
-                                DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(exec.executor(),
-                                        SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
-                                serviceDiscovererRetryStrategy);
-        return new HttpClientBuildContext<>(clonedBuilder, exec, sd, sdStatus, proxyAddress);
+        return new HttpClientBuildContext<U, R>(clonedBuilder, exec,
+                this.serviceDiscoverer, this.serviceDiscovererRetryStrategy,
+                this.deprecatedServiceDiscovererRetryStrategy, this.proxyAddress);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
@@ -522,7 +543,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy) {
+        this.deprecatedServiceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.serviceDiscovererRetryStrategy = null;
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        this.deprecatedServiceDiscovererRetryStrategy = null;
         return this;
     }
 
@@ -716,17 +746,28 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
             extends DelegatingServiceDiscoverer<U, R, E> {
-        private final ServiceDiscoveryRetryStrategy<R, E> retryStrategy;
+        @Nullable
+        private final BiIntFunction<Throwable, ? extends Completable> retryStrategy;
+        @Nullable
+        private final ServiceDiscoveryRetryStrategy<R, E> deprecatedRetryStrategy;
 
         RetryingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate,
-                                  final ServiceDiscoveryRetryStrategy<R, E> retryStrategy) {
+                                  @Nullable final BiIntFunction<Throwable, ? extends Completable> retryStrategy,
+                                  @Nullable final ServiceDiscoveryRetryStrategy<R, E> deprecatedRetryStrategy) {
             super(delegate);
-            this.retryStrategy = requireNonNull(retryStrategy);
+            if (retryStrategy == null && deprecatedRetryStrategy == null) {
+                throw new NullPointerException("retryStrategy and deprecatedRetryStrategy can't both be null");
+            }
+            this.retryStrategy = retryStrategy;
+            this.deprecatedRetryStrategy = deprecatedRetryStrategy;
         }
 
         @Override
         public Publisher<Collection<E>> discover(final U u) {
-            return retryStrategy.apply(delegate().discover(u));
+            if (retryStrategy != null) {
+                return delegate().discover(u).retryWhen(retryStrategy);
+            }
+            return deprecatedRetryStrategy.apply(delegate().discover(u));
         }
     }
 

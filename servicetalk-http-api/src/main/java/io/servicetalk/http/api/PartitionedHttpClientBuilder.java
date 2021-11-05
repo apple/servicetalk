@@ -221,10 +221,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy);
-
     /**
      * {@inheritDoc}
      * @deprecated {@link #initializer(SingleAddressInitializer)} and

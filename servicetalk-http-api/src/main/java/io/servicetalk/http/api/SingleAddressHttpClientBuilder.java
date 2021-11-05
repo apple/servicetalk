@@ -138,10 +138,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
             ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
-
-    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 
