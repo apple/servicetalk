@@ -34,6 +34,10 @@ import static java.util.stream.StreamSupport.stream;
 final class DefaultCompositeCloseable implements CompositeCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCompositeCloseable.class);
 
+    /**
+     * Initial size of 2 because we don't expect a large cardinality of {@link Operand}s. Usually only 1 is present
+     * (e.g. either merge or concat).
+     */
     private final Deque<Operand> operands = new ArrayDeque<>(2);
     @Nullable
     private Completable closeAsync;
@@ -60,21 +64,21 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
 
     @Override
     public <T extends AsyncCloseable> T append(final T closeable) {
-        concatCloseableDelayError(closeable);
+        appendCloseableDelayError(closeable);
         return closeable;
     }
 
     @Override
     public CompositeCloseable appendAll(final AsyncCloseable... asyncCloseables) {
         for (AsyncCloseable closeable : asyncCloseables) {
-            concatCloseableDelayError(closeable);
+            appendCloseableDelayError(closeable);
         }
         return this;
     }
 
     @Override
     public CompositeCloseable appendAll(final Iterable<? extends AsyncCloseable> asyncCloseables) {
-        asyncCloseables.forEach(this::concatCloseableDelayError);
+        asyncCloseables.forEach(this::appendCloseableDelayError);
         return this;
     }
 
@@ -160,7 +164,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
             } else {
                 operand = new Operand(isMerge);
                 if (append) {
-                    operands.add(operand);
+                    operands.addLast(operand);
                 } else {
                     operands.addFirst(operand);
                 }
@@ -169,7 +173,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
         return operand;
     }
 
-    private void concatCloseableDelayError(final AsyncCloseable closeable) {
+    private void appendCloseableDelayError(final AsyncCloseable closeable) {
         final Operand operand = getOrAddConcatOperand(true);
         operand.closables.add(closeable);
         resetState();

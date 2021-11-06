@@ -27,8 +27,8 @@ import static org.mockito.Mockito.when;
 
 final class CompositeClosableTest {
     @ParameterizedTest
-    @CsvSource(value = {"true,true", "true,false", "false, true", "false,false"})
-    void sameOperationDoesNotSOOE(boolean merge, boolean gracefully) throws Exception {
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void sameOperationDoesNotSOE(boolean merge, boolean gracefully) throws Exception {
         AsyncCloseable mockClosable = mock(AsyncCloseable.class);
         when(mockClosable.closeAsync()).thenReturn(completed());
         when(mockClosable.closeAsyncGracefully()).thenReturn(completed());
@@ -49,9 +49,9 @@ final class CompositeClosableTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "gracefully={0}")
     @ValueSource(booleans = {true, false})
-    void alternatingOperationSOOE(boolean gracefully) {
+    void alternatingOperationSOE(boolean gracefully) {
         AsyncCloseable mockClosable = mock(AsyncCloseable.class);
         when(mockClosable.closeAsync()).thenReturn(completed());
         when(mockClosable.closeAsyncGracefully()).thenReturn(completed());
