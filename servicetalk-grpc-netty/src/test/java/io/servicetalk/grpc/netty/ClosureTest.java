@@ -171,9 +171,11 @@ class ClosureTest {
     }
 
     private void verifyClosure(AsyncCloseable closeable, int times) {
-        // Async mode both methods are called but one is subscribed.
-        verify(closeable, times(times)).closeAsyncGracefully();
-        verify(closeable, times(times)).closeAsync();
+        if (closeGracefully) {
+            verify(closeable, times(times)).closeAsyncGracefully();
+        } else {
+            verify(closeable, times(times)).closeAsync();
+        }
         verifyNoMoreInteractions(closeable);
     }
 
