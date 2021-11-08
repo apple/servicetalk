@@ -33,7 +33,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -100,14 +99,8 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                     SD_RETRY_STRATEGY_JITTER, executionContext.executor());
         }
         ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
-                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(
-                        serviceDiscoverer,
-                        sdRetryStrategy,
-                        deprecatedServiceDiscovererRetryStrategy == null ?
-                                DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
-                                        executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
-                                        SD_RETRY_STRATEGY_JITTER).build() :
-                                deprecatedServiceDiscovererRetryStrategy);
+                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
+                        sdRetryStrategy, deprecatedServiceDiscovererRetryStrategy);
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
