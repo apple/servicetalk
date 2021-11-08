@@ -25,6 +25,9 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
@@ -39,6 +42,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -50,6 +56,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -77,7 +84,11 @@ class ProxyConnectConnectionFactoryFilterTest {
     private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
 
     ProxyConnectConnectionFactoryFilterTest() {
+        HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
+        HttpConnectionContext connectionContext = (mock(HttpConnectionContext.class));
+        when(connectionContext.executionContext()).thenReturn(executionContext);
         connection = mock(FilterableStreamingHttpConnection.class);
+        when(connection.connectionContext()).thenReturn(connectionContext);
         connectionClose = new TestCompletable.Builder().build(subscriber -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onComplete();
@@ -119,11 +130,19 @@ class ProxyConnectConnectionFactoryFilterTest {
         when(pipeline.get(DeferSslHandler.class)).thenReturn(mock(DeferSslHandler.class));
     }
 
-    private void configureConnectionContext(ChannelPipeline pipeline) {
+    private void configureConnectionContext(final ChannelPipeline pipeline) {
+        configureConnectionContext(pipeline, HttpExecutionStrategies.defaultStrategy());
+    }
+
+    private void configureConnectionContext(final ChannelPipeline pipeline,
+                                            final HttpExecutionStrategy executionStrategy) {
         Channel channel = mock(Channel.class);
         when(channel.pipeline()).thenReturn(pipeline);
 
+        HttpExecutionContext executionContext = new HttpExecutionContextBuilder()
+                .executionStrategy(executionStrategy).build();
         NettyHttpConnectionContext nettyContext = mock(NettyHttpConnectionContext.class);
+        when(nettyContext.executionContext()).thenReturn(executionContext);
         when(nettyContext.nettyChannel()).thenReturn(channel);
         when(connection.connectionContext()).thenReturn(nettyContext);
     }
@@ -140,11 +159,16 @@ class ProxyConnectConnectionFactoryFilterTest {
     }
 
     private void subscribeToProxyConnectionFactory() {
+        subscribeToProxyConnectionFactory(c -> {});
+    }
+
+    private void subscribeToProxyConnectionFactory(Consumer<FilterableStreamingHttpConnection> onSuccess) {
         @SuppressWarnings("unchecked")
         ConnectionFactory<String, FilterableStreamingHttpConnection> original = mock(ConnectionFactory.class);
         when(original.newConnection(any(), any())).thenReturn(succeeded(connection));
         toSource(new ProxyConnectConnectionFactoryFilter<String, FilterableStreamingHttpConnection>(CONNECT_ADDRESS)
-                .create(original).newConnection(RESOLVED_ADDRESS, null)).subscribe(subscriber);
+                .create(original).newConnection(RESOLVED_ADDRESS, null).afterOnSuccess(onSuccess))
+                .subscribe(subscriber);
     }
 
     @Test
@@ -165,7 +189,8 @@ class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        Throwable error = subscriber.awaitOnError();
+        assertThat("Unexpected error: " + error, error, is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
@@ -190,7 +215,12 @@ class ProxyConnectConnectionFactoryFilterTest {
     @Test
     void cannotAccessNettyChannel() {
         // Does not implement NettyConnectionContext:
-        when(connection.connectionContext()).thenReturn(mock(HttpConnectionContext.class));
+        HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
+
+        HttpConnectionContext connectionContext = (mock(HttpConnectionContext.class));
+        when(connectionContext.executionContext()).thenReturn(executionContext);
+
+        when(connection.connectionContext()).thenReturn(connectionContext);
 
         configureRequestSend();
         configureConnectRequest();
@@ -279,6 +309,26 @@ class ProxyConnectConnectionFactoryFilterTest {
         assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
         assertConnectPayloadConsumed(true);
         assertThat("Connection closed", connectionClose.isSubscribed(), is(false));
+    }
+
+    @Test
+    void noOffloadingStrategy() {
+        ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
+        configureDeferSslHandler(pipeline);
+        configureConnectionContext(pipeline, HttpExecutionStrategies.offloadAll());
+        configureRequestSend();
+        configureConnectRequest();
+        Queue<Throwable> errors = new LinkedBlockingQueue<>();
+        subscribeToProxyConnectionFactory(c -> {
+            if (true) {
+                errors.add(new AssertionError("Unexpected Thread for success " + Thread.currentThread()));
+            }
+        });
+
+        assertNoAsyncErrors(errors);
+        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
+        assertConnectPayloadConsumed(true);
+        assertThat("Connection closed", !connectionClose.isSubscribed());
     }
 
     private void assertConnectPayloadConsumed(boolean expected) {
