@@ -45,7 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -117,7 +116,7 @@ class HttpOffloadingTest {
     void afterTest() throws Exception {
         CompositeCloseable closeables = newCompositeCloseable();
         Stream.of(httpConnection, client, serverContext)
-                .filter(Objects::nonNull)
+                .filter(obj -> null != obj)
                 .forEach(closeables::append);
         closeables.close();
     }
