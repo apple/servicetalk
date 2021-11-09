@@ -69,7 +69,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * the server could not be started.
      */
     public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
-        return routes.bind(binder, executionContext);
+        return routes.bind(binder, DefaultGrpcExecutionContext.from(executionContext));
     }
 
     /**

@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -63,62 +64,70 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final HttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final HttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
-                .thenRouteTo(router)
+                .executionStrategy(defaultStrategy())
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final StreamingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final StreamingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
-                .thenRouteTo(router)
+                .executionStrategy(defaultStrategy())
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final BlockingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final BlockingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
-                .thenRouteTo(router)
+                .executionStrategy(defaultStrategy())
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override
     ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
-                              final BlockingStreamingHttpService router) throws Exception {
-        return httpServerBuilder.listenStreamingAndAwait(new HttpPredicateRouterBuilder()
+                              final BlockingStreamingHttpService route) throws Exception {
+        StreamingHttpService router = new HttpPredicateRouterBuilder()
                 // No-offloads can not be used with CompletionStage responses (and also with @Suspended AsyncResponse
                 // and SSE), so we override the strategy for this particular path by simply routing to it from
                 // the predicate router, which will use the appropriate default strategy.
                 .whenPathEquals(MixedModeResources.PATH + "/cs-string")
-                .thenRouteTo(router)
+                .executionStrategy(defaultStrategy())
+                .thenRouteTo(route)
                 .when(__ -> true)
                 .executionStrategy(noOffloadsStrategy())
-                .thenRouteTo(router)
-                .buildStreaming());
+                .thenRouteTo(route)
+                .buildStreaming();
+        return httpServerBuilder.listenStreamingAndAwait(router);
     }
 
     @Override

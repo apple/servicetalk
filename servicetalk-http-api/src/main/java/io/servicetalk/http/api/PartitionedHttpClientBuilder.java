@@ -22,6 +22,8 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -93,13 +95,36 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
-     *
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(BiIntFunction)} if it was called before.
      * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
      * @return {@code this}.
      * @see DefaultServiceDiscoveryRetryStrategy.Builder
+     * @deprecated Use {@link #retryServiceDiscoveryErrors(BiIntFunction)} preferably with the standard utilities from
+     * {@link io.servicetalk.concurrent.api.RetryStrategies}.
      */
-    PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy);
+    @Deprecated
+    default PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting ServiceDiscoveryRetryStrategy" +
+                " is not supported by " + getClass().getName());
+    }
+
+    /**
+     * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * <p>
+     * Note, calling this method will unset the value provided via
+     * {@link #retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)} if it was called before.
+     * @param retryStrategy a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
+     * @return {@code this}.
+     * @see io.servicetalk.concurrent.api.RetryStrategies
+     */
+    default PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        throw new UnsupportedOperationException("retryServiceDiscoveryErrors accepting BiIntFunction" +
+                " is not supported by " + getClass().getName());
+    }
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.

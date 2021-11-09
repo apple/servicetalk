@@ -34,8 +34,9 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * A special default {@link HttpExecutionStrategy} that offloads all actions unless merged with another
-     * strategy that requires less offloading.
+     * A special default {@link HttpExecutionStrategy} that offloads all actions unless merged with another strategy
+     * that requires less offloading. The intention of this strategy is to provide a safe default if no strategy is
+     * specified.
      *
      * @return Default {@link HttpExecutionStrategy}.
      * @see #offloadAll()
