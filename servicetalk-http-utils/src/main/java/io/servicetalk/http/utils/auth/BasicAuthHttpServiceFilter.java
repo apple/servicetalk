@@ -94,6 +94,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
 
         @Override
         default HttpExecutionStrategy requiredOffloads() {
+            // safe default--implementations are expected to override
             return HttpExecutionStrategies.offloadAll();
         }
     }

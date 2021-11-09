@@ -65,7 +65,7 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<E
 
     @Override
     default ExecutionStrategy requiredOffloads() {
-        // "safe" default -- implementations are expected to override
+        // safe default--implementations are expected to override
         return ExecutionStrategy.offloadAll();
     }
 

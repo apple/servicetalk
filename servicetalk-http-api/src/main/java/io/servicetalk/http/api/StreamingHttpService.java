@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
 /**
  * A service contract for the HTTP protocol.
@@ -51,7 +50,7 @@ public interface StreamingHttpService extends AsyncCloseable, ExecutionStrategyI
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {
-        // "safe" default -- implementations are expected to override
-        return OFFLOAD_ALL_STRATEGY;
+        // safe default--implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
     }
 }

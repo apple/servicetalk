@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,11 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
-
-/**
- * A factory for HTTP filters.
- */
-public interface HttpFilterFactory extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+interface DefaultHttpExecutionStrategyInfluencer extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {
-        // "safe" default strategy -- implementations are expected to override
-        return OFFLOAD_ALL_STRATEGY;
+        // safe default--implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
     }
 }

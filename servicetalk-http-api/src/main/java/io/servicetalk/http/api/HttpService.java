@@ -39,6 +39,7 @@ public interface HttpService extends AsyncCloseable, ExecutionStrategyInfluencer
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
         return OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
     }
 

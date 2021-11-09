@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
-
 /**
  * A {@link StreamingHttpClient} that supports filtering.
  */
@@ -39,7 +37,7 @@ public interface FilterableStreamingHttpClient extends
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to ovrride
-        return OFFLOAD_ALL_STRATEGY;
+        // safe default--implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
     }
 }
