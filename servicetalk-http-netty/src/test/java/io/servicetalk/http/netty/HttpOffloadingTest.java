@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -45,6 +46,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -116,7 +118,8 @@ class HttpOffloadingTest {
     void afterTest() throws Exception {
         CompositeCloseable closeables = newCompositeCloseable();
         Stream.of(httpConnection, client, serverContext)
-                .filter(obj -> null != obj)
+                .filter(Objects::nonNull)
+                .map(AsyncCloseable.class::cast)
                 .forEach(closeables::append);
         closeables.close();
     }
