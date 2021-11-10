@@ -159,7 +159,7 @@ class ProxyConnectConnectionFactoryFilterTest {
     }
 
     private void subscribeToProxyConnectionFactory() {
-        subscribeToProxyConnectionFactory(c -> {});
+        subscribeToProxyConnectionFactory(c -> { });
     }
 
     private void subscribeToProxyConnectionFactory(Consumer<FilterableStreamingHttpConnection> onSuccess) {
@@ -315,12 +315,13 @@ class ProxyConnectConnectionFactoryFilterTest {
     void noOffloadingStrategy() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         configureDeferSslHandler(pipeline);
-        configureConnectionContext(pipeline, HttpExecutionStrategies.offloadAll());
+        configureConnectionContext(pipeline, HttpExecutionStrategies.noOffloadsStrategy());
         configureRequestSend();
         configureConnectRequest();
         Queue<Throwable> errors = new LinkedBlockingQueue<>();
+        Thread testThread = Thread.currentThread();
         subscribeToProxyConnectionFactory(c -> {
-            if (true) {
+            if (Thread.currentThread() != testThread) {
                 errors.add(new AssertionError("Unexpected Thread for success " + Thread.currentThread()));
             }
         });
