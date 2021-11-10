@@ -17,6 +17,7 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -24,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -60,6 +62,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsClientFilterFactory filterFactory;
     @Nullable
     private DnsServiceDiscovererObserver observer;
+    private ServiceDiscoveryStatus missingRecordStatus = UNAVAILABLE;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -176,6 +179,18 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
+     * Sets which {@link ServiceDiscoveryStatus} to use in {@link ServiceDiscovererEvent#status()} when a record
+     * for a previously seen address is missing in the response.
+     *
+     * @param status a {@link ServiceDiscoveryStatus} for missing records.
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder missingRecordStatus(ServiceDiscoveryStatus status) {
+        this.missingRecordStatus = status;
+        return this;
+    }
+
+    /**
      * Build a new {@link ServiceDiscoverer} which queries
      * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
      * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
@@ -273,7 +288,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, srvConcurrency,
                 inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
-                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer);
+                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

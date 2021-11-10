@@ -242,7 +242,6 @@ class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     private static ServiceDiscovererEvent<String> flipAvailable(final ServiceDiscovererEvent<String> evt) {
-        // TODO: consider other events than AVAILABLE and UNAVAILABLE
         final ServiceDiscoveryStatus flipped = isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
         return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
     }

@@ -70,7 +70,6 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
 import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
 import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
@@ -115,6 +114,7 @@ final class DefaultDnsClient implements DnsClient {
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
+    private final ServiceDiscoveryStatus missingRecordStatus;
     private final IntFunction<? extends Completable> srvHostNameRepeater;
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
@@ -128,7 +128,8 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
                      @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
-                     @Nullable final DnsServiceDiscovererObserver observer) {
+                     @Nullable final DnsServiceDiscovererObserver observer,
+                     ServiceDiscoveryStatus missingRecordStatus) {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
@@ -142,6 +143,7 @@ final class DefaultDnsClient implements DnsClient {
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor.asExecutor());
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.observer = observer;
+        this.missingRecordStatus = requireNonNull(missingRecordStatus);
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
@@ -223,7 +225,6 @@ final class DefaultDnsClient implements DnsClient {
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
-                // TODO: consider other events than AVAILABLE and UNAVAILABLE
                 if (isAvailable(srvEvent.status())) {
                     return defer(() -> {
                         final ARecordPublisher aPublisher =
@@ -360,6 +361,11 @@ final class DefaultDnsClient implements DnsClient {
                 protected Comparator<HostAndPort> comparator() {
                     return HOST_AND_PORT_COMPARATOR;
                 }
+
+                @Override
+                protected ServiceDiscoveryStatus missingRecordStatus() {
+                    return DefaultDnsClient.this.missingRecordStatus;
+                }
             };
         }
     }
@@ -405,6 +411,11 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Comparator<InetAddress> comparator() {
                     return INET_ADDRESS_COMPARATOR;
+                }
+
+                @Override
+                protected ServiceDiscoveryStatus missingRecordStatus() {
+                    return DefaultDnsClient.this.missingRecordStatus;
                 }
             };
         }
@@ -522,6 +533,14 @@ final class DefaultDnsClient implements DnsClient {
              * @return a {@link Comparator} for the resolved address type
              */
             protected abstract Comparator<T> comparator();
+
+            /**
+             * Returns {@link ServiceDiscoveryStatus} to use for {@link ServiceDiscovererEvent#status()} when a record
+             * for previously seen address is missing in the response.
+             *
+             * @return a {@link ServiceDiscoveryStatus} for missing records.
+             */
+            protected abstract ServiceDiscoveryStatus missingRecordStatus();
 
             @Override
             public final void request(final long n) {
@@ -645,8 +664,9 @@ final class DefaultDnsClient implements DnsClient {
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
                     final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), resolutionObserver == null ? null : (nAvailable, nUnavailable) ->
-                                    reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nUnavailable));
+                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
+                                    reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nMissing),
+                            missingRecordStatus);
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (events != null) {
                         activeAddresses = addresses;
@@ -690,9 +710,9 @@ final class DefaultDnsClient implements DnsClient {
 
             private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
                                                 final DnsAnswer<T> dnsAnswer,
-                                                final int nAvailable, final int nUnavailable) {
+                                                final int nAvailable, final int nMissing) {
                 final ResolutionResult result = new DefaultResolutionResult(dnsAnswer.answer().size(),
-                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), nAvailable, nUnavailable);
+                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), nAvailable, nMissing);
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {
@@ -713,11 +733,11 @@ final class DefaultDnsClient implements DnsClient {
                 final List<ServiceDiscovererEvent<T>> events = new ArrayList<>(activeAddresses.size());
                 if (activeAddresses instanceof RandomAccess) {
                     for (int i = 0; i < activeAddresses.size(); ++i) {
-                        events.add(new DefaultServiceDiscovererEvent<>(activeAddresses.get(i), UNAVAILABLE));
+                        events.add(new DefaultServiceDiscovererEvent<>(activeAddresses.get(i), missingRecordStatus));
                     }
                 } else {
                     for (final T address : activeAddresses) {
-                        events.add(new DefaultServiceDiscovererEvent<>(address, UNAVAILABLE));
+                        events.add(new DefaultServiceDiscovererEvent<>(address, missingRecordStatus));
                     }
                 }
                 activeAddresses = emptyList();
@@ -734,16 +754,15 @@ final class DefaultDnsClient implements DnsClient {
             for (ServiceDiscovererEvent<InetAddress> event : events) {
                 InetSocketAddress addr = new InetSocketAddress(event.address(), port);
                 final ServiceDiscoveryStatus status = event.status();
+                Integer count = availableAddresses.get(addr);
                 if (status == AVAILABLE) {
-                    Integer count = availableAddresses.get(addr);
                     if (count == null) {
                         mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, status));
                         availableAddresses.put(addr, 1);
                     } else {
                         availableAddresses.put(addr, count + 1);
                     }
-                } else { // TODO: consider other events than UNAVAILABLE
-                    Integer count = availableAddresses.get(addr);
+                } else {
                     if (count == null) {
                         throw new IllegalStateException("null count for: " + addr);
                     }
@@ -766,9 +785,9 @@ final class DefaultDnsClient implements DnsClient {
             if (subscription != null) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
                 if (!events.isEmpty()) {
-                    return (generateAggregateEvent ?
-                            Publisher.<List<ServiceDiscovererEvent<T>>>from(
-                                    singletonList(new SrvInactiveEvent<T, A>()), events) : from(events))
+                    return (generateAggregateEvent ? Publisher.<List<ServiceDiscovererEvent<T>>>from(
+                            singletonList(new SrvInactiveEvent<T, A>(subscription.missingRecordStatus())), events)
+                            : from(events))
                             .concat(failed(cause));
                 }
             }
@@ -863,7 +882,13 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private static final class SrvInactiveEvent<T, A> implements ServiceDiscovererEvent<T> {
+        private final ServiceDiscoveryStatus missingRecordStatus;
         private final List<ServiceDiscovererEvent<A>> aggregatedEvents = new SrvAggregateList<>();
+
+        SrvInactiveEvent(ServiceDiscoveryStatus missingRecordStatus) {
+            this.missingRecordStatus = missingRecordStatus;
+        }
+
         @Override
         public T address() {
             throw new IllegalStateException("address method should not be called when isAvailable is false!");
@@ -871,7 +896,7 @@ final class DefaultDnsClient implements DnsClient {
 
         @Override
         public ServiceDiscoveryStatus status() {
-            return UNAVAILABLE;
+            return missingRecordStatus;
         }
     }
 

@@ -46,11 +46,13 @@ import static java.util.Objects.requireNonNull;
  * suggests otherwise. This can lead to situations where connections will be used to their maximum capacity
  * (for example in the context of pipelining) before new connections are created.</li>
  * <li>Closed connections are automatically pruned.</li>
- * <li>If {@link #eagerConnectionShutdown} is set to {@code true}, connections are immediately closed
- * for an {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable} address. When {@code false} is used, connections
- * to addresses marked as {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable} are used for requests,
- * but no new connections are created for them. In case the address' connections are busy, another host is tried.
- * If all hosts are busy, selection fails with a {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
+ * <li>When {@link Publisher}&lt;{@link ServiceDiscovererEvent}&gt; delivers events with
+ * {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscoveryStatus#UNAVAILABLE}, connections
+ * are immediately closed for the associated {@link ServiceDiscovererEvent#address()}. In case of
+ * {@link ServiceDiscoveryStatus#EXPIRED}, already established connections to {@link ServiceDiscovererEvent#address()}
+ * are used for requests, but no new connections are created. In case the address' connections are busy,
+ * another host is tried. If all hosts are busy, selection fails with a
+ * {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
  * <li>For hosts to which consecutive connection attempts fail, a background health checking task is created and
  * the host is not considered for opening new connections until the background check succeeds to create a connection.
  * Upon such event, the connection can immediately be reused and future attempts will again consider this host.
@@ -66,18 +68,13 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
     static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
-    static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = true;
     static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
-
-    private final boolean eagerConnectionShutdown;
 
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
 
-    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown,
-                                          @Nullable HealthCheckConfig healthCheckConfig) {
-        this.eagerConnectionShutdown = eagerConnectionShutdown;
+    private RoundRobinLoadBalancerFactory(@Nullable HealthCheckConfig healthCheckConfig) {
         this.healthCheckConfig = healthCheckConfig;
     }
 
@@ -86,7 +83,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(
-                eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+                eventPublisher, connectionFactory, healthCheckConfig);
     }
 
     @Override
@@ -95,7 +92,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
-                eventPublisher, connectionFactory, eagerConnectionShutdown, healthCheckConfig);
+                eventPublisher, connectionFactory, healthCheckConfig);
     }
 
     /**
@@ -105,7 +102,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-        private boolean eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
         @Nullable
         private Executor backgroundExecutor;
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -129,10 +125,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * for a particular host. Value of {@code false} preserves connections and routes requests through them
          * but no new connections are opened for such host.
          * @return {@code this}.
+         * @deprecated This configuration has no effect. To control the behaviour, configure the
+         * {@link io.servicetalk.client.api.ServiceDiscoverer} of your choice to deliver appropriate
+         * {@link ServiceDiscovererEvent#status()}. In order to avoid connection shutdown use
+         * {@link ServiceDiscoveryStatus#EXPIRED}. Use {@link ServiceDiscoveryStatus#UNAVAILABLE} when the
+         * connections should be eagerly closed upon such event.
          */
+        @Deprecated
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> eagerConnectionShutdown(
                 boolean eagerConnectionShutdown) {
-            this.eagerConnectionShutdown = eagerConnectionShutdown;
             return this;
         }
 
@@ -205,14 +206,14 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {
-                return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, null);
+                return new RoundRobinLoadBalancerFactory<>(null);
             }
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
                     healthCheckInterval, healthCheckFailedConnectionsThreshold);
 
-            return new RoundRobinLoadBalancerFactory<>(eagerConnectionShutdown, healthCheckConfig);
+            return new RoundRobinLoadBalancerFactory<>(healthCheckConfig);
         }
     }
 
