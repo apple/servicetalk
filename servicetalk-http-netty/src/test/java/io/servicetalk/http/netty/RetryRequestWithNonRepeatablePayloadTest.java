@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -26,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -68,7 +70,8 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                        boolean offloading) {
         protocol(protocol.config);
         ChannelOutboundHandler firstWriteHandler = new FailingFirstWriteHandler();
-        connectionFactoryFilter(factory -> new DelegatingConnectionFactory<InetSocketAddress,
+        connectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
+                factory -> new DelegatingConnectionFactory<InetSocketAddress,
                 FilterableStreamingHttpConnection>(factory) {
             @Override
             public Single<FilterableStreamingHttpConnection> newConnection(InetSocketAddress address,
@@ -91,7 +94,8 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                                                                      StreamingHttpRequest request) {
                             return delegate().request(strategy, request).whenOnError(t -> {
                                 try {
-                                    assertThat("Unexpected exception type", t, instanceOf(RetryableException.class));
+                                    assertThat("Unexpected exception type", t,
+                                            instanceOf(RetryableException.class));
                                     assertThat("Unexpected exception type",
                                             t.getCause(), instanceOf(DeliberateException.class));
                                     assertThat("Unexpected subscribe to payload body",
@@ -104,7 +108,7 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                     };
                 });
             }
-        });
+        }, ExecutionStrategy.anyStrategy()));
         setUp(offloading ? CACHED : IMMEDIATE, offloading ? CACHED_SERVER : IMMEDIATE);
     }
 

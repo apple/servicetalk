@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.ConnectionClosedException;
-import io.servicetalk.client.api.MaxRequestLimitExceededException;
-import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -50,8 +47,8 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.IMMEDIATE;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
@@ -151,10 +148,7 @@ class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest 
             if (filterMode.expectAccept) {
                 throw new AssertionError("Unexpected exception while reading/writing request/response", e);
             }
-            MatcherAssert.assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
-                                                         instanceOf(MaxRequestLimitExceededException.class),
-                                                         instanceOf(NoAvailableHostException.class),
-                                                         instanceOf(ConnectionClosedException.class)));
+            MatcherAssert.assertThat(e.getCause(), is(instanceOf(IOException.class)));
         }
 
         if (isSslEnabled()) {

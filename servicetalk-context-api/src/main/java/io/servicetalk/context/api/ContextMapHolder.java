@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils;
+package io.servicetalk.context.api;
+
+import javax.annotation.Nullable;
 
 /**
- * Throws when redirect could not be performed.
+ * Interface for getting and setting a {@link ContextMap}.
  */
-public final class InvalidRedirectException extends RuntimeException {
-    private static final long serialVersionUID = -3339327100606339327L;
+public interface ContextMapHolder {
+    /**
+     * Get the current {@link ContextMap}.
+     *
+     * @return the current {@link ContextMap}.
+     */
+    @Nullable
+    ContextMap context();
 
     /**
-     * Create a new instance.
+     * Set the {@link ContextMap}.
      *
-     * @param message The detail message.
+     * @param context the new value for {@link ContextMap}.
+     * @return {@code this}.
      */
-    InvalidRedirectException(final String message) {
-        super(message);
-    }
+    ContextMapHolder context(@Nullable ContextMap context);
 }

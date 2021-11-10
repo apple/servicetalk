@@ -18,12 +18,15 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
+
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
 
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
 @FunctionalInterface
-public interface HttpService extends AsyncCloseable {
+public interface HttpService extends AsyncCloseable, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     /**
      * Handles a single HTTP request.
      *
@@ -33,6 +36,12 @@ public interface HttpService extends AsyncCloseable {
      * @return {@link Single} of HTTP response.
      */
     Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory);
+
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
+        return OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+    }
 
     /**
      * Closes this {@link HttpService} asynchronously.

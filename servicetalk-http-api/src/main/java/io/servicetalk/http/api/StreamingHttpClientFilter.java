@@ -22,6 +22,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
+ *
+ * @see StreamingHttpClientFilterFactory
  */
 public class StreamingHttpClientFilter implements FilterableStreamingHttpClient {
     private final FilterableStreamingHttpClient delegate;

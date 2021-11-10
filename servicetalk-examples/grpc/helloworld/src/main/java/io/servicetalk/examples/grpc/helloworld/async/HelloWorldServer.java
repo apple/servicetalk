@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
  * <p>
  * Start this server first and then run the {@link HelloWorldClient}.
  */
-public class HelloWorldServer {
+public final class HelloWorldServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 .listenAndAwait((GreeterService) (ctx, request) ->

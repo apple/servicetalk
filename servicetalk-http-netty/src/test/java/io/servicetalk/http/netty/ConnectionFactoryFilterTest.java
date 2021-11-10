@@ -37,6 +37,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
@@ -157,14 +158,14 @@ class ConnectionFactoryFilterTest {
     private static
     ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> newConnectionFactoryFilter(
             UnaryOperator<FilterableStreamingHttpConnection> filter) {
-        return original ->
+        return ConnectionFactoryFilter.withStrategy(original ->
                 new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(original) {
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
                             final InetSocketAddress inetSocketAddress, @Nullable final TransportObserver observer) {
                         return delegate().newConnection(inetSocketAddress, observer).map(filter);
                     }
-                };
+                }, ExecutionStrategy.anyStrategy());
     }
 
     private static class AddResponseHeaderConnectionFilter extends StreamingHttpConnectionFilter {

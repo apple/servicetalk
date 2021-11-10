@@ -123,7 +123,16 @@ could be any protobuf object.
 * link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[ErrorExampleServer] - Requires each request has a non-empty `token` field or else returns an
 error.
 * link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java[ErrorExampleClient] - Sends a request with missing `token` field to simulate an error
-  condition on the server.
+condition on the server.
+
+[#execution-strategy]
+== Execution Strategy
+The gRPC implementation can be configured to execute all or some of the routes for a server without offloading. Using the `IoExecutor` for executing routes is appropriate only if there is no possibility that the route implementation will block.
+
+The example demonstrates the impact of different route execution strategy configuration mechanisms.
+
+* link:{source-root}/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyServer.java[ExecutionStrategyServer] - Starts multiple servers configured using a variety of modes and techniques to specify the execution strategy to be used.
+* link:{source-root}/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyClient.java[ExecutionStrategyClient] - Sends requests to each of the differently configured servers and reports execution details.
 
 [#protoc-options]
 == Protoc Options

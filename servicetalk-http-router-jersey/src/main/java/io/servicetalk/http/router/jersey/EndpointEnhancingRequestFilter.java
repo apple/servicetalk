@@ -154,9 +154,10 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 return new CompletableAwareEndpoint(
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             }
-            final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+            final ExecutionContext<HttpExecutionStrategy> executionContext = (ExecutionContext<HttpExecutionStrategy>)
+                    ctxRefProvider.get().get().executionContext();
             final HttpExecutionStrategy difference = difference(executionContext.executor(),
-                            (HttpExecutionStrategy) executionContext.executionStrategy(), routeExecutionStrategy);
+                            executionContext.executionStrategy(), routeExecutionStrategy);
             if (difference != null) {
                 return new ExecutorOffloadingEndpoint(
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
@@ -194,7 +195,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             this.ctxRefProvider = ctxRefProvider;
             this.routeExecutionStrategy = routeExecutionStrategy;
             if (routeExecutionStrategy != null) {
-                final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+                final ExecutionContext<?> executionContext = ctxRefProvider.get().get().executionContext();
                 // ExecutionStrategy and Executor shared for all routes in JerseyRouter
                 final ExecutionStrategy executionStrategy = executionContext.executionStrategy();
                 executor = executionContext.executor();
@@ -482,7 +483,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     }
 
     private static final class ExecutorOverrideConnectionContext extends DelegatingConnectionContext {
-        private final ExecutionContext execCtx;
+        private final ExecutionContext<?> execCtx;
 
         private ExecutorOverrideConnectionContext(final ConnectionContext original,
                                                   final Executor executor) {
@@ -497,7 +498,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public ExecutionContext<?> executionContext() {
             return execCtx;
         }
     }

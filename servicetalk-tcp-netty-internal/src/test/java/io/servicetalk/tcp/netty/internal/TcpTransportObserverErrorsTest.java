@@ -94,7 +94,7 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         return new TcpServer(getTcpServerConfig()) {
             @Override
             ChannelInitializer getChannelInitializer(Function<NettyConnection<Buffer, Buffer>, Completable> service,
-                                                     ExecutionContext executionContext) {
+                                                     ExecutionContext<?> executionContext) {
                 return super.getChannelInitializer(service, executionContext).andThen(channelInitializer);
             }
         };

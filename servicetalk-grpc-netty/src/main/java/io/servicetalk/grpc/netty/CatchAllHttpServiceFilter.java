@@ -16,8 +16,8 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,8 +30,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.netty.GrpcUtils.newErrorResponse;
 
-final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                 HttpExecutionStrategyInfluencer {
+final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory {
 
     public static final StreamingHttpServiceFilterFactory INSTANCE = new CatchAllHttpServiceFilter();
 
@@ -64,7 +63,7 @@ final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFacto
     }
 
     @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategy;    // no influence since we do not block
+    public HttpExecutionStrategy requiredOffloads() {
+        return HttpExecutionStrategies.anyStrategy();
     }
 }

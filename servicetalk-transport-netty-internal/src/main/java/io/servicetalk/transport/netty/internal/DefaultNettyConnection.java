@@ -106,7 +106,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final CloseHandler closeHandler;
     private final NettyChannelPublisher<Read> nettyChannelPublisher;
     private final Publisher<Read> readPublisher;
-    private final ExecutionContext executionContext;
+    private final ExecutionContext<?> executionContext;
     @Nullable
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
@@ -162,7 +162,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     };
 
     private DefaultNettyConnection(
-            Channel channel, ExecutionContext executionContext, CloseHandler closeHandler, FlushStrategy flushStrategy,
+            Channel channel, ExecutionContext<?> executionContext,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
@@ -227,11 +228,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * ready to use.
      */
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
-            Channel channel, ExecutionContext executionContext, CloseHandler closeHandler, FlushStrategy flushStrategy,
+            Channel channel, ExecutionContext<?> executionContext,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
-        DefaultExecutionContext childExecutionContext = new DefaultExecutionContext(executionContext.bufferAllocator(),
+        DefaultExecutionContext<?> childExecutionContext = new DefaultExecutionContext<>(
+                executionContext.bufferAllocator(),
                 fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, childExecutionContext,
@@ -277,7 +280,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 try {
                     delayedCancellable = new DelayedCancellable();
                     boolean supportsIoThread = null != ioExecutor && ioExecutor.isIoThreadSupported();
-                    DefaultExecutionContext executionContext = new DefaultExecutionContext(allocator,
+                    DefaultExecutionContext<?> executionContext = new DefaultExecutionContext<>(allocator,
                             fromNettyEventLoop(channel.eventLoop(), supportsIoThread), executor, executionStrategy);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel,
                             executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, null, null,
@@ -452,7 +455,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public ExecutionContext<?> executionContext() {
         return executionContext;
     }
 

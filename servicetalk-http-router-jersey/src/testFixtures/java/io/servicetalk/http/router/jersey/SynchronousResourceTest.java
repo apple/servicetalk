@@ -17,6 +17,8 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpResponseStatus;
 
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -32,6 +34,7 @@ import static io.servicetalk.http.router.jersey.resources.SynchronousResources.P
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 
+@Execution(ExecutionMode.CONCURRENT)
 class SynchronousResourceTest extends AbstractResourceTest {
 
     @Override

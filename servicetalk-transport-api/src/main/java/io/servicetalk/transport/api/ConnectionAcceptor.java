@@ -22,6 +22,8 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
  * A contract that defines the connection acceptance criterion.
+ *
+ * @see ConnectionAcceptorFactory
  */
 @FunctionalInterface
 public interface ConnectionAcceptor extends AsyncCloseable {

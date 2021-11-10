@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.context.api.ContextMap;
+
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
 class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpResponseMetaData {
@@ -22,8 +26,8 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     private HttpResponseStatus status;
 
     DefaultHttpResponseMetaData(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                final HttpHeaders headers) {
-        super(version, headers);
+                                final HttpHeaders headers, @Nullable final ContextMap context) {
+        super(version, headers, context);
         this.status = requireNonNull(status);
     }
 
@@ -41,6 +45,12 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     @Override
     public HttpResponseMetaData status(final HttpResponseStatus status) {
         this.status = requireNonNull(status);
+        return this;
+    }
+
+    @Override
+    public HttpResponseMetaData context(final ContextMap context) {
+        super.context(context);
         return this;
     }
 

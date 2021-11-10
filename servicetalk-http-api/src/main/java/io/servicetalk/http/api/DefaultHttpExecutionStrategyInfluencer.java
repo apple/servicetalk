@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
+package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-final class OffloadAllExecutionStrategy implements ExecutionStrategy {
+interface DefaultHttpExecutionStrategyInfluencer extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
-    static final ExecutionStrategy OFFLOAD_ALL_STRATEGY = new OffloadAllExecutionStrategy();
-
-    private OffloadAllExecutionStrategy() {
-        // Singleton
+    @Override
+    default HttpExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
     }
 }

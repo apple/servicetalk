@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +45,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
@@ -257,7 +259,18 @@ class ServerEffectiveStrategyTest {
                 serverBuilder.ioExecutor(ioExecutor)
                         .appendServiceFilter(new ServiceInvokingThreadRecorder(invokingThreadsRecorder));
                 if (addFilter) {
-                    serverBuilder.appendServiceFilter(StreamingHttpServiceFilter::new);
+                    serverBuilder.appendServiceFilter(new StreamingHttpServiceFilterFactory() {
+                        @Override
+                        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+                            return new StreamingHttpServiceFilter(service);
+                        }
+
+                        @Override
+                        public HttpExecutionStrategy requiredOffloads() {
+                            // require full offloading
+                            return offloadAll();
+                        }
+                    });
                 }
                 return serverStarter.apply(serverBuilder);
             }, (__, ___) -> { });
@@ -273,7 +286,7 @@ class ServerEffectiveStrategyTest {
     }
 
     private static final class ServiceInvokingThreadRecorder
-            implements HttpExecutionStrategyInfluencer, StreamingHttpServiceFilterFactory {
+            implements ExecutionStrategyInfluencer<HttpExecutionStrategy>, StreamingHttpServiceFilterFactory {
 
         private final InvokingThreadsRecorder<ServerOffloadPoint> recorder;
 
@@ -282,8 +295,9 @@ class ServerEffectiveStrategyTest {
         }
 
         @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;
+        public HttpExecutionStrategy requiredOffloads() {
+            // No influence since we do not block.
+            return HttpExecutionStrategies.anyStrategy();
         }
 
         @Override

@@ -49,12 +49,12 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
-import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -75,7 +75,7 @@ import static org.mockito.Mockito.when;
 class DefaultNettyConnectionTest {
 
     private static final String TRAILER_MSG = "Trailer";
-    private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG);
+    private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG).asReadOnly();
     private TestPublisher<Buffer> publisher;
     private TestCompletableSubscriber writeListener = new TestCompletableSubscriber();
     private final TestCompletableSubscriber secondWriteListener = new TestCompletableSubscriber();
@@ -114,7 +114,7 @@ class DefaultNettyConnectionTest {
         CloseHandler closeHandler = closeHandlerFactory.apply(channel);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
                 null, closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(closeHandler),
-                OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+                offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = new TestPublisher<>();
     }
 

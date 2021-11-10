@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api;
 
-/**
- * Exception raised when more concurrent requests have been issued on a connection than is allowed.
- */
-public class MaxRequestLimitExceededException extends RuntimeException {
-    private static final long serialVersionUID = 9114515334374632438L;
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-    /**
-     * New instance.
-     *
-     * @param message The exception message.
-     */
-    public MaxRequestLimitExceededException(String message) {
-        super(message);
-    }
+dependencies {
+  implementation project(":servicetalk-annotations")
+
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }

@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link StreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
+ *
+ * @see StreamingHttpConnectionFilterFactory
  */
 public class StreamingHttpConnectionFilter implements FilterableStreamingHttpConnection {
     private final FilterableStreamingHttpConnection delegate;

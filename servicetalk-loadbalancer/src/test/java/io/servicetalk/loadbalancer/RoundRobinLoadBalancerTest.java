@@ -83,6 +83,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -415,7 +416,7 @@ abstract class RoundRobinLoadBalancerTest {
                 final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
                 assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
             } catch (Exception e) {
-                assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+                assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
             }
         }
 
@@ -459,7 +460,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
@@ -467,7 +468,7 @@ abstract class RoundRobinLoadBalancerTest {
         for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -492,7 +493,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
             Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         for (int i = 0; i < timeAdvancementsTillHealthy; ++i) {
@@ -538,7 +539,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         // Trigger first health check:
         Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory,
         // second - due to an unexpected error from executor:
         for (int i = 0; i < 2; ++i) {
@@ -547,7 +548,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         // Trigger yet another health check:
         e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
-        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory, second succeeds:
         for (int i = 0; i < 2; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -757,6 +758,8 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     static class UnhealthyHostConnectionFactory {
+        // Create a new instance of DeliberateException to avoid "Self-suppression not permitted"
+        static final DeliberateException UNHEALTHY_HOST_EXCEPTION = new DeliberateException();
         private final String failingHost;
         private final AtomicInteger momentInTime = new AtomicInteger();
         final AtomicInteger requests = new AtomicInteger();
@@ -785,7 +788,7 @@ abstract class RoundRobinLoadBalancerTest {
                                        Single<TestLoadBalancedConnection> properConnection) {
             this.failingHost = failingHost;
             this.connections = IntStream.range(0, timeAdvancementsTillHealthy)
-                    .<Single<TestLoadBalancedConnection>>mapToObj(__ -> failed(DELIBERATE_EXCEPTION))
+                    .<Single<TestLoadBalancedConnection>>mapToObj(__ -> failed(UNHEALTHY_HOST_EXCEPTION))
                     .collect(Collectors.toList());
             this.properConnection = properConnection;
         }

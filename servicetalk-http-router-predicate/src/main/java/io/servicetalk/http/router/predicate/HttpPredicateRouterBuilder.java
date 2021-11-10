@@ -20,10 +20,8 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.dsl.CookieMatcher;
@@ -31,10 +29,12 @@ import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
 import io.servicetalk.http.router.predicate.dsl.RouteStarter;
 import io.servicetalk.http.router.predicate.dsl.StringMultiValueMatcher;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -53,7 +53,7 @@ import static io.servicetalk.http.router.predicate.Predicates.regex;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
+ * Builds a {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
  * on user specified criteria.
  * <p>
  * eg.
@@ -66,6 +66,7 @@ import static java.util.Objects.requireNonNull;
  * }</pre>
  * <p>
  * If no routes match, a default service is used, which returns a 404 response.
+ *
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
     private final List<Route> routes = new ArrayList<>();
@@ -173,7 +174,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private class RouteContinuationImpl implements RouteContinuation {
 
-        private StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
         @Nullable
         private HttpExecutionStrategy strategy;
 
@@ -249,51 +249,46 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteContinuation executionStrategy(final HttpExecutionStrategy routeStrategy) {
-            strategy = routeStrategy;
+            strategy = Objects.requireNonNull(routeStrategy);
             return this;
         }
 
         @Override
         public RouteStarter thenRouteTo(final StreamingHttpService service) {
-            return thenRouteTo0(service, newInfluencer(service).influenceStrategy(defaultStrategy()));
+            return thenRouteTo0(service, serviceOffloads(service));
         }
 
         @Override
         public RouteStarter thenRouteTo(final HttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingHttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
-        private HttpExecutionStrategyInfluencer newInfluencer(final Object service) {
-            influencerChainBuilder.prependIfInfluencer(service);
-            final HttpExecutionStrategyInfluencer strategyInfluencer;
-            if (strategy != null) {
-                strategyInfluencer = influencerChainBuilder.build(strategy);
-            } else {
-                strategyInfluencer = influencerChainBuilder.build();
-            }
-            return strategyInfluencer;
+        private HttpExecutionStrategy serviceOffloads(final Object service) {
+            return null != strategy ?
+                    strategy : service instanceof ExecutionStrategyInfluencer ?
+                        HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
+                        defaultStrategy();
         }
 
         private RouteStarter thenRouteTo0(final StreamingHttpService route,
                                           @Nullable final HttpExecutionStrategy routeStrategy) {
             assert predicate != null;
-            routes.add(new Route(predicate, route, routeStrategy));
+            routes.add(new Route(predicate, route, null == strategy ? null : routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
-            influencerChainBuilder = new StrategyInfluencerChainBuilder();
             strategy = null;
             return HttpPredicateRouterBuilder.this;
         }

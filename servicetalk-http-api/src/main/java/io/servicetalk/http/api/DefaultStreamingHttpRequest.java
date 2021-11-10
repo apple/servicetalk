@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
@@ -34,10 +35,11 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
+                                @Nullable final ContextMap context,
                                 @Nullable final ContentCodec encoding, @Nullable final BufferEncoder encoder,
                                 final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
                                 final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory) {
-        super(method, requestTarget, version, headers);
+        super(method, requestTarget, version, headers, context);
         if (encoding != null) {
             encoding(encoding);
         }
@@ -55,6 +57,12 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     @Override
     public StreamingHttpRequest encoding(final ContentCodec encoding) {
         super.encoding(encoding);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest context(final ContextMap context) {
+        super.context(context);
         return this;
     }
 

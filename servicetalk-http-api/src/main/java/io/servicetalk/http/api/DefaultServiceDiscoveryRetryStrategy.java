@@ -52,7 +52,13 @@ import static java.util.stream.Collectors.toList;
  *
  * @param <ResolvedAddress> The type of address after resolution.
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
+ * @see io.servicetalk.concurrent.api.RetryStrategies
+ * @see SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)
+ * @deprecated Use {@link SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)}
+ * or {@link PartitionedHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)} combined with common utilities
+ * from {@link io.servicetalk.concurrent.api.RetryStrategies} or provide your own {@link BiIntFunction retry strategy}.
  */
+@Deprecated
 public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         E extends ServiceDiscovererEvent<ResolvedAddress>>
         implements ServiceDiscoveryRetryStrategy<ResolvedAddress, E> {
@@ -94,7 +100,12 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
      *
      * @param <ResolvedAddress> The type of address after resolution.
      * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
+     * @see io.servicetalk.concurrent.api.RetryStrategies
+     * @see SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)
+     * @deprecated Use standard mechanisms for retrying using {@link io.servicetalk.concurrent.api.RetryStrategies}
+     * combined with {@link SingleAddressHttpClientBuilder#retryServiceDiscoveryErrors(BiIntFunction)}.
      */
+    @Deprecated
     public static final class Builder<ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> {
         private BiIntFunction<Throwable, ? extends Completable> retryStrategy;
         private final UnaryOperator<E> flipAvailability;

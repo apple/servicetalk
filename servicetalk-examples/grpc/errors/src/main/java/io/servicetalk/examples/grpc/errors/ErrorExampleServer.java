@@ -35,7 +35,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 /**
  * Extends the async "Hello World" example to include support for application error propagation.
  */
-public class ErrorExampleServer {
+public final class ErrorExampleServer {
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
                 .listenAndAwait(new ErrorGreeterService())

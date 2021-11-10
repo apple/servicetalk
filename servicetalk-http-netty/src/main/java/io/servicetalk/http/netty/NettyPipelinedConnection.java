@@ -140,7 +140,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public ExecutionContext<?> executionContext() {
         return connection.executionContext();
     }
 

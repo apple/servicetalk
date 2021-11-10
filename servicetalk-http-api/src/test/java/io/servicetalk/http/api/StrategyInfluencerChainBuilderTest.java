@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import javax.annotation.Nonnull;
@@ -23,6 +25,7 @@ import javax.annotation.Nonnull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -40,32 +43,32 @@ class StrategyInfluencerChainBuilderTest {
         HttpExecutionStrategyInfluencer influencer2 = newNoInfluenceInfluencer();
         chain2.append(influencer2);
 
-        chain1.build().influenceStrategy(defaultStrategy());
+        defaultStrategy().merge(chain1.build().requiredOffloads());
 
         verifyNoInteractions(influencer2);
     }
 
     @Test
-    void appendAndPrepend() {
-        appendAndPrepend(false);
-    }
-
-    @Test
-    void conditionalAppendAndPrepend() {
-        appendAndPrepend(true);
-    }
-
-    @Test
     void buildWithStrategy() {
         StrategyInfluencerChainBuilder chain = new StrategyInfluencerChainBuilder();
-        HttpExecutionStrategy transportStrategy = mock(HttpExecutionStrategy.class);
-        when(transportStrategy.merge(defaultStrategy())).then(invocation -> invocation.getArgument(0));
-        HttpExecutionStrategy influenced =
-                chain.build(transportStrategy).influenceStrategy(defaultStrategy());
-        assertThat("Unexpected infuenced strategy", influenced, sameInstance(defaultStrategy()));
+        HttpExecutionStrategy transportStrategy = HttpExecutionStrategies.customStrategyBuilder().offloadSend().build();
+        HttpExecutionStrategyInfluencer influencer = chain.build(transportStrategy);
+        HttpExecutionStrategy influenced = influencer.requiredOffloads();
+        assertThat("Unexpected influenced strategy", influenced, sameInstance(transportStrategy));
     }
 
-    private void appendAndPrepend(boolean conditional) {
+    @Test
+    void buildWithDefaultStrategy() {
+        StrategyInfluencerChainBuilder chain = new StrategyInfluencerChainBuilder();
+        HttpExecutionStrategy transportStrategy = defaultStrategy();
+        HttpExecutionStrategyInfluencer influencer = chain.build(transportStrategy);
+        HttpExecutionStrategy influenced = influencer.requiredOffloads();
+        assertThat("Unexpected influenced strategy", influenced, sameInstance(defaultStrategy()));
+    }
+
+    @ParameterizedTest(name = "conditional? = {0}")
+    @ValueSource(booleans = {false, true})
+    void appendAndPrepend(boolean conditional) {
         StrategyInfluencerChainBuilder chain = new StrategyInfluencerChainBuilder();
         HttpExecutionStrategyInfluencer influencer1 = newNoInfluenceInfluencer();
         HttpExecutionStrategyInfluencer influencer2 = newNoInfluenceInfluencer();
@@ -81,18 +84,20 @@ class StrategyInfluencerChainBuilderTest {
             chain.append(influencer3);
         }
 
-        chain.build().influenceStrategy(defaultStrategy());
+        defaultStrategy().merge(chain.build().requiredOffloads());
 
         InOrder inOrder = inOrder(influencer1, influencer2, influencer3);
-        inOrder.verify(influencer1).influenceStrategy(defaultStrategy());
-        inOrder.verify(influencer2).influenceStrategy(defaultStrategy());
-        inOrder.verify(influencer3).influenceStrategy(defaultStrategy());
+        inOrder.verify(influencer1).requiredOffloads();
+        inOrder.verify(influencer2).requiredOffloads();
+        inOrder.verify(influencer3).requiredOffloads();
     }
 
     @Nonnull
     private HttpExecutionStrategyInfluencer newNoInfluenceInfluencer() {
         HttpExecutionStrategyInfluencer influencer1 = mock(HttpExecutionStrategyInfluencer.class);
-        when(influencer1.influenceStrategy(defaultStrategy())).then(invocation -> invocation.getArgument(0));
+        when(influencer1.requiredOffloads()).thenReturn(HttpExecutionStrategies.anyStrategy());
+        when(influencer1.influenceStrategy(any(HttpExecutionStrategy.class)))
+                .then(invocation -> invocation.getArgument(0));
         return influencer1;
     }
 }

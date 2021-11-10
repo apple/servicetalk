@@ -45,30 +45,6 @@ public final class AwaitUtils {
     }
 
     /**
-     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down.
-     * @param latch the {@link CountDownLatch} to await.
-     * @deprecated use {@link #await(CountDownLatch)} instead
-     */
-    @Deprecated
-    public static void awaitUninterruptibly(CountDownLatch latch) {
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    latch.await();
-                    return;
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
      * Await a {@link CountDownLatch} until the latch is counted down or the given time duration expires,
      * throws unchecked InterruptedException.
      * @param latch the {@link CountDownLatch} to await.
@@ -85,40 +61,6 @@ public final class AwaitUtils {
             Thread.currentThread().interrupt();
             throwException(e);
             return false;
-        }
-    }
-
-    /**
-     * Await a {@link CountDownLatch} while suppressing {@link InterruptedException} until the latch is counted down or
-     * the given time duration expires.
-     * @param latch the {@link CountDownLatch} to await.
-     * @param timeout the timeout duration to await for.
-     * @param unit the units applied to {@code timeout}.
-     * @return see {@link CountDownLatch#await(long, TimeUnit)}.
-     * @deprecated use {@link #await(CountDownLatch, long, TimeUnit)} instead
-     */
-    @Deprecated
-    public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
-        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeoutNanos;
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return latch.await(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
         }
     }
 
@@ -143,31 +85,6 @@ public final class AwaitUtils {
     }
 
     /**
-     * {@link BlockingQueue#take()} from the queue while suppressing {@link InterruptedException}s.
-     * @param queue The queue to take from.
-     * @param <T> The types of objects in the queue.
-     * @return see {@link BlockingQueue#take()}.
-     * @deprecated use {@link #take(BlockingQueue)} instead.
-     */
-    @Deprecated
-    public static <T> T takeUninterruptibly(BlockingQueue<T> queue) {
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return queue.take();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
      * {@link BlockingQueue#poll(long, TimeUnit)} from the queue, throws unchecked Exception if
      * thread is interrupted while waiting.
      * @param queue the queue to poll from.
@@ -184,41 +101,6 @@ public final class AwaitUtils {
             Thread.currentThread().interrupt();
             throwException(e);
             return null;
-        }
-    }
-
-    /**
-     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue while suppressing {@link InterruptedException}s.
-     * @param queue the queue to poll from.
-     * @param timeout the timeout duration to poll for.
-     * @param unit the units applied to {@code timeout}.
-     * @param <T> The types of objects in the queue.
-     * @return see {@link BlockingQueue#poll(long, TimeUnit)}.
-     * @deprecated use {@link #poll(BlockingQueue, long, TimeUnit)} instead.
-     */
-    @Deprecated
-    @Nullable
-    public static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
-        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeout;
-        boolean interrupted = false;
-        try {
-            do {
-                try {
-                    return queue.poll(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return null;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
         }
     }
 }

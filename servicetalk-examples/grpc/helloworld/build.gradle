@@ -41,7 +41,7 @@ protobuf {
 
   //// REMOVE if outside of ServiceTalk gradle project
   def pluginJar = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
-          "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar")
+      "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar")
   //// REMOVE if outside of ServiceTalk gradle project
 
   plugins {
@@ -61,10 +61,10 @@ protobuf {
 
       // you may need to manually add the artifact name as an input
       task.inputs
-              .file(pluginJar)
-              .withNormalizer(ClasspathNormalizer)
-              .withPropertyName("servicetalkPluginJar")
-              .withPathSensitivity(PathSensitivity.RELATIVE)
+          .file(pluginJar)
+          .withNormalizer(ClasspathNormalizer)
+          .withPropertyName("servicetalkPluginJar")
+          .withPathSensitivity(PathSensitivity.RELATIVE)
       //// REMOVE if outside of ServiceTalk gradle project
 
       task.plugins {

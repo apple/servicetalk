@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.grpc.strategies;
 
-import io.servicetalk.transport.api.ExecutionStrategy;
-
-final class OffloadFromIOExecutionStrategy implements ExecutionStrategy {
-
-    static final ExecutionStrategy OFFLOAD_FROM_IO_STRATEGY = new OffloadFromIOExecutionStrategy();
-
-    private OffloadFromIOExecutionStrategy() {
-        // Singleton
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
