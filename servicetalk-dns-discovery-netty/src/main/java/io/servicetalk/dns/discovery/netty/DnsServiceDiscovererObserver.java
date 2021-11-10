@@ -16,7 +16,7 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 /**
  * An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
@@ -88,16 +88,17 @@ public interface DnsServiceDiscovererObserver {
         int ttl();
 
         /**
-         * Number of resolved records that became {@link ServiceDiscoveryStatus#AVAILABLE available}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent.Status#AVAILABLE available}.
          *
-         * @return the number of resolved records that became {@link ServiceDiscoveryStatus#AVAILABLE available}
+         * @return the number of resolved records that became {@link ServiceDiscovererEvent.Status#AVAILABLE available}
          */
         int nAvailable();
 
         /**
-         * Number of resolved records that became {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable}.
          *
-         * @return the number of resolved records that became {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable}
+         * @return the number of resolved records that became
+         * {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable}
          * @deprecated Implement and use {@link #nMissing()} method.
          */
         @Deprecated
@@ -106,8 +107,9 @@ public interface DnsServiceDiscovererObserver {
         }
 
         /**
-         * Number of records expected in response but not returned in the query results.
-         * @return number of records missing in the response.
+         * Number of missing records compared to the previous resolution result.
+         *
+         * @return number of missing records compared to the previous resolution result.
          */
         default int nMissing() {
             return nUnavailable();

@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.client.api.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
@@ -53,7 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -105,7 +104,7 @@ class PartitionedHttpClientTest {
                     }
 
                     @Override
-                    public ServiceDiscoveryStatus status() {
+                    public Status status() {
                         return psde.status();
                     }
 
@@ -242,7 +241,7 @@ class PartitionedHttpClientTest {
         }
 
         @Override
-        public ServiceDiscoveryStatus status() {
+        public Status status() {
             return AVAILABLE;
         }
     }

@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
-import io.servicetalk.client.api.internal.ServiceDiscovererUtils;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -37,9 +35,8 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
-import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
@@ -169,7 +166,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         withDefaults(final Executor executor, final Duration initialDelay, final Duration jitter) {
             // TODO(dj): flip availability might not make sense for EXPIRED
             return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter), evt -> {
-                final ServiceDiscoveryStatus flipped = isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
+                final ServiceDiscovererEvent.Status flipped =
+                        AVAILABLE.equals(evt.status()) ? UNAVAILABLE : AVAILABLE;
                 return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
             });
         }
@@ -198,9 +196,9 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                         }
 
                         @Override
-                        public ServiceDiscoveryStatus status() {
+                        public Status status() {
                             // TODO(dj): flip availability might not make sense for EXPIRED
-                            return ServiceDiscovererUtils.isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
+                            return AVAILABLE.equals(evt.status()) ? UNAVAILABLE : AVAILABLE;
                         }
                     });
         }
@@ -213,8 +211,8 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          * @param jitter {@link Duration} of jitter to apply to each backoff delay.
          * @param flipAvailability {@link UnaryOperator} that returns a new {@link ServiceDiscovererEvent} that is the
          * same as the passed {@link ServiceDiscovererEvent} but with {@link ServiceDiscovererEvent#status()} value
-         * flipped (with the assumption that only {@link ServiceDiscoveryStatus#AVAILABLE}
-         * and {@link ServiceDiscoveryStatus#UNAVAILABLE} statuses are in use).
+         * flipped (with the assumption that only {@link ServiceDiscovererEvent.Status#AVAILABLE}
+         * and {@link ServiceDiscovererEvent.Status#UNAVAILABLE} statuses are in use).
          * @param <ResolvedAddress> The type of address after resolution.
          * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
          * @return A new {@link Builder}.
@@ -257,7 +255,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             if (retainedAddresses == NONE_RETAINED) {
                 for (E e : events) {
                     // TODO: consider other events than AVAILABLE and UNAVAILABLE
-                    if (isAvailable(e.status())) {
+                    if (AVAILABLE.equals(e.status())) {
                         activeAddresses.put(e.address(), e);
                     } else {
                         activeAddresses.remove(e.address());

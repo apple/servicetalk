@@ -22,7 +22,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -219,15 +218,15 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 final List<Host<ResolvedAddress, C>> oldHostsTyped =
                                         (List<Host<ResolvedAddress, C>>) oldHosts;
 
-                                if (ServiceDiscoveryStatus.AVAILABLE.equals(event.status())) {
+                                if (ServiceDiscovererEvent.Status.AVAILABLE.equals(event.status())) {
                                     return addHostToList(oldHostsTyped, addr);
-                                } else if (ServiceDiscoveryStatus.EXPIRED.equals(event.status())) {
+                                } else if (ServiceDiscovererEvent.Status.EXPIRED.equals(event.status())) {
                                     if (oldHostsTyped.isEmpty()) {
                                         return emptyList();
                                     } else {
                                         return markHostAsExpired(oldHostsTyped, addr);
                                     }
-                                } else if (ServiceDiscoveryStatus.UNAVAILABLE.equals(event.status())) {
+                                } else if (ServiceDiscovererEvent.Status.UNAVAILABLE.equals(event.status())) {
                                     return listWithHostRemoved(oldHostsTyped, host -> {
                                         boolean match = host.address.equals(addr);
                                         if (match) {
@@ -236,7 +235,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                         return match;
                                     });
                                 } else {
-                                    LOGGER.error("Load balancer for {}: Unexpected ServiceDiscoveryStatus in event:" +
+                                    LOGGER.error("Load balancer for {}: Unexpected Status in event:" +
                                             " {}. Leaving usedHosts unchanged: {}", targetResource, event, oldHosts);
                                     return oldHosts;
                                 }
@@ -245,7 +244,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: now using {} addresses: {}.",
                             targetResource, usedAddresses.size(), usedAddresses);
 
-                    if (ServiceDiscoveryStatus.AVAILABLE.equals(event.status())) {
+                    if (ServiceDiscovererEvent.Status.AVAILABLE.equals(event.status())) {
                         if (usedAddresses.size() == 1) {
                             eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                         }

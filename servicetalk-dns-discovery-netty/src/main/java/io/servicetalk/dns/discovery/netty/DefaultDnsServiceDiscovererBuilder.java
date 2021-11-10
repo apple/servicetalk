@@ -17,7 +17,6 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -25,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.EXPIRED;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -62,7 +61,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsClientFilterFactory filterFactory;
     @Nullable
     private DnsServiceDiscovererObserver observer;
-    private ServiceDiscoveryStatus missingRecordStatus = EXPIRED;
+    private ServiceDiscovererEvent.Status missingRecordStatus = EXPIRED;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -179,13 +178,13 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Sets which {@link ServiceDiscoveryStatus} to use in {@link ServiceDiscovererEvent#status()} when a record
+     * Sets which {@link ServiceDiscovererEvent.Status} to use in {@link ServiceDiscovererEvent#status()} when a record
      * for a previously seen address is missing in the response.
      *
-     * @param status a {@link ServiceDiscoveryStatus} for missing records.
+     * @param status a {@link ServiceDiscovererEvent.Status} for missing records.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder missingRecordStatus(ServiceDiscoveryStatus status) {
+    public DefaultDnsServiceDiscovererBuilder missingRecordStatus(ServiceDiscovererEvent.Status status) {
         this.missingRecordStatus = status;
         return this;
     }

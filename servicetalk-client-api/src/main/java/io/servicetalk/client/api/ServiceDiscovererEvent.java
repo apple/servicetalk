@@ -15,8 +15,11 @@
  */
 package io.servicetalk.client.api;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import java.util.Locale;
+import java.util.Objects;
+
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
@@ -30,15 +33,15 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     ResolvedAddress address();
 
     /**
-     * {@link ServiceDiscoveryStatus Status} of the event instructing the {@link ServiceDiscoverer} what actions
+     * {@link Status Status} of the event instructing the {@link ServiceDiscoverer} what actions
      * to take upon the associated {@link #address() address}.
      * <p>
      * Note, the default implementation calls {@link #isAvailable()} to allow frictionless adoption, but once the
      * implementing class removes the override for the deprecated method {@link #isAvailable()},
      * it will be also necessary to override {@link #status()}.
-     * @return {@link ServiceDiscoveryStatus Status} of the associated {@link #address()}.
+     * @return {@link Status Status} of the associated {@link #address()}.
      */
-    default ServiceDiscoveryStatus status() {
+    default Status status() {
         return isAvailable() ? AVAILABLE : UNAVAILABLE;
     }
 
@@ -50,6 +53,84 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
      */
     @Deprecated
     default boolean isAvailable() {
-        throw new UnsupportedOperationException("Please implement and use the status() method.");
+        throw new UnsupportedOperationException("Migrate to status() method. This method may be implemented" +
+                " temporarily until migration to status() is complete.");
+    }
+
+    /**
+     * Status provided by the {@link ServiceDiscoverer} system that guides the actions of {@link LoadBalancer} upon the
+     * bound {@link ServiceDiscovererEvent#address()} (via {@link ServiceDiscovererEvent}).
+     */
+    final class Status {
+
+        /**
+         * Signifies the {@link ServiceDiscovererEvent#address()} is available for use in connection establishment.
+         */
+        public static final Status AVAILABLE = new Status("available");
+
+        /**
+         * Signifies the {@link ServiceDiscovererEvent#address()} is not available for use and all currently established
+         * connections should be closed.
+         */
+        public static final Status UNAVAILABLE = new Status("unavailable");
+
+        /**
+         * Signifies the {@link ServiceDiscovererEvent#address()} is expired and should not be used for establishing
+         * new connections. It doesn't necessarily mean that the host should not be used in traffic routing over already
+         * established connections as long as they are kept open by the remote peer. The implementations can have
+         * different policies in that regard.
+         */
+        public static final Status EXPIRED = new Status("expired");
+
+        private final String name;
+
+        private Status(final String name) {
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("Status name cannot be empty");
+            }
+            this.name = name.toLowerCase(Locale.ENGLISH);
+        }
+
+        /**
+         * Returns an {@link Status} for the specified name.
+         * @param name the status name.
+         * @return {@link Status} representing the status for given name.
+         */
+        public static Status of(final String name) {
+            switch (name.toLowerCase(Locale.ENGLISH)) {
+                case "available":
+                    return AVAILABLE;
+                case "unavailable":
+                    return UNAVAILABLE;
+                case "expired":
+                    return EXPIRED;
+                default:
+                    return new Status(name);
+            }
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof ServiceDiscovererEvent.Status)) {
+                return false;
+            }
+            final Status that = (Status) o;
+            return name.equals(that.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(name);
+        }
+
+        @Override
+        public String toString() {
+            return "Status{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
     }
 }

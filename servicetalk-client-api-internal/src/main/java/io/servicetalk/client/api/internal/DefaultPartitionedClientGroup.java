@@ -46,8 +46,8 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.EXPIRED;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;

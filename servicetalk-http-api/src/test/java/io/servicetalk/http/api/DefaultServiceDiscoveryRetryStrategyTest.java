@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -31,9 +30,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
-import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.isAvailable;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withTestExecutor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -242,7 +240,8 @@ class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     private static ServiceDiscovererEvent<String> flipAvailable(final ServiceDiscovererEvent<String> evt) {
-        final ServiceDiscoveryStatus flipped = isAvailable(evt.status()) ? UNAVAILABLE : AVAILABLE;
+        final ServiceDiscovererEvent.Status flipped =
+                AVAILABLE.equals(evt.status()) ? UNAVAILABLE : AVAILABLE;
         return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
     }
 

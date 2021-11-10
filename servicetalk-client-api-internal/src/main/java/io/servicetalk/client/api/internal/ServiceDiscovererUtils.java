@@ -18,7 +18,6 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.RandomAccess;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static java.util.Collections.binarySearch;
 
 /**
@@ -49,17 +48,18 @@ public final class ServiceDiscovererUtils {
      * @param comparator A comparator for the addresses and to use for binary searches.
      * @param reporter A reporter for the numbers of available and missing events.
      * @param <T> The type of address.
-     * @param missingRecordStatus {@link ServiceDiscoveryStatus} to use for created {@link ServiceDiscovererEvent}
-     * when address present in current list but not in the new one.
+     * @param missingRecordStatus {@link ServiceDiscovererEvent.Status} to use for created
+     * {@link ServiceDiscovererEvent} when address present in current list but not in the new one.
      * @return A list of {@link ServiceDiscovererEvent}s which represents the changes between
      * {@code currentActiveAddresses} and {@code newActiveAddresses}, or {@code null} if there are no changes.
      */
     @Nullable
-    public static <T> List<ServiceDiscovererEvent<T>> calculateDifference(List<? extends T> currentActiveAddresses,
-                                                                          List<? extends T> newActiveAddresses,
-                                                                          Comparator<T> comparator,
-                                                                          @Nullable TwoIntsConsumer reporter,
-                                                                          ServiceDiscoveryStatus missingRecordStatus) {
+    public static <T> List<ServiceDiscovererEvent<T>> calculateDifference(
+            List<? extends T> currentActiveAddresses,
+            List<? extends T> newActiveAddresses,
+            Comparator<T> comparator,
+            @Nullable TwoIntsConsumer reporter,
+            ServiceDiscovererEvent.Status missingRecordStatus) {
         // First sort the newAddresses so we can use binary search.
         newActiveAddresses.sort(comparator);
 
@@ -100,7 +100,7 @@ public final class ServiceDiscovererUtils {
      * return value.
      * @param comparator Used for binary searches on {@code sortedA} for each element in {@code sortedB}.
      * @param result List to append new results to.
-     * @param status {@link ServiceDiscoveryStatus} to use for created {@link ServiceDiscovererEvent}
+     * @param status {@link ServiceDiscovererEvent.Status} to use for created {@link ServiceDiscovererEvent}
      * in the {@code result}.
      * @param <T> The type of resolved address.
      * @return the relative complement of {@code sortedA} and {@code sortedB} (elements in {@code sortedB} and not in
@@ -109,7 +109,7 @@ public final class ServiceDiscovererUtils {
     @Nullable
     private static <T> List<ServiceDiscovererEvent<T>> relativeComplement(
             List<? extends T> sortedA, List<? extends T> sortedB, Comparator<T> comparator,
-            @Nullable List<ServiceDiscovererEvent<T>> result, ServiceDiscoveryStatus status) {
+            @Nullable List<ServiceDiscovererEvent<T>> result, ServiceDiscovererEvent.Status status) {
         if (sortedB instanceof RandomAccess) {
             for (int i = 0; i < sortedB.size(); ++i) {
                 final T valueB = sortedB.get(i);
@@ -139,15 +139,6 @@ public final class ServiceDiscovererUtils {
             }
         }
         return result;
-    }
-
-    /**
-     * Utility method to determine the {@code status} is in fact the {@link ServiceDiscoveryStatus#AVAILABLE} status.
-     * @param status {@link ServiceDiscoveryStatus} to compare.
-     * @return whether the argument is the {{@link ServiceDiscoveryStatus#AVAILABLE}} status.
-     */
-    public static boolean isAvailable(final ServiceDiscoveryStatus status) {
-        return AVAILABLE.equals(status);
     }
 
     /**

@@ -17,7 +17,6 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -44,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -83,7 +82,7 @@ class DefaultDnsClientTest {
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     // @BeforeEach
-    public void setup(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    public void setup(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         nettyIoExecutor = createIoExecutor();
 
         dnsServer = new TestDnsServer(recordStore);
@@ -112,13 +111,13 @@ class DefaultDnsClientTest {
         nettyIoExecutor.closeAsync().toFuture().get();
     }
 
-    static Stream<ServiceDiscoveryStatus> missingRecordStatus() {
-        return Stream.of(ServiceDiscoveryStatus.EXPIRED, ServiceDiscoveryStatus.UNAVAILABLE);
+    static Stream<ServiceDiscovererEvent.Status> missingRecordStatus() {
+        return Stream.of(ServiceDiscovererEvent.Status.EXPIRED, ServiceDiscovererEvent.Status.UNAVAILABLE);
     }
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void singleSrvSingleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void singleSrvSingleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
@@ -136,7 +135,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void singleSrvMultipleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void singleSrvMultipleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
@@ -157,7 +156,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void multipleSrvSingleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void multipleSrvSingleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
@@ -182,7 +181,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void multipleSrvChangeSingleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void multipleSrvChangeSingleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
@@ -216,7 +215,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void multipleSrvMultipleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void multipleSrvMultipleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
@@ -245,7 +244,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvWithCNAMEEntryLowerTTLDoesNotFail(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvWithCNAMEEntryLowerTTLDoesNotFail(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "sd.servicetalk.io";
         final String srvCNAME = "sdcname.servicetalk.io";
@@ -269,19 +268,20 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvCNAMEDuplicateAddressesRemoveFail(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvCNAMEDuplicateAddressesRemoveFail(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvCNAMEDuplicateAddresses(false, missingRecordStatus);
     }
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvCNAMEDuplicateAddressesRemoveInactive(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvCNAMEDuplicateAddressesRemoveInactive(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvCNAMEDuplicateAddresses(true, missingRecordStatus);
     }
 
-    private void srvCNAMEDuplicateAddresses(boolean inactiveEventsOnError, ServiceDiscoveryStatus missingRecordStatus)
+    private void srvCNAMEDuplicateAddresses(boolean inactiveEventsOnError,
+                                            ServiceDiscovererEvent.Status missingRecordStatus)
             throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus)
@@ -329,7 +329,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvInactiveEventsAggregated(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvInactiveEventsAggregated(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).inactiveEventsOnError(true).build();
@@ -383,7 +383,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvRecordRemovalPropagatesError(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvRecordRemovalPropagatesError(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "sd.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
@@ -414,19 +414,20 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvDuplicateAddressesNoFilter(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvDuplicateAddressesNoFilter(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvDuplicateAddresses(false, missingRecordStatus);
     }
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvDuplicateAddressesFilter(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvDuplicateAddressesFilter(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvDuplicateAddresses(true, missingRecordStatus);
     }
 
-    private void srvDuplicateAddresses(boolean srvFilterDuplicateEvents, ServiceDiscoveryStatus missingRecordStatus)
+    private void srvDuplicateAddresses(boolean srvFilterDuplicateEvents,
+                                       ServiceDiscovererEvent.Status missingRecordStatus)
             throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).srvFilterDuplicateEvents(srvFilterDuplicateEvents).build();
@@ -461,20 +462,21 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvAAAAFailsGeneratesInactive(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvAAAAFailsGeneratesInactive(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvAAAAFailsGeneratesInactive(true, missingRecordStatus);
     }
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvAAAAFailsGeneratesInactiveEvenIfNotRequested(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvAAAAFailsGeneratesInactiveEvenIfNotRequested(ServiceDiscovererEvent.Status missingRecordStatus)
+            throws Exception {
         setup(missingRecordStatus);
         srvAAAAFailsGeneratesInactive(false, missingRecordStatus);
     }
 
     private void srvAAAAFailsGeneratesInactive(boolean inactiveEventsOnError,
-                                               ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+                                               ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus)
                 .inactiveEventsOnError(inactiveEventsOnError)
@@ -509,20 +511,20 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvNoMoreSrvRecordsFails(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvNoMoreSrvRecordsFails(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvRecordFailsGeneratesInactive(false, missingRecordStatus);
     }
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvNoMoreSrvRecordsGeneratesInactive(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvNoMoreSrvRecordsGeneratesInactive(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         srvRecordFailsGeneratesInactive(true, missingRecordStatus);
     }
 
     private void srvRecordFailsGeneratesInactive(boolean inactiveEventsOnError,
-                                                 ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+                                                 ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).inactiveEventsOnError(inactiveEventsOnError).build();
         final String domain = "sd.servicetalk.io";
@@ -557,7 +559,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void unknownHostDiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void unknownHostDiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery("unknown.com");
         Subscription subscription = subscriber.awaitSubscription();
@@ -568,7 +570,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void singleADiscover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void singleADiscover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String ip = nextIp();
         final String domain = "servicetalk.io";
@@ -588,7 +590,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void singleDiscoverMultipleRecords(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void singleDiscoverMultipleRecords(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "servicetalk.io";
         final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
@@ -610,7 +612,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void singleDiscoverDuplicateRecords(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void singleDiscoverDuplicateRecords(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String dupIp = nextIp();
         final String domain = "servicetalk.io";
@@ -637,7 +639,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void repeatDiscoverMultipleRecords(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void repeatDiscoverMultipleRecords(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "servicetalk.io";
         final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
@@ -668,7 +670,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void repeatDiscoverMultipleHosts(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void repeatDiscoverMultipleHosts(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String ip1 = nextIp();
         final String domain1 = "servicetalk.io";
@@ -699,7 +701,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void repeatDiscoverNxDomainAndRecover(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void repeatDiscoverNxDomainAndRecover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilderWithRetry(missingRecordStatus).inactiveEventsOnError(true).build();
@@ -720,7 +722,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void preferIpv4(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void preferIpv4(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).completeOncePreferredResolved(false)
@@ -747,7 +749,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void preferIpv4ButOnlyAAAARecordIsPresent(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void preferIpv4ButOnlyAAAARecordIsPresent(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(IPV4_PREFERRED).build();
@@ -768,7 +770,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void acceptOnlyIpv6(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void acceptOnlyIpv6(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(IPV6_ONLY).build();
@@ -786,7 +788,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void exceptionInSubscriberOnNext(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void exceptionInSubscriberOnNext(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         final String domain = "servicetalk.io";
         final String ip = nextIp();
@@ -801,7 +803,7 @@ class DefaultDnsClientTest {
 
     @ParameterizedTest(name = "missing-record-status={0}")
     @MethodSource("missingRecordStatus")
-    void srvExceptionInSubscriberOnNext(ServiceDiscoveryStatus missingRecordStatus) throws Exception {
+    void srvExceptionInSubscriberOnNext(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
         client = dnsClientBuilder(missingRecordStatus).srvHostNameRepeatDelay(ofMillis(50), ofMillis(10)).build();
@@ -866,7 +868,7 @@ class DefaultDnsClientTest {
         return subscriber;
     }
 
-    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder(ServiceDiscoveryStatus missingRecordStatus) {
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder(ServiceDiscovererEvent.Status missingRecordStatus) {
         return new DefaultDnsServiceDiscovererBuilder()
                 .missingRecordStatus(missingRecordStatus)
                 .ioExecutor(nettyIoExecutor)
@@ -878,7 +880,8 @@ class DefaultDnsClientTest {
                 .minTTL(1);
     }
 
-    private DefaultDnsServiceDiscovererBuilder dnsClientBuilderWithRetry(ServiceDiscoveryStatus missingRecordStatus) {
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilderWithRetry(
+            ServiceDiscovererEvent.Status missingRecordStatus) {
         final BiIntFunction<Throwable, ? extends Completable> retryStrategy = (i, t) -> immediate().timer(ofMillis(50));
         return dnsClientBuilder(missingRecordStatus)
                 .appendFilter(client -> new DnsClientFilter(client) {
@@ -896,24 +899,26 @@ class DefaultDnsClientTest {
     }
 
     private static void assertEvent(@Nullable ServiceDiscovererEvent<InetSocketAddress> event,
-                                    String ip, int port, ServiceDiscoveryStatus status) throws UnknownHostException {
+                                    String ip, int port, ServiceDiscovererEvent.Status status)
+            throws UnknownHostException {
         assertThat(event, is(new DefaultServiceDiscovererEvent<>(
                 new InetSocketAddress(getByName(ip), port), status)));
     }
 
     private static void assertEvent(@Nullable ServiceDiscovererEvent<InetAddress> event,
-                                    String ip, ServiceDiscoveryStatus status) throws UnknownHostException {
+                                    String ip, ServiceDiscovererEvent.Status status) throws UnknownHostException {
         assertThat(event, is(new DefaultServiceDiscovererEvent<>(getByName(ip), status)));
     }
 
     private static void assertHasEvent(Collection<ServiceDiscovererEvent<InetAddress>> events,
-                                       String ip, ServiceDiscoveryStatus status) throws UnknownHostException {
+                                       String ip, ServiceDiscovererEvent.Status status) throws UnknownHostException {
         assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(getByName(ip), status)));
     }
 
     @SuppressWarnings("unchecked")
     private static void assertHasEvent(Collection<ServiceDiscovererEvent<InetSocketAddress>> events,
-                                       String ip, int port, ServiceDiscoveryStatus status) throws UnknownHostException {
+                                       String ip, int port, ServiceDiscovererEvent.Status status)
+            throws UnknownHostException {
         assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(
                 new InetSocketAddress(getByName(ip), port), status)));
     }

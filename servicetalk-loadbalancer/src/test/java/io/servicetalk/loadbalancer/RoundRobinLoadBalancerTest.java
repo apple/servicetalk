@@ -70,9 +70,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.EXPIRED;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;

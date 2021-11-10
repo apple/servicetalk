@@ -15,8 +15,8 @@
  */
 package io.servicetalk.client.api;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -25,13 +25,13 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
-    private final ServiceDiscoveryStatus status;
+    private final Status status;
 
     /**
      * Create a new instance.
      * @param address The address returned by {@link #address()}.
      * @param available Value used to determine {@link #status()}.
-     * @deprecated Use {@link #DefaultServiceDiscovererEvent(Object, ServiceDiscoveryStatus)}.
+     * @deprecated Use {@link #DefaultServiceDiscovererEvent(Object, Status)}.
      */
     @Deprecated
     public DefaultServiceDiscovererEvent(T address, boolean available) {
@@ -44,7 +44,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
      * @param address The address returned by {@link #address()}.
      * @param status Value returned by {@link #status()}.
      */
-    public DefaultServiceDiscovererEvent(T address, ServiceDiscoveryStatus status) {
+    public DefaultServiceDiscovererEvent(T address, Status status) {
         this.address = requireNonNull(address);
         this.status = requireNonNull(status);
     }
@@ -55,7 +55,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     }
 
     @Override
-    public ServiceDiscoveryStatus status() {
+    public Status status() {
         return status;
     }
 

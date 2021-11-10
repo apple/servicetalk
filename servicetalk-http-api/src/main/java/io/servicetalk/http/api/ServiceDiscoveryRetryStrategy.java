@@ -26,7 +26,7 @@ import java.util.Collection;
  * A retry strategy for errors emitted from {@link ServiceDiscoverer#discover(Object)}.
  * <p>
  * <strong>Note, the default implementation does not support
- * {@link io.servicetalk.client.api.ServiceDiscoveryStatus#EXPIRED} {@link ServiceDiscovererEvent#status()}.</strong>
+ * {@link ServiceDiscovererEvent.Status#EXPIRED} {@link ServiceDiscovererEvent#status()}.</strong>
  *
  * @param <ResolvedAddress> The type of address after resolution.
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.

@@ -20,7 +20,6 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscoveryStatus;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -51,11 +50,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * (for example in the context of pipelining) before new connections are created.</li>
  * <li>Closed connections are automatically pruned.</li>
  * <li>When {@link Publisher}&lt;{@link ServiceDiscovererEvent}&gt; delivers events with
- * {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscoveryStatus#UNAVAILABLE}, connections
+ * {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscovererEvent.Status#UNAVAILABLE}, connections
  * are immediately closed for the associated {@link ServiceDiscovererEvent#address()}. In case of
- * {@link ServiceDiscoveryStatus#EXPIRED}, already established connections to {@link ServiceDiscovererEvent#address()}
- * are used for requests, but no new connections are created. In case the address' connections are busy,
- * another host is tried. If all hosts are busy, selection fails with a
+ * {@link ServiceDiscovererEvent.Status#EXPIRED}, already established connections to
+ * {@link ServiceDiscovererEvent#address()} are used for requests, but no new connections are created.
+ * In case the address' connections are busy, another host is tried. If all hosts are busy, selection fails with a
  * {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
  * <li>For hosts to which consecutive connection attempts fail, a background health checking task is created and
  * the host is not considered for opening new connections until the background check succeeds to create a connection.
@@ -127,18 +126,18 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * Configures the {@link RoundRobinLoadBalancerFactory} to produce a {@link LoadBalancer} with
          * a setting driving eagerness of connection shutdown. When configured with {@code false} as the argument,
          * the created {@link LoadBalancer} does not close connections when a host becomes
-         * {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable}. If the value is {@code true},
+         * {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable}. If the value is {@code true},
          * the connections will be closed gracefully on such event.
          *
          * @param eagerConnectionShutdown when {@code true}, connections will be shut down upon receiving
-         * {@link ServiceDiscoveryStatus#UNAVAILABLE unavailable} {@link ServiceDiscovererEvent events}
+         * {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable} {@link ServiceDiscovererEvent events}
          * for a particular host. Value of {@code false} preserves connections and routes requests through them
          * but no new connections are opened for such host.
          * @return {@code this}.
          * @deprecated This configuration has no effect. To control the behaviour, configure the
          * {@link io.servicetalk.client.api.ServiceDiscoverer} of your choice to deliver appropriate
          * {@link ServiceDiscovererEvent#status()}. In order to avoid connection shutdown use
-         * {@link ServiceDiscoveryStatus#EXPIRED}. Use {@link ServiceDiscoveryStatus#UNAVAILABLE} when the
+         * {@link ServiceDiscovererEvent.Status#EXPIRED}. Use {@link ServiceDiscovererEvent.Status#UNAVAILABLE} when the
          * connections should be eagerly closed upon such event.
          */
         @Deprecated
