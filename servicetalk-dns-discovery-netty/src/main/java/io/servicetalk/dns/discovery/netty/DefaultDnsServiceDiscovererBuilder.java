@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscoveryStatus.UNAVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscoveryStatus.EXPIRED;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -62,7 +62,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsClientFilterFactory filterFactory;
     @Nullable
     private DnsServiceDiscovererObserver observer;
-    private ServiceDiscoveryStatus missingRecordStatus = UNAVAILABLE;
+    private ServiceDiscoveryStatus missingRecordStatus = EXPIRED;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
