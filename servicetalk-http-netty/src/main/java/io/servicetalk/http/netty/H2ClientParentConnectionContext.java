@@ -43,6 +43,7 @@ import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OwnedRunnable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -73,7 +74,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
-import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -149,11 +151,13 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
         private static final IgnoreConsumedEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
                 new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
+        private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
+        private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor =
+                newPublisherProcessorDropHeadOnOverflow(16);
         private final boolean allowDropTrailersReadFromTransport;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
@@ -172,7 +176,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
-            maxConcurrencyProcessor = newPublisherProcessor(16);
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
@@ -223,7 +226,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
             @SuppressWarnings("unchecked")
-            Publisher<T> maxConcurrencyStream = (Publisher<T>) fromSource(maxConcurrencyProcessor);
+            Publisher<T> maxConcurrencyStream = (Publisher<T>) fromSource(maxConcurrencyProcessor)
+                    .publishOn(parentContext.executionContext().executionStrategy().isEventOffloaded() ?
+                            parentContext.executionContext().executor() : immediate(),
+                            IoThreadFactory.IoThread::currentThreadIsIoThread);
             return eventKey == MAX_CONCURRENCY ? maxConcurrencyStream :
                     failed(new IllegalArgumentException("Unknown key: " + eventKey));
         }
@@ -439,11 +445,15 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
         @Override
         public Completable closeAsync() {
+            maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
+            maxConcurrencyProcessor.onComplete();
             return parentContext.closeAsync();
         }
 
         @Override
         public Completable closeAsyncGracefully() {
+            maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
+            maxConcurrencyProcessor.onComplete();
             return parentContext.closeAsyncGracefully();
         }
 

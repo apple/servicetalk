@@ -113,7 +113,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadReceiveData().build();
+            expectedClientStrategy = customStrategyBuilder().offloadReceiveData().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().offloadSend().build();
         }
@@ -141,7 +141,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadNone().build();
+            expectedClientStrategy = customStrategyBuilder().offloadNone().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().build();
         }
@@ -175,7 +175,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadSend().build();
+            expectedClientStrategy = customStrategyBuilder().offloadSend().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveMetadata().build();
         }

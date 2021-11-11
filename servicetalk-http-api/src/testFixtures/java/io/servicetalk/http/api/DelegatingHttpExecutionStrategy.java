@@ -49,6 +49,11 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean isEventOffloaded() {
+        return delegate.isEventOffloaded();
+    }
+
+    @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
         // Since any methods can be overridden to change behavior, we leverage the other strategy to also account for
         // the overridden methods here.

@@ -180,6 +180,13 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         abstract void tryFailSubscriber(Throwable cause);
 
+        /**
+         * Receive a settings frame and optionally handle the acknowledgement of the frame.
+         *
+         * @param ctx the channel context
+         * @param settingsFrame the received settings frame
+         * @return true if caller should send ack or false if receiver has or will send ack.
+         */
         abstract boolean ackSettings(ChannelHandlerContext ctx, Http2SettingsFrame settingsFrame);
 
         @Override

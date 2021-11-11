@@ -39,8 +39,7 @@ public final class ReservableRequestConcurrencyControllers {
     public static ReservableRequestConcurrencyController newController(
             final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing,
             final int initialMaxConcurrency) {
-        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency,
-                onClosing, initialMaxConcurrency);
+        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency, onClosing, initialMaxConcurrency);
     }
 
     /**

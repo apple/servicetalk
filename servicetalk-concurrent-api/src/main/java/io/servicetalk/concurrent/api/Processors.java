@@ -105,7 +105,7 @@ public final class Processors {
      * <p>
      * Only allows for {@code maxBuffer} number of items to be added through
      * {@link PublisherSource.Processor#onNext(Object)} without being delivered to its
-     * {@link PublisherSource.Subscriber}. If more numbers are added without being delivered, subsequent additions will
+     * {@link PublisherSource.Subscriber}. If more items are added without being delivered, subsequent additions will
      * fail.
      *
      * @param maxBuffer Maximum number of items to buffer.
@@ -129,7 +129,7 @@ public final class Processors {
      * <p>
      * Only allows for {@code maxBuffer} number of items to be added through
      * {@link PublisherSource.Processor#onNext(Object)} without being delivered to its
-     * {@link PublisherSource.Subscriber}. If more numbers are added without being delivered, the oldest buffered item
+     * {@link PublisherSource.Subscriber}. If more items are added without being delivered, the oldest buffered item
      * (head) will be dropped.
      *
      * @param maxBuffer Maximum number of items to buffer.
@@ -153,7 +153,7 @@ public final class Processors {
      * <p>
      * Only allows for {@code maxBuffer} number of items to be added through
      * {@link PublisherSource.Processor#onNext(Object)} without being delivered to its
-     * {@link PublisherSource.Subscriber}. If more numbers are added without being delivered, the latest buffered item
+     * {@link PublisherSource.Subscriber}. If more items are added without being delivered, the latest buffered item
      * (tail) will be dropped.
      *
      * @param maxBuffer Maximum number of items to buffer.
