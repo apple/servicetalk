@@ -23,7 +23,7 @@ final class Versions {
   static final String CHECKSTYLE_VERSION = "9.0"
   static final String PMD_VERSION = "6.38.0"
   static final String SPOTBUGS_VERSION = "4.4.1"
-  static final String PITEST_VERSION = "1.6.7"
-  static final String PITEST_JUNIT5_PLUGIN_VERSION = "0.12"
+  static final String PITEST_VERSION = "1.7.3"
+  static final String PITEST_JUNIT5_PLUGIN_VERSION = "0.15"
   static final JavaVersion TARGET_VERSION = VERSION_1_8
 }
