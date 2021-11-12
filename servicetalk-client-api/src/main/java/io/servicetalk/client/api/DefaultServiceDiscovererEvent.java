@@ -31,7 +31,8 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
      * Create a new instance.
      * @param address The address returned by {@link #address()}.
      * @param available Value used to determine {@link #status()}.
-     * @deprecated Use {@link #DefaultServiceDiscovererEvent(Object, Status)}.
+     * @deprecated Use
+     * {@link #DefaultServiceDiscovererEvent(Object, io.servicetalk.client.api.ServiceDiscovererEvent.Status)}.
      */
     @Deprecated
     public DefaultServiceDiscovererEvent(T address, boolean available) {
