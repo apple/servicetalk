@@ -270,7 +270,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             for (E event : events) {
                 final R address = event.address();
                 // TODO: consider other events than AVAILABLE and UNAVAILABLE
-                if (event.status() == AVAILABLE) {
+                if (AVAILABLE.equals(event.status())) {
                     activeAddresses.put(address, event);
                     if (retainedAddresses.remove(address) == null) {
                         toReturn.add(event);

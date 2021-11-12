@@ -71,7 +71,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
@@ -640,7 +639,11 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     ServiceDiscovererEvent downEvent(final String address) {
-        return new DefaultServiceDiscovererEvent<>(address, eagerConnectionShutdown() ? UNAVAILABLE : EXPIRED);
+        return new DefaultServiceDiscovererEvent<>(address, UNAVAILABLE);
+    }
+
+    ServiceDiscovererEvent downEvent(final String address, ServiceDiscovererEvent.Status status) {
+        return new DefaultServiceDiscovererEvent<>(address, status);
     }
 
     RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
@@ -652,6 +655,7 @@ abstract class RoundRobinLoadBalancerTest {
         final DelegatingConnectionFactory connectionFactory) {
         return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .eagerConnectionShutdown(eagerConnectionShutdown())
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);

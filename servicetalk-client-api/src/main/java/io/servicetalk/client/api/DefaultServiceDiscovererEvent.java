@@ -88,7 +88,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     public String toString() {
         return "DefaultServiceDiscovererEvent{" +
                 "address=" + address +
-                ", status=" + status +
+                ", status=" + status.getName() +
                 ", available=" + isAvailable() +
                 '}';
     }

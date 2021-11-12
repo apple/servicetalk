@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
@@ -185,7 +186,10 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder missingRecordStatus(ServiceDiscovererEvent.Status status) {
-        this.missingRecordStatus = status;
+        if (AVAILABLE.equals(status)) {
+            throw new IllegalArgumentException(AVAILABLE + " status can not be used as missing records' status.");
+        }
+        this.missingRecordStatus = requireNonNull(status);
         return this;
     }
 

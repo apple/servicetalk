@@ -141,7 +141,7 @@ final class DefaultDnsClient implements DnsClient {
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor.asExecutor());
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.observer = observer;
-        this.missingRecordStatus = requireNonNull(missingRecordStatus);
+        this.missingRecordStatus = missingRecordStatus;
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
@@ -223,7 +223,7 @@ final class DefaultDnsClient implements DnsClient {
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
-                if (ServiceDiscovererEvent.Status.AVAILABLE.equals(srvEvent.status())) {
+                if (AVAILABLE.equals(srvEvent.status())) {
                     return defer(() -> {
                         final ARecordPublisher aPublisher =
                                 new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);
@@ -359,11 +359,6 @@ final class DefaultDnsClient implements DnsClient {
                 protected Comparator<HostAndPort> comparator() {
                     return HOST_AND_PORT_COMPARATOR;
                 }
-
-                @Override
-                protected ServiceDiscovererEvent.Status missingRecordStatus() {
-                    return DefaultDnsClient.this.missingRecordStatus;
-                }
             };
         }
     }
@@ -409,11 +404,6 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Comparator<InetAddress> comparator() {
                     return INET_ADDRESS_COMPARATOR;
-                }
-
-                @Override
-                protected ServiceDiscovererEvent.Status missingRecordStatus() {
-                    return DefaultDnsClient.this.missingRecordStatus;
                 }
             };
         }
@@ -538,7 +528,9 @@ final class DefaultDnsClient implements DnsClient {
              *
              * @return a {@link ServiceDiscovererEvent.Status} for missing records.
              */
-            protected abstract ServiceDiscovererEvent.Status missingRecordStatus();
+            protected final ServiceDiscovererEvent.Status missingRecordStatus() {
+                return DefaultDnsClient.this.missingRecordStatus;
+            }
 
             @Override
             public final void request(final long n) {
@@ -753,7 +745,7 @@ final class DefaultDnsClient implements DnsClient {
                 InetSocketAddress addr = new InetSocketAddress(event.address(), port);
                 final ServiceDiscovererEvent.Status status = event.status();
                 Integer count = availableAddresses.get(addr);
-                if (status == AVAILABLE) {
+                if (AVAILABLE.equals(status)) {
                     if (count == null) {
                         mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, status));
                         availableAddresses.put(addr, 1);

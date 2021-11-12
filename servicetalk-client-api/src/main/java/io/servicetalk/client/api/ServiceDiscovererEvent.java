@@ -16,7 +16,6 @@
 package io.servicetalk.client.api;
 
 import java.util.Locale;
-import java.util.Objects;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
@@ -109,6 +108,14 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
             }
         }
 
+        /**
+         * Returns the name of this status.
+         * @return name of this status.
+         */
+        public String getName() {
+            return name;
+        }
+
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
@@ -123,7 +130,7 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(name);
+            return name.hashCode();
         }
 
         @Override

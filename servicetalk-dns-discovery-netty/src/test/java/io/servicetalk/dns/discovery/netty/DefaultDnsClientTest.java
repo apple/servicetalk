@@ -81,7 +81,6 @@ class DefaultDnsClientTest {
     private DnsClient client;
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    // @BeforeEach
     public void setup(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         nettyIoExecutor = createIoExecutor();
 

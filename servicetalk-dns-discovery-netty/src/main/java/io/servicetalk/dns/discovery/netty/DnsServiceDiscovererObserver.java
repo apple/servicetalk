@@ -103,7 +103,7 @@ public interface DnsServiceDiscovererObserver {
          */
         @Deprecated
         default int nUnavailable() {
-            throw new UnsupportedOperationException("Please implement and use the nMissing() method.");
+            return nMissing();
         }
 
         /**
@@ -112,7 +112,8 @@ public interface DnsServiceDiscovererObserver {
          * @return number of missing records compared to the previous resolution result.
          */
         default int nMissing() {
-            return nUnavailable();
+            throw new UnsupportedOperationException("Method nMissing is not yet implemented by "
+                    + getClass().getName());
         }
     }
 }
