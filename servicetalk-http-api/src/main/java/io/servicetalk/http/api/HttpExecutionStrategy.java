@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOA
  */
 public interface HttpExecutionStrategy extends ExecutionStrategy {
 
+    @Override
     default boolean hasOffloads() {
         return isSendOffloaded() || isMetadataReceiveOffloaded() || isDataReceiveOffloaded();
     }
