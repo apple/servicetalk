@@ -113,14 +113,14 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for adding a value to the current context.
+     * Convenience method to put a value to the current context.
      *
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
      * @param value the value to put.
      * @param <T>   The type of object associated with {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with {@code key} is {@code null} (if {@code null} values are supported
-     * by the implementation).
+     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
+     * implementation).
      * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
      * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
@@ -135,14 +135,14 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for adding a new key-value pair to the current context.
+     * Convenience method to put a new key-value pair to the current context.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
      * @param value the value to put.
      * @param <T> The type of object associated with {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with {@code key} is {@code null} (if {@code null} values are supported
-     * by the implementation).
+     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
+     * implementation).
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * underlying {@link ContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
@@ -155,15 +155,15 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for adding a new key-value pair to the current context if this map does not already contain
+     * Convenience method to put a new key-value pair to the current context if this map does not already contain
      * this {@code key} or is mapped to {@code null}.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
      * @param value the value to put.
      * @param <T> The type of object associated with {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with {@code key} is {@code null} (if {@code null} values are supported
-     * by the implementation).
+     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
+     * implementation).
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * underlying {@link ContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
@@ -176,7 +176,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for adding a new key-value pair to the current context if this map does not already contain
+     * Convenience method to compute a new key-value pair for the current context if this map does not already contain
      * this {@code key} or is mapped to {@code null}.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
@@ -184,8 +184,8 @@ public final class AsyncContext {
      * times if concurrent threads attempt modifying this context map, result is expected to be idempotent.
      * @param <T> The type of object associated with {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with {@code key} is {@code null} (if {@code null} values are supported
-     * by the implementation).
+     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
+     * implementation).
      * @throws NullPointerException (optional behavior) if {@code key} or computed {@code value} is {@code null} and the
      * underlying {@link ContextMap} implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
@@ -199,7 +199,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for to put all the key-value pairs into the current context from another {@link ContextMap}.
+     * Convenience method to put all the key-value pairs into the current context from another {@link ContextMap}.
      *
      * @param map contains the key-value pairs that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
@@ -216,7 +216,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for to put all the key/value pairs into the current context.
+     * Convenience method to put all the key/value pairs into the current context.
      *
      * @param map contains the key/value pairs that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
@@ -234,7 +234,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method for to put all the key-value pairs into the current context.
+     * Convenience method to put all the key-value pairs into the current context.
      *
      * @param map contains the key-value pairs that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be

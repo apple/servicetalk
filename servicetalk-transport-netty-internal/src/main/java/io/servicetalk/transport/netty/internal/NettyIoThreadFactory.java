@@ -144,7 +144,7 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
             if (ASYNC_CONTEXT_MAP_DETECTED.compareAndSet(false, true)) {
                 LOGGER.warn("Detected usage of deprecated {}, migrate your code to {}",
                         AsyncContextMapHolder.class.getCanonicalName(), ContextMapHolder.class.getCanonicalName(),
-                        new RuntimeException("Stack trace where AsyncContextMapHolder was used"));
+                        new Throwable("Stack trace where AsyncContextMapHolder was used"));
             }
         }
     }

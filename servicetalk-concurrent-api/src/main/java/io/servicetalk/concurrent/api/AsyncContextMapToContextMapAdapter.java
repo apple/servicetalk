@@ -50,8 +50,9 @@ final class AsyncContextMapToContextMapAdapter implements AsyncContextMap {
         final ContextMap.Key<?> oldCmKey = acmToCm.putIfAbsent(acmKey, cmKey);
         final AsyncContextMap.Key<?> oldAcmKey = cmToAcm.putIfAbsent(cmKey, acmKey);
         if (oldCmKey != null || oldAcmKey != null) {
-            LOGGER.warn("Tried to register a new mapping, but the other one already exists: AsyncContextMap.Key={} " +
-                    "== {}, discarding {}", acmKey, oldCmKey, cmKey);
+            LOGGER.warn("Tried to register a new mapping of AsyncContextMap.Key={} to {}, but other mappings already " +
+                    "exist: AsyncContextMap.Key={} to {} and/or {} to AsyncContextMap.Key={}. Discarding request.",
+                    acmKey, cmKey, acmKey, oldCmKey, cmKey, oldAcmKey);
         }
     }
 
@@ -129,6 +130,8 @@ final class AsyncContextMapToContextMapAdapter implements AsyncContextMap {
         if (map.isEmpty()) {
             return;
         }
+        // Concurrent implementations, like CopyOnWriteAsyncContextMap, expect to put all or retry an operation. Use
+        // an intermediate map to preserve this behavior instead of invoking `put` multiple times.
         final Map<ContextMap.Key<?>, Object> cMap = new HashMap<>(map.size());
         for (Map.Entry<AsyncContextMap.Key<?>, Object> entry : map.entrySet()) {
             cMap.put(toCmKey(entry.getKey()), entry.getValue());

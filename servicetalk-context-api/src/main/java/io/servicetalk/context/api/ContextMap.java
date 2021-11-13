@@ -180,8 +180,8 @@ public interface ContextMap {
      * @param value The value to put.
      * @param <T> The type of object associated with the {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with the {@code key} was {@code null} (if {@code null} values are
-     * supported by the implementation).
+     * also indicate the value associated with the {@code key} was {@code null} (if {@code null} values are supported by
+     * the implementation).
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported.
@@ -197,8 +197,8 @@ public interface ContextMap {
      * @param value The value to put.
      * @param <T> The type of object associated with the {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with the {@code key} was {@code null} (if {@code null} values are
-     * supported by the implementation).
+     * also indicate the value associated with the {@code key} was {@code null} (if {@code null} values are supported by
+     * the implementation).
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * implementation doesn't support {@code null} keys or values.
      * @throws UnsupportedOperationException if this method is not supported.
@@ -291,8 +291,8 @@ public interface ContextMap {
      * @param key The {@link Key} which identifies a key-value pair for removal.
      * @param <T> The type of object associated with the {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated value with the {@code key} was {@code null} (if {@code null} values are
-     * supported by the implementation).
+     * also indicate the value associated with the {@code key} was {@code null} (if {@code null} values are supported by
+     * the implementation).
      * If the {@link ContextMap} implementation is immutable this may be a new object.
      * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the implementation doesn't
      * support {@code null} keys.

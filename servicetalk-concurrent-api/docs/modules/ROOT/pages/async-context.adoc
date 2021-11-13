@@ -22,7 +22,7 @@ request and response to simulate `ThreadLocal` storage. Here is some code
 // Main.java - application logic
 Single<Response> single = authenticate(client.request(...));
 single.map(response -> {
-  if ("admin".equals(AsyncContext.get(USER_ID_KEY))) {
+  if (AsyncContext.get(USER_ID_KEY).equals("admin")) {
     // do something for admin
   } else {
     // do something for non-admin
@@ -30,7 +30,7 @@ single.map(response -> {
 })// do something else in the function composition chain
 
 // AuthenticationFilter.java
-public static final Key<String> USER_ID_KEY = Key.newKey("userId");
+public static final Key<String> USER_ID_KEY = Key.newKey("userId", String.class);
 
 public static Single<Resposne> authenticate(Single<Response> responseSingle) {
   AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
