@@ -17,12 +17,12 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.transport.api.RetryableException;
 
-import java.net.SocketException;
+import java.io.IOException;
 
 /**
  * Thrown when no host is available but at least one is required.
  */
-public class NoAvailableHostException extends SocketException implements RetryableException {
+public class NoAvailableHostException extends IOException implements RetryableException {
     private static final long serialVersionUID = -7717046537430445936L;
 
     /**
