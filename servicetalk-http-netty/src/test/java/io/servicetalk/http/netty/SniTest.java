@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SniTest {
-    private static final String SNI_HOSTNAME = "servicetalk.io";
+    private static final String SNI_HOSTNAME = serverPemHostname();
 
     @ParameterizedTest(name = "protocols={0}, alpn={1}")
     @MethodSource("protocolsAndAlpn")
@@ -121,7 +121,7 @@ class SniTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfigs(protocols))
                 .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap(getLoopbackAddress().getHostName(), untrustedServerConfig()))
+                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig()))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
                      getLoopbackAddress().getHostName(),
@@ -153,6 +153,7 @@ class SniTest {
                      .protocols(protocolConfigs(protocols))
                      .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem),
                              protocols, useALPN).build())
+                     .inferPeerHost(false)
                      .inferSniHostname(false)
                      .buildBlocking()) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));

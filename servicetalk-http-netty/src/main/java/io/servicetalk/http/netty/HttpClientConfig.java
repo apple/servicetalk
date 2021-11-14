@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.DelegatingClientSslConfig;
 
 import java.util.List;
 import javax.annotation.Nullable;

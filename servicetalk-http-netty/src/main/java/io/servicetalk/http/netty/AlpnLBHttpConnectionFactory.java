@@ -43,6 +43,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
+import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -63,36 +64,35 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     Single<FilterableStreamingHttpConnection> newFilterableConnection(
             final ResolvedAddress resolvedAddress, final TransportObserver observer) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
+        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, config.tcpConfig());
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, false,
-                executionContext, this::createConnection, observer);
+        return TcpConnector.connect(null, resolvedAddress, tcpConfig, false,
+                executionContext, (channel, observer2) -> createConnection(channel, observer2, tcpConfig),
+                observer);
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(
-            final Channel channel, final ConnectionObserver connectionObserver) {
-        final ReadOnlyTcpClientConfig tcpConfig = this.config.tcpConfig();
+            final Channel channel, final ConnectionObserver connectionObserver,
+            final ReadOnlyTcpClientConfig tcpConfig) {
         return new AlpnChannelSingle(channel,
                 new TcpClientChannelInitializer(tcpConfig, connectionObserver), false).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
-                    final H1ProtocolConfig h1Config = this.config.h1Config();
+                    final H1ProtocolConfig h1Config = config.h1Config();
                     assert h1Config != null;
-                    return StreamingConnectionFactory.createConnection(channel, executionContext, this.config,
+                    return StreamingConnectionFactory.createConnection(channel, executionContext, h1Config, tcpConfig,
                             NoopChannelInitializer.INSTANCE, connectionObserver)
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
                                     config.allowDropTrailersReadFromTransport()));
                 case HTTP_2:
-                    final H2ProtocolConfig h2Config = this.config.h2Config();
+                    final H2ProtocolConfig h2Config = config.h2Config();
                     assert h2Config != null;
-                    return H2ClientParentConnectionContext.initChannel(channel,
-                            executionContext,
+                    return H2ClientParentConnectionContext.initChannel(channel, executionContext,
                             h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
-                            tcpConfig.idleTimeoutMs(),
-                            new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                            config.allowDropTrailersReadFromTransport());
+                            tcpConfig.idleTimeoutMs(), new H2ClientParentChannelInitializer(h2Config),
+                            connectionObserver, config.allowDropTrailersReadFromTransport());
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }
