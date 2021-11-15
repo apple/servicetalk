@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,7 +41,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round robin strategy
- * for selecting addresses. The created instances have the following behaviour:
+ * for selecting connections from a pool of addresses. The addresses are provided via the {@link Publisher published}
+ * {@link ServiceDiscovererEvent events} that signal the host's {@link ServiceDiscovererEvent.Status status}.
+ * Instances returned handle {@link ServiceDiscovererEvent.Status#AVAILABLE},
+ * {@link ServiceDiscovererEvent.Status#EXPIRED}, and {@link ServiceDiscovererEvent.Status#UNAVAILABLE} event statuses.
+ * <p>The created instances have the following behaviour:
  * <ul>
  * <li>Round robining is done at address level.</li>
  * <li>Connections are created lazily, without any concurrency control on their creation.
@@ -76,16 +81,16 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
     static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
-    static final boolean EAGER_CONNECTION_SHUTDOWN_ENABLED = false;
+    static final Optional<Boolean> EAGER_CONNECTION_SHUTDOWN_ENABLED = Optional.empty();
     static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
-    private final boolean eagerConnectionShutdown;
+    private final Optional<Boolean> eagerConnectionShutdown;
 
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
 
-    private RoundRobinLoadBalancerFactory(boolean eagerConnectionShutdown,
+    private RoundRobinLoadBalancerFactory(Optional<Boolean> eagerConnectionShutdown,
                                           @Nullable HealthCheckConfig healthCheckConfig) {
         this.eagerConnectionShutdown = eagerConnectionShutdown;
         this.healthCheckConfig = healthCheckConfig;
@@ -121,7 +126,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
-        private boolean eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
+        private Optional<Boolean> eagerConnectionShutdown = EAGER_CONNECTION_SHUTDOWN_ENABLED;
         @Nullable
         private Executor backgroundExecutor;
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -153,7 +158,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Deprecated
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> eagerConnectionShutdown(
                 boolean eagerConnectionShutdown) {
-            this.eagerConnectionShutdown = eagerConnectionShutdown;
+            this.eagerConnectionShutdown = Optional.of(eagerConnectionShutdown);
             return this;
         }
 

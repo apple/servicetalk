@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
@@ -622,6 +623,51 @@ abstract class RoundRobinLoadBalancerTest {
 
         final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+    }
+
+    @Test
+    void handleDiscoveryEventsWithNoEagernessSetting() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
+        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .backgroundExecutor(testExecutor)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.usedAddresses(), "address-1");
+
+        sendServiceDiscoveryEvents(downEvent("address-1", UNAVAILABLE));
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertAddresses(lb.usedAddresses(), "address-2");
+
+        sendServiceDiscoveryEvents(downEvent("address-3", UNAVAILABLE));
+        assertAddresses(lb.usedAddresses(), "address-2");
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.usedAddresses(), "address-2", "address-1");
+
+        // Make sure both hosts have connections
+        lb.selectConnection(any()).toFuture().get();
+        lb.selectConnection(any()).toFuture().get();
+
+        sendServiceDiscoveryEvents(downEvent("address-1", EXPIRED));
+        assertAddresses(lb.usedAddresses(), "address-2", "address-1");
+
+        sendServiceDiscoveryEvents(downEvent("address-2", UNAVAILABLE));
+        assertAddresses(lb.usedAddresses(), "address-1");
+
+        sendServiceDiscoveryEvents(downEvent("address-1", AVAILABLE));
+        assertAddresses(lb.usedAddresses(), "address-1");
+
+        // Let's make sure that an SD failure doesn't compromise LB's internal state
+        serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
+        assertAddresses(lb.usedAddresses(), "address-1");
     }
 
     void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {

@@ -108,14 +108,6 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
             }
         }
 
-        /**
-         * Returns the name of this status.
-         * @return name of this status.
-         */
-        public String getName() {
-            return name;
-        }
-
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
@@ -135,9 +127,7 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
 
         @Override
         public String toString() {
-            return "Status{" +
-                    "name='" + name + '\'' +
-                    '}';
+            return name;
         }
     }
 }
