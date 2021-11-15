@@ -88,17 +88,32 @@ public interface DnsServiceDiscovererObserver {
         int ttl();
 
         /**
-         * Number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() available}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent.Status#AVAILABLE available}.
          *
-         * @return the number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() available}
+         * @return the number of resolved records that became {@link ServiceDiscovererEvent.Status#AVAILABLE available}
          */
         int nAvailable();
 
         /**
-         * Number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() unavailable}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable}.
          *
-         * @return the number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() unavailable}
+         * @return the number of resolved records that became
+         * {@link ServiceDiscovererEvent.Status#UNAVAILABLE unavailable}
+         * @deprecated Implement and use {@link #nMissing()} method.
          */
-        int nUnavailable();
+        @Deprecated
+        default int nUnavailable() {
+            return nMissing();
+        }
+
+        /**
+         * Number of missing records compared to the previous resolution result.
+         *
+         * @return number of missing records compared to the previous resolution result.
+         */
+        default int nMissing() {
+            throw new UnsupportedOperationException("Method nMissing is not yet implemented by "
+                    + getClass().getName());
+        }
     }
 }

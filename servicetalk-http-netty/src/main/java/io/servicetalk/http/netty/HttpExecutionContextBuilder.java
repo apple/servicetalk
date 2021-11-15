@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -29,6 +32,30 @@ final class HttpExecutionContextBuilder extends ExecutionContextBuilder<HttpExec
 
     HttpExecutionContextBuilder(final HttpExecutionContextBuilder from) {
         super(from);
+    }
+
+    @Override
+    public HttpExecutionContextBuilder ioExecutor(final IoExecutor ioExecutor) {
+        super.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public HttpExecutionContextBuilder executor(final Executor executor) {
+        super.executor(executor);
+        return this;
+    }
+
+    @Override
+    public HttpExecutionContextBuilder bufferAllocator(final BufferAllocator allocator) {
+        super.bufferAllocator(allocator);
+        return this;
+    }
+
+    @Override
+    public HttpExecutionContextBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+        super.executionStrategy(strategy);
+        return this;
     }
 
     /**
