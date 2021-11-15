@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ public final class RepeatStrategies {
     /**
      * An {@link Exception} instance used to indicate termination of repeats.
      */
-    public static final class TerminateRepeatException extends Exception {
-        private static final long serialVersionUID = -1725458427890873886L;
+    public static final class TerminateRepeatException extends RuntimeException {
+        private static final long serialVersionUID = -1725458427890873887L;
 
         // It is fine to reuse this instance and let it escape to the user as enableSuppression is set to false.
         static final TerminateRepeatException INSTANCE = new TerminateRepeatException();

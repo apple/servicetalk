@@ -494,17 +494,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     if (!selector.test(newCnx)) {
                         // Failure in selection could be temporary, hence add it to the queue and be consistent
                         // with the fact that select failure does not close a connection.
-                        return newCnx.closeAsync().concat(failed(new ConnectionRejectedException(
+                        return newCnx.closeAsync().concat(failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
-                                        + " was rejected by the selection filter.")));
+                                        + " was rejected by the selection filter.",
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)")));
                     }
                     if (host.addConnection(newCnx)) {
                         return succeeded(newCnx);
                     }
                     return newCnx.closeAsync().concat(this.usedHosts == CLOSED_LIST ? failedLBClosed(targetResource) :
-                            failed(new ConnectionRejectedException(
+                            failed(StacklessConnectionRejectedException.newInstance(
                                     "Failed to add newly created connection " + newCnx + " for " + targetResource
-                                            + " for " + host)));
+                                            + " for " + host, RoundRobinLoadBalancer.class, "selectConnection0(...)")));
                 });
     }
 
@@ -965,6 +966,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
+        }
+    }
+
+    private static final class StacklessConnectionRejectedException extends ConnectionRejectedException {
+        private static final long serialVersionUID = -4940708893680455819L;
+
+        private StacklessConnectionRejectedException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+
+        public static StacklessConnectionRejectedException newInstance(String message, Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessConnectionRejectedException(message), clazz, method);
         }
     }
 }
