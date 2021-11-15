@@ -45,7 +45,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -63,9 +62,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
  * absolute-form URL address information from each {@link StreamingHttpRequest}.
- * <p>
- * If {@link HttpRequestMetaData#requestTarget()} is not an absolute-form URL, a {@link MalformedURLException} will be
- * returned or thrown.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
@@ -122,21 +118,23 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     /**
      * Returns a cached {@link UrlKey} or creates a new one based on {@link StreamingHttpRequest} information.
      */
-    private static final class CachingKeyFactory implements AsyncCloseable {
+    private static final class CachingKeyFactory
+            implements Function<HttpRequestMetaData, UrlKey>, AsyncCloseable {
 
         private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
 
-        public UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
+        @Override
+        public UrlKey apply(final HttpRequestMetaData metaData) {
             final String host = metaData.host();
             if (host == null) {
-                throw new MalformedURLException(
+                throw new IllegalArgumentException(
                         "Request-target does not contain target host address: " + metaData.requestTarget() +
                                 ", expected absolute-form URL");
             }
 
             final String scheme = metaData.scheme();
             if (scheme == null) {
-                throw new MalformedURLException("Request-target does not contains scheme: " +
+                throw new IllegalArgumentException("Request-target does not contains scheme: " +
                         metaData.requestTarget() + ", expected absolute-form URL");
             }
 
@@ -264,32 +262,21 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.executionContext = requireNonNull(executionContext);
         }
 
-        private FilterableStreamingHttpClient selectClient(HttpRequestMetaData metaData) throws MalformedURLException {
-            return group.get(keyFactory.get(metaData));
+        private FilterableStreamingHttpClient selectClient(
+                HttpRequestMetaData metaData) {
+            return group.get(keyFactory.apply(metaData));
         }
 
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                 final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-            return defer(() -> {
-                try {
-                    return selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext();
-                } catch (Throwable t) {
-                    return Single.<FilterableReservedStreamingHttpConnection>failed(t).subscribeShareContext();
-                }
-            });
+            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-            return defer(() -> {
-                try {
-                    return selectClient(request).request(strategy, request).subscribeShareContext();
-                } catch (Throwable t) {
-                    return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
-                }
-            });
+            return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
         @Override

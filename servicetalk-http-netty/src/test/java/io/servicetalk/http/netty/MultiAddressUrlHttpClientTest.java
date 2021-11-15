@@ -35,7 +35,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
@@ -168,7 +167,7 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get("/200?param=value");
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(instanceOf(MalformedURLException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -176,7 +175,7 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get("/200?param=value");
         request.headers().set(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(instanceOf(MalformedURLException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -184,7 +183,7 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get(format("%s/200?param=value#tag", hostHeader));
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(instanceOf(MalformedURLException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -241,7 +240,7 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.newRequest(OPTIONS, "*")
                 .setHeader(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.awaitOnError(), is(instanceOf(MalformedURLException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
