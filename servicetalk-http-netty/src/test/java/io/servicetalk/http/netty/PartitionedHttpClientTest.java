@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -106,8 +107,8 @@ class PartitionedHttpClientTest {
                     }
 
                     @Override
-                    public boolean isAvailable() {
-                        return psde.isAvailable();
+                    public Status status() {
+                        return psde.status();
                     }
 
                     @Override
@@ -243,8 +244,8 @@ class PartitionedHttpClientTest {
         }
 
         @Override
-        public boolean isAvailable() {
-            return true;
+        public Status status() {
+            return AVAILABLE;
         }
     }
 

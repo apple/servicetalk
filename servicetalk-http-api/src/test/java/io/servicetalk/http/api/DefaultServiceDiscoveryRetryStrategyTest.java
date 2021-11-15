@@ -30,6 +30,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withTestExecutor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -233,12 +235,14 @@ class DefaultServiceDiscoveryRetryStrategyTest {
                 .collect(toList());
         assertThat("Event not received.", received, hasSize(1));
         assertThat("Unexpected event received.", received.iterator().next().address(), is(addr));
-        assertThat("Unexpected event received.", received.iterator().next().isAvailable(), is(true));
+        assertThat("Unexpected event received.", received.iterator().next().status(), is(AVAILABLE));
         return evt;
     }
 
     private static ServiceDiscovererEvent<String> flipAvailable(final ServiceDiscovererEvent<String> evt) {
-        return new DefaultServiceDiscovererEvent<>(evt.address(), !evt.isAvailable());
+        final ServiceDiscovererEvent.Status flipped =
+                AVAILABLE.equals(evt.status()) ? UNAVAILABLE : AVAILABLE;
+        return new DefaultServiceDiscovererEvent<>(evt.address(), flipped);
     }
 
     private final class State {

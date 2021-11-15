@@ -47,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -182,8 +183,8 @@ class FlushStrategyOverrideTest {
                 }
 
                 @Override
-                public boolean isAvailable() {
-                    return true;
+                public Status status() {
+                    return AVAILABLE;
                 }
             }));
         }

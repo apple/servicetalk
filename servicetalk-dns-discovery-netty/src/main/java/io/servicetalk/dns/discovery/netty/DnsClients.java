@@ -112,7 +112,7 @@ final class DnsClients {
                                                                final Function<T, R> mapper) {
         List<ServiceDiscovererEvent<R>> result = new ArrayList<>(original.size());
         for (ServiceDiscovererEvent<T> evt : original) {
-            result.add(new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.isAvailable()));
+            result.add(new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.status()));
         }
         return result;
     }
