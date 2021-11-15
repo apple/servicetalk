@@ -46,6 +46,8 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
@@ -106,9 +108,13 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.unknownPartitionClient = unknownPartitionClient;
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
-        toSource(psdEvents.groupToMany(event -> event.isAvailable() ?
-                partitionMap.add(event.partitionAddress()).iterator() :
-                partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize))
+        toSource(psdEvents
+                .groupToMany(event -> UNAVAILABLE.equals(event.status()) ?
+                                partitionMap.remove(event.partitionAddress()).iterator()
+                                // EXPIRED events neither add or remove new partitions so it's safe to call add
+                                // as it will just return current partitions.
+                                : partitionMap.add(event.partitionAddress()).iterator(),
+                        psdMaxQueueSize))
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));
     }
 
@@ -166,11 +172,12 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
 
                 @Override
                 public boolean test(PSDE evt) {
+                    if (EXPIRED.equals(evt.status())) {
+                        return false;
+                    }
                     MutableInt counter = addressCount.computeIfAbsent(evt.address(), __ -> new MutableInt());
                     boolean acceptEvent;
-                    if (evt.isAvailable()) {
-                        acceptEvent = ++counter.value == 1;
-                    } else {
+                    if (UNAVAILABLE.equals(evt.status())) {
                         acceptEvent = --counter.value == 0;
                         if (acceptEvent) {
                             // If address is unavailable and no more add events are pending stop tracking and
@@ -181,6 +188,8 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                                 partition.closeNow();
                             }
                         }
+                    } else {
+                        acceptEvent = ++counter.value == 1;
                     }
                     return acceptEvent;
                 }

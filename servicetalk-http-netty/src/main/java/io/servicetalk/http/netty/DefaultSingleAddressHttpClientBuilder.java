@@ -68,6 +68,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
@@ -675,8 +676,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         @Override
         public Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> discover(
                 final UnresolvedAddress address) {
-            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(singletonList(
-                    new DefaultServiceDiscovererEvent<>(requireNonNull(toResolvedAddressMapper.apply(address)), true)))
+            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(
+                    singletonList(new DefaultServiceDiscovererEvent<>(
+                            requireNonNull(toResolvedAddressMapper.apply(address)), AVAILABLE)))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
                     .concat(never());
         }
