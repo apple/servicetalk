@@ -43,7 +43,6 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     private static final DefaultHttpExecutionStrategy[] VALUES = values();
 
     private final byte offloads;
-    private final HttpExecutionStrategyInfluencer influencer = HttpExecutionStrategyInfluencer.newInfluencer(this);
 
     DefaultHttpExecutionStrategy(EnumSet<HttpExecutionStrategies.HttpOffload> offloads) {
         this.offloads = toMask(offloads);
@@ -55,10 +54,6 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         }
 
         return VALUES[mask];
-    }
-
-    public final HttpExecutionStrategyInfluencer asInfluencer() {
-        return influencer;
     }
 
     @Override
