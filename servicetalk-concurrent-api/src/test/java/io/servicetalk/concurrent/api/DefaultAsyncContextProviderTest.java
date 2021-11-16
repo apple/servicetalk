@@ -748,7 +748,7 @@ class DefaultAsyncContextProviderTest {
         assertContextSize(8);
 
         // Start removal
-        AsyncContext.removeAllPairs(asList(K1));
+        AsyncContext.removeAllEntries(asList(K1));
         assertContains(K2, "v2-2");
         assertContains(K3, "v3-1");
         assertContains(K4, "v4");
@@ -758,7 +758,7 @@ class DefaultAsyncContextProviderTest {
         assertContains(K8, "v8");
         assertContextSize(7);
 
-        AsyncContext.removeAllPairs(asList(K1, K8, K3));
+        AsyncContext.removeAllEntries(asList(K1, K8, K3));
         assertContains(K2, "v2-2");
         assertContains(K4, "v4");
         assertContains(K5, "v5");
@@ -766,14 +766,14 @@ class DefaultAsyncContextProviderTest {
         assertContains(K7, "v7");
         assertContextSize(5);
 
-        AsyncContext.removeAllPairs(asList(K7));
+        AsyncContext.removeAllEntries(asList(K7));
         assertContains(K2, "v2-2");
         assertContains(K4, "v4");
         assertContains(K5, "v5");
         assertContains(K6, "v6");
         assertContextSize(4);
 
-        AsyncContext.removeAllPairs(asList(K6, K4, K2, K5));
+        AsyncContext.removeAllEntries(asList(K6, K4, K2, K5));
         assertContextSize(0);
     }
 
@@ -836,7 +836,7 @@ class DefaultAsyncContextProviderTest {
                 remainingBits &= ~(1 << keysIndex);
             } while (remainingBits != 0);
 
-            AsyncContext.removeAllPairs(asList(permutation));
+            AsyncContext.removeAllEntries(asList(permutation));
 
             // Verify all the remove elements are not present in the context, and the size is as expected.
             assertContextSize(keys.size() - permutation.length);

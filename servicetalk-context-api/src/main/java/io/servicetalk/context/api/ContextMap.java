@@ -25,7 +25,7 @@ import static java.lang.Integer.toHexString;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The key-value map for different types of the value, defined by the {@link Key}.
+ * The key-value entry map for different types of the value, defined by the {@link Key}.
  */
 public interface ContextMap {
     /**
@@ -96,19 +96,19 @@ public interface ContextMap {
     int size();
 
     /**
-     * Determine if there are no key-value pairs in this {@link ContextMap}.
+     * Determine if there are no entries in this {@link ContextMap}.
      *
-     * @return {@code true} if there are no key-value pairs in this {@link ContextMap}.
+     * @return {@code true} if there are no entries in this {@link ContextMap}.
      */
     default boolean isEmpty() {
         return size() == 0;
     }
 
     /**
-     * Determine if this {@link ContextMap} contains a key-value pair corresponding to the {@code key}.
+     * Determine if this {@link ContextMap} contains an entry corresponding to the {@code key}.
      *
      * @param key The {@link Key} to lookup.
-     * @return {@code true} if this {@link ContextMap} contains a key-value pair corresponding to the {@code key},
+     * @return {@code true} if this {@link ContextMap} contains an entry corresponding to the {@code key},
      * {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the implementation doesn't
      * support {@code null} keys.
@@ -116,23 +116,23 @@ public interface ContextMap {
     boolean containsKey(Key<?> key);
 
     /**
-     * Determine if this {@link ContextMap} contains a key-value pair with the specified {@code value}.
+     * Determine if this {@link ContextMap} contains an entry with the specified {@code value}.
      *
      * @param value The {@code value} to lookup.
-     * @return {@code true} if this {@link ContextMap} contains one or more a key-value entries with the specified
-     * {@code value}, {@code false} otherwise.
+     * @return {@code true} if this {@link ContextMap} contains one or more entries with the specified {@code value},
+     * {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code value} is {@code null} and the implementation doesn't
      * support {@code null} values.
      */
     boolean containsValue(@Nullable Object value);
 
     /**
-     * Determine if this {@link ContextMap} contains a key-value pair matching the passed {@code key} and {@code value}.
+     * Determine if this {@link ContextMap} contains an entry matching the passed {@code key} and {@code value}.
      *
      * @param key The {@link Key} to lookup.
      * @param value The value to match.
      * @param <T> The anticipated type of object associated with the {@code key}.
-     * @return {@code true} if this {@link ContextMap} contains a key-value pair matching the passed {@code key} and
+     * @return {@code true} if this {@link ContextMap} contains an entry matching the passed {@code key} and
      * {@code value}, {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * implementation doesn't support {@code null} keys or values.
@@ -174,7 +174,7 @@ public interface ContextMap {
     }
 
     /**
-     * Put a new key-value pair into this {@link ContextMap}.
+     * Put a new entry into this {@link ContextMap}.
      *
      * @param key The {@link Key} used to index the {@code value}.
      * @param value The value to put.
@@ -190,8 +190,8 @@ public interface ContextMap {
     <T> T put(Key<T> key, @Nullable T value);
 
     /**
-     * Put a new key-value pair into this {@link ContextMap} if this map does not already contain this {@code key} or is
-     * mapped to {@code null}.
+     * Put a new entry into this {@link ContextMap} if this map does not already contain this {@code key} or is mapped
+     * to {@code null}.
      *
      * @param key The {@link Key} used to index the {@code value}.
      * @param value The value to put.
@@ -214,8 +214,8 @@ public interface ContextMap {
     }
 
     /**
-     * Computes a new key-value pair for this {@link ContextMap} if this map does not already contain this {@code key}
-     * or is mapped to {@code null}.
+     * Computes a new entry for this {@link ContextMap} if this map does not already contain this {@code key} or is
+     * mapped to {@code null}.
      *
      * @param key The {@link Key} used to index a new value.
      * @param computeFunction The function to compute a new value. Implementation may invoke this function multiple
@@ -243,7 +243,7 @@ public interface ContextMap {
     }
 
     /**
-     * Put all the key-value pairs into this {@link ContextMap}.
+     * Put all the entries into this {@link ContextMap}.
      *
      * @param map The entries to insert into this {@link ContextMap}.
      * @throws IllegalArgumentException if any value type does not match with its corresponding {@link Key#type()}.
@@ -262,7 +262,7 @@ public interface ContextMap {
     }
 
     /**
-     * Put all the key-value pairs into this {@link ContextMap}.
+     * Put all the entries into this {@link ContextMap}.
      *
      * @param map The entries to insert into this {@link ContextMap}.
      * @throws IllegalArgumentException if any value type does not match with its corresponding {@link Key#type()}.
@@ -286,9 +286,9 @@ public interface ContextMap {
     }
 
     /**
-     * Remove a key-value pair from this {@link ContextMap}, and get the previous value (if one exists).
+     * Remove an entry from this {@link ContextMap}, and get the previous value (if one exists).
      *
-     * @param key The {@link Key} which identifies a key-value pair for removal.
+     * @param key The {@link Key} which identifies an entry for removal.
      * @param <T> The type of object associated with the {@code key}.
      * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
      * also indicate the value associated with the {@code key} was {@code null} (if {@code null} values are supported by
@@ -302,10 +302,9 @@ public interface ContextMap {
     <T> T remove(Key<T> key);
 
     /**
-     * Remove all key-value pairs from this {@link ContextMap} associated with the keys from the passed
-     * {@link Iterable}.
+     * Remove all entries from this {@link ContextMap} associated with the keys from the passed {@link Iterable}.
      *
-     * @param keys The {@link Key}s that identify key-value pairs for removal.
+     * @param keys The {@link Key}s that identify entries for removal.
      * @return {@code true} if this map has changed as a result of this operation.
      * @throws NullPointerException (optional behavior) if any of the {@code keys} is {@code null} and the
      * implementation doesn't support {@code null} keys.
@@ -333,12 +332,13 @@ public interface ContextMap {
     void clear();
 
     /**
-     * Iterate over the key-value pairs contained in this {@link ContextMap}.
+     * Iterate over the entries contained in this {@link ContextMap}.
      *
-     * @param consumer Each key-value pair will be passed as arguments to this {@link BiPredicate}. Returns {@code true}
-     * if the consumer wants to keep iterating or {@code false} to stop iteration at the current key-value pair.
-     * @return {@code null} if {@code consumer} iterated through all key-value pairs or the {@link Key} at which the
-     * iteration stopped.
+     * @param consumer Each entry will be passed as key and value arguments to this {@link BiPredicate}. A consumer
+     * predicate should return {@code true} if it wants to keep iterating or {@code false} to stop iteration at the
+     * current entry.
+     * @return {@code null} if {@code consumer} iterated through all entries or the {@link Key} at which the iteration
+     * stopped.
      * @throws NullPointerException if {@code consumer} is {@code null}.
      */
     @Nullable
@@ -358,7 +358,7 @@ public interface ContextMap {
      * Determines if the specified object is equal to this {@link ContextMap}.
      *
      * @param o object to be compared for equality with this {@link ContextMap}.
-     * @return {@code true} if the passed object is a {@link ContextMap} and has the same key-value mappings.
+     * @return {@code true} if the passed object is a {@link ContextMap} and has the same key-value mapping entries.
      * @see #hashCode()
      */
     @Override
@@ -368,7 +368,7 @@ public interface ContextMap {
      * Returns the hash code value for this {@link ContextMap}.
      *
      * @return the hash code value for this {@link ContextMap}, taking into account the hash codes of each key-value
-     * mappings this {@link ContextMap} contains.
+     * mapping entries this {@link ContextMap} contains.
      * @see #equals(Object)
      */
     @Override

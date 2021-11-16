@@ -135,7 +135,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to put a new key-value pair to the current context.
+     * Convenience method to put a new entry to the current context.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
      * @param value the value to put.
@@ -155,8 +155,8 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to put a new key-value pair to the current context if this map does not already contain
-     * this {@code key} or is mapped to {@code null}.
+     * Convenience method to put a new entry to the current context if this map does not already contain this
+     * {@code key} or is mapped to {@code null}.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
      * @param value the value to put.
@@ -176,8 +176,8 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to compute a new key-value pair for the current context if this map does not already contain
-     * this {@code key} or is mapped to {@code null}.
+     * Convenience method to compute a new entry for the current context if this map does not already contain this
+     * {@code key} or is mapped to {@code null}.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
      * @param computeFunction The function to compute a new value. Implementation may invoke this function multiple
@@ -199,9 +199,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to put all the key-value pairs into the current context from another {@link ContextMap}.
+     * Convenience method to put all the entries into the current context from another {@link ContextMap}.
      *
-     * @param map contains the key-value pairs that will be added.
+     * @param map contains the entries that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
      * modified while attempting to put all entries.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
@@ -216,9 +216,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to put all the key/value pairs into the current context.
+     * Convenience method to put all the entries into the current context.
      *
-     * @param map contains the key/value pairs that will be added.
+     * @param map contains the entries that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
      * modified while attempting to put all entries.
      * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
@@ -234,9 +234,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to put all the key-value pairs into the current context.
+     * Convenience method to put all the entries into the current context.
      *
-     * @param map contains the key-value pairs that will be added.
+     * @param map contains the entries that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
      * modified while attempting to put all entries.
      * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
@@ -252,7 +252,7 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to remove a key/value pair from the current context.
+     * Convenience method to remove an entry from the current context.
      *
      * @param <T> The type of object associated with {@code key}.
      * @param key The key to remove.
@@ -270,9 +270,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to remove a key-value pair from the current context.
+     * Convenience method to remove an entry from the current context.
      *
-     * @param key The {@link ContextMap.Key} which identifies a key-value pair for removal.
+     * @param key The {@link ContextMap.Key} which identifies an entry for removal.
      * @param <T> The type of object associated with {@code key}.
      * @return the previous value associated with {@code key}, or {@code null} if there was none. A {@code null}
      * value may also indicate there was a previous value which was {@code null}.
@@ -288,14 +288,14 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to remove all the key/value pairs from the current context.
+     * Convenience method to remove all the entries from the current context.
      *
      * @param entries A {@link Iterable} which contains all the keys to remove.
      * @return {@code true} if this map has changed as a result of this operation.
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
      * implementation.
      * @see AsyncContextMap#removeAll(Iterable)
-     * @deprecated Use {@link #removeAllPairs(Iterable)}
+     * @deprecated Use {@link #removeAllEntries(Iterable)}
      */
     @Deprecated
     public static boolean removeAll(final Iterable<AsyncContextMap.Key<?>> entries) {
@@ -303,10 +303,10 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to remove all key-value pairs from the current context associated with the keys from the
+     * Convenience method to remove all entries from the current context associated with the keys from the
      * passed {@link Iterable}.
      *
-     * @param keys The {@link ContextMap.Key}s that identify key-value pairs for removal.
+     * @param keys The {@link ContextMap.Key}s that identify entries for removal.
      * @return {@code true} if this map has changed as a result of this operation.
      * @throws NullPointerException (optional behavior) if any of the {@code keys} is {@code null} and the underlying
      * {@link ContextMap} implementation doesn't support {@code null} keys.
@@ -314,13 +314,13 @@ public final class AsyncContext {
      * implementation.
      * @see ContextMap#removeAll(Iterable)
      */
-    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllPairs(Iterable)
-    public static boolean removeAllPairs(final Iterable<ContextMap.Key<?>> keys) {
+    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllEntries(Iterable)
+    public static boolean removeAllEntries(final Iterable<ContextMap.Key<?>> keys) {
         return context().removeAll(keys);
     }
 
     /**
-     * Convenience method to clear all the key-value pairs from the current context.
+     * Convenience method to clear all the entries from the current context.
      *
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
      * implementation.
@@ -385,10 +385,10 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine if the current context contains a key/value entry corresponding to {@code key}.
+     * Convenience method to determine if the current context contains an entry corresponding to {@code key}.
      *
      * @param key the key to lookup.
-     * @return {@code true} if the current context contains a key/value entry corresponding to {@code key}.
+     * @return {@code true} if the current context contains an entry corresponding to {@code key}.
      * {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
      * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
@@ -401,12 +401,11 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine if the current context contains a key-value pair corresponding to the
-     * {@code key}.
+     * Convenience method to determine if the current context contains an entry corresponding to the {@code key}.
      *
      * @param key The {@link ContextMap.Key} to lookup.
-     * @return {@code true} if the current context contains a key-value pair corresponding to the {@code key},
-     * {@code false} otherwise.
+     * @return {@code true} if the current context contains an entry corresponding to the {@code key}, {@code false}
+     * otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
      * {@link ContextMap} implementation doesn't support {@code null} keys.
      * @see ContextMap#containsKey(ContextMap.Key)
@@ -416,12 +415,11 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine if the current context contains a key-value pair with the specified
-     * {@code value}.
+     * Convenience method to determine if the current context contains an entry with the specified {@code value}.
      *
      * @param value the value to lookup.
-     * @return {@code true} if this context contains one or more a key-value entries with the specified {@code value},
-     * {@code false} otherwise.
+     * @return {@code true} if this context contains one or more entries with the specified {@code value}, {@code false}
+     * otherwise.
      * @throws NullPointerException (optional behavior) if {@code value} is {@code null} and the underlying
      * {@link ContextMap} implementation doesn't support {@code null} values.
      * @see ContextMap#containsValue(Object)
@@ -431,14 +429,14 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine if this context contains a key-value pair matching the passed {@code key} and
+     * Convenience method to determine if this context contains an entry matching the passed {@code key} and
      * {@code value}.
      *
      * @param key The {@link ContextMap.Key} to lookup.
      * @param value The value to match.
      * @param <T> The anticipated type of object associated with the {@code key}.
-     * @return {@code true} if this context contains a key-value pair matching the passed {@code key} and
-     * {@code value}, {@code false} otherwise.
+     * @return {@code true} if this context contains an entry matching the passed {@code key} and {@code value},
+     * {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} or {@code value} is {@code null} and the
      * underlying {@link ContextMap} implementation doesn't support {@code null} keys or values.
      */
@@ -447,9 +445,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine the number of key/value pairs in the current context.
+     * Convenience method to determine the number of entries in the current context.
      *
-     * @return the number of key/value pairs in the current context.
+     * @return the number of entries in the current context.
      * @see ContextMap#size() ()
      */
     public static int size() {
@@ -457,9 +455,9 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to determine if there are no key/value pairs in the current context.
+     * Convenience method to determine if there are no entries in the current context.
      *
-     * @return {@code true} if there are no key/value pairs in the current context.
+     * @return {@code true} if there are no entries in the current context.
      * @see ContextMap#isEmpty()
      */
     public static boolean isEmpty() {
@@ -467,15 +465,16 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to iterate over the key/value pairs contained in the current context.
+     * Convenience method to iterate over the entries contained in the current context.
      *
-     * @param consumer Each key/value pair will be passed as arguments to this {@link BiPredicate}. Returns {@code true}
-     * if the consumer wants to keep iterating or {@code false} to stop iteration at the current key/value pair.
-     * @return {@code null} if {@code consumer} iterated through all key/value pairs or the {@link AsyncContextMap.Key}
-     * at which the iteration stopped.
+     * @param consumer Each entry will be passed as key and value arguments to this {@link BiPredicate}. A consumer
+     * predicate should return {@code true} if it wants to keep iterating or {@code false} to stop iteration at the
+     * current entry.
+     * @return {@code null} if {@code consumer} iterated through all entries or the {@link AsyncContextMap.Key} at which
+     * the iteration stopped.
      * @throws NullPointerException if {@code consumer} is null.
      * @see AsyncContextMap#forEach(BiPredicate)
-     * @deprecated Use {@link #forEachPair(BiPredicate)}
+     * @deprecated Use {@link #forEachEntry(BiPredicate)}
      */
     @Deprecated
     @Nullable
@@ -484,18 +483,19 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to iterate over the key-value pairs contained in the current context.
+     * Convenience method to iterate over the entries contained in the current context.
      *
-     * @param consumer Each key/value pair will be passed as arguments to this {@link BiPredicate}. Returns {@code true}
-     * if the consumer wants to keep iterating or {@code false} to stop iteration at the current key/value pair.
-     * @return {@code null} if {@code consumer} iterated through all key/value pairs or the {@link ContextMap.Key}
-     * at which the iteration stopped.
+     * @param consumer Each entry will be passed as key and value arguments to this {@link BiPredicate}. A consumer
+     * predicate should return {@code true} if it wants to keep iterating or {@code false} to stop iteration at the
+     * current entry.
+     * @return {@code null} if {@code consumer} iterated through all entries or the {@link ContextMap.Key} at which the
+     * iteration stopped.
      * @throws NullPointerException if {@code consumer} is null.
      * @see ContextMap#forEach(BiPredicate)
      */
     // FIXME: 0.42 - add forEach(BiPredicate) alias method and consider deprecating forEachPair(BiPredicate)
     @Nullable
-    public static ContextMap.Key<?> forEachPair(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
+    public static ContextMap.Key<?> forEachEntry(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
         return context().forEach(consumer);
     }
 
@@ -664,6 +664,6 @@ public final class AsyncContext {
     private static void disable0() {
         provider = NoopAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
-        LOGGER.info("Disabled, features that depend on AsyncContext will stop working.");
+        LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
     }
 }

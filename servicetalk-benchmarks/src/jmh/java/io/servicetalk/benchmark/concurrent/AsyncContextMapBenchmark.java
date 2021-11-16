@@ -105,7 +105,7 @@ public class AsyncContextMapBenchmark {
     @Benchmark
     public void putGetMultiFour() {
         AsyncContext.putAllFromMap(FourMap.INSTANCE);
-        AsyncContext.removeAllPairs(FourList.INSTANCE);
+        AsyncContext.removeAllEntries(FourList.INSTANCE);
     }
 
     private static final class FourList extends AbstractList<Key<?>> {
