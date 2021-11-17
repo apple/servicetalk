@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -45,8 +47,11 @@ public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpReq
      * {@link HttpRequestMetaData#context() request context}.
      */
     @Deprecated
-    BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
-                                          BlockingStreamingHttpRequest request) throws Exception;
+    default BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
+                                          BlockingStreamingHttpRequest request) throws Exception {
+        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return request(request);
+    }
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.
