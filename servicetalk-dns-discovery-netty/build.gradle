@@ -42,6 +42,7 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation "commons-lang:commons-lang:$commonsLangVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

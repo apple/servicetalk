@@ -54,23 +54,4 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
         // the overridden methods here.
         return other.merge(this);
     }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final DelegatingHttpExecutionStrategy that = (DelegatingHttpExecutionStrategy) o;
-
-        return delegate.equals(that.delegate);
-    }
-
-    @Override
-    public int hashCode() {
-        return delegate.hashCode();
-    }
 }

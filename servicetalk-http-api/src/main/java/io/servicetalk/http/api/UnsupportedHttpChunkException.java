@@ -15,11 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.serializer.api.SerializationException;
-
 import javax.annotation.Nullable;
 
-final class UnsupportedHttpChunkException extends SerializationException {
+final class UnsupportedHttpChunkException extends IllegalArgumentException {
     private static final long serialVersionUID = -4336685587984151152L;
 
     UnsupportedHttpChunkException(@Nullable Object o) {

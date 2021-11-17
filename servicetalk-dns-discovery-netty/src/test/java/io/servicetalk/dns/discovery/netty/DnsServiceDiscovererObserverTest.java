@@ -258,12 +258,12 @@ class DnsServiceDiscovererObserverTest {
     }
 
     private static void assertResolutionResult(@Nullable ResolutionResult result,
-                                               int resolvedRecords, int nAvailable, int nUnavailable) {
+                                               int resolvedRecords, int nAvailable, int nMissing) {
         assertThat("Unexpected null ResolutionResult", result, is(notNullValue()));
         assertThat("Unexpected number of resolvedRecords", result.resolvedRecords(), is(resolvedRecords));
         assertThat("Unexpected TTL value", result.ttl(), is(DEFAULT_TTL));
         assertThat("Unexpected number of nAvailable records", result.nAvailable(), is(nAvailable));
-        assertThat("Unexpected number of nUnavailable records", result.nUnavailable(), is(nUnavailable));
+        assertThat("Unexpected number of nMissing records", result.nMissing(), is(nMissing));
     }
 
     @Test

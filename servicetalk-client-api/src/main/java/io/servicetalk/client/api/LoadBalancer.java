@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,10 @@ public interface LoadBalancer<C extends LoadBalancedConnection> extends Listenab
      * @param selector A {@link Function} that evaluates a connection for selection.
      *                 This selector should return {@code null} if the connection <strong>MUST</strong> not be selected.
      *                 This selector is guaranteed to be called for any connection that is returned from this method.
-     * @return a {@link Single} that completes with the most appropriate connection to use.
+     * @return a {@link Single} that completes with the most appropriate connection to use. A
+     * {@link Single#failed(Throwable) failed Single} with {@link NoAvailableHostException} can be returned if no
+     * connection can be selected at this time or with {@link ConnectionRejectedException} if a newly created connection
+     * was rejected by the {@code selector} or this load balancer.
      */
     Single<C> selectConnection(Predicate<C> selector);
 

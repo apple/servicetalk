@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Indicates that a duplicate value was added while constructing a {@link PartitionAttributes}.
  */
-public final class DuplicateAttributeException extends RuntimeException {
-    private static final long serialVersionUID = 3128709895329437549L;
+public final class DuplicateAttributeException extends IllegalStateException {
+    private static final long serialVersionUID = 8374128121212690894L;
 
     private final Key key;
 

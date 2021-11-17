@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.transport.api.RetryableException;
 
+import java.io.IOException;
+
 /**
  * Thrown when no host is available but at least one is required.
  */
-public class NoAvailableHostException extends RuntimeException implements RetryableException {
-    private static final long serialVersionUID = 5340791072245425967L;
+public class NoAvailableHostException extends IOException implements RetryableException {
+    private static final long serialVersionUID = -7717046537430445936L;
 
     /**
      * Creates a new instance.
