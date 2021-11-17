@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
 
 final class ContextPreservingCompletableSubscriberAndCancellable extends ContextPreservingCompletableSubscriber {
-    ContextPreservingCompletableSubscriberAndCancellable(Subscriber subscriber, AsyncContextMap current) {
+    ContextPreservingCompletableSubscriberAndCancellable(Subscriber subscriber, ContextMap current) {
         super(subscriber, current);
     }
 
+    @Override
     void invokeOnSubscribe(Cancellable cancellable) {
         subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
     }

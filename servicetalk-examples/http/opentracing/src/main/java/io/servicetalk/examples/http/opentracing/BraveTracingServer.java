@@ -16,7 +16,7 @@
 package io.servicetalk.examples.http.opentracing;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.opentracing.http.TracingHttpServiceFilter;
@@ -38,7 +38,7 @@ import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.opentracing.propagation.Format.Builtin.TEXT_MAP;
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
 /**
  * A server that does distributed tracing via {@link BraveTracer}.
@@ -74,10 +74,12 @@ public final class BraveTracingServer {
      * leveraging {@link AsyncContextTraceContext}.
      */
     private static final class AsyncContextTraceContext extends CurrentTraceContext {
-        private static final AsyncContextMap.Key<TraceContext> SCOPE_KEY = newKey("bravetracing");
-        public static final CurrentTraceContext INSTANCE = new AsyncContextTraceContext();
+        private static final ContextMap.Key<TraceContext> SCOPE_KEY = newKey("bravetracing", TraceContext.class);
+
+        static final CurrentTraceContext INSTANCE = new AsyncContextTraceContext();
 
         private AsyncContextTraceContext() {
+            // Singleton
         }
 
         @Nullable
@@ -88,7 +90,7 @@ public final class BraveTracingServer {
 
         @Override
         public Scope newScope(final TraceContext context) {
-            AsyncContextMap contextMap = AsyncContext.current();
+            final ContextMap contextMap = AsyncContext.context();
             TraceContext previous = contextMap.get(SCOPE_KEY);
             contextMap.put(SCOPE_KEY, context);
             return decorateScope(context,
@@ -96,9 +98,10 @@ public final class BraveTracingServer {
         }
 
         private static final class RemoveScopeOnClose implements Scope {
-            private static final Scope INSTANCE = new RemoveScopeOnClose();
+            static final Scope INSTANCE = new RemoveScopeOnClose();
 
             private RemoveScopeOnClose() {
+                // Singleton
             }
 
             @Override

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.SingleToFuture;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1450,13 +1451,13 @@ public abstract class Single<T> {
 
     /**
      * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link AsyncContextMap#copy() copy}.
+     * instead of making a {@link ContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Single} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed to.
+     * {@link ContextMap#copy() copy} when subscribed to.
      */
     public final Single<T> subscribeShareContext() {
         return new SingleSubscribeShareContext<>(this);
@@ -2387,26 +2388,26 @@ public abstract class Single<T> {
     // <editor-fold desc="Internal Methods">
 
     /**
-     * Returns the {@link AsyncContextMap} to be used for a subscribe.
+     * Returns the {@link ContextMap} to be used for a subscribe.
      *
      * @param provider The {@link AsyncContextProvider} which is the source of the map
-     * @return {@link AsyncContextMap} for this subscribe operation.
+     * @return {@link ContextMap} for this subscribe operation.
      */
-    AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+    ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.contextMap().copy();
+        return provider.context().copy();
     }
 
     /**
-     * Subscribes to this {@link Single} and returns the {@link AsyncContextMap} associated for this subscribe
+     * Subscribes to this {@link Single} and returns the {@link ContextMap} associated for this subscribe
      * operation.
      *
      * @param subscriber the subscriber.
      * @param provider {@link AsyncContextProvider} to use.
-     * @return {@link AsyncContextMap} for this subscribe operation.
+     * @return {@link ContextMap} for this subscribe operation.
      */
-    final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        final AsyncContextMap contextMap = contextForSubscribe(provider);
+    final ContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        final ContextMap contextMap = contextForSubscribe(provider);
         subscribeWithContext(subscriber, provider, contextMap);
         return contextMap;
     }
@@ -2415,21 +2416,20 @@ public abstract class Single<T> {
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber,
-                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, contextMap, contextProvider);
     }
 
     private void subscribeWithContext(Subscriber<? super T> subscriber,
-                                      AsyncContextProvider contextProvider, AsyncContextMap contextMap) {
+                                      AsyncContextProvider contextProvider, ContextMap contextMap) {
         requireNonNull(subscriber);
         Subscriber<? super T> wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        if (contextProvider.contextMap() == contextMap) {
-            // No need to wrap as we sharing the AsyncContext
+        if (contextProvider.context() == contextMap) {
+            // No need to wrap as we are sharing the AsyncContext
             handleSubscribe(wrapped, contextMap, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
@@ -2443,12 +2443,11 @@ public abstract class Single<T> {
      * This method wraps the passed {@link Subscriber}. Operators that do not wish to wrap the passed {@link Subscriber}
      * can override this method and omit the wrapping.
      * @param subscriber the subscriber.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                         ContextMap contextMap, AsyncContextProvider contextProvider) {
         try {
             Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
             handleSubscribe(wrapped);

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +40,13 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     }
 
     @Override
-    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.contextMap();
+    ContextMap contextForSubscribe(AsyncContextProvider provider) {
+        return provider.context();
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ScanWithLifetimeSubscriber<>(subscriber, mapperSupplier.get(),
                 contextMap, contextProvider), contextMap, contextProvider);
     }
@@ -69,7 +71,7 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
                                    final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             super(subscriber, mapper, contextProvider, contextMap);
             this.mapper = mapper;
         }

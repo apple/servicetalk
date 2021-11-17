@@ -21,9 +21,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class AsyncContextDisableTest {
     private static final Key<String> K1 = Key.newKey("k1");
@@ -57,7 +58,7 @@ class AsyncContextDisableTest {
                     // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext
                     // won't be captured.
                     executor2 = Executors.newCachedThreadExecutor();
-                    asyncContextPutIgnoreUnsupported(K1, expectedValue);
+                    asyncContextPutExpectNoop(K1, expectedValue);
                     assertNull(executor2.submit(() -> AsyncContext.get(K1)).toFuture().get());
                 } finally {
                     AsyncContext.enable();
@@ -78,7 +79,7 @@ class AsyncContextDisableTest {
             try {
                 Executor executor = Executors.newCachedThreadExecutor();
                 try {
-                    asyncContextPutIgnoreUnsupported(K1, "foo");
+                    asyncContextPutExpectNoop(K1, "foo");
                     assertNull(executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
 
                     AtomicReference<String> actualValue = new AtomicReference<>();
@@ -104,12 +105,11 @@ class AsyncContextDisableTest {
         }
     }
 
-    private static <T> void asyncContextPutIgnoreUnsupported(Key<T> key, T value) {
-        try {
-            AsyncContext.put(key, value);
-            fail(UnsupportedOperationException.class + " exception expected but not seen");
-        } catch (UnsupportedOperationException ignored) {
-            // expected
-        }
+    private static <T> void asyncContextPutExpectNoop(Key<T> key, T value) {
+        int sizeBefore = AsyncContext.size();
+        AsyncContext.put(key, value);
+        assertThat("Size of AsyncContext unexpectedly changed", AsyncContext.size(), is(sizeBefore));
+        assertThat("AsyncContext should not contain " + key + '=' + value,
+                AsyncContext.containsKey(key), is(false));
     }
 }

@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -25,6 +24,7 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.internal.AbstractOffloadingTest;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.EnumSet;
 import java.util.function.BiFunction;
@@ -53,7 +53,7 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
         Runnable appCode = () -> {
             try {
                 // Insert a custom value into AsyncContext map
-                AsyncContext.current().put(ASYNC_CONTEXT_CUSTOM_KEY, ASYNC_CONTEXT_VALUE);
+                AsyncContext.put(ASYNC_CONTEXT_CUSTOM_KEY, ASYNC_CONTEXT_VALUE);
 
                 capture(CaptureSlot.APP);
 
@@ -163,9 +163,9 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
         }
 
         // Ensure that Async Context Map was correctly set during signals
-        AsyncContextMap appMap = capturedContexts.captured(CaptureSlot.APP);
+        ContextMap appMap = capturedContexts.captured(CaptureSlot.APP);
         assertThat(appMap, notNullValue());
-        AsyncContextMap subscribeMap = capturedContexts.captured(CaptureSlot.ORIGINAL_SUBSCRIBE);
+        ContextMap subscribeMap = capturedContexts.captured(CaptureSlot.ORIGINAL_SUBSCRIBE);
         assertThat(subscribeMap, notNullValue());
         assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
         assertThat("Missing custom async context entry ",
@@ -175,7 +175,8 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
         checkSlots.stream()
                 .filter(slot -> null != capturedContexts.captured(slot))
                 .forEach(slot -> {
-                    AsyncContextMap map = capturedContexts.captured(slot);
+                    ContextMap map = capturedContexts.captured(slot);
+                    assertThat("Context map was not captured", map, is(notNullValue()));
                     assertThat("Custom key missing from context map", map.containsKey(ASYNC_CONTEXT_CUSTOM_KEY));
                     assertThat("Unexpected context map @ slot " + slot + " : " + map,
                              map, sameInstance(subscribeMap));

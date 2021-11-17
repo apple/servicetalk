@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,6 +26,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -36,10 +37,10 @@ class SingleAmbWithAsyncTest {
     private static final String FIRST_EXECUTOR_THREAD_NAME_PREFIX = "first";
     private static final String SECOND_EXECUTOR_THREAD_NAME_PREFIX = "second";
 
-    private static final Key<Integer> BEFORE_SUBSCRIBE_KEY = Key.newKey("before-subscribe");
+    private static final ContextMap.Key<Integer> BEFORE_SUBSCRIBE_KEY = newKey("before-subscribe", Integer.class);
     private static final int BEFORE_SUBSCRIBE_KEY_VAL = 1;
     private static final int BEFORE_SUBSCRIBE_KEY_VAL_2 = 2;
-    private static final Key<Integer> BEFORE_ON_SUBSCRIBE_KEY = Key.newKey("before-on-subscribe");
+    private static final ContextMap.Key<Integer> BEFORE_ON_SUBSCRIBE_KEY = newKey("before-on-subscribe", Integer.class);
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL = 2;
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL_2 = 3;
 
@@ -179,7 +180,7 @@ class SingleAmbWithAsyncTest {
         return first.publishOn(firstExec.executor())
                 .ambWith(second.publishOn(secondExec.executor()))
                 .beforeFinally(() ->
-                        assertThat("Unexpected context value.", AsyncContext.current().get(BEFORE_SUBSCRIBE_KEY),
+                        assertThat("Unexpected context value.", AsyncContext.get(BEFORE_SUBSCRIBE_KEY),
                                 is(BEFORE_SUBSCRIBE_KEY_VAL)))
                 .<Integer>liftSync(subscriber -> {
                     AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL);
@@ -194,7 +195,7 @@ class SingleAmbWithAsyncTest {
                 .ambWith(second.publishOn(secondExec.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.",
-                                AsyncContext.current().get(BEFORE_ON_SUBSCRIBE_KEY),
+                                AsyncContext.get(BEFORE_ON_SUBSCRIBE_KEY),
                                 is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
                 .toFuture().get();
     }
@@ -211,7 +212,7 @@ class SingleAmbWithAsyncTest {
                         })
                 )
                 .beforeFinally(() ->
-                        assertThat("Unexpected context value.", AsyncContext.current().get(BEFORE_SUBSCRIBE_KEY),
+                        assertThat("Unexpected context value.", AsyncContext.get(BEFORE_SUBSCRIBE_KEY),
                                 is(BEFORE_SUBSCRIBE_KEY_VAL)))
                 .<Integer>liftSync(subscriber -> {
                     AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL);
@@ -229,7 +230,7 @@ class SingleAmbWithAsyncTest {
                                 AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL_2)))
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.",
-                                AsyncContext.current().get(BEFORE_ON_SUBSCRIBE_KEY),
+                                AsyncContext.get(BEFORE_ON_SUBSCRIBE_KEY),
                                 is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
                 .toFuture().get();
     }

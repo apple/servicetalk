@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BooleanSupplier;
 
@@ -35,7 +36,7 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber,
-                                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider,
+                                                 ContextMap contextMap, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
@@ -43,11 +44,11 @@ final class PublishAndSubscribeOnPublishers {
     @FunctionalInterface
     private interface HandleSubscribe<T> {
         void handleSubscribe(Subscriber<? super T> subscriber,
-                             AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+                             ContextMap contextMap, AsyncContextProvider contextProvider);
     }
 
     private static <T> void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber<? super T> subscriber,
-                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         try {
             handler.handleSubscribe(subscriber, contextMap, contextProvider);
         } catch (Throwable throwable) {
@@ -83,7 +84,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             final Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -121,7 +122,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             final Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();

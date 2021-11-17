@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.context.api.ContextMap;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,12 +27,13 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 class SubscribeShareContextTest {
 
-    static final AsyncContextMap.Key<String> KEY = AsyncContextMap.Key.newKey("share-context-key");
+    static final ContextMap.Key<String> KEY = newKey("share-context-key", String.class);
 
     @Test
     void contextIsShared() throws Exception {

@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -42,8 +42,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest {
 
-    private static final AsyncContextMap.Key<String> CLIENT_KEY = newKey("client");
+    private static final ContextMap.Key<String> CLIENT_KEY = newKey("client-key", String.class);
     private static final String CLIENT_VALUE = "client_value";
 
     private final AsyncContextCaptureTransportObserver clientObserver =
@@ -157,9 +157,9 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
     private static final class AsyncContextCaptureTransportObserver implements TransportObserver {
 
         private final Map<String, String> storageMap = new ConcurrentHashMap<>();
-        private final AsyncContextMap.Key<String> key;
+        private final ContextMap.Key<String> key;
 
-        AsyncContextCaptureTransportObserver(AsyncContextMap.Key<String> key) {
+        AsyncContextCaptureTransportObserver(ContextMap.Key<String> key) {
             this.key = key;
         }
 

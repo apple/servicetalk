@@ -16,19 +16,17 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Single} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link Single#handleSubscribe(Subscriber, AsyncContextMap, AsyncContextProvider)}.
+ * {@link Single#handleSubscribe(Subscriber, ContextMap, AsyncContextProvider)}.
  *
  * @param <T> Type of the result of the single.
  */
 abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> implements SingleSource<T> {
-
-    AbstractNoHandleSubscribeSingle() {
-    }
 
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {

@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.context.api.ContextMap;
 
 final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Completable original;
@@ -27,7 +28,7 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                   ContextMap contextMap, AsyncContextProvider contextProvider) {
         // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
         // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
         // resulting Completable is subscribed. Since, it is the same source, just viewed as a Single, there is no

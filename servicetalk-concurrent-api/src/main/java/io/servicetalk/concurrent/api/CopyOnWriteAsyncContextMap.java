@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,32 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ContextMapUtils;
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapUtils.contextMapToString;
+import static io.servicetalk.concurrent.internal.ContextMapUtils.ensureType;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
 
 /**
- * This class provides a Copy-on-Write map behavior is and special cased for cardinality of less than 7 elements. Less
- * than 7 elements was chosen because it is not common to have more than this number of {@link Key}-value pairs in a
- * single {@link AsyncContextMap}. Common {@link Key}-value paris are (tracing, MDC, auth, 3-custom user entries).
+ * This class provides a Copy-on-Write map behavior. It features special cases for cardinality of less than 7 elements.
+ * Less than 7 elements was chosen because it is not common to have more than this number of
+ * {@link ContextMap.Key}-value entries in a single {@link ContextMap}. Common {@link ContextMap.Key}-value entries are
+ * (tracing, MDC, auth, 3-custom user entries).
  */
-final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
+// FIXME: 0.42 - rename to CopyOnWriteContextMap
+final class CopyOnWriteAsyncContextMap implements ContextMap {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteAsyncContextMap.class, CopyAsyncContextMap.class, "map");
     private volatile CopyAsyncContextMap map;
@@ -44,15 +53,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         this.map = map;
     }
 
-    @Nullable
     @Override
-    public <T> T get(final Key<T> key) {
-        return map.get(key);
-    }
-
-    @Override
-    public boolean containsKey(final Key<?> key) {
-        return map.containsKey(key);
+    public int size() {
+        return map.size();
     }
 
     @Override
@@ -61,8 +64,30 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
     }
 
     @Override
-    public int size() {
-        return map.size();
+    public boolean containsKey(final Key<?> key) {
+        return map.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(@Nullable final Object value) {
+        return map.containsValue(value);
+    }
+
+    @Override
+    public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+        return map.contains(key, value);
+    }
+
+    @Nullable
+    @Override
+    public <T> T get(final Key<T> key) {
+        return map.get(key);
+    }
+
+    @Nullable
+    @Override
+    public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+        return map.getOrDefault(key, defaultValue);
     }
 
     @Nullable
@@ -71,11 +96,41 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         return map.put(key, value, this, mapUpdater);
     }
 
+    @Nullable
     @Override
-    public void putAll(final Map<Key<?>, Object> map) {
+    public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
+        return map.putIfAbsent(key, value, this, mapUpdater);
+    }
+
+    @Nullable
+    @Override
+    public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction) {
+        return map.computeIfAbsent(key, computeFunction, this, mapUpdater);
+    }
+
+    @Override
+    public void putAll(final ContextMap map) {
+        final int size = map.size();
+        if (size < 1) {
+            return;
+        }
         for (;;) {
             CopyAsyncContextMap contextMap = this.map;
-            if (mapUpdater.compareAndSet(this, contextMap, contextMap.putAll(map))) {
+            if (mapUpdater.compareAndSet(this, contextMap, contextMap.putAll(size, map::forEach))) {
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void putAll(final Map<Key<?>, Object> map) {
+        final int size = map.size();
+        if (size < 1) {
+            return;
+        }
+        for (;;) {
+            CopyAsyncContextMap contextMap = this.map;
+            if (mapUpdater.compareAndSet(this, contextMap, contextMap.putAll(size, map::forEach))) {
                 break;
             }
         }
@@ -88,8 +143,8 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
     }
 
     @Override
-    public boolean removeAll(final Iterable<Key<?>> entries) {
-        return map.removeAll(entries, this, mapUpdater);
+    public boolean removeAll(final Iterable<Key<?>> keys) {
+        return map.removeAll(keys, this, mapUpdater);
     }
 
     @Override
@@ -104,40 +159,81 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
     }
 
     @Override
-    public AsyncContextMap copy() {
+    public ContextMap copy() {
         return new CopyOnWriteAsyncContextMap(map);
     }
 
     @Override
-    public String toString() {
-        return contextMapToString(this);
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ContextMap)) {
+            return false;
+        }
+        if (o instanceof CopyOnWriteAsyncContextMap) {
+            return map.equals(((CopyOnWriteAsyncContextMap) o).map);
+        }
+        return ContextMapUtils.equals(this, (ContextMap) o);
     }
 
-    interface CopyAsyncContextMap {
-        @Nullable
-        <T> T get(Key<T> key);
+    @Override
+    public int hashCode() {
+        return map.hashCode();
+    }
 
-        boolean containsKey(Key<?> key);
+    @Override
+    public String toString() {
+        return ContextMapUtils.toString(this);
+    }
+
+    private interface CopyAsyncContextMap {
+
+        int size();
 
         boolean isEmpty();
 
-        int size();
+        boolean containsKey(Key<?> key);
+
+        boolean containsValue(@Nullable Object value);
+
+        <T> boolean contains(Key<T> key, @Nullable T value);
+
+        @Nullable
+        <T> T get(Key<T> key);
+
+        @Nullable
+        <T> T getOrDefault(Key<T> key, T defaultValue);
 
         @Nullable
         <T> T put(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
                   AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
 
-        CopyAsyncContextMap putAll(Map<Key<?>, Object> map);
+        @Nullable
+        <T> T putIfAbsent(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
+                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+
+        @Nullable
+        <T> T computeIfAbsent(Key<T> key, Function<Key<T>, T> computeFunction, CopyOnWriteAsyncContextMap owner,
+                              AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+
+        CopyAsyncContextMap putAll(int mapSize, Consumer<PutAllBuilder> forEach);
 
         @Nullable
         <T> T remove(Key<T> key, CopyOnWriteAsyncContextMap owner,
                      AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
 
-        boolean removeAll(Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
+        boolean removeAll(Iterable<Key<?>> keys, CopyOnWriteAsyncContextMap owner,
                           AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
 
         @Nullable
         Key<?> forEach(BiPredicate<Key<?>, Object> consumer);
+
+        @Override
+        boolean equals(Object o);
+
+        @Override
+        int hashCode();
     }
 
     private static final class EmptyAsyncContextMap implements CopyAsyncContextMap {
@@ -147,15 +243,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             // singleton
         }
 
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            return null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            return false;
+        public int size() {
+            return 0;
         }
 
         @Override
@@ -164,70 +254,76 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 0;
+        public boolean containsKey(final Key<?> key) {
+            return false;
+        }
+
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return false;
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return false;
         }
 
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value,
-                         CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ? null :
-                    owner.put(key, value);
-        }
-
-        @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    OneAsyncContextMap newMap = new OneAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                }
-                case 2: {
-                    TwoAsyncContextMap newMap = new TwoAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                }
-                case 3: {
-                    ThreeAsyncContextMap newMap = new ThreeAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                }
-                case 4: {
-                    FourAsyncContextMap newMap = new FourAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                }
-                case 5: {
-                    FiveAsyncContextMap newMap = new FiveAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                }
-                case 6:
-                    SixAsyncContextMap newMap = new SixAsyncContextMap();
-                    map.forEach(newMap);
-                    return newMap;
-                default:
-                    return new SevenOrMoreAsyncContextMap().putAll(map);
-            }
-        }
-
-        @Nullable
-        @Override
-        public <T> T remove(final Key<T> key,
-                            CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T get(final Key<T> key) {
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries,
-                                 CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return defaultValue;
+        }
+
+        @Nullable
+        @Override
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(requireNonNull(key), value)) ?
+                    null : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(requireNonNull(key), value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final T value = computeFunction.apply(requireNonNull(key));
+            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(mapSize);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            requireNonNull(key);
+            return null;
+        }
+
+        @Override
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            requireNonNull(keys);
             return false;
         }
 
@@ -236,40 +332,27 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
             return null;
         }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            return this == o;   // this is a singleton
+        }
     }
 
-    private static final class OneAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                             BiPredicate<Key<?>, Object> {
+    private static final class OneAsyncContextMap implements CopyAsyncContextMap {
+
+        private final Key<?> keyOne;
         @Nullable
-        private Key<?> key;
-        @Nullable
-        private Object value;
+        private final Object valueOne;
 
-        OneAsyncContextMap() {
-        }
-
-        OneAsyncContextMap(Key<?> key, @Nullable Object value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Nullable
-        @Override
-        public <T> T get(final Key<T> key) {
-            assert this.key != null;
-            return this.key.equals(key) ? (T) value : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert this.key != null;
-            return this.key.equals(key);
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
+        OneAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne) {
+            this.keyOne = keyOne;
+            this.valueOne = valueOne;
         }
 
         @Override
@@ -277,79 +360,116 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             return 1;
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert this.key != null;
-            if (this.key.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(this.key, value)) ? (T) this.value :
-                        owner.put(key, value);
-            }
-            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(this.key, this.value, key, value)) ?
-                    null : owner.put(key, value);
+        public boolean isEmpty() {
+            return false;
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert key != null;
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    PutTwoBuilder builder = new PutTwoBuilder(key, value);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 2: {
-                    PutThreeBuilder builder = new PutThreeBuilder(key, value);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 3: {
-                    PutFourBuilder builder = new PutFourBuilder(key, value);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 4: {
-                    PutFiveBuilder builder = new PutFiveBuilder(key, value);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 5:
-                    PutSixBuilder builder = new PutSixBuilder(key, value);
-                    map.forEach(builder);
-                    return builder.build();
-                default:
-                    return new SevenOrMoreAsyncContextMap(key, value).putAll(map);
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne);
+        }
+
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return containsKey(key) && containsValue(value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : null;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                        (T) valueOne : owner.put(key, value);
             }
+            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                    null : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
+            }
+            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            forEach.accept(builder);
+            return builder.build();
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
         public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert this.key != null;
-            if (this.key.equals(key)) {
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
                 return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) ?
-                        (T) value : owner.remove(key);
+                        (T) valueOne : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert this.key != null;
-            MutableInt index = new MutableInt();
-            entries.forEach(key -> {
-                if (this.key.equals(key)) {
-                    index.value = 1;
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            for (Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) ||
+                            owner.removeAll(keys);
                 }
-            });
-            if (index.value != 0) {
-                return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) || owner.removeAll(entries);
             }
             return false;
         }
@@ -357,335 +477,50 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         @Nullable
         @Override
         public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-            return consumer.test(key, value) ? null : key;
+            return consumer.test(keyOne, valueOne) ? null : keyOne;
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object o) {
-            assert this.key == null;
-            this.key = key;
-            this.value = o;
-            return false;
-        }
-
-        private static final class PutTwoBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            @Nullable
-            private Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-
-            PutTwoBuilder(Key<?> keyOne, @Nullable Object valueOne) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else {
-                    assert keyTwo == null;
-                    keyTwo = key;
-                    valueTwo = o;
-                    return false;
-                }
+        public boolean equals(final Object o) {
+            if (this == o) {
                 return true;
             }
-
-            CopyAsyncContextMap build() {
-                if (keyTwo == null) {
-                    return new OneAsyncContextMap(keyOne, valueOne);
-                }
-                return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
+            if (o == null || getClass() != o.getClass()) {
+                return false;
             }
-        }
-
-        private static final class PutThreeBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            @Nullable
-            private Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-
-            PutThreeBuilder(Key<?> keyOne, @Nullable Object valueOne) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo == null) {
-                    keyTwo = key;
-                    valueTwo = o;
-                } else {
-                    assert keyThree == null;
-                    keyThree = key;
-                    valueThree = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                assert keyTwo != null;
-                if (keyThree == null) {
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                }
-                return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-            }
-        }
-
-        private static final class PutFourBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            @Nullable
-            private Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-
-            PutFourBuilder(Key<?> keyOne, @Nullable Object valueOne) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo == null) {
-                    keyTwo = key;
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else {
-                    assert keyFour == null;
-                    keyFour = key;
-                    valueFour = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                assert keyTwo != null && keyThree != null;
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour);
-            }
-        }
-
-        private static final class PutFiveBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            @Nullable
-            private Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-
-            PutFiveBuilder(Key<?> keyOne, @Nullable Object valueOne) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo == null) {
-                    keyTwo = key;
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else {
-                    assert keyFive == null;
-                    keyFive = key;
-                    valueFive = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                assert keyTwo != null && keyThree != null && keyFour != null;
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive);
-            }
-        }
-
-        private static final class PutSixBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            @Nullable
-            private Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-            @Nullable
-            private Key<?> keySix;
-            @Nullable
-            private Object valueSix;
-
-            PutSixBuilder(Key<?> keyOne, @Nullable Object valueOne) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo == null) {
-                    keyTwo = key;
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else if (keyFive == null) {
-                    keyFive = key;
-                    valueFive = o;
-                } else {
-                    assert keySix == null;
-                    keySix = key;
-                    valueSix = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                assert keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-                if (keySix == null) {
-                    return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, keyFive, valueFive);
-                }
-                return new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
-            }
+            final OneAsyncContextMap that = (OneAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne);
         }
     }
 
-    private static final class TwoAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                             BiPredicate<Key<?>, Object> {
-        @Nullable
-        private Key<?> keyOne;
-        @Nullable
-        private Object valueOne;
-        @Nullable
-        private Key<?> keyTwo;
-        @Nullable
-        private Object valueTwo;
+    private static final class TwoAsyncContextMap implements CopyAsyncContextMap {
 
-        TwoAsyncContextMap() {
-        }
+        private final Key<?> keyOne;
+        @Nullable
+        private final Object valueOne;
 
-        TwoAsyncContextMap(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo) {
+        private final Key<?> keyTwo;
+        @Nullable
+        private final Object valueTwo;
+
+        TwoAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                           final Key<?> keyTwo, @Nullable final Object valueTwo) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
             this.valueTwo = valueTwo;
         }
 
-        @SuppressWarnings("unchecked")
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            assert keyOne != null && keyTwo != null;
-            return keyOne.equals(key) ? (T) valueOne : keyTwo.equals(key) ? (T) valueTwo : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert keyOne != null && keyTwo != null;
-            return keyOne.equals(key) || keyTwo.equals(key);
+        public int size() {
+            return 2;
         }
 
         @Override
@@ -694,20 +529,46 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 2;
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne) || key.equals(keyTwo);
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, value, keyTwo, valueTwo)) ?
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne) || Objects.equals(value, valueTwo);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return (key.equals(keyOne) && Objects.equals(value, valueOne)) ||
+                    (key.equals(keyTwo) && Objects.equals(value, valueTwo));
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : null;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
                         (T) valueOne : owner.put(key, value);
-            } else if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, keyTwo, value)) ?
+            }
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             return mapUpdater.compareAndSet(owner, this,
@@ -715,50 +576,77 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
                     null : owner.put(key, value);
         }
 
-        @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert keyOne != null && keyTwo != null;
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    PutThreeBuilder builder = new PutThreeBuilder(keyOne, valueOne, keyTwo, valueTwo);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 2: {
-                    PutFourBuilder builder = new PutFourBuilder(keyOne, valueOne, keyTwo, valueTwo);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 3: {
-                    PutFiveBuilder builder = new PutFiveBuilder(keyOne, valueOne, keyTwo, valueTwo);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 4: {
-                    PutSixBuilder builder = new PutSixBuilder(keyOne, valueOne, keyTwo, valueTwo);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                default:
-                    PutSevenBuilder builder = new PutSevenBuilder(keyOne, valueOne, keyTwo, valueTwo, map.size());
-                    map.forEach(builder);
-                    return builder.build();
-            }
-        }
-
-        @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null;
-            if (keyOne.equals(key)) {
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueTwo;
+            }
+            return mapUpdater.compareAndSet(owner, this,
+                    new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueTwo;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this,
+                    new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            builder.addPair(keyTwo, valueTwo);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
                 return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyTwo, valueTwo)) ?
                         (T) valueOne : owner.remove(key);
             }
-            if (keyTwo.equals(key)) {
+            if (key.equals(keyTwo)) {
                 return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyOne, valueOne)) ?
                         (T) valueTwo : owner.remove(key);
             }
@@ -766,28 +654,39 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null;
-            MutableInt removeIndexMask = new MutableInt();
-            entries.forEach(k -> {
-                if (keyOne.equals(k)) {
-                    removeIndexMask.value |= 0x1;
-                } else if (keyTwo.equals(k)) {
-                    removeIndexMask.value |= 0x2;
-                }
-            });
-
-            if ((removeIndexMask.value & 0x3) == 0x3) {
-                return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) || owner.removeAll(entries);
-            } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyOne, valueOne)) ||
-                        owner.removeAll(entries);
-            } else if ((removeIndexMask.value & 0x1) == 0x1) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyTwo, valueTwo)) ||
-                        owner.removeAll(entries);
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+            if (newMap == null) {
+                return false;
             }
-            return false;
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        private int removeIndexMask(final Iterable<Key<?>> keys) {
+            int mask = 0;
+            for (Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    mask |= 0x1;
+                } else if (k.equals(keyTwo)) {
+                    mask |= 0x2;
+                }
+            }
+            return mask;
+        }
+
+        @Nullable
+        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+            if ((removeIndexMask & 0x3) == 0x3) {
+                return EmptyAsyncContextMap.INSTANCE;
+            }
+            if ((removeIndexMask & 0x2) == 0x2) {
+                return new OneAsyncContextMap(keyOne, valueOne);
+            }
+            if ((removeIndexMask & 0x1) == 0x1) {
+                return new OneAsyncContextMap(keyTwo, valueTwo);
+            }
+            return null;
         }
 
         @Nullable
@@ -800,335 +699,45 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            result = 31 * result + keyTwo.hashCode();
+            result = 31 * result + Objects.hashCode(valueTwo);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object value) {
-            if (keyOne == null) {
-                keyOne = key;
-                valueOne = value;
-            } else {
-                assert keyTwo == null;
-                keyTwo = key;
-                valueTwo = value;
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            return true;
-        }
-
-        private static final class PutThreeBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-
-            PutThreeBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else {
-                    assert keyThree == null;
-                    keyThree = key;
-                    valueThree = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                return (keyThree == null) ? new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo) :
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-        }
-
-        private static final class PutFourBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-
-            PutFourBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else {
-                    assert keyFour == null;
-                    keyFour = key;
-                    valueFour = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyThree == null) {
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                }
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour);
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-        }
-
-        private static final class PutFiveBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-
-            PutFiveBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else {
-                    assert keyFive == null;
-                    keyFive = key;
-                    valueFive = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyThree == null) {
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                }
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive);
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-        }
-
-        private static final class PutSixBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            @Nullable
-            private Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-            @Nullable
-            private Key<?> keySix;
-            @Nullable
-            private Object valueSix;
-
-            PutSixBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree == null) {
-                    keyThree = key;
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else if (keyFive == null) {
-                    keyFive = key;
-                    valueFive = o;
-                } else {
-                    assert keySix == null;
-                    keySix = key;
-                    valueSix = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyThree == null) {
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                }
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                if (keySix == null) {
-                    return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, keyFive, valueFive);
-                }
-                return new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-        }
-
-        private static final class PutSevenBuilder extends AbstractPutSevenBuilder {
-            PutSevenBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            int putAllMapSize) {
-                super((2 + putAllMapSize) << 1, 4);
-                pairs[0] = keyOne;
-                pairs[1] = valueOne;
-                pairs[2] = keyTwo;
-                pairs[3] = valueTwo;
-            }
-
-            CopyAsyncContextMap build() {
-                if (nextIndex == 4) {
-                    return new TwoAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3]);
-                }
-                if (nextIndex == 6) {
-                    return new ThreeAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5]);
-                }
-                if (nextIndex == 8) {
-                    return new FourAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7]);
-                }
-                if (nextIndex == 10) {
-                    return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
-                }
-                if (nextIndex == 12) {
-                    return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
-                            (Key<?>) pairs[10], pairs[11]);
-                }
-                if (nextIndex == pairs.length) {
-                    return new SevenOrMoreAsyncContextMap(pairs);
-                }
-                return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, nextIndex));
-            }
+            final TwoAsyncContextMap that = (TwoAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
+                    keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo);
         }
     }
 
-    private static final class ThreeAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                               BiPredicate<Key<?>, Object> {
-        @Nullable
-        private Key<?> keyOne;
-        @Nullable
-        private Object valueOne;
-        @Nullable
-        private Key<?> keyTwo;
-        @Nullable
-        private Object valueTwo;
-        @Nullable
-        private Key<?> keyThree;
-        @Nullable
-        private Object valueThree;
+    private static final class ThreeAsyncContextMap implements CopyAsyncContextMap {
 
-        ThreeAsyncContextMap() {
-        }
+        private final Key<?> keyOne;
+        @Nullable
+        private final Object valueOne;
 
-        ThreeAsyncContextMap(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                             Key<?> keyThree, @Nullable Object valueThree) {
+        private final Key<?> keyTwo;
+        @Nullable
+        private final Object valueTwo;
+
+        private final Key<?> keyThree;
+        @Nullable
+        private final Object valueThree;
+
+        ThreeAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                             final Key<?> keyTwo, @Nullable final Object valueTwo,
+                             final Key<?> keyThree, @Nullable final Object valueThree) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -1137,19 +746,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             this.valueThree = valueThree;
         }
 
-        @SuppressWarnings("unchecked")
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            return keyOne.equals(key) ? (T) valueOne : keyTwo.equals(key) ? (T) valueTwo : keyThree.equals(key) ?
-                    (T) valueThree : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            return keyOne.equals(key) || keyTwo.equals(key) || keyThree.equals(key);
+        public int size() {
+            return 3;
         }
 
         @Override
@@ -1158,83 +757,163 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 3;
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne) || key.equals(keyTwo) || key.equals(keyThree);
         }
 
-        @SuppressWarnings("unchecked")
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne) || Objects.equals(value, valueTwo) ||
+                    Objects.equals(value, valueThree);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return (key.equals(keyOne) && Objects.equals(value, valueOne)) ||
+                    (key.equals(keyTwo) && Objects.equals(value, valueTwo)) ||
+                    (key.equals(keyThree) && Objects.equals(value, valueThree));
+        }
+
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, value, keyTwo, valueTwo, keyThree, valueThree)) ?
-                            (T) valueOne : owner.put(key, value);
-            } else if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, value, keyThree, valueThree)) ?
-                            (T) valueTwo : owner.put(key, value);
-            } else if (keyThree.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, value)) ?
-                            (T) valueThree : owner.put(key, value);
-            }
-            return mapUpdater.compareAndSet(owner, this,
-                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
-                        null : owner.put(key, value);
-        }
-
-        @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    PutFourBuilder builder = new PutFourBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 2: {
-                    PutFiveBuilder builder = new PutFiveBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 3: {
-                    PutSixBuilder builder = new PutSixBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                default:
-                    PutSevenBuilder builder = new PutSevenBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, map.size());
-                    map.forEach(builder);
-                    return builder.build();
-            }
-        }
-
         @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : null;
+        }
+
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             if (keyOne.equals(key)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree)) ?
-                            (T) valueOne : owner.remove(key);
+                        new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                        (T) valueOne : owner.put(key, value);
             }
             if (keyTwo.equals(key)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree)) ?
-                            (T) valueTwo : owner.remove(key);
+                        new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                        (T) valueTwo : owner.put(key, value);
             }
             if (keyThree.equals(key)) {
+                return mapUpdater.compareAndSet(owner, this,
+                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                        (T) valueThree : owner.put(key, value);
+            }
+            return mapUpdater.compareAndSet(owner, this,
+                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    null : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (keyOne.equals(key)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
+            }
+            if (keyTwo.equals(key)) {
+                if (valueTwo == null) {
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueTwo;
+            }
+            if (keyThree.equals(key)) {
+                if (valueThree == null) {
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueThree;
+            }
+            return mapUpdater.compareAndSet(owner, this,
+                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (keyOne.equals(key)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            if (keyTwo.equals(key)) {
+                if (valueTwo == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueTwo;
+            }
+            if (keyThree.equals(key)) {
+                if (valueThree == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this,
+                            new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueThree;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this,
+                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            builder.addPair(keyTwo, valueTwo);
+            builder.addPair(keyThree, valueThree);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this,
+                        new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree)) ?
+                        (T) valueOne : owner.remove(key);
+            }
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this,
+                        new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree)) ?
+                        (T) valueTwo : owner.remove(key);
+            }
+            if (key.equals(keyThree)) {
                 return mapUpdater.compareAndSet(owner, this,
                         new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo)) ?
                         (T) valueThree : owner.remove(key);
@@ -1243,45 +922,50 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            MutableInt removeIndexMask = new MutableInt();
-            entries.forEach(k -> {
-                if (keyOne.equals(k)) {
-                    removeIndexMask.value |= 0x1;
-                } else if (keyTwo.equals(k)) {
-                    removeIndexMask.value |= 0x2;
-                } else if (keyThree.equals(k)) {
-                    removeIndexMask.value |= 0x4;
-                }
-            });
-
-            CopyAsyncContextMap newMap = removeAll(removeIndexMask);
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
-            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(entries);
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        private int removeIndexMask(final Iterable<Key<?>> keys) {
+            int mask = 0;
+            for (ContextMap.Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    mask |= 0x1;
+                } else if (k.equals(keyTwo)) {
+                    mask |= 0x2;
+                } else if (k.equals(keyThree)) {
+                    mask |= 0x4;
+                }
+            }
+            return mask;
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(MutableInt removeIndexMask) {
-            assert keyOne != null && keyTwo != null && keyThree != null;
-            if ((removeIndexMask.value & 0x7) == 0x7) {
+        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+            if ((removeIndexMask & 0x7) == 0x7) {
                 return EmptyAsyncContextMap.INSTANCE;
-            } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                if ((removeIndexMask.value & 0x2) == 0x2) {
+            }
+            if ((removeIndexMask & 0x4) == 0x4) {
+                if ((removeIndexMask & 0x2) == 0x2) {
                     return new OneAsyncContextMap(keyOne, valueOne);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new OneAsyncContextMap(keyTwo, valueTwo);
                 }
                 return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-            } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x2) == 0x2) {
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new OneAsyncContextMap(keyThree, valueThree);
                 }
                 return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
-            } else if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x1) == 0x1) {
                 return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
             }
             return null;
@@ -1300,291 +984,53 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            result = 31 * result + keyTwo.hashCode();
+            result = 31 * result + Objects.hashCode(valueTwo);
+            result = 31 * result + keyThree.hashCode();
+            result = 31 * result + Objects.hashCode(valueThree);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object value) {
-            if (keyOne == null) {
-                keyOne = key;
-                valueOne = value;
-            } else if (keyTwo == null) {
-                keyTwo = key;
-                valueTwo = value;
-            } else {
-                assert keyThree == null;
-                keyThree = key;
-                valueThree = value;
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            return true;
-        }
-
-        private static final class PutFourBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-
-            PutFourBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                           Key<?> keyThree, @Nullable Object valueThree) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else {
-                    assert keyFour == null;
-                    keyFour = key;
-                    valueFour = o;
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour);
-            }
-        }
-
-        private static final class PutFiveBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-
-            PutFiveBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                           Key<?> keyThree, @Nullable Object valueThree) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else {
-                    assert keyFive == null;
-                    keyFive = key;
-                    valueFive = o;
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive);
-            }
-        }
-
-        private static final class PutSixBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            @Nullable
-            private Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-            @Nullable
-            private Key<?> keySix;
-            @Nullable
-            private Object valueSix;
-
-            PutSixBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                          Key<?> keyThree, @Nullable Object valueThree) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else if (keyFour == null) {
-                    keyFour = key;
-                    valueFour = o;
-                } else if (keyFive == null) {
-                    keyFive = key;
-                    valueFive = o;
-                } else {
-                    assert keySix == null;
-                    keySix = key;
-                    valueSix = o;
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyFour == null) {
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                }
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                if (keySix == null) {
-                    return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, keyFive, valueFive);
-                }
-                return new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
-            }
-        }
-
-        private static final class PutSevenBuilder extends AbstractPutSevenBuilder {
-            PutSevenBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, int putAllMapSize) {
-                super((3 + putAllMapSize) << 1, 6);
-                pairs[0] = keyOne;
-                pairs[1] = valueOne;
-                pairs[2] = keyTwo;
-                pairs[3] = valueTwo;
-                pairs[4] = keyThree;
-                pairs[5] = valueThree;
-            }
-
-            CopyAsyncContextMap build() {
-                if (nextIndex == 6) {
-                    return new ThreeAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5]);
-                }
-                if (nextIndex == 8) {
-                    return new FourAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7]);
-                }
-                if (nextIndex == 10) {
-                    return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
-                }
-                if (nextIndex == 12) {
-                    return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
-                            (Key<?>) pairs[10], pairs[11]);
-                }
-                if (nextIndex == pairs.length) {
-                    return new SevenOrMoreAsyncContextMap(pairs);
-                }
-                return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, nextIndex));
-            }
+            final ThreeAsyncContextMap that = (ThreeAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
+                    keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
+                    keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree);
         }
     }
 
-    private static final class FourAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                              BiPredicate<Key<?>, Object> {
+    private static final class FourAsyncContextMap implements CopyAsyncContextMap {
 
+        private final Key<?> keyOne;
         @Nullable
-        private Key<?> keyOne;
-        @Nullable
-        private Object valueOne;
-        @Nullable
-        private Key<?> keyTwo;
-        @Nullable
-        private Object valueTwo;
-        @Nullable
-        private Key<?> keyThree;
-        @Nullable
-        private Object valueThree;
-        @Nullable
-        private Key<?> keyFour;
-        @Nullable
-        private Object valueFour;
+        private final Object valueOne;
 
-        FourAsyncContextMap() {
-        }
+        private final Key<?> keyTwo;
+        @Nullable
+        private final Object valueTwo;
 
-        FourAsyncContextMap(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour) {
+        private final Key<?> keyThree;
+        @Nullable
+        private final Object valueThree;
+
+        private final Key<?> keyFour;
+        @Nullable
+        private final Object valueFour;
+
+        FourAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                            final Key<?> keyTwo, @Nullable final Object valueTwo,
+                            final Key<?> keyThree, @Nullable final Object valueThree,
+                            final Key<?> keyFour, @Nullable final Object valueFour) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -1595,19 +1041,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             this.valueFour = valueFour;
         }
 
-        @SuppressWarnings("unchecked")
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            return keyOne.equals(key) ? (T) valueOne : keyTwo.equals(key) ? (T) valueTwo : keyThree.equals(key) ?
-                    (T) valueThree : keyFour.equals(key) ? (T) valueFour : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            return keyOne.equals(key) || keyTwo.equals(key) || keyThree.equals(key) || keyFour.equals(key);
+        public int size() {
+            return 4;
         }
 
         @Override
@@ -1616,155 +1052,270 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 4;
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne) || key.equals(keyTwo) || key.equals(keyThree) || key.equals(keyFour);
         }
 
-        @SuppressWarnings("unchecked")
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne) || Objects.equals(value, valueTwo) ||
+                    Objects.equals(value, valueThree) || Objects.equals(value, valueFour);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return (key.equals(keyOne) && Objects.equals(value, valueOne)) ||
+                    (key.equals(keyTwo) && Objects.equals(value, valueTwo)) ||
+                    (key.equals(keyThree) && Objects.equals(value, valueThree)) ||
+                    (key.equals(keyFour) && Objects.equals(value, valueFour));
+        }
+
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FourAsyncContextMap(keyOne, value, keyTwo, valueTwo, keyThree, valueThree,
-                                keyFour, valueFour)) ? (T) valueOne : owner.put(key, value);
-            } else if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FourAsyncContextMap(keyOne, valueOne, keyTwo, value, keyThree, valueThree,
-                            keyFour, valueFour)) ? (T) valueTwo : owner.put(key, value);
-            } else if (keyThree.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, value,
-                                keyFour, valueFour)) ? (T) valueThree : owner.put(key, value);
-            } else if (keyFour.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, value)) ? (T) valueFour : owner.put(key, value);
-            }
-            return mapUpdater.compareAndSet(owner, this,
-                    new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, key, value)) ? null : owner.put(key, value);
-        }
-
-        @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    PutFiveBuilder builder = new PutFiveBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, keyFour, valueFour);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                case 2: {
-                    PutSixBuilder builder = new PutSixBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, keyFour, valueFour);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                default:
-                    PutSevenBuilder builder = new PutSevenBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, keyFour, valueFour, map.size());
-                    map.forEach(builder);
-                    return builder.build();
-            }
-        }
-
         @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : null;
+        }
+
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            if (keyOne.equals(key)) {
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                        keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
+                        (T) valueOne : owner.put(key, value);
+            }
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        key, value, keyThree, valueThree, keyFour, valueFour)) ?
+                        (T) valueTwo : owner.put(key, value);
+            }
+            if (key.equals(keyThree)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
+                        (T) valueThree : owner.put(key, value);
+            }
+            if (key.equals(keyFour)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                        (T) valueFour : owner.put(key, value);
+            }
+            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                    null : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            key, value, keyThree, valueThree, keyFour, valueFour)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueTwo;
+            }
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueThree;
+            }
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueFour;
+            }
+            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            key, value, keyThree, valueThree, keyFour, valueFour)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueTwo;
+            }
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueThree;
+            }
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueFour;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            builder.addPair(keyTwo, valueTwo);
+            builder.addPair(keyThree, valueThree);
+            builder.addPair(keyFour, valueFour);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
                 return mapUpdater.compareAndSet(owner, this,
                         new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
-                            (T) valueOne : owner.remove(key);
+                        (T) valueOne : owner.remove(key);
             }
-            if (keyTwo.equals(key)) {
+            if (key.equals(keyTwo)) {
                 return mapUpdater.compareAndSet(owner, this,
                         new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour)) ?
-                            (T) valueTwo : owner.remove(key);
+                        (T) valueTwo : owner.remove(key);
             }
-            if (keyThree.equals(key)) {
+            if (key.equals(keyThree)) {
                 return mapUpdater.compareAndSet(owner, this,
                         new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour)) ?
-                            (T) valueThree : owner.remove(key);
+                        (T) valueThree : owner.remove(key);
             }
-            if (keyFour.equals(key)) {
+            if (key.equals(keyFour)) {
                 return mapUpdater.compareAndSet(owner, this,
                         new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree)) ?
-                            (T) valueFour : owner.remove(key);
+                        (T) valueFour : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            MutableInt removeIndexMask = new MutableInt();
-            entries.forEach(k -> {
-                if (keyOne.equals(k)) {
-                    removeIndexMask.value |= 0x1;
-                } else if (keyTwo.equals(k)) {
-                    removeIndexMask.value |= 0x2;
-                } else if (keyThree.equals(k)) {
-                    removeIndexMask.value |= 0x4;
-                } else if (keyFour.equals(k)) {
-                    removeIndexMask.value |= 0x8;
-                }
-            });
-
-            CopyAsyncContextMap newMap = removeAll(removeIndexMask);
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
-            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(entries);
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        private int removeIndexMask(final Iterable<ContextMap.Key<?>> keys) {
+            int mask = 0;
+            for (ContextMap.Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    mask |= 0x1;
+                } else if (k.equals(keyTwo)) {
+                    mask |= 0x2;
+                } else if (k.equals(keyThree)) {
+                    mask |= 0x4;
+                } else if (k.equals(keyFour)) {
+                    mask |= 0x8;
+                }
+            }
+            return mask;
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(MutableInt removeIndexMask) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
-            if ((removeIndexMask.value & 0xf) == 0xf) {
+        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+            if ((removeIndexMask & 0xF) == 0xF) {
                 return EmptyAsyncContextMap.INSTANCE;
-            } else if ((removeIndexMask.value & 0x8) == 0x8) {
-                if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
+            }
+            if ((removeIndexMask & 0x8) == 0x8) {
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
                         return new OneAsyncContextMap(keyOne, valueOne);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new OneAsyncContextMap(keyTwo, valueTwo);
                     }
                     return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new OneAsyncContextMap(keyThree, valueThree);
                     }
                     return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
                 }
                 return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-            } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x4) == 0x4) {
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new OneAsyncContextMap(keyFour, valueFour);
                     }
                     return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
                 }
                 return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
-            } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x2) == 0x2) {
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
                 }
                 return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
-            } else if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x1) == 0x1) {
                 return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
             }
             return null;
@@ -1786,236 +1337,61 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            result = 31 * result + keyTwo.hashCode();
+            result = 31 * result + Objects.hashCode(valueTwo);
+            result = 31 * result + keyThree.hashCode();
+            result = 31 * result + Objects.hashCode(valueThree);
+            result = 31 * result + keyFour.hashCode();
+            result = 31 * result + Objects.hashCode(valueFour);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object value) {
-            if (keyOne == null) {
-                keyOne = key;
-                valueOne = value;
-            } else if (keyTwo == null) {
-                keyTwo = key;
-                valueTwo = value;
-            } else if (keyThree == null) {
-                keyThree = key;
-                valueThree = value;
-            } else {
-                assert keyFour == null;
-                keyFour = key;
-                valueFour = value;
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            return true;
-        }
-
-        private static final class PutFiveBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            private final Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-
-            PutFiveBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                           Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-                this.keyFour = keyFour;
-                this.valueFour = valueFour;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else if (keyFour.equals(key)) {
-                    valueFour = o;
-                } else {
-                    assert keyFive == null;
-                    keyFive = key;
-                    valueFive = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive);
-            }
-        }
-
-        private static final class PutSixBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            private final Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            @Nullable
-            private Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-            @Nullable
-            private Key<?> keySix;
-            @Nullable
-            private Object valueSix;
-
-            PutSixBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                          Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-                this.keyFour = keyFour;
-                this.valueFour = valueFour;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else if (keyFour.equals(key)) {
-                    valueFour = o;
-                } else if (keyFive == null) {
-                    keyFive = key;
-                    valueFive = o;
-                } else {
-                    assert keySix == null;
-                    keySix = key;
-                    valueSix = o;
-                    return false;
-                }
-                return true;
-            }
-
-            CopyAsyncContextMap build() {
-                if (keyFive == null) {
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour);
-                }
-                if (keySix == null) {
-                    return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, keyFive, valueFive);
-                }
-                return new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
-            }
-        }
-
-        private static final class PutSevenBuilder extends AbstractPutSevenBuilder {
-            PutSevenBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                            int putAllMapSize) {
-                super((4 + putAllMapSize) << 1, 8);
-                pairs[0] = keyOne;
-                pairs[1] = valueOne;
-                pairs[2] = keyTwo;
-                pairs[3] = valueTwo;
-                pairs[4] = keyThree;
-                pairs[5] = valueThree;
-                pairs[6] = keyFour;
-                pairs[7] = valueFour;
-            }
-
-            CopyAsyncContextMap build() {
-                if (nextIndex == 8) {
-                    return new FourAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7]);
-                }
-                if (nextIndex == 10) {
-                    return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
-                }
-                if (nextIndex == 12) {
-                    return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
-                            (Key<?>) pairs[10], pairs[11]);
-                }
-                if (nextIndex == pairs.length) {
-                    return new SevenOrMoreAsyncContextMap(pairs);
-                }
-                return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, nextIndex));
-            }
+            final FourAsyncContextMap that = (FourAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
+                    keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
+                    keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
+                    keyFour.equals(that.keyFour) && Objects.equals(valueFour, that.valueFour);
         }
     }
 
-    private static final class FiveAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                              BiPredicate<Key<?>, Object> {
+    private static final class FiveAsyncContextMap implements CopyAsyncContextMap {
 
+        private final Key<?> keyOne;
         @Nullable
-        private Key<?> keyOne;
-        @Nullable
-        private Object valueOne;
-        @Nullable
-        private Key<?> keyTwo;
-        @Nullable
-        private Object valueTwo;
-        @Nullable
-        private Key<?> keyThree;
-        @Nullable
-        private Object valueThree;
-        @Nullable
-        private Key<?> keyFour;
-        @Nullable
-        private Object valueFour;
-        @Nullable
-        private Key<?> keyFive;
-        @Nullable
-        private Object valueFive;
+        private final Object valueOne;
 
-        FiveAsyncContextMap() {
-        }
+        private final Key<?> keyTwo;
+        @Nullable
+        private final Object valueTwo;
 
-        FiveAsyncContextMap(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                            Key<?> keyFive, @Nullable Object valueFive) {
+        private final Key<?> keyThree;
+        @Nullable
+        private final Object valueThree;
+
+        private final Key<?> keyFour;
+        @Nullable
+        private final Object valueFour;
+
+        private final Key<?> keyFive;
+        @Nullable
+        private final Object valueFive;
+
+        FiveAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                            final Key<?> keyTwo, @Nullable final Object valueTwo,
+                            final Key<?> keyThree, @Nullable final Object valueThree,
+                            final Key<?> keyFour, @Nullable final Object valueFour,
+                            final Key<?> keyFive, @Nullable final Object valueFive) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -2028,20 +1404,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             this.valueFive = valueFive;
         }
 
-        @SuppressWarnings("unchecked")
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            return keyOne.equals(key) ? (T) valueOne : keyTwo.equals(key) ? (T) valueTwo : keyThree.equals(key) ?
-                    (T) valueThree : keyFour.equals(key) ? (T) valueFour : keyFive.equals(key) ? (T) valueFive : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            return keyOne.equals(key) || keyTwo.equals(key) || keyThree.equals(key) || keyFour.equals(key) ||
-                    keyFive.equals(key);
+        public int size() {
+            return 5;
         }
 
         @Override
@@ -2050,200 +1415,357 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 5;
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne) || key.equals(keyTwo) || key.equals(keyThree) || key.equals(keyFour) ||
+                    key.equals(keyFive);
         }
 
-        @SuppressWarnings("unchecked")
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne) || Objects.equals(value, valueTwo) ||
+                    Objects.equals(value, valueThree) || Objects.equals(value, valueFour) ||
+                    Objects.equals(value, valueFive);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return (key.equals(keyOne) && Objects.equals(value, valueOne)) ||
+                    (key.equals(keyTwo) && Objects.equals(value, valueTwo)) ||
+                    (key.equals(keyThree) && Objects.equals(value, valueThree)) ||
+                    (key.equals(keyFour) && Objects.equals(value, valueFour)) ||
+                    (key.equals(keyFive) && Objects.equals(value, valueFive));
+        }
+
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FiveAsyncContextMap(keyOne, value, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive)) ? (T) valueOne : owner.put(key, value);
-            } else if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FiveAsyncContextMap(keyOne, valueOne, keyTwo, value, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive)) ? (T) valueTwo : owner.put(key, value);
-            } else if (keyThree.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, value, keyFour, valueFour,
-                        keyFive, valueFive)) ? (T) valueThree : owner.put(key, value);
-            } else if (keyFour.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFour, value, keyFive, valueFive)) ?
+        @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : key.equals(keyFive) ? (T) valueFive : null;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : key.equals(keyFive) ? (T) valueFive :
+                    defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                        keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueOne : owner.put(key, value);
+            }
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                        key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueTwo : owner.put(key, value);
+            }
+            if (key.equals(keyThree)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueThree : owner.put(key, value);
+            }
+            if (key.equals(keyFour)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
                         (T) valueFour : owner.put(key, value);
-            } else if (keyFive.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this,
-                        new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, value)) ? (T) valueFive : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this,
-                    new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
-                    keyFive, valueFive, key, value)) ? null : owner.put(key, value);
+            if (key.equals(keyFive)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                        (T) valueFive : owner.put(key, value);
+            }
+            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
+                    null : owner.put(key, value);
         }
 
-        @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            switch (map.size()) {
-                case 0:
-                    return this;
-                case 1: {
-                    PutSixBuilder builder = new PutSixBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive);
-                    map.forEach(builder);
-                    return builder.build();
-                }
-                default:
-                    PutSevenBuilder builder = new PutSevenBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, map.size());
-                    map.forEach(builder);
-                    return builder.build();
-            }
-        }
-
-        @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyTwo, valueTwo, keyThree,
-                        valueThree, keyFour, valueFour, keyFive, valueFive)) ? (T) valueOne : owner.remove(key);
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
             }
-            if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne, keyThree,
-                        valueThree, keyFour, valueFour, keyFive, valueFive)) ? (T) valueTwo : owner.remove(key);
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueTwo;
             }
-            if (keyThree.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyFour, valueFour, keyFive, valueFive)) ? (T) valueThree : owner.remove(key);
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueThree;
             }
-            if (keyFour.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFive, valueFive)) ? (T) valueFour : owner.remove(key);
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueFour;
             }
-            if (keyFive.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFour, valueFour)) ? (T) valueFive : owner.remove(key);
+            if (key.equals(keyFive)) {
+                if (valueFive == null) {
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueFive;
+            }
+            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueTwo;
+            }
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueThree;
+            }
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueFour;
+            }
+            if (key.equals(keyFive)) {
+                if (valueFive == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueFive;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            builder.addPair(keyTwo, valueTwo);
+            builder.addPair(keyThree, valueThree);
+            builder.addPair(keyFour, valueFour);
+            builder.addPair(keyFive, valueFive);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                    final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyTwo, valueTwo,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueOne : owner.remove(key);
+            }
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueTwo : owner.remove(key);
+            }
+            if (key.equals(keyThree)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueThree : owner.remove(key);
+            }
+            if (key.equals(keyFour)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive)) ?
+                        (T) valueFour : owner.remove(key);
+            }
+            if (key.equals(keyFive)) {
+                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                        keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
+                        (T) valueFive : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            MutableInt removeIndexMask = new MutableInt();
-            entries.forEach(k -> {
-                if (keyOne.equals(k)) {
-                    removeIndexMask.value |= 0x1;
-                } else if (keyTwo.equals(k)) {
-                    removeIndexMask.value |= 0x2;
-                } else if (keyThree.equals(k)) {
-                    removeIndexMask.value |= 0x4;
-                } else if (keyFour.equals(k)) {
-                    removeIndexMask.value |= 0x8;
-                } else if (keyFive.equals(k)) {
-                    removeIndexMask.value |= 0x10;
-                }
-            });
-
-            CopyAsyncContextMap newMap = removeAll(removeIndexMask);
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
-            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(entries);
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        private int removeIndexMask(final Iterable<ContextMap.Key<?>> keys) {
+            int mask = 0;
+            for (ContextMap.Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    mask |= 0x1;
+                } else if (k.equals(keyTwo)) {
+                    mask |= 0x2;
+                } else if (k.equals(keyThree)) {
+                    mask |= 0x4;
+                } else if (k.equals(keyFour)) {
+                    mask |= 0x8;
+                } else if (k.equals(keyFive)) {
+                    mask |= 0x10;
+                }
+            }
+            return mask;
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(MutableInt removeIndexMask) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
-            if ((removeIndexMask.value & 0x1f) == 0x1f) {
+        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+            if ((removeIndexMask & 0x1F) == 0x1F) {
                 return EmptyAsyncContextMap.INSTANCE;
-            } else if ((removeIndexMask.value & 0x10) == 0x10) {
-                if ((removeIndexMask.value & 0x8) == 0x8) {
-                    if ((removeIndexMask.value & 0x4) == 0x4) {
-                        if ((removeIndexMask.value & 0x2) == 0x2) {
+            }
+            if ((removeIndexMask & 0x10) == 0x10) {
+                if ((removeIndexMask & 0x8) == 0x8) {
+                    if ((removeIndexMask & 0x4) == 0x4) {
+                        if ((removeIndexMask & 0x2) == 0x2) {
                             return new OneAsyncContextMap(keyOne, valueOne);
-                        } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new OneAsyncContextMap(keyTwo, valueTwo);
                         }
                         return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                    } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new OneAsyncContextMap(keyThree, valueThree);
                         }
                         return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new OneAsyncContextMap(keyFour, valueFour);
                         }
                         return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
                 }
                 return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour);
-            } else if ((removeIndexMask.value & 0x8) == 0x8) {
-                if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x8) == 0x8) {
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new OneAsyncContextMap(keyFive, valueFive);
                         }
                         return new TwoAsyncContextMap(keyOne, valueOne, keyFive, valueFive);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyThree, valueThree, keyFive, valueFive);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
                 }
                 return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFive, valueFive);
-            } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x4) == 0x4) {
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new TwoAsyncContextMap(keyFour, valueFour, keyFive, valueFive);
                     }
                     return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
                 }
                 return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                         keyFive, valueFive);
-            } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x2) == 0x2) {
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
                 }
                 return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive);
-            } else if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x1) == 0x1) {
                 return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive);
             }
@@ -2269,174 +1791,69 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            result = 31 * result + keyTwo.hashCode();
+            result = 31 * result + Objects.hashCode(valueTwo);
+            result = 31 * result + keyThree.hashCode();
+            result = 31 * result + Objects.hashCode(valueThree);
+            result = 31 * result + keyFour.hashCode();
+            result = 31 * result + Objects.hashCode(valueFour);
+            result = 31 * result + keyFive.hashCode();
+            result = 31 * result + Objects.hashCode(valueFive);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object value) {
-            if (keyOne == null) {
-                keyOne = key;
-                valueOne = value;
-            } else if (keyTwo == null) {
-                keyTwo = key;
-                valueTwo = value;
-            } else if (keyThree == null) {
-                keyThree = key;
-                valueThree = value;
-            } else if (keyFour == null) {
-                keyFour = key;
-                valueFour = value;
-            } else {
-                assert keyFive == null;
-                keyFive = key;
-                valueFive = value;
-                return false;
-            }
-            return true;
-        }
-
-        private static final class PutSixBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-            private final Key<?> keyOne;
-            @Nullable
-            private Object valueOne;
-            private final Key<?> keyTwo;
-            @Nullable
-            private Object valueTwo;
-            private final Key<?> keyThree;
-            @Nullable
-            private Object valueThree;
-            private final Key<?> keyFour;
-            @Nullable
-            private Object valueFour;
-            private final Key<?> keyFive;
-            @Nullable
-            private Object valueFive;
-            @Nullable
-            private Key<?> keySix;
-            @Nullable
-            private Object valueSix;
-
-            PutSixBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                          Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                          Key<?> keyFive, @Nullable Object valueFive) {
-                this.keyOne = keyOne;
-                this.valueOne = valueOne;
-                this.keyTwo = keyTwo;
-                this.valueTwo = valueTwo;
-                this.keyThree = keyThree;
-                this.valueThree = valueThree;
-                this.keyFour = keyFour;
-                this.valueFour = valueFour;
-                this.keyFive = keyFive;
-                this.valueFive = valueFive;
-            }
-
-            @Override
-            public void accept(final Key<?> key, final Object o) {
-                test(key, o);
-            }
-
-            @Override
-            public boolean test(final Key<?> key, final Object o) {
-                if (keyOne.equals(key)) {
-                    valueOne = o;
-                } else if (keyTwo.equals(key)) {
-                    valueTwo = o;
-                } else if (keyThree.equals(key)) {
-                    valueThree = o;
-                } else if (keyFour.equals(key)) {
-                    valueFour = o;
-                } else if (keyFive.equals(key)) {
-                    valueFive = o;
-                } else {
-                    assert keySix == null;
-                    keySix = key;
-                    valueSix = o;
-                    return false;
-                }
+        public boolean equals(final Object o) {
+            if (this == o) {
                 return true;
             }
-
-            CopyAsyncContextMap build() {
-                if (keySix == null) {
-                    return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                            keyFour, valueFour, keyFive, valueFive);
-                }
-                return new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
+            if (o == null || getClass() != o.getClass()) {
+                return false;
             }
-        }
-
-        private static final class PutSevenBuilder extends AbstractPutSevenBuilder {
-            PutSevenBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                            Key<?> keyFive, @Nullable Object valueFive, int putAllMapSize) {
-                super((5 + putAllMapSize) << 1, 10);
-                pairs[0] = keyOne;
-                pairs[1] = valueOne;
-                pairs[2] = keyTwo;
-                pairs[3] = valueTwo;
-                pairs[4] = keyThree;
-                pairs[5] = valueThree;
-                pairs[6] = keyFour;
-                pairs[7] = valueFour;
-                pairs[8] = keyFive;
-                pairs[9] = valueFive;
-            }
-
-            CopyAsyncContextMap build() {
-                if (nextIndex == 10) {
-                    return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
-                }
-                if (nextIndex == 12) {
-                    return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
-                            (Key<?>) pairs[10], pairs[11]);
-                }
-                if (nextIndex == pairs.length) {
-                    return new SevenOrMoreAsyncContextMap(pairs);
-                }
-                return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, nextIndex));
-            }
+            final FiveAsyncContextMap that = (FiveAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
+                    keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
+                    keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
+                    keyFour.equals(that.keyFour) && Objects.equals(valueFour, that.valueFour) &&
+                    keyFive.equals(that.keyFive) && Objects.equals(valueFive, that.valueFive);
         }
     }
 
-    private static final class SixAsyncContextMap implements CopyAsyncContextMap, BiConsumer<Key<?>, Object>,
-                                                             BiPredicate<Key<?>, Object> {
+    private static final class SixAsyncContextMap implements CopyAsyncContextMap {
 
+        private final Key<?> keyOne;
         @Nullable
-        private Key<?> keyOne;
-        @Nullable
-        private Object valueOne;
-        @Nullable
-        private Key<?> keyTwo;
-        @Nullable
-        private Object valueTwo;
-        @Nullable
-        private Key<?> keyThree;
-        @Nullable
-        private Object valueThree;
-        @Nullable
-        private Key<?> keyFour;
-        @Nullable
-        private Object valueFour;
-        @Nullable
-        private Key<?> keyFive;
-        @Nullable
-        private Object valueFive;
-        @Nullable
-        private Key<?> keySix;
-        @Nullable
-        private Object valueSix;
+        private final Object valueOne;
 
-        SixAsyncContextMap() {
-        }
+        private final Key<?> keyTwo;
+        @Nullable
+        private final Object valueTwo;
 
-        SixAsyncContextMap(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                           Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                           Key<?> keyFive, @Nullable Object valueFive, Key<?> keySix, @Nullable Object valueSix) {
+        private final Key<?> keyThree;
+        @Nullable
+        private final Object valueThree;
+
+        private final Key<?> keyFour;
+        @Nullable
+        private final Object valueFour;
+
+        private final Key<?> keyFive;
+        @Nullable
+        private final Object valueFive;
+
+        private final Key<?> keySix;
+        @Nullable
+        private final Object valueSix;
+
+        SixAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                           final Key<?> keyTwo, @Nullable final Object valueTwo,
+                           final Key<?> keyThree, @Nullable final Object valueThree,
+                           final Key<?> keyFour, @Nullable final Object valueFour,
+                           final Key<?> keyFive, @Nullable final Object valueFive,
+                           final Key<?> keySix, @Nullable final Object valueSix) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -2451,23 +1868,9 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
             this.valueSix = valueSix;
         }
 
-        @SuppressWarnings("unchecked")
-        @Nullable
         @Override
-        public <T> T get(final Key<T> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            return keyOne.equals(key) ? (T) valueOne : keyTwo.equals(key) ? (T) valueTwo : keyThree.equals(key) ?
-                    (T) valueThree : keyFour.equals(key) ? (T) valueFour : keyFive.equals(key) ? (T) valueFive :
-                    keySix.equals(key) ? (T) valueSix : null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            return keyOne.equals(key) || keyTwo.equals(key) || keyThree.equals(key) || keyFour.equals(key) ||
-                    keyFive.equals(key) || keySix.equals(key);
+        public int size() {
+            return 6;
         }
 
         @Override
@@ -2476,304 +1879,505 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public int size() {
-            return 6;
+        public boolean containsKey(final Key<?> key) {
+            return key.equals(keyOne) || key.equals(keyTwo) || key.equals(keyThree) || key.equals(keyFour) ||
+                    key.equals(keyFive) || key.equals(keySix);
         }
 
-        @SuppressWarnings("unchecked")
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            return Objects.equals(value, valueOne) || Objects.equals(value, valueTwo) ||
+                    Objects.equals(value, valueThree) || Objects.equals(value, valueFour) ||
+                    Objects.equals(value, valueFive) || Objects.equals(value, valueSix);
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            return (key.equals(keyOne) && Objects.equals(value, valueOne)) ||
+                    (key.equals(keyTwo) && Objects.equals(value, valueTwo)) ||
+                    (key.equals(keyThree) && Objects.equals(value, valueThree)) ||
+                    (key.equals(keyFour) && Objects.equals(value, valueFour)) ||
+                    (key.equals(keyFive) && Objects.equals(value, valueFive)) ||
+                    (key.equals(keySix) && Objects.equals(value, valueSix));
+        }
+
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, value, keyTwo, valueTwo,
+        @SuppressWarnings("unchecked")
+        public <T> T get(final Key<T> key) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : key.equals(keyFive) ? (T) valueFive :
+                    key.equals(keySix) ? (T) valueSix : null;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            return key.equals(keyOne) ? (T) valueOne : key.equals(keyTwo) ? (T) valueTwo : key.equals(keyThree) ?
+                    (T) valueThree : key.equals(keyFour) ? (T) valueFour : key.equals(keyFive) ? (T) valueFive :
+                    key.equals(keySix) ? (T) valueSix : defaultValue;
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueOne : owner.put(key, value);
-            } else if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, value,
-                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueTwo : owner.put(key, value);
-            } else if (keyThree.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueThree : owner.put(key, value);
-            } else if (keyFour.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFour, value, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueFour : owner.put(key, value);
-            } else if (keyFive.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFour, valueFour, keyFive, value, keySix, valueSix)) ?
-                            (T) valueFive : owner.put(key, value);
-            } else if (keySix.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, value)) ?
-                            (T) valueSix : owner.put(key, value);
+                        (T) valueOne : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne, keyTwo,
-                    valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
-                    key, value)) ? null : owner.put(key, value);
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueTwo : owner.put(key, value);
+            }
+            if (key.equals(keyThree)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                        key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueThree : owner.put(key, value);
+            }
+            if (key.equals(keyFour)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                        keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueFour : owner.put(key, value);
+            }
+            if (key.equals(keyFive)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                        keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
+                        (T) valueFive : owner.put(key, value);
+            }
+            if (key.equals(keySix)) {
+                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
+                        (T) valueSix : owner.put(key, value);
+            }
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
+                    key, value)) ?
+                    null : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
+                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueTwo;
+            }
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueThree;
+            }
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueFour;
+            }
+            if (key.equals(keyFive)) {
+                if (valueFive == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueFive;
+            }
+            if (key.equals(keySix)) {
+                if (valueSix == null) {
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
+                            key, value)) ?
+                            null : owner.putIfAbsent(key, value);
+                }
+                return (T) valueSix;
+            }
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
+                    key, value)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                if (valueOne == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
+                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueOne;
+            }
+            if (key.equals(keyTwo)) {
+                if (valueTwo == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                            keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueTwo;
+            }
+            if (key.equals(keyThree)) {
+                if (valueThree == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueThree;
+            }
+            if (key.equals(keyFour)) {
+                if (valueFour == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueFour;
+            }
+            if (key.equals(keyFive)) {
+                if (valueFive == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueFive;
+            }
+            if (key.equals(keySix)) {
+                if (valueSix == null) {
+                    final T value = computeFunction.apply(key);
+                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                            keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
+                            key, value)) ?
+                            value : owner.computeIfAbsent(key, computeFunction);
+                }
+                return (T) valueSix;
+            }
+            final T value = computeFunction.apply(key);
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+                    keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
+                    key, value)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final Map<Key<?>, Object> map) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            if (map.isEmpty()) {
-                return this;
-            }
-            PutSevenBuilder builder = new PutSevenBuilder(keyOne, valueOne, keyTwo, valueTwo,
-                    keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix, map.size());
-            map.forEach(builder);
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPair(keyOne, valueOne);
+            builder.addPair(keyTwo, valueTwo);
+            builder.addPair(keyThree, valueThree);
+            builder.addPair(keyFour, valueFour);
+            builder.addPair(keyFive, valueFive);
+            builder.addPair(keySix, valueSix);
+            forEach.accept(builder);
             return builder.build();
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            if (keyOne.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyTwo, valueTwo, keyThree,
-                        valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueOne : owner.remove(key);
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            if (key.equals(keyOne)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyTwo, valueTwo,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueOne : owner.remove(key);
             }
-            if (keyTwo.equals(key)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyThree,
-                        valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
-                            (T) valueTwo : owner.remove(key);
+            if (key.equals(keyTwo)) {
+                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueTwo : owner.remove(key);
             }
-            if (keyThree.equals(key)) {
+            if (key.equals(keyThree)) {
                 return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ? (T) valueThree : owner.remove(key);
+                        keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueThree : owner.remove(key);
             }
-            if (keyFour.equals(key)) {
+            if (key.equals(keyFour)) {
                 return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                    keyThree, valueThree, keyFive, valueFive, keySix, valueSix)) ? (T) valueFour : owner.remove(key);
+                        keyThree, valueThree, keyFive, valueFive, keySix, valueSix)) ?
+                        (T) valueFour : owner.remove(key);
             }
-            if (keyFive.equals(key)) {
+            if (key.equals(keyFive)) {
                 return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                    keyThree, valueThree, keyFour, valueFour, keySix, valueSix)) ? (T) valueFive : owner.remove(key);
+                        keyThree, valueThree, keyFour, valueFour, keySix, valueSix)) ?
+                        (T) valueFive : owner.remove(key);
             }
-            if (keySix.equals(key)) {
+            if (key.equals(keySix)) {
                 return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
-                    keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ? (T) valueSix : owner.remove(key);
+                        keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
+                        (T) valueSix : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            MutableInt removeIndexMask = new MutableInt();
-            entries.forEach(k -> {
-                if (keyOne.equals(k)) {
-                    removeIndexMask.value |= 0x1;
-                } else if (keyTwo.equals(k)) {
-                    removeIndexMask.value |= 0x2;
-                } else if (keyThree.equals(k)) {
-                    removeIndexMask.value |= 0x4;
-                } else if (keyFour.equals(k)) {
-                    removeIndexMask.value |= 0x8;
-                } else if (keyFive.equals(k)) {
-                    removeIndexMask.value |= 0x10;
-                } else if (keySix.equals(k)) {
-                    removeIndexMask.value |= 0x20;
-                }
-            });
-
-            CopyAsyncContextMap newMap = removeAll(removeIndexMask);
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
-            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(entries);
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        private int removeIndexMask(final Iterable<ContextMap.Key<?>> keys) {
+            int mask = 0;
+            for (ContextMap.Key<?> k : keys) {
+                if (k.equals(keyOne)) {
+                    mask |= 0x1;
+                } else if (k.equals(keyTwo)) {
+                    mask |= 0x2;
+                } else if (k.equals(keyThree)) {
+                    mask |= 0x4;
+                } else if (k.equals(keyFour)) {
+                    mask |= 0x8;
+                } else if (k.equals(keyFive)) {
+                    mask |= 0x10;
+                } else if (k.equals(keySix)) {
+                    mask |= 0x20;
+                }
+            }
+            return mask;
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(MutableInt removeIndexMask) {
-            assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
-                    keySix != null;
-            if ((removeIndexMask.value & 0x3f) == 0x3f) {
+        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+            if ((removeIndexMask & 0x3F) == 0x3F) {
                 return EmptyAsyncContextMap.INSTANCE;
-            } else if ((removeIndexMask.value & 0x20) == 0x20) {
-                if ((removeIndexMask.value & 0x10) == 0x10) {
-                    if ((removeIndexMask.value & 0x8) == 0x8) {
-                        if ((removeIndexMask.value & 0x4) == 0x4) {
-                            if ((removeIndexMask.value & 0x2) == 0x2) {
+            }
+            if ((removeIndexMask & 0x20) == 0x20) {
+                if ((removeIndexMask & 0x10) == 0x10) {
+                    if ((removeIndexMask & 0x8) == 0x8) {
+                        if ((removeIndexMask & 0x4) == 0x4) {
+                            if ((removeIndexMask & 0x2) == 0x2) {
                                 return new OneAsyncContextMap(keyOne, valueOne);
-                            } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                            }
+                            if ((removeIndexMask & 0x1) == 0x1) {
                                 return new OneAsyncContextMap(keyTwo, valueTwo);
                             }
                             return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
-                        } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                            if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x2) == 0x2) {
+                            if ((removeIndexMask & 0x1) == 0x1) {
                                 return new OneAsyncContextMap(keyThree, valueThree);
                             }
                             return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
-                        } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
-                    } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                        if ((removeIndexMask.value & 0x2) == 0x2) {
-                            if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x4) == 0x4) {
+                        if ((removeIndexMask & 0x2) == 0x2) {
+                            if ((removeIndexMask & 0x1) == 0x1) {
                                 return new OneAsyncContextMap(keyFour, valueFour);
                             }
                             return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
-                        } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
-                    } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keyFour, valueFour);
-                } else if ((removeIndexMask.value & 0x8) == 0x8) {
-                    if ((removeIndexMask.value & 0x4) == 0x4) {
-                        if ((removeIndexMask.value & 0x2) == 0x2) {
-                            if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x8) == 0x8) {
+                    if ((removeIndexMask & 0x4) == 0x4) {
+                        if ((removeIndexMask & 0x2) == 0x2) {
+                            if ((removeIndexMask & 0x1) == 0x1) {
                                 return new OneAsyncContextMap(keyFive, valueFive);
                             }
                             return new TwoAsyncContextMap(keyOne, valueOne, keyFive, valueFive);
-                        } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
-                    } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyThree, valueThree, keyFive, valueFive);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyFour, valueFour, keyFive, valueFive);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                             keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
                 }
                 return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour, keyFive, valueFive);
-            } else if ((removeIndexMask.value & 0x10) == 0x10) {
-                if ((removeIndexMask.value & 0x8) == 0x8) {
-                    if ((removeIndexMask.value & 0x4) == 0x4) {
-                        if ((removeIndexMask.value & 0x2) == 0x2) {
-                            if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x10) == 0x10) {
+                if ((removeIndexMask & 0x8) == 0x8) {
+                    if ((removeIndexMask & 0x4) == 0x4) {
+                        if ((removeIndexMask & 0x2) == 0x2) {
+                            if ((removeIndexMask & 0x1) == 0x1) {
                                 return new OneAsyncContextMap(keySix, valueSix);
                             }
                             return new TwoAsyncContextMap(keyOne, valueOne, keySix, valueSix);
-                        } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                        }
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyTwo, valueTwo, keySix, valueSix);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keySix, valueSix);
-                    } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyThree, valueThree, keySix, valueSix);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keySix, valueSix);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyFour, valueFour, keySix, valueSix);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keySix, valueSix);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                             keySix, valueSix);
                 }
                 return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour, keySix, valueSix);
-            } else if ((removeIndexMask.value & 0x8) == 0x8) {
-                if ((removeIndexMask.value & 0x4) == 0x4) {
-                    if ((removeIndexMask.value & 0x2) == 0x2) {
-                        if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x8) == 0x8) {
+                if ((removeIndexMask & 0x4) == 0x4) {
+                    if ((removeIndexMask & 0x2) == 0x2) {
+                        if ((removeIndexMask & 0x1) == 0x1) {
                             return new TwoAsyncContextMap(keyFive, valueFive, keySix, valueSix);
                         }
                         return new ThreeAsyncContextMap(keyOne, valueOne, keyFive, valueFive, keySix, valueSix);
-                    } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                    }
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyThree, valueThree, keyFive, valueFive, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFive, valueFive, keySix, valueSix);
-            } else if ((removeIndexMask.value & 0x4) == 0x4) {
-                if ((removeIndexMask.value & 0x2) == 0x2) {
-                    if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x4) == 0x4) {
+                if ((removeIndexMask & 0x2) == 0x2) {
+                    if ((removeIndexMask & 0x1) == 0x1) {
                         return new ThreeAsyncContextMap(keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
                     }
                     return new FourAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
-                } else if ((removeIndexMask.value & 0x1) == 0x1) {
+                }
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new FourAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
-            } else if ((removeIndexMask.value & 0x2) == 0x2) {
-                if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x2) == 0x2) {
+                if ((removeIndexMask & 0x1) == 0x1) {
                     return new FourAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 return new FiveAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
-            } else if ((removeIndexMask.value & 0x1) == 0x1) {
+            }
+            if ((removeIndexMask & 0x1) == 0x1) {
                 return new FiveAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
             }
@@ -2802,67 +2406,37 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public void accept(final Key<?> key, final Object value) {
-            test(key, value);
+        public int hashCode() {
+            int result = keyOne.hashCode();
+            result = 31 * result + Objects.hashCode(valueOne);
+            result = 31 * result + keyTwo.hashCode();
+            result = 31 * result + Objects.hashCode(valueTwo);
+            result = 31 * result + keyThree.hashCode();
+            result = 31 * result + Objects.hashCode(valueThree);
+            result = 31 * result + keyFour.hashCode();
+            result = 31 * result + Objects.hashCode(valueFour);
+            result = 31 * result + keyFive.hashCode();
+            result = 31 * result + Objects.hashCode(valueFive);
+            result = 31 * result + keySix.hashCode();
+            result = 31 * result + Objects.hashCode(valueSix);
+            return result;
         }
 
         @Override
-        public boolean test(final Key<?> key, final Object value) {
-            if (keyOne == null) {
-                keyOne = key;
-                valueOne = value;
-            } else if (keyTwo == null) {
-                keyTwo = key;
-                valueTwo = value;
-            } else if (keyThree == null) {
-                keyThree = key;
-                valueThree = value;
-            } else if (keyFour == null) {
-                keyFour = key;
-                valueFour = value;
-            } else if (keyFive == null) {
-                keyFive = key;
-                valueFive = value;
-            } else {
-                assert keySix == null;
-                keySix = key;
-                valueSix = value;
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            return true;
-        }
-
-        private static final class PutSevenBuilder extends AbstractPutSevenBuilder {
-            PutSevenBuilder(Key<?> keyOne, @Nullable Object valueOne, Key<?> keyTwo, @Nullable Object valueTwo,
-                            Key<?> keyThree, @Nullable Object valueThree, Key<?> keyFour, @Nullable Object valueFour,
-                            Key<?> keyFive, @Nullable Object valueFive, Key<?> keySix, @Nullable Object valueSix,
-                            int putAllMapSize) {
-                super((6 + putAllMapSize) << 1, 12);
-                pairs[0] = keyOne;
-                pairs[1] = valueOne;
-                pairs[2] = keyTwo;
-                pairs[3] = valueTwo;
-                pairs[4] = keyThree;
-                pairs[5] = valueThree;
-                pairs[6] = keyFour;
-                pairs[7] = valueFour;
-                pairs[8] = keyFive;
-                pairs[9] = valueFive;
-                pairs[10] = keySix;
-                pairs[11] = valueSix;
-            }
-
-            CopyAsyncContextMap build() {
-                if (nextIndex == 12) {
-                    return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
-                            (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
-                            (Key<?>) pairs[10], pairs[11]);
-                }
-                if (nextIndex == pairs.length) {
-                    return new SevenOrMoreAsyncContextMap(pairs);
-                }
-                return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, nextIndex));
-            }
+            final SixAsyncContextMap that = (SixAsyncContextMap) o;
+            return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
+                    keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
+                    keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
+                    keyFour.equals(that.keyFour) && Objects.equals(valueFour, that.valueFour) &&
+                    keyFive.equals(that.keyFive) && Objects.equals(valueFive, that.valueFive) &&
+                    keySix.equals(that.keySix) && Objects.equals(valueSix, that.valueSix);
         }
     }
 
@@ -2872,111 +2446,13 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
          */
         private final Object[] context;
 
-        SevenOrMoreAsyncContextMap(Object... context) {
+        SevenOrMoreAsyncContextMap(final Object... context) {
+            assert context.length >= 2;
+            assert context.length % 2 == 0;
             this.context = context;
         }
 
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public int size() {
-            return context.length >>> 1;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public <T> T get(Key<T> key) {
-            int i = findIndex(key);
-            return i < 0 ? null : (T) context[i + 1];
-        }
-
-        @Override
-        public boolean containsKey(Key<?> key) {
-            return findIndex(key) >= 0;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Nullable
-        @Override
-        public <T> T put(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
-                         AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            int i = findIndex(Objects.requireNonNull(key));
-            final Object[] context;
-            if (i < 0) {
-                context = new Object[this.context.length + 2];
-                arraycopy(this.context, 0, context, 0, this.context.length);
-                context[this.context.length] = key;
-                context[this.context.length + 1] = value;
-            } else {
-                context = new Object[this.context.length];
-                arraycopy(this.context, 0, context, 0, i + 1);
-                context[i + 1] = value;
-                if (i + 2 < context.length) {
-                    arraycopy(this.context, i + 2, context, i + 2, context.length - i - 2);
-                }
-            }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
-                    (T) this.context[i + 1] : null;
-        }
-
-        @Override
-        public CopyAsyncContextMap putAll(Map<Key<?>, Object> map) {
-            PutAllConsumer consumer = new PutAllConsumer(map.size());
-            // First pass is to see how many new entries there are to get the correct size of the new context array
-            map.forEach(consumer);
-
-            Object[] context = new Object[this.context.length + (consumer.newItems << 1)];
-            arraycopy(this.context, 0, context, 0, this.context.length);
-
-            // Second pass is to fill entries where the keys overlap, or append new entries to the end
-            PutAllPopulateConsumer populateConsumer =
-                    new PutAllPopulateConsumer(consumer.keyIndexes, this.context, context);
-            map.forEach(populateConsumer);
-            return new SevenOrMoreAsyncContextMap(context);
-        }
-
-        @SuppressWarnings("unchecked")
-        @Nullable
-        @Override
-        public <T> T remove(Key<T> key, CopyOnWriteAsyncContextMap owner,
-                            AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            int i = findIndex(key);
-            if (i < 0) {
-                return null;
-            }
-            if (size() == 7) {
-                return mapUpdater.compareAndSet(owner, this, removeBelowSeven(i)) ? (T) this.context[i + 1] :
-                        owner.remove(key);
-            }
-            Object[] context = new Object[this.context.length - 2];
-            arraycopy(this.context, 0, context, 0, i);
-            arraycopy(this.context, i + 2, context, i, this.context.length - i - 2);
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
-                    (T) this.context[i + 1] : owner.remove(key);
-        }
-
-        @Override
-        public boolean removeAll(Iterable<Key<?>> entries, CopyOnWriteAsyncContextMap owner,
-                             AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            GrowableIntArray indexesToRemove = new GrowableIntArray(3);
-            entries.forEach(key -> {
-                int keyIndex = findIndex(key);
-                if (keyIndex >= 0) {
-                    indexesToRemove.add(keyIndex);
-                }
-            });
-
-            CopyAsyncContextMap newMap = removeAll(indexesToRemove);
-            if (newMap == null) {
-                return false;
-            }
-            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(entries);
-        }
-
-        private int findIndex(Key<?> key) {
+        private int findIndex(final Key<?> key) {
             for (int i = 0; i < context.length; i += 2) {
                 if (key.equals(context[i])) {
                     return i;
@@ -2986,37 +2462,202 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         }
 
         @Override
-        public Key<?> forEach(BiPredicate<Key<?>, Object> consumer) {
-            for (int i = 0; i < context.length; i += 2) {
-                final Key<?> key = (Key<?>) context[i];
-                if (!consumer.test(key, context[i + 1])) {
-                    return key;
+        public int size() {
+            return context.length >>> 1;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean containsKey(final Key<?> key) {
+            return findIndex(key) >= 0;
+        }
+
+        @Override
+        public boolean containsValue(@Nullable final Object value) {
+            for (int i = 1; i < context.length; i += 2) {
+                if (Objects.equals(value, context[i])) {
+                    return true;
                 }
             }
-            return null;
+            return false;
+        }
+
+        @Override
+        public <T> boolean contains(final Key<T> key, @Nullable final T value) {
+            for (int i = 0; i < context.length; i += 2) {
+                if (key.equals(context[i]) && Objects.equals(value, context[i + 1])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T get(final Key<T> key) {
+            final int i = findIndex(key);
+            return i < 0 ? null : (T) context[i + 1];
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(GrowableIntArray indexesToRemove) {
-            if (size() == indexesToRemove.size) {
-                return EmptyAsyncContextMap.INSTANCE;
-            } else if (indexesToRemove.size == 0) {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
+            final int i = findIndex(key);
+            return i < 0 ? defaultValue : (T) context[i + 1];
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final int i = findIndex(key);
+            final Object returnValue;
+            final Object[] context;
+            if (i < 0) {
+                returnValue = null;
+                context = new Object[this.context.length + 2];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[this.context.length] = key;
+                context[this.context.length + 1] = value;
+            } else {
+                returnValue = this.context[i + 1];
+                context = new Object[this.context.length];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[i + 1] = value;
+            }
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+                    (T) returnValue : owner.put(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final int i = findIndex(key);
+            final Object[] context;
+            if (i < 0) {
+                context = new Object[this.context.length + 2];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[this.context.length] = key;
+                context[this.context.length + 1] = value;
+            } else {
+                final Object currentValue = this.context[i + 1];
+                if (currentValue != null) {
+                    return (T) currentValue;
+                }
+                context = new Object[this.context.length];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[i + 1] = value;
+            }
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+                    null : owner.putIfAbsent(key, value);
+        }
+
+        @Nullable
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
+                     final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final int i = findIndex(key);
+            final T value;
+            final Object[] context;
+            if (i < 0) {
+                value = computeFunction.apply(key);
+                context = new Object[this.context.length + 2];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[this.context.length] = key;
+                context[this.context.length + 1] = value;
+            } else {
+                final Object currentValue = this.context[i + 1];
+                if (currentValue != null) {
+                    return (T) currentValue;
+                }
+                value = computeFunction.apply(key);
+                context = new Object[this.context.length];
+                arraycopy(this.context, 0, context, 0, this.context.length);
+                context[i + 1] = value;
+            }
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+                    value : owner.computeIfAbsent(key, computeFunction);
+        }
+
+        @Override
+        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+            final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
+            builder.addPairs(this.context);
+            forEach.accept(builder);
+            return builder.build();
+        }
+
+        @Nullable
+        @Override
+        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            int i = findIndex(key);
+            if (i < 0) {
                 return null;
-            } else if (size() - indexesToRemove.size < 7) {
+            }
+            @SuppressWarnings("unchecked")
+            final T value = (T) this.context[i + 1];
+            if (size() == 7) {
+                return mapUpdater.compareAndSet(owner, this, removeBelowSeven(i)) ? value : owner.remove(key);
+            }
+            final Object[] context = new Object[this.context.length - 2];
+            arraycopy(this.context, 0, context, 0, i);
+            arraycopy(this.context, i + 2, context, i, this.context.length - i - 2);
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+                    value : owner.remove(key);
+        }
+
+        @Override
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+            final GrowableIntArray indexesToRemove = new GrowableIntArray(
+                    keys instanceof Collection ? ((Collection<Key<?>>) keys).size() : 4);
+            for (ContextMap.Key<?> k : keys) {
+                final int keyIndex = findIndex(k);
+                if (keyIndex >= 0) {
+                    indexesToRemove.add(keyIndex);
+                }
+            }
+
+            final CopyAsyncContextMap newMap = removeAll(indexesToRemove);
+            if (newMap == null) {
+                return false;
+            }
+            return mapUpdater.compareAndSet(owner, this, newMap) || owner.removeAll(keys);
+        }
+
+        @Nullable
+        private CopyAsyncContextMap removeAll(final GrowableIntArray indexesToRemove) {
+            if (size() == indexesToRemove.count()) {
+                return EmptyAsyncContextMap.INSTANCE;
+            }
+            if (indexesToRemove.count() == 0) {
+                return null;
+            }
+            if (size() - indexesToRemove.count() < 7) {
                 return removeBelowSeven(indexesToRemove);
             }
 
-            Object[] context = new Object[this.context.length - (indexesToRemove.size << 1)];
-
+            final Object[] context = new Object[this.context.length - (indexesToRemove.count() << 1)];
             // Preserve entries that were not found in the first pass
             int newContextIndex = 0;
             for (int i = 0; i < this.context.length; i += 2) {
                 if (indexesToRemove.isValueAbsent(i)) {
-                    context[newContextIndex] = this.context[i];
-                    context[newContextIndex + 1] = this.context[i + 1];
-                    newContextIndex += 2;
+                    context[newContextIndex++] = this.context[i];
+                    context[newContextIndex++] = this.context[i + 1];
                 }
             }
+            assert newContextIndex == context.length;
             return new SevenOrMoreAsyncContextMap(context);
         }
 
@@ -3072,12 +2713,12 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11]);
                 default:
-                    throw new RuntimeException("programming error. unable to remove i: " + i);
+                    throw new RuntimeException("Programming error, unable to remove a key at index=" + i);
             }
         }
 
-        private CopyAsyncContextMap removeBelowSeven(GrowableIntArray indexesToRemove) {
-            switch (size() - indexesToRemove.size) {
+        private CopyAsyncContextMap removeBelowSeven(final GrowableIntArray indexesToRemove) {
+            switch (size() - indexesToRemove.count()) {
                 case 1:
                     for (int i = 0; i < this.context.length; i += 2) {
                         if (indexesToRemove.isValueAbsent(i)) {
@@ -3198,116 +2839,138 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
                 default:
                     break;
             }
-            throw new RuntimeException("programming error. unable to reduce: " + (size() - indexesToRemove.size));
+            throw new RuntimeException("Programming error, unable to reduce from " + size() + " to " +
+                    (size() - indexesToRemove.count()));
+        }
+
+        @Override
+        public Key<?> forEach(BiPredicate<Key<?>, Object> consumer) {
+            for (int i = 0; i < context.length; i += 2) {
+                final Key<?> key = (Key<?>) context[i];
+                if (!consumer.test(key, context[i + 1])) {
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final SevenOrMoreAsyncContextMap that = (SevenOrMoreAsyncContextMap) o;
+            return Arrays.equals(context, that.context);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(context);
         }
 
         private static final class GrowableIntArray {
             private int[] array;
-            int size;
+            private int count;
 
-            GrowableIntArray(int size) {
-                array = new int[size];
+            GrowableIntArray(final int initialSize) {
+                array = new int[initialSize];
             }
 
-            void add(int value) {
-                if (size == array.length) {
-                    int[] newArray = new int[array.length << 1];
-                    arraycopy(array, 0, newArray, 0, array.length);
-                    array = newArray;
+            void add(final int value) {
+                if (count == array.length) {
+                    array = Arrays.copyOf(array, array.length << 1);
                 }
-                array[size++] = value;
+                array[count++] = value;
             }
 
-            int get(int i) {
-                return array[i];
-            }
-
-            boolean isValueAbsent(int value) {
-                for (int i = 0; i < size; ++i) {
+            boolean isValueAbsent(final int value) {
+                for (int i = 0; i < count; ++i) {
                     if (array[i] == value) {
                         return false;
                     }
                 }
                 return true;
             }
-        }
 
-        private final class PutAllConsumer implements BiConsumer<Key<?>, Object> {
-            int newItems;
-            final GrowableIntArray keyIndexes;
-
-            PutAllConsumer(int mapSize) {
-                keyIndexes = new GrowableIntArray(mapSize);
-            }
-
-            @Override
-            public void accept(Key<?> key, Object o) {
-                int keyIndex = findIndex(key);
-                if (keyIndex < 0) {
-                    ++newItems;
-                }
-                keyIndexes.add(keyIndex);
-            }
-        }
-
-        private static final class PutAllPopulateConsumer implements BiConsumer<Key<?>, Object> {
-            private int i;
-            private int newItemIndex;
-            private final GrowableIntArray keyIndexes;
-            private final Object[] newContext;
-
-            PutAllPopulateConsumer(GrowableIntArray keyIndexes, Object[] oldContext, Object[] newContext) {
-                this.keyIndexes = keyIndexes;
-                this.newContext = newContext;
-                newItemIndex = oldContext.length;
-            }
-
-            @Override
-            public void accept(Key<?> key, Object o) {
-                final int keyIndex = keyIndexes.get(i++);
-                if (keyIndex < 0) {
-                    newContext[newItemIndex] = key;
-                    newContext[newItemIndex + 1] = o;
-                    newItemIndex += 2;
-                } else {
-                    newContext[keyIndex] = key;
-                    newContext[keyIndex + 1] = o;
-                }
+            int count() {
+                return count;
             }
         }
     }
 
-    abstract static class AbstractPutSevenBuilder implements BiPredicate<Key<?>, Object>, BiConsumer<Key<?>, Object> {
-        Object[] pairs;
-        int nextIndex;
+    private static final class PutAllBuilder implements BiConsumer<Key<?>, Object>, BiPredicate<Key<?>, Object> {
+        private final Object[] pairs;
+        private int index;
 
-        AbstractPutSevenBuilder(int arraySize, int nextIndex) {
-            pairs = new Object[arraySize];
-            this.nextIndex = nextIndex;
+        PutAllBuilder(final int size) {
+            assert size > 0;
+            pairs = new Object[size << 1];
+        }
+
+        void addPairs(final Object[] currentPairs) {
+            arraycopy(currentPairs, 0, pairs, 0, currentPairs.length);
+            index = currentPairs.length;
+        }
+
+        int addPair(final Key<?> key, @Nullable final Object value) {
+            assert index <= pairs.length - 2;
+            pairs[index] = key;
+            pairs[++index] = value;
+            return ++index;
         }
 
         @Override
-        public final void accept(final Key<?> key, final Object o) {
-            test(key, o);
+        public void accept(final Key<?> key, @Nullable final Object value) {
+            ensureType(key, value);
+            test(key, value);
         }
 
         @Override
-        public final boolean test(final Key<?> key, final Object o) {
-            for (int i = 0; i < nextIndex; i += 2) {
-                if (pairs[i].equals(key)) {
-                    pairs[i + 1] = o;
-                    return false;
+        public boolean test(final Key<?> key, @Nullable final Object value) {
+            for (int i = 0; i < index; i += 2) {
+                if (key.equals(pairs[i])) {
+                    pairs[i + 1] = value;
+                    return true;
                 }
             }
-            assert nextIndex <= pairs.length - 2;
-            pairs[nextIndex] = key;
-            pairs[nextIndex + 1] = o;
-            nextIndex += 2;
-            return true;
+            return addPair(key, value) < pairs.length;
         }
-    }
 
-    private static final class MutableInt {
-        int value;
+        CopyAsyncContextMap build() {
+            assert index % 2 == 0;
+            if (index <= 12) {
+                switch (index) {
+                    case 0:
+                        return EmptyAsyncContextMap.INSTANCE;
+                    case 2:
+                        return new OneAsyncContextMap((Key<?>) pairs[0], pairs[1]);
+                    case 4:
+                        return new TwoAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3]);
+                    case 6:
+                        return new ThreeAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                                (Key<?>) pairs[4], pairs[5]);
+                    case 8:
+                        return new FourAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                                (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7]);
+                    case 10:
+                        return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                                (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
+                    case 12:
+                        return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                                (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
+                                (Key<?>) pairs[10], pairs[11]);
+                    default:
+                        throw new IllegalStateException("Unexpected index: " + index +
+                                ", (expected an even number from 2 to 12");
+                }
+            }
+            if (index == pairs.length) {
+                return new SevenOrMoreAsyncContextMap(pairs);
+            }
+            return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, index));
+        }
     }
 }
