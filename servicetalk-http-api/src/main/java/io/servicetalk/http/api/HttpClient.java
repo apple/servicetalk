@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
@@ -31,6 +32,7 @@ public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
      * @param request the request to send.
      * @return The response.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in HttpRequester
     Single<HttpResponse> request(HttpRequest request);
 
     /**
@@ -53,8 +55,18 @@ public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
      * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
+     * @deprecated Use {@link #reserveConnection(HttpRequestMetaData)}. If an {@link HttpExecutionStrategy} needs to be
+     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
+     * {@link HttpRequestMetaData#context() request context}.
      */
-    Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy, HttpRequestMetaData metaData);
+    @Deprecated
+    default Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                             HttpRequestMetaData metaData) {
+        return Single.defer(() -> {
+            metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            return reserveConnection(metaData).subscribeShareContext();
+        });
+    }
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.

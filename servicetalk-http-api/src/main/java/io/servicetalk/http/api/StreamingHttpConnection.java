@@ -31,6 +31,7 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
      * @param request the request to send.
      * @return The response.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in StreamingHttpRequester
     Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**

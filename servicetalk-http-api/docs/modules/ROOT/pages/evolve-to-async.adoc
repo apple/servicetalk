@@ -28,16 +28,9 @@ of operation.
 
 === No offloads per request
 
-HTTP clients for all programming models provide methods to make requests with or without `HttpExecutionStrategy`.
-
-See
-link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java[HttpClient].
-[source, java]
-----
-Single<HttpResponse> request(HttpRequest request);
-
-Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
-----
+HTTP clients for all programming models recognize `HTTP_EXECUTION_STRATEGY_KEY` from
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpContextKeys.java[HttpContextKeys] that
+allows to override offloading by passing its value in `HttpRequestMetaData#context()`.
 
 In order to disable offloading for a specific request one has to use a specific `HttpExecutionStrategy` that does not
 do any offloading. Such a strategy is available out of the box in
@@ -47,7 +40,9 @@ and can be used as below:
 [source, java]
 ----
 // Processing of this request does not have any blocking code
-httpClient.request(HttpExecutionStrategies.noOffloadsStrategy(), aRequest);
+HttpRequest request = httpClient.newRequest(method, requestTarget);
+request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.noOffloadsStrategy());
+HttpResponse  response = httpClient.request(request);
 ----
 
 For a request made using this strategy, ServiceTalk will not perform any offloading and all user calls may be invoked

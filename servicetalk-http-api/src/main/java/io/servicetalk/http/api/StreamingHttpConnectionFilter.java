@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,9 +40,18 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
     }
 
     @Override
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return delegate.request(request);
+    }
+
+    @Deprecated
+    @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
-        return delegate.request(strategy, request);
+        return Single.defer(() -> {
+            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            return request(request).subscribeShareContext();
+        });
     }
 
     @Override

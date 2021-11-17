@@ -17,10 +17,24 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+
 /**
  * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public interface BlockingHttpRequester extends HttpRequestFactory, GracefulAutoCloseable {
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the request to send.
+     * @return The response.
+     */
+    default HttpResponse request(HttpRequest request) throws Exception {
+        // FIXME: 0.42 - remove default impl
+        throw new UnsupportedOperationException("Method request(HttpRequest) is not supported by " +
+                getClass().getName());
+    }
+
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
      *
@@ -29,7 +43,10 @@ public interface BlockingHttpRequester extends HttpRequestFactory, GracefulAutoC
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception;
+    default HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception {
+        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return request(request);
+    }
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

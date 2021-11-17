@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 /**
  * A {@link StreamingHttpClient} that supports filtering.
  */
@@ -26,14 +27,38 @@ public interface FilterableStreamingHttpClient extends
     /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
      * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
      * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                                  HttpRequestMetaData metaData);
+    default Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+            HttpRequestMetaData metaData) {
+        // FIXME: 0.42 - remove default impl
+        throw new UnsupportedOperationException("Method reserveConnection(HttpRequestMetaData) is not supported by " +
+                getClass().getName());
+    }
+
+    /**
+     * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
+     * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
+     * For example this may provide some insight into shard or other info.
+     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
+     * @deprecated Use {@link #reserveConnection(HttpRequestMetaData)}. If an {@link HttpExecutionStrategy} needs to be
+     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
+     * {@link HttpRequestMetaData#context() request context}.
+     */
+    @Deprecated
+    default Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+            HttpExecutionStrategy strategy, HttpRequestMetaData metaData) {
+        return Single.defer(() -> {
+            metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            return reserveConnection(metaData).subscribeShareContext();
+        });
+    }
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {

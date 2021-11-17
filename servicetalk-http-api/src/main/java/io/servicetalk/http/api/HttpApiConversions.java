@@ -19,6 +19,8 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
@@ -432,5 +434,10 @@ public final class HttpApiConversions {
      */
     public static BlockingStreamingHttpService toBlockingStreamingHttpService(StreamingHttpService service) {
         return new StreamingHttpServiceToBlockingStreamingHttpService(service);
+    }
+
+    static HttpExecutionStrategy requestStrategy(HttpRequestMetaData metaData, HttpExecutionStrategy fallback) {
+        final HttpExecutionStrategy strategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+        return strategy != null ? strategy : fallback;
     }
 }
