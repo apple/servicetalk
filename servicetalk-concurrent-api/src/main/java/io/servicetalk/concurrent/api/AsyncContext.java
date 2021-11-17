@@ -246,7 +246,8 @@ public final class AsyncContext {
      * implementation.
      * @see ContextMap#putAll(Map)
      */
-    // FIXME: 0.42 - add putAll(Map) alias method and consider deprecating putAllFromMap(Map)
+    // FIXME: 0.42 - add putAll(Map) alias method and consider deprecating putAllFromMap(Map).
+    //  A different name was used to avoid clashing with pre-existing forEach method.
     public static void putAllFromMap(final Map<ContextMap.Key<?>, Object> map) {
         context().putAll(map);
     }
@@ -314,7 +315,8 @@ public final class AsyncContext {
      * implementation.
      * @see ContextMap#removeAll(Iterable)
      */
-    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllEntries(Iterable)
+    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllEntries(Iterable).
+    //  A different name was used to avoid clashing with pre-existing forEach method.
     public static boolean removeAllEntries(final Iterable<ContextMap.Key<?>> keys) {
         return context().removeAll(keys);
     }
@@ -493,7 +495,8 @@ public final class AsyncContext {
      * @throws NullPointerException if {@code consumer} is null.
      * @see ContextMap#forEach(BiPredicate)
      */
-    // FIXME: 0.42 - add forEach(BiPredicate) alias method and consider deprecating forEachPair(BiPredicate)
+    // FIXME: 0.42 - add forEach(BiPredicate) alias method and consider deprecating forEachPair(BiPredicate).
+    //  A different name was used to avoid clashing with pre-existing forEach method.
     @Nullable
     public static ContextMap.Key<?> forEachEntry(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
         return context().forEach(consumer);
