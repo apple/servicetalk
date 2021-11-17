@@ -34,10 +34,10 @@ import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class provides a Copy-on-Write map behavior is and special cased for cardinality of less than 7 elements. Less
- * than 7 elements was chosen because it is not common to have more than this number of {@link ContextMap.Key}-value
- * pairs in a single {@link ContextMap}. Common {@link ContextMap.Key}-value paris are (tracing, MDC, auth, 3-custom
- * user entries).
+ * This class provides a Copy-on-Write map behavior. It features special cases for cardinality of less than 7 elements.
+ * Less than 7 elements was chosen because it is not common to have more than this number of
+ * {@link ContextMap.Key}-value entries in a single {@link ContextMap}. Common {@link ContextMap.Key}-value entries are
+ * (tracing, MDC, auth, 3-custom user entries).
  */
 // FIXME: 0.42 - rename to CopyOnWriteContextMap
 final class CopyOnWriteAsyncContextMap implements ContextMap {
