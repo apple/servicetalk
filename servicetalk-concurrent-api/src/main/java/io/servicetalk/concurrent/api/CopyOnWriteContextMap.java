@@ -39,17 +39,16 @@ import static java.util.Objects.requireNonNull;
  * {@link ContextMap.Key}-value entries in a single {@link ContextMap}. Common {@link ContextMap.Key}-value entries are
  * (tracing, MDC, auth, 3-custom user entries).
  */
-// FIXME: 0.42 - rename to CopyOnWriteContextMap
-final class CopyOnWriteAsyncContextMap implements ContextMap {
-    private static final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteAsyncContextMap.class, CopyAsyncContextMap.class, "map");
-    private volatile CopyAsyncContextMap map;
+final class CopyOnWriteContextMap implements ContextMap {
+    private static final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteContextMap.class, CopyContextMap.class, "map");
+    private volatile CopyContextMap map;
 
-    CopyOnWriteAsyncContextMap() {
-        this(EmptyAsyncContextMap.INSTANCE);
+    CopyOnWriteContextMap() {
+        this(EmptyContextMap.INSTANCE);
     }
 
-    private CopyOnWriteAsyncContextMap(CopyAsyncContextMap map) {
+    private CopyOnWriteContextMap(CopyContextMap map) {
         this.map = map;
     }
 
@@ -115,7 +114,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             return;
         }
         for (;;) {
-            CopyAsyncContextMap contextMap = this.map;
+            CopyContextMap contextMap = this.map;
             if (mapUpdater.compareAndSet(this, contextMap, contextMap.putAll(size, map::forEach))) {
                 break;
             }
@@ -129,7 +128,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             return;
         }
         for (;;) {
-            CopyAsyncContextMap contextMap = this.map;
+            CopyContextMap contextMap = this.map;
             if (mapUpdater.compareAndSet(this, contextMap, contextMap.putAll(size, map::forEach))) {
                 break;
             }
@@ -149,7 +148,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
 
     @Override
     public void clear() {
-        map = EmptyAsyncContextMap.INSTANCE;
+        map = EmptyContextMap.INSTANCE;
     }
 
     @Nullable
@@ -160,7 +159,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
 
     @Override
     public ContextMap copy() {
-        return new CopyOnWriteAsyncContextMap(map);
+        return new CopyOnWriteContextMap(map);
     }
 
     @Override
@@ -171,8 +170,8 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         if (!(o instanceof ContextMap)) {
             return false;
         }
-        if (o instanceof CopyOnWriteAsyncContextMap) {
-            return map.equals(((CopyOnWriteAsyncContextMap) o).map);
+        if (o instanceof CopyOnWriteContextMap) {
+            return map.equals(((CopyOnWriteContextMap) o).map);
         }
         return ContextMapUtils.equals(this, (ContextMap) o);
     }
@@ -187,7 +186,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         return ContextMapUtils.toString(this);
     }
 
-    private interface CopyAsyncContextMap {
+    private interface CopyContextMap {
 
         int size();
 
@@ -206,25 +205,25 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         <T> T getOrDefault(Key<T> key, T defaultValue);
 
         @Nullable
-        <T> T put(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
-                  AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+        <T> T put(Key<T> key, @Nullable T value, CopyOnWriteContextMap owner,
+                  AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater);
 
         @Nullable
-        <T> T putIfAbsent(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
-                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+        <T> T putIfAbsent(Key<T> key, @Nullable T value, CopyOnWriteContextMap owner,
+                          AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater);
 
         @Nullable
-        <T> T computeIfAbsent(Key<T> key, Function<Key<T>, T> computeFunction, CopyOnWriteAsyncContextMap owner,
-                              AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+        <T> T computeIfAbsent(Key<T> key, Function<Key<T>, T> computeFunction, CopyOnWriteContextMap owner,
+                              AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater);
 
-        CopyAsyncContextMap putAll(int mapSize, Consumer<PutAllBuilder> forEach);
+        CopyContextMap putAll(int mapSize, Consumer<PutAllBuilder> forEach);
 
         @Nullable
-        <T> T remove(Key<T> key, CopyOnWriteAsyncContextMap owner,
-                     AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+        <T> T remove(Key<T> key, CopyOnWriteContextMap owner,
+                     AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater);
 
-        boolean removeAll(Iterable<Key<?>> keys, CopyOnWriteAsyncContextMap owner,
-                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
+        boolean removeAll(Iterable<Key<?>> keys, CopyOnWriteContextMap owner,
+                          AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater);
 
         @Nullable
         Key<?> forEach(BiPredicate<Key<?>, Object> consumer);
@@ -236,10 +235,10 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         int hashCode();
     }
 
-    private static final class EmptyAsyncContextMap implements CopyAsyncContextMap {
-        static final CopyAsyncContextMap INSTANCE = new EmptyAsyncContextMap();
+    private static final class EmptyContextMap implements CopyContextMap {
+        static final CopyContextMap INSTANCE = new EmptyContextMap();
 
-        private EmptyAsyncContextMap() {
+        private EmptyContextMap() {
             // singleton
         }
 
@@ -281,32 +280,32 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
 
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(requireNonNull(key), value)) ?
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            return mapUpdater.compareAndSet(owner, this, new OneContextMap(requireNonNull(key), value)) ?
                     null : owner.put(key, value);
         }
 
         @Nullable
         @Override
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(requireNonNull(key), value)) ?
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            return mapUpdater.compareAndSet(owner, this, new OneContextMap(requireNonNull(key), value)) ?
                     null : owner.putIfAbsent(key, value);
         }
 
         @Nullable
         @Override
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             final T value = computeFunction.apply(requireNonNull(key));
-            return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+            return mapUpdater.compareAndSet(owner, this, new OneContextMap(key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(mapSize);
             forEach.accept(builder);
             return builder.build();
@@ -314,15 +313,15 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
 
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             requireNonNull(key);
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             requireNonNull(keys);
             return false;
         }
@@ -344,13 +343,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
     }
 
-    private static final class OneAsyncContextMap implements CopyAsyncContextMap {
+    private static final class OneContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
         private final Object valueOne;
 
-        OneAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne) {
+        OneContextMap(final Key<?> keyOne, @Nullable final Object valueOne) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
         }
@@ -397,29 +396,29 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                return mapUpdater.compareAndSet(owner, this, new OneContextMap(key, value)) ?
                         (T) valueOne : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+            return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                     null : owner.put(key, value);
         }
 
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
-                    return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                    return mapUpdater.compareAndSet(owner, this, new OneContextMap(key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueOne;
             }
-            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+            return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                     null : owner.putIfAbsent(key, value);
         }
 
@@ -427,23 +426,23 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ?
+                    return mapUpdater.compareAndSet(owner, this, new OneContextMap(key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueOne;
             }
             final T value = computeFunction.apply(key);
-            return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+            return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             forEach.accept(builder);
@@ -453,21 +452,21 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) ?
+                return mapUpdater.compareAndSet(owner, this, EmptyContextMap.INSTANCE) ?
                         (T) valueOne : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             for (Key<?> k : keys) {
                 if (k.equals(keyOne)) {
-                    return mapUpdater.compareAndSet(owner, this, EmptyAsyncContextMap.INSTANCE) ||
+                    return mapUpdater.compareAndSet(owner, this, EmptyContextMap.INSTANCE) ||
                             owner.removeAll(keys);
                 }
             }
@@ -495,12 +494,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final OneAsyncContextMap that = (OneAsyncContextMap) o;
+            final OneContextMap that = (OneContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne);
         }
     }
 
-    private static final class TwoAsyncContextMap implements CopyAsyncContextMap {
+    private static final class TwoContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
@@ -510,8 +509,8 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         private final Object valueTwo;
 
-        TwoAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
-                           final Key<?> keyTwo, @Nullable final Object valueTwo) {
+        TwoContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                      final Key<?> keyTwo, @Nullable final Object valueTwo) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -561,42 +560,42 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
+                return mapUpdater.compareAndSet(owner, this, new TwoContextMap(key, value, keyTwo, valueTwo)) ?
                         (T) valueOne : owner.put(key, value);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             return mapUpdater.compareAndSet(owner, this,
-                    new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                    new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                     null : owner.put(key, value);
         }
 
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
-                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
+                    return mapUpdater.compareAndSet(owner, this, new TwoContextMap(key, value, keyTwo, valueTwo)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueOne;
             }
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
-                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                    return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueTwo;
             }
             return mapUpdater.compareAndSet(owner, this,
-                    new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                    new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                     null : owner.putIfAbsent(key, value);
         }
 
@@ -604,12 +603,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(key, value, keyTwo, valueTwo)) ?
+                    return mapUpdater.compareAndSet(owner, this, new TwoContextMap(key, value, keyTwo, valueTwo)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueOne;
@@ -617,19 +616,19 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new TwoAsyncContextMap(keyOne, valueOne, key, value)) ?
+                    return mapUpdater.compareAndSet(owner, this, new TwoContextMap(keyOne, valueOne, key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueTwo;
             }
             final T value = computeFunction.apply(key);
             return mapUpdater.compareAndSet(owner, this,
-                    new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                    new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             builder.addPair(keyTwo, valueTwo);
@@ -640,23 +639,23 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyTwo, valueTwo)) ?
+                return mapUpdater.compareAndSet(owner, this, new OneContextMap(keyTwo, valueTwo)) ?
                         (T) valueOne : owner.remove(key);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(keyOne, valueOne)) ?
+                return mapUpdater.compareAndSet(owner, this, new OneContextMap(keyOne, valueOne)) ?
                         (T) valueTwo : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            final CopyContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
@@ -676,15 +675,15 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+        private CopyContextMap removeAll(final int removeIndexMask) {
             if ((removeIndexMask & 0x3) == 0x3) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if ((removeIndexMask & 0x2) == 0x2) {
-                return new OneAsyncContextMap(keyOne, valueOne);
+                return new OneContextMap(keyOne, valueOne);
             }
             if ((removeIndexMask & 0x1) == 0x1) {
-                return new OneAsyncContextMap(keyTwo, valueTwo);
+                return new OneContextMap(keyTwo, valueTwo);
             }
             return null;
         }
@@ -715,13 +714,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final TwoAsyncContextMap that = (TwoAsyncContextMap) o;
+            final TwoContextMap that = (TwoContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
                     keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo);
         }
     }
 
-    private static final class ThreeAsyncContextMap implements CopyAsyncContextMap {
+    private static final class ThreeContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
@@ -735,9 +734,9 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         private final Object valueThree;
 
-        ThreeAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
-                             final Key<?> keyTwo, @Nullable final Object valueTwo,
-                             final Key<?> keyThree, @Nullable final Object valueThree) {
+        ThreeContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                        final Key<?> keyTwo, @Nullable final Object valueTwo,
+                        final Key<?> keyThree, @Nullable final Object valueThree) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -793,37 +792,37 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (keyOne.equals(key)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                        new ThreeContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
                         (T) valueOne : owner.put(key, value);
             }
             if (keyTwo.equals(key)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                        new ThreeContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             if (keyThree.equals(key)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                        new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                         (T) valueThree : owner.put(key, value);
             }
             return mapUpdater.compareAndSet(owner, this,
-                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                     null : owner.put(key, value);
         }
 
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (keyOne.equals(key)) {
                 if (valueOne == null) {
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                            new ThreeContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueOne;
@@ -831,7 +830,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (keyTwo.equals(key)) {
                 if (valueTwo == null) {
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                            new ThreeContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueTwo;
@@ -839,13 +838,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (keyThree.equals(key)) {
                 if (valueThree == null) {
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                            new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueThree;
             }
             return mapUpdater.compareAndSet(owner, this,
-                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                     null : owner.putIfAbsent(key, value);
         }
 
@@ -853,13 +852,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (keyOne.equals(key)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
+                            new ThreeContextMap(key, value, keyTwo, valueTwo, keyThree, valueThree)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueOne;
@@ -868,7 +867,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 if (valueTwo == null) {
                     final T value = computeFunction.apply(key);
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
+                            new ThreeContextMap(keyOne, valueOne, key, value, keyThree, valueThree)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueTwo;
@@ -877,19 +876,19 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 if (valueThree == null) {
                     final T value = computeFunction.apply(key);
                     return mapUpdater.compareAndSet(owner, this,
-                            new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
+                            new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueThree;
             }
             final T value = computeFunction.apply(key);
             return mapUpdater.compareAndSet(owner, this,
-                    new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
+                    new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             builder.addPair(keyTwo, valueTwo);
@@ -901,30 +900,30 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree)) ?
+                        new TwoContextMap(keyTwo, valueTwo, keyThree, valueThree)) ?
                         (T) valueOne : owner.remove(key);
             }
             if (key.equals(keyTwo)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree)) ?
+                        new TwoContextMap(keyOne, valueOne, keyThree, valueThree)) ?
                         (T) valueTwo : owner.remove(key);
             }
             if (key.equals(keyThree)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo)) ?
+                        new TwoContextMap(keyOne, valueOne, keyTwo, valueTwo)) ?
                         (T) valueThree : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            final CopyContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
@@ -946,27 +945,27 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+        private CopyContextMap removeAll(final int removeIndexMask) {
             if ((removeIndexMask & 0x7) == 0x7) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if ((removeIndexMask & 0x4) == 0x4) {
                 if ((removeIndexMask & 0x2) == 0x2) {
-                    return new OneAsyncContextMap(keyOne, valueOne);
+                    return new OneContextMap(keyOne, valueOne);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new OneAsyncContextMap(keyTwo, valueTwo);
+                    return new OneContextMap(keyTwo, valueTwo);
                 }
-                return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
+                return new TwoContextMap(keyOne, valueOne, keyTwo, valueTwo);
             }
             if ((removeIndexMask & 0x2) == 0x2) {
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new OneAsyncContextMap(keyThree, valueThree);
+                    return new OneContextMap(keyThree, valueThree);
                 }
-                return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
+                return new TwoContextMap(keyOne, valueOne, keyThree, valueThree);
             }
             if ((removeIndexMask & 0x1) == 0x1) {
-                return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
+                return new TwoContextMap(keyTwo, valueTwo, keyThree, valueThree);
             }
             return null;
         }
@@ -1002,14 +1001,14 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final ThreeAsyncContextMap that = (ThreeAsyncContextMap) o;
+            final ThreeContextMap that = (ThreeContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
                     keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
                     keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree);
         }
     }
 
-    private static final class FourAsyncContextMap implements CopyAsyncContextMap {
+    private static final class FourContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
@@ -1027,10 +1026,10 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         private final Object valueFour;
 
-        FourAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
-                            final Key<?> keyTwo, @Nullable final Object valueTwo,
-                            final Key<?> keyThree, @Nullable final Object valueThree,
-                            final Key<?> keyFour, @Nullable final Object valueFour) {
+        FourContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                       final Key<?> keyTwo, @Nullable final Object valueTwo,
+                       final Key<?> keyThree, @Nullable final Object valueThree,
+                       final Key<?> keyFour, @Nullable final Object valueFour) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -1089,29 +1088,29 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(key, value,
                         keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
                         (T) valueOne : owner.put(key, value);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         key, value, keyThree, valueThree, keyFour, valueFour)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             if (key.equals(keyThree)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
                         (T) valueThree : owner.put(key, value);
             }
             if (key.equals(keyFour)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                         (T) valueFour : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                     null : owner.put(key, value);
         }
@@ -1119,11 +1118,11 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(key, value,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1131,7 +1130,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             key, value, keyThree, valueThree, keyFour, valueFour)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1139,7 +1138,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1147,13 +1146,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueFour;
             }
-            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                     null : owner.putIfAbsent(key, value);
         }
@@ -1162,12 +1161,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(key, value,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(key, value,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1176,7 +1175,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             key, value, keyThree, valueThree, keyFour, valueFour)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1185,7 +1184,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1194,20 +1193,20 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueFour;
             }
             final T value = computeFunction.apply(key);
-            return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             builder.addPair(keyTwo, valueTwo);
@@ -1220,35 +1219,35 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
+                        new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
                         (T) valueOne : owner.remove(key);
             }
             if (key.equals(keyTwo)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour)) ?
+                        new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour)) ?
                         (T) valueTwo : owner.remove(key);
             }
             if (key.equals(keyThree)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour)) ?
+                        new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour)) ?
                         (T) valueThree : owner.remove(key);
             }
             if (key.equals(keyFour)) {
                 return mapUpdater.compareAndSet(owner, this,
-                        new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree)) ?
+                        new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree)) ?
                         (T) valueFour : owner.remove(key);
             }
             return null;
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            CopyContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
@@ -1272,51 +1271,51 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+        private CopyContextMap removeAll(final int removeIndexMask) {
             if ((removeIndexMask & 0xF) == 0xF) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if ((removeIndexMask & 0x8) == 0x8) {
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
-                        return new OneAsyncContextMap(keyOne, valueOne);
+                        return new OneContextMap(keyOne, valueOne);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new OneAsyncContextMap(keyTwo, valueTwo);
+                        return new OneContextMap(keyTwo, valueTwo);
                     }
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
+                    return new TwoContextMap(keyOne, valueOne, keyTwo, valueTwo);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new OneAsyncContextMap(keyThree, valueThree);
+                        return new OneContextMap(keyThree, valueThree);
                     }
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
+                    return new TwoContextMap(keyOne, valueOne, keyThree, valueThree);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
+                    return new TwoContextMap(keyTwo, valueTwo, keyThree, valueThree);
                 }
-                return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
+                return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
             }
             if ((removeIndexMask & 0x4) == 0x4) {
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new OneAsyncContextMap(keyFour, valueFour);
+                        return new OneContextMap(keyFour, valueFour);
                     }
-                    return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
+                    return new TwoContextMap(keyOne, valueOne, keyFour, valueFour);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
+                    return new TwoContextMap(keyTwo, valueTwo, keyFour, valueFour);
                 }
-                return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
+                return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
             }
             if ((removeIndexMask & 0x2) == 0x2) {
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
+                    return new TwoContextMap(keyThree, valueThree, keyFour, valueFour);
                 }
-                return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
+                return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
             }
             if ((removeIndexMask & 0x1) == 0x1) {
-                return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
+                return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
             }
             return null;
         }
@@ -1357,7 +1356,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final FourAsyncContextMap that = (FourAsyncContextMap) o;
+            final FourContextMap that = (FourContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
                     keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
                     keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
@@ -1365,7 +1364,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
     }
 
-    private static final class FiveAsyncContextMap implements CopyAsyncContextMap {
+    private static final class FiveContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
@@ -1387,11 +1386,11 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         private final Object valueFive;
 
-        FiveAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
-                            final Key<?> keyTwo, @Nullable final Object valueTwo,
-                            final Key<?> keyThree, @Nullable final Object valueThree,
-                            final Key<?> keyFour, @Nullable final Object valueFour,
-                            final Key<?> keyFive, @Nullable final Object valueFive) {
+        FiveContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                       final Key<?> keyTwo, @Nullable final Object valueTwo,
+                       final Key<?> keyThree, @Nullable final Object valueThree,
+                       final Key<?> keyFour, @Nullable final Object valueFour,
+                       final Key<?> keyFive, @Nullable final Object valueFive) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -1456,34 +1455,34 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(key, value,
                         keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueOne : owner.put(key, value);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                         key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             if (key.equals(keyThree)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueThree : owner.put(key, value);
             }
             if (key.equals(keyFour)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
                         (T) valueFour : owner.put(key, value);
             }
             if (key.equals(keyFive)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                         (T) valueFive : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
                     null : owner.put(key, value);
         }
@@ -1491,11 +1490,11 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(key, value,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1503,7 +1502,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1511,7 +1510,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1519,7 +1518,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1527,13 +1526,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyFive)) {
                 if (valueFive == null) {
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueFive;
             }
-            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
                     null : owner.putIfAbsent(key, value);
         }
@@ -1542,12 +1541,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(key, value,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(key, value,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1556,7 +1555,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             key, value, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1565,7 +1564,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1574,7 +1573,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -1583,20 +1582,20 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyFive)) {
                 if (valueFive == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
                 return (T) valueFive;
             }
             final T value = computeFunction.apply(key);
-            return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             builder.addPair(keyTwo, valueTwo);
@@ -1610,30 +1609,30 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                    final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                    final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueOne : owner.remove(key);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueTwo : owner.remove(key);
             }
             if (key.equals(keyThree)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueThree : owner.remove(key);
             }
             if (key.equals(keyFour)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive)) ?
                         (T) valueFour : owner.remove(key);
             }
             if (key.equals(keyFive)) {
-                return mapUpdater.compareAndSet(owner, this, new FourAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FourContextMap(keyOne, valueOne,
                         keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour)) ?
                         (T) valueFive : owner.remove(key);
             }
@@ -1641,9 +1640,9 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            final CopyContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
@@ -1669,104 +1668,104 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+        private CopyContextMap removeAll(final int removeIndexMask) {
             if ((removeIndexMask & 0x1F) == 0x1F) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if ((removeIndexMask & 0x10) == 0x10) {
                 if ((removeIndexMask & 0x8) == 0x8) {
                     if ((removeIndexMask & 0x4) == 0x4) {
                         if ((removeIndexMask & 0x2) == 0x2) {
-                            return new OneAsyncContextMap(keyOne, valueOne);
+                            return new OneContextMap(keyOne, valueOne);
                         }
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new OneAsyncContextMap(keyTwo, valueTwo);
+                            return new OneContextMap(keyTwo, valueTwo);
                         }
-                        return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
+                        return new TwoContextMap(keyOne, valueOne, keyTwo, valueTwo);
                     }
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new OneAsyncContextMap(keyThree, valueThree);
+                            return new OneContextMap(keyThree, valueThree);
                         }
-                        return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
+                        return new TwoContextMap(keyOne, valueOne, keyThree, valueThree);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
+                        return new TwoContextMap(keyTwo, valueTwo, keyThree, valueThree);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
+                    return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
                 }
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new OneAsyncContextMap(keyFour, valueFour);
+                            return new OneContextMap(keyFour, valueFour);
                         }
-                        return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
+                        return new TwoContextMap(keyOne, valueOne, keyFour, valueFour);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
+                        return new TwoContextMap(keyTwo, valueTwo, keyFour, valueFour);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
+                    return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
+                        return new TwoContextMap(keyThree, valueThree, keyFour, valueFour);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
+                    return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
+                    return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
                 }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour);
             }
             if ((removeIndexMask & 0x8) == 0x8) {
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new OneAsyncContextMap(keyFive, valueFive);
+                            return new OneContextMap(keyFive, valueFive);
                         }
-                        return new TwoAsyncContextMap(keyOne, valueOne, keyFive, valueFive);
+                        return new TwoContextMap(keyOne, valueOne, keyFive, valueFive);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive);
+                        return new TwoContextMap(keyTwo, valueTwo, keyFive, valueFive);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
+                    return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyThree, valueThree, keyFive, valueFive);
+                        return new TwoContextMap(keyThree, valueThree, keyFive, valueFive);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
+                    return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
+                    return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
                 }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFive, valueFive);
             }
             if ((removeIndexMask & 0x4) == 0x4) {
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new TwoAsyncContextMap(keyFour, valueFour, keyFive, valueFive);
+                        return new TwoContextMap(keyFour, valueFour, keyFive, valueFive);
                     }
-                    return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
+                    return new ThreeContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
+                    return new ThreeContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
                 }
-                return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
+                return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                         keyFive, valueFive);
             }
             if ((removeIndexMask & 0x2) == 0x2) {
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour,
+                    return new ThreeContextMap(keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
                 }
-                return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
+                return new FourContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive);
             }
             if ((removeIndexMask & 0x1) == 0x1) {
-                return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
+                return new FourContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive);
             }
             return null;
@@ -1813,7 +1812,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final FiveAsyncContextMap that = (FiveAsyncContextMap) o;
+            final FiveContextMap that = (FiveContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
                     keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
                     keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
@@ -1822,7 +1821,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
     }
 
-    private static final class SixAsyncContextMap implements CopyAsyncContextMap {
+    private static final class SixContextMap implements CopyContextMap {
 
         private final Key<?> keyOne;
         @Nullable
@@ -1848,12 +1847,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         private final Object valueSix;
 
-        SixAsyncContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
-                           final Key<?> keyTwo, @Nullable final Object valueTwo,
-                           final Key<?> keyThree, @Nullable final Object valueThree,
-                           final Key<?> keyFour, @Nullable final Object valueFour,
-                           final Key<?> keyFive, @Nullable final Object valueFive,
-                           final Key<?> keySix, @Nullable final Object valueSix) {
+        SixContextMap(final Key<?> keyOne, @Nullable final Object valueOne,
+                      final Key<?> keyTwo, @Nullable final Object valueTwo,
+                      final Key<?> keyThree, @Nullable final Object valueThree,
+                      final Key<?> keyFour, @Nullable final Object valueFour,
+                      final Key<?> keyFive, @Nullable final Object valueFive,
+                      final Key<?> keySix, @Nullable final Object valueSix) {
             this.keyOne = keyOne;
             this.valueOne = valueOne;
             this.keyTwo = keyTwo;
@@ -1922,39 +1921,39 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(key, value, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueOne : owner.put(key, value);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, key, value,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueTwo : owner.put(key, value);
             }
             if (key.equals(keyThree)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueThree : owner.put(key, value);
             }
             if (key.equals(keyFour)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueFour : owner.put(key, value);
             }
             if (key.equals(keyFive)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
                         (T) valueFive : owner.put(key, value);
             }
             if (key.equals(keySix)) {
-                return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, key, value)) ?
                         (T) valueSix : owner.put(key, value);
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
                     key, value)) ?
                     null : owner.put(key, value);
@@ -1963,11 +1962,11 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(key, value, keyTwo, valueTwo,
                             keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1975,7 +1974,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, key, value,
                             keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1983,7 +1982,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1991,7 +1990,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -1999,7 +1998,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keyFive)) {
                 if (valueFive == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
                             null : owner.putIfAbsent(key, value);
                 }
@@ -2007,14 +2006,14 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
             if (key.equals(keySix)) {
                 if (valueSix == null) {
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
                             key, value)) ?
                             null : owner.putIfAbsent(key, value);
                 }
                 return (T) valueSix;
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
                     key, value)) ?
                     null : owner.putIfAbsent(key, value);
@@ -2024,12 +2023,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
                 if (valueOne == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(key, value, keyTwo, valueTwo,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(key, value, keyTwo, valueTwo,
                             keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -2038,7 +2037,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyTwo)) {
                 if (valueTwo == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne, key, value,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne, key, value,
                             keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -2047,7 +2046,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyThree)) {
                 if (valueThree == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, key, value, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -2056,7 +2055,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyFour)) {
                 if (valueFour == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, key, value, keyFive, valueFive, keySix, valueSix)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -2065,7 +2064,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keyFive)) {
                 if (valueFive == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, key, value, keySix, valueSix)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
                 }
@@ -2074,7 +2073,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (key.equals(keySix)) {
                 if (valueSix == null) {
                     final T value = computeFunction.apply(key);
-                    return mapUpdater.compareAndSet(owner, this, new SixAsyncContextMap(keyOne, valueOne,
+                    return mapUpdater.compareAndSet(owner, this, new SixContextMap(keyOne, valueOne,
                             keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
                             key, value)) ?
                             value : owner.computeIfAbsent(key, computeFunction);
@@ -2082,14 +2081,14 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 return (T) valueSix;
             }
             final T value = computeFunction.apply(key);
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(keyOne, valueOne,
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(keyOne, valueOne,
                     keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix,
                     key, value)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPair(keyOne, valueOne);
             builder.addPair(keyTwo, valueTwo);
@@ -2104,35 +2103,35 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             if (key.equals(keyOne)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueOne : owner.remove(key);
             }
             if (key.equals(keyTwo)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueTwo : owner.remove(key);
             }
             if (key.equals(keyThree)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyFour, valueFour, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueThree : owner.remove(key);
             }
             if (key.equals(keyFour)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, keyFive, valueFive, keySix, valueSix)) ?
                         (T) valueFour : owner.remove(key);
             }
             if (key.equals(keyFive)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keySix, valueSix)) ?
                         (T) valueFive : owner.remove(key);
             }
             if (key.equals(keySix)) {
-                return mapUpdater.compareAndSet(owner, this, new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo,
+                return mapUpdater.compareAndSet(owner, this, new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo,
                         keyThree, valueThree, keyFour, valueFour, keyFive, valueFive)) ?
                         (T) valueSix : owner.remove(key);
             }
@@ -2140,9 +2139,9 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
-            final CopyAsyncContextMap newMap = removeAll(removeIndexMask(keys));
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
+            final CopyContextMap newMap = removeAll(removeIndexMask(keys));
             if (newMap == null) {
                 return false;
             }
@@ -2170,107 +2169,107 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final int removeIndexMask) {
+        private CopyContextMap removeAll(final int removeIndexMask) {
             if ((removeIndexMask & 0x3F) == 0x3F) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if ((removeIndexMask & 0x20) == 0x20) {
                 if ((removeIndexMask & 0x10) == 0x10) {
                     if ((removeIndexMask & 0x8) == 0x8) {
                         if ((removeIndexMask & 0x4) == 0x4) {
                             if ((removeIndexMask & 0x2) == 0x2) {
-                                return new OneAsyncContextMap(keyOne, valueOne);
+                                return new OneContextMap(keyOne, valueOne);
                             }
                             if ((removeIndexMask & 0x1) == 0x1) {
-                                return new OneAsyncContextMap(keyTwo, valueTwo);
+                                return new OneContextMap(keyTwo, valueTwo);
                             }
-                            return new TwoAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo);
+                            return new TwoContextMap(keyOne, valueOne, keyTwo, valueTwo);
                         }
                         if ((removeIndexMask & 0x2) == 0x2) {
                             if ((removeIndexMask & 0x1) == 0x1) {
-                                return new OneAsyncContextMap(keyThree, valueThree);
+                                return new OneContextMap(keyThree, valueThree);
                             }
-                            return new TwoAsyncContextMap(keyOne, valueOne, keyThree, valueThree);
+                            return new TwoContextMap(keyOne, valueOne, keyThree, valueThree);
                         }
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree);
+                            return new TwoContextMap(keyTwo, valueTwo, keyThree, valueThree);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
+                        return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree);
                     }
                     if ((removeIndexMask & 0x4) == 0x4) {
                         if ((removeIndexMask & 0x2) == 0x2) {
                             if ((removeIndexMask & 0x1) == 0x1) {
-                                return new OneAsyncContextMap(keyFour, valueFour);
+                                return new OneContextMap(keyFour, valueFour);
                             }
-                            return new TwoAsyncContextMap(keyOne, valueOne, keyFour, valueFour);
+                            return new TwoContextMap(keyOne, valueOne, keyFour, valueFour);
                         }
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour);
+                            return new TwoContextMap(keyTwo, valueTwo, keyFour, valueFour);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
+                        return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour);
                     }
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyThree, valueThree, keyFour, valueFour);
+                            return new TwoContextMap(keyThree, valueThree, keyFour, valueFour);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
+                        return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keyFour, valueFour);
                 }
                 if ((removeIndexMask & 0x8) == 0x8) {
                     if ((removeIndexMask & 0x4) == 0x4) {
                         if ((removeIndexMask & 0x2) == 0x2) {
                             if ((removeIndexMask & 0x1) == 0x1) {
-                                return new OneAsyncContextMap(keyFive, valueFive);
+                                return new OneContextMap(keyFive, valueFive);
                             }
-                            return new TwoAsyncContextMap(keyOne, valueOne, keyFive, valueFive);
+                            return new TwoContextMap(keyOne, valueOne, keyFive, valueFive);
                         }
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive);
+                            return new TwoContextMap(keyTwo, valueTwo, keyFive, valueFive);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
+                        return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive);
                     }
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyThree, valueThree, keyFive, valueFive);
+                            return new TwoContextMap(keyThree, valueThree, keyFive, valueFive);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
+                        return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyFour, valueFour, keyFive, valueFive);
+                            return new TwoContextMap(keyFour, valueFour, keyFive, valueFive);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
+                        return new ThreeContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                             keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive);
+                        return new ThreeContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
+                    return new FourContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
+                    return new FourContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                             keyFive, valueFive);
                 }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                return new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour, keyFive, valueFive);
             }
             if ((removeIndexMask & 0x10) == 0x10) {
@@ -2278,107 +2277,107 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                     if ((removeIndexMask & 0x4) == 0x4) {
                         if ((removeIndexMask & 0x2) == 0x2) {
                             if ((removeIndexMask & 0x1) == 0x1) {
-                                return new OneAsyncContextMap(keySix, valueSix);
+                                return new OneContextMap(keySix, valueSix);
                             }
-                            return new TwoAsyncContextMap(keyOne, valueOne, keySix, valueSix);
+                            return new TwoContextMap(keyOne, valueOne, keySix, valueSix);
                         }
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyTwo, valueTwo, keySix, valueSix);
+                            return new TwoContextMap(keyTwo, valueTwo, keySix, valueSix);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keySix, valueSix);
+                        return new ThreeContextMap(keyOne, valueOne, keyTwo, valueTwo, keySix, valueSix);
                     }
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyThree, valueThree, keySix, valueSix);
+                            return new TwoContextMap(keyThree, valueThree, keySix, valueSix);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keySix, valueSix);
+                        return new ThreeContextMap(keyOne, valueOne, keyThree, valueThree, keySix, valueSix);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keySix, valueSix);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyThree, valueThree, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyFour, valueFour, keySix, valueSix);
+                            return new TwoContextMap(keyFour, valueFour, keySix, valueSix);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keySix, valueSix);
+                        return new ThreeContextMap(keyOne, valueOne, keyFour, valueFour, keySix, valueSix);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keySix, valueSix);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyFour, valueFour, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keySix, valueSix);
+                        return new ThreeContextMap(keyThree, valueThree, keyFour, valueFour, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
+                    return new FourContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
+                    return new FourContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                             keySix, valueSix);
                 }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                return new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFour, valueFour, keySix, valueSix);
             }
             if ((removeIndexMask & 0x8) == 0x8) {
                 if ((removeIndexMask & 0x4) == 0x4) {
                     if ((removeIndexMask & 0x2) == 0x2) {
                         if ((removeIndexMask & 0x1) == 0x1) {
-                            return new TwoAsyncContextMap(keyFive, valueFive, keySix, valueSix);
+                            return new TwoContextMap(keyFive, valueFive, keySix, valueSix);
                         }
-                        return new ThreeAsyncContextMap(keyOne, valueOne, keyFive, valueFive, keySix, valueSix);
+                        return new ThreeContextMap(keyOne, valueOne, keyFive, valueFive, keySix, valueSix);
                     }
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyTwo, valueTwo, keyFive, valueFive, keySix, valueSix);
+                        return new ThreeContextMap(keyTwo, valueTwo, keyFive, valueFive, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive,
+                    return new FourContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyThree, valueThree, keyFive, valueFive, keySix, valueSix);
+                        return new ThreeContextMap(keyThree, valueThree, keyFive, valueFive, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive,
+                    return new FourContextMap(keyOne, valueOne, keyThree, valueThree, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new FourAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive,
+                    return new FourContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFive, valueFive,
                             keySix, valueSix);
                 }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
+                return new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo, keyThree, valueThree,
                         keyFive, valueFive, keySix, valueSix);
             }
             if ((removeIndexMask & 0x4) == 0x4) {
                 if ((removeIndexMask & 0x2) == 0x2) {
                     if ((removeIndexMask & 0x1) == 0x1) {
-                        return new ThreeAsyncContextMap(keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
+                        return new ThreeContextMap(keyFour, valueFour, keyFive, valueFive, keySix, valueSix);
                     }
-                    return new FourAsyncContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive,
+                    return new FourContextMap(keyOne, valueOne, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
                 }
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new FourAsyncContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive,
+                    return new FourContextMap(keyTwo, valueTwo, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
                 }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
+                return new FiveContextMap(keyOne, valueOne, keyTwo, valueTwo, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
             }
             if ((removeIndexMask & 0x2) == 0x2) {
                 if ((removeIndexMask & 0x1) == 0x1) {
-                    return new FourAsyncContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
+                    return new FourContextMap(keyThree, valueThree, keyFour, valueFour, keyFive, valueFive,
                             keySix, valueSix);
                 }
-                return new FiveAsyncContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
+                return new FiveContextMap(keyOne, valueOne, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
             }
             if ((removeIndexMask & 0x1) == 0x1) {
-                return new FiveAsyncContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
+                return new FiveContextMap(keyTwo, valueTwo, keyThree, valueThree, keyFour, valueFour,
                         keyFive, valueFive, keySix, valueSix);
             }
             return null;
@@ -2430,7 +2429,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final SixAsyncContextMap that = (SixAsyncContextMap) o;
+            final SixContextMap that = (SixContextMap) o;
             return keyOne.equals(that.keyOne) && Objects.equals(valueOne, that.valueOne) &&
                     keyTwo.equals(that.keyTwo) && Objects.equals(valueTwo, that.valueTwo) &&
                     keyThree.equals(that.keyThree) && Objects.equals(valueThree, that.valueThree) &&
@@ -2440,13 +2439,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
     }
 
-    private static final class SevenOrMoreAsyncContextMap implements CopyAsyncContextMap {
+    private static final class SevenOrMoreContextMap implements CopyContextMap {
         /**
          * Array of <[i] = key, [i+1] = value> pairs.
          */
         private final Object[] context;
 
-        SevenOrMoreAsyncContextMap(final Object... context) {
+        SevenOrMoreContextMap(final Object... context) {
             assert context.length >= 2;
             assert context.length % 2 == 0;
             this.context = context;
@@ -2514,8 +2513,8 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T put(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             final int i = findIndex(key);
             final Object returnValue;
             final Object[] context;
@@ -2531,15 +2530,15 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 arraycopy(this.context, 0, context, 0, this.context.length);
                 context[i + 1] = value;
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(context)) ?
                     (T) returnValue : owner.put(key, value);
         }
 
         @Nullable
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T putIfAbsent(final Key<T> key, @Nullable final T value, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             final int i = findIndex(key);
             final Object[] context;
             if (i < 0) {
@@ -2556,7 +2555,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 arraycopy(this.context, 0, context, 0, this.context.length);
                 context[i + 1] = value;
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(context)) ?
                     null : owner.putIfAbsent(key, value);
         }
 
@@ -2564,8 +2563,8 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction,
-                     final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+                     final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             final int i = findIndex(key);
             final T value;
             final Object[] context;
@@ -2585,12 +2584,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 arraycopy(this.context, 0, context, 0, this.context.length);
                 context[i + 1] = value;
             }
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(context)) ?
                     value : owner.computeIfAbsent(key, computeFunction);
         }
 
         @Override
-        public CopyAsyncContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
+        public CopyContextMap putAll(final int mapSize, final Consumer<PutAllBuilder> forEach) {
             final PutAllBuilder builder = new PutAllBuilder(size() + mapSize);
             builder.addPairs(this.context);
             forEach.accept(builder);
@@ -2599,8 +2598,8 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
 
         @Nullable
         @Override
-        public <T> T remove(final Key<T> key, final CopyOnWriteAsyncContextMap owner,
-                        final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public <T> T remove(final Key<T> key, final CopyOnWriteContextMap owner,
+                        final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             int i = findIndex(key);
             if (i < 0) {
                 return null;
@@ -2613,13 +2612,13 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             final Object[] context = new Object[this.context.length - 2];
             arraycopy(this.context, 0, context, 0, i);
             arraycopy(this.context, i + 2, context, i, this.context.length - i - 2);
-            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreAsyncContextMap(context)) ?
+            return mapUpdater.compareAndSet(owner, this, new SevenOrMoreContextMap(context)) ?
                     value : owner.remove(key);
         }
 
         @Override
-        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteAsyncContextMap owner,
-                     final AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
+        public boolean removeAll(final Iterable<Key<?>> keys, final CopyOnWriteContextMap owner,
+                     final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater) {
             final GrowableIntArray indexesToRemove = new GrowableIntArray(
                     keys instanceof Collection ? ((Collection<Key<?>>) keys).size() : 4);
             for (ContextMap.Key<?> k : keys) {
@@ -2629,7 +2628,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 }
             }
 
-            final CopyAsyncContextMap newMap = removeAll(indexesToRemove);
+            final CopyContextMap newMap = removeAll(indexesToRemove);
             if (newMap == null) {
                 return false;
             }
@@ -2637,9 +2636,9 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
         }
 
         @Nullable
-        private CopyAsyncContextMap removeAll(final GrowableIntArray indexesToRemove) {
+        private CopyContextMap removeAll(final GrowableIntArray indexesToRemove) {
             if (size() == indexesToRemove.count()) {
-                return EmptyAsyncContextMap.INSTANCE;
+                return EmptyContextMap.INSTANCE;
             }
             if (indexesToRemove.count() == 0) {
                 return null;
@@ -2658,55 +2657,55 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 }
             }
             assert newContextIndex == context.length;
-            return new SevenOrMoreAsyncContextMap(context);
+            return new SevenOrMoreContextMap(context);
         }
 
-        private CopyAsyncContextMap removeBelowSeven(int i) {
+        private CopyContextMap removeBelowSeven(int i) {
             switch (i) {
                 case 0:
-                    return new SixAsyncContextMap((Key<?>) context[2], context[3],
+                    return new SixContextMap((Key<?>) context[2], context[3],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[6], context[7],
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11],
                             (Key<?>) context[12], context[13]);
                 case 2:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[6], context[7],
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11],
                             (Key<?>) context[12], context[13]);
                 case 4:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[2], context[3],
                             (Key<?>) context[6], context[7],
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11],
                             (Key<?>) context[12], context[13]);
                 case 6:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[2], context[3],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11],
                             (Key<?>) context[12], context[13]);
                 case 8:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[2], context[3],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[6], context[7],
                             (Key<?>) context[10], context[11],
                             (Key<?>) context[12], context[13]);
                 case 10:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[2], context[3],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[6], context[7],
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[12], context[13]);
                 case 12:
-                    return new SixAsyncContextMap((Key<?>) context[0], context[1],
+                    return new SixContextMap((Key<?>) context[0], context[1],
                             (Key<?>) context[2], context[3],
                             (Key<?>) context[4], context[5],
                             (Key<?>) context[6], context[7],
@@ -2717,12 +2716,12 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             }
         }
 
-        private CopyAsyncContextMap removeBelowSeven(final GrowableIntArray indexesToRemove) {
+        private CopyContextMap removeBelowSeven(final GrowableIntArray indexesToRemove) {
             switch (size() - indexesToRemove.count()) {
                 case 1:
                     for (int i = 0; i < this.context.length; i += 2) {
                         if (indexesToRemove.isValueAbsent(i)) {
-                            return new OneAsyncContextMap((Key<?>) context[i], context[i + 1]);
+                            return new OneContextMap((Key<?>) context[i], context[i + 1]);
                         }
                     }
                     break;
@@ -2733,7 +2732,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                             if (keepI1 < 0) {
                                 keepI1 = i;
                             } else {
-                                return new TwoAsyncContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
+                                return new TwoContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
                                         (Key<?>) context[i], context[i + 1]);
                             }
                         }
@@ -2750,7 +2749,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                             } else if (keepI2 < 0) {
                                 keepI2 = i;
                             } else {
-                                return new ThreeAsyncContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
+                                return new ThreeContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
                                         (Key<?>) context[keepI2], context[keepI2 + 1],
                                         (Key<?>) context[i], context[i + 1]);
                             }
@@ -2771,7 +2770,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                             } else if (keepI3 < 0) {
                                 keepI3 = i;
                             } else {
-                                return new FourAsyncContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
+                                return new FourContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
                                         (Key<?>) context[keepI2], context[keepI2 + 1],
                                         (Key<?>) context[keepI3], context[keepI3 + 1],
                                         (Key<?>) context[i], context[i + 1]);
@@ -2796,7 +2795,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                             } else if (keepI4 < 0) {
                                 keepI4 = i;
                             } else {
-                                return new FiveAsyncContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
+                                return new FiveContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
                                         (Key<?>) context[keepI2], context[keepI2 + 1],
                                         (Key<?>) context[keepI3], context[keepI3 + 1],
                                         (Key<?>) context[keepI4], context[keepI4 + 1],
@@ -2825,7 +2824,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                             } else if (keepI5 < 0) {
                                 keepI5 = i;
                             } else {
-                                return new SixAsyncContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
+                                return new SixContextMap((Key<?>) context[keepI1], context[keepI1 + 1],
                                         (Key<?>) context[keepI2], context[keepI2 + 1],
                                         (Key<?>) context[keepI3], context[keepI3 + 1],
                                         (Key<?>) context[keepI4], context[keepI4 + 1],
@@ -2862,7 +2861,7 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final SevenOrMoreAsyncContextMap that = (SevenOrMoreAsyncContextMap) o;
+            final SevenOrMoreContextMap that = (SevenOrMoreContextMap) o;
             return Arrays.equals(context, that.context);
         }
 
@@ -2939,27 +2938,27 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
             return addPair(key, value) < pairs.length;
         }
 
-        CopyAsyncContextMap build() {
+        CopyContextMap build() {
             assert index % 2 == 0;
             if (index <= 12) {
                 switch (index) {
                     case 0:
-                        return EmptyAsyncContextMap.INSTANCE;
+                        return EmptyContextMap.INSTANCE;
                     case 2:
-                        return new OneAsyncContextMap((Key<?>) pairs[0], pairs[1]);
+                        return new OneContextMap((Key<?>) pairs[0], pairs[1]);
                     case 4:
-                        return new TwoAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3]);
+                        return new TwoContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3]);
                     case 6:
-                        return new ThreeAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                        return new ThreeContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
                                 (Key<?>) pairs[4], pairs[5]);
                     case 8:
-                        return new FourAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                        return new FourContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
                                 (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7]);
                     case 10:
-                        return new FiveAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                        return new FiveContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
                                 (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9]);
                     case 12:
-                        return new SixAsyncContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
+                        return new SixContextMap((Key<?>) pairs[0], pairs[1], (Key<?>) pairs[2], pairs[3],
                                 (Key<?>) pairs[4], pairs[5], (Key<?>) pairs[6], pairs[7], (Key<?>) pairs[8], pairs[9],
                                 (Key<?>) pairs[10], pairs[11]);
                     default:
@@ -2968,9 +2967,9 @@ final class CopyOnWriteAsyncContextMap implements ContextMap {
                 }
             }
             if (index == pairs.length) {
-                return new SevenOrMoreAsyncContextMap(pairs);
+                return new SevenOrMoreContextMap(pairs);
             }
-            return new SevenOrMoreAsyncContextMap(Arrays.copyOf(pairs, index));
+            return new SevenOrMoreContextMap(Arrays.copyOf(pairs, index));
         }
     }
 }

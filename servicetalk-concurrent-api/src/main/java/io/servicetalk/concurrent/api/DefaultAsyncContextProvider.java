@@ -40,11 +40,6 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         // singleton
     }
 
-    @Override
-    public AsyncContextMap contextMap() {
-        return new AsyncContextMapToContextMapAdapter(context());
-    }
-
     @Nonnull
     @Override
     public ContextMap context() {

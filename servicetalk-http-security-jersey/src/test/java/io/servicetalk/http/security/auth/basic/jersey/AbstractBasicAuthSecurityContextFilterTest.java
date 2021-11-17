@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -108,30 +107,24 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         }
     }
 
-    private static final AsyncContextMap.Key<BasicUserInfo> TEST_USER_INFO_KEY =
-            AsyncContextMap.Key.newKey("basicUserInfo");
     private static final ContextMap.Key<BasicUserInfo> TEST_USER_INFO_AC_KEY =
             ContextMap.Key.newKey("basicUserInfo", BasicUserInfo.class);
 
     private ServerContext serverContext;
     private BlockingHttpClient httpClient;
 
-    void setUp(final boolean withUserInfo, final boolean withNewKey) throws Exception {
+    void setUp(final boolean withUserInfo) throws Exception {
         final Builder<BasicUserInfo> builder = new Builder<>(CREDENTIALS_VERIFIER, "test-realm");
         if (withUserInfo) {
-            builder.userInfoKey(TEST_USER_INFO_KEY)
-                    .userInfoAsyncContextKey(TEST_USER_INFO_AC_KEY);
+            builder.userInfoAsyncContextKey(TEST_USER_INFO_AC_KEY);
         }
         serverContext = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(builder.buildServer())
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder()
-                        .buildStreaming(withNewKey ? application(withUserInfo ? TEST_USER_INFO_AC_KEY : null)
-                                : application(withUserInfo ? TEST_USER_INFO_KEY : null)));
+                        .buildStreaming(application(withUserInfo ? TEST_USER_INFO_AC_KEY : null)));
 
         httpClient = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlocking();
     }
-
-    protected abstract Application application(@Nullable AsyncContextMap.Key<BasicUserInfo> userInfoKey);
 
     protected abstract Application application(@Nullable ContextMap.Key<BasicUserInfo> userInfoKey);
 

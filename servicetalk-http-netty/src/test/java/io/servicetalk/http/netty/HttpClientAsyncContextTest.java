@@ -17,7 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -41,6 +43,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -48,16 +51,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-abstract class HttpClientAsyncContextTest {
+class HttpClientAsyncContextTest {
+    private static final ContextMap.Key<CharSequence> K1 = newKey("k1", CharSequence.class);
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
-
-    abstract void putIntoAsyncContext(CharSequence value);
-
-    @Nullable
-    abstract CharSequence getFromAsyncContext();
-
-    abstract String keyToString();
 
     @Test
     void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
@@ -69,7 +66,7 @@ abstract class HttpClientAsyncContextTest {
         contextPreservedOverFilterBoundaries(true);
     }
 
-    private void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
+    private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
@@ -81,7 +78,7 @@ abstract class HttpClientAsyncContextTest {
     }
 
     @Nonnull
-    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
             final boolean useImmediate, final Queue<Throwable> errorQueue, final ServerContext serverContext) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
                 serverHostAndPort(serverContext))
@@ -102,15 +99,15 @@ abstract class HttpClientAsyncContextTest {
         response.messageBody().ignoreElements().toFuture().get();
     }
 
-    private void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        CharSequence k1Value = getFromAsyncContext();
+    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
+        CharSequence k1Value = AsyncContext.get(K1);
         if (requestId != null && !requestId.equals(k1Value)) {
-            errorQueue.add(new AssertionError("AsyncContext[" + keyToString() + "]=[" + k1Value +
+            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
                     "], expected=[" + requestId + "]"));
         }
     }
 
-    private final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
+    private static final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
         private final Queue<Throwable> errorQueue;
 
         TestStreamingHttpClientFilter(final FilterableStreamingHttpClient delegate,
@@ -128,7 +125,7 @@ abstract class HttpClientAsyncContextTest {
             // put this value in AsyncContext.
             CharSequence hdrRequestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (hdrRequestId != null) {
-                putIntoAsyncContext(hdrRequestId);
+                AsyncContext.put(K1, hdrRequestId);
                 request.headers().add(CONSUMED_REQUEST_ID_HEADER, hdrRequestId);
             } else {
                 hdrRequestId = request.headers().getAndRemove(CONSUMED_REQUEST_ID_HEADER);

@@ -16,7 +16,6 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.context.api.ContextMap;
 
 import java.security.Principal;
@@ -144,28 +143,7 @@ public final class BasicAuthSecurityContextFilters {
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
-                return new GlobalBindingBasicAuthSecurityContextFilter<>(userInfoKey, null, securityContextFunction());
-            }
-        };
-    }
-
-    /**
-     * Creates a new {@link UserInfoBuilder} instance for building a {@link ContainerRequestFilter} that needs to be
-     * globally bound to the JAX-RS {@link Application}.
-     *
-     * @param userInfoKey the {@link AsyncContextMap.Key} to use to get the user info from {@link AsyncContext}
-     * @param <UserInfo> the type of user info object expected in {@link AsyncContext}'s {@code userInfoKey} entry
-     * @return a new {@link UserInfoBuilder} instance
-     * @deprecated Use {@link #forGlobalBinding(ContextMap.Key)}
-     */
-    @Deprecated
-    public static <UserInfo> UserInfoBuilder<UserInfo> forGlobalBinding(
-            final AsyncContextMap.Key<UserInfo> userInfoKey) {
-        requireNonNull(userInfoKey);
-        return new UserInfoBuilder<UserInfo>() {
-            @Override
-            public ContainerRequestFilter build() {
-                return new GlobalBindingBasicAuthSecurityContextFilter<>(null, userInfoKey, securityContextFunction());
+                return new GlobalBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction());
             }
         };
     }
@@ -180,7 +158,7 @@ public final class BasicAuthSecurityContextFilters {
         return new NoUserInfoBuilder() {
             @Override
             public ContainerRequestFilter build() {
-                return new GlobalBindingBasicAuthSecurityContextFilter<Void>(null, null,
+                return new GlobalBindingBasicAuthSecurityContextFilter<Void>(null,
                         asSecurityContextBiFunction(securityContextFunction()));
             }
         };
@@ -199,27 +177,7 @@ public final class BasicAuthSecurityContextFilters {
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
-                return new NameBindingBasicAuthSecurityContextFilter<>(userInfoKey, null, securityContextFunction());
-            }
-        };
-    }
-
-    /**
-     * Creates a new {@link UserInfoBuilder} instance for building a {@link ContainerRequestFilter} that needs to be
-     * explicitly bound to resources via the {@link BasicAuthenticated} annotation.
-     *
-     * @param userInfoKey the {@link AsyncContextMap.Key} to use to get the user info from {@link AsyncContext}
-     * @param <UserInfo> the type of user info object expected in {@link AsyncContext}'s {@code userInfoKey} entry
-     * @return a new {@link UserInfoBuilder} instance
-     * @deprecated Use {@link #forNameBinding(ContextMap.Key)}
-     */
-    @Deprecated
-    public static <UserInfo> UserInfoBuilder<UserInfo> forNameBinding(final AsyncContextMap.Key<UserInfo> userInfoKey) {
-        requireNonNull(userInfoKey);
-        return new UserInfoBuilder<UserInfo>() {
-            @Override
-            public ContainerRequestFilter build() {
-                return new NameBindingBasicAuthSecurityContextFilter<>(null, userInfoKey, securityContextFunction());
+                return new NameBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction());
             }
         };
     }
@@ -234,7 +192,7 @@ public final class BasicAuthSecurityContextFilters {
         return new NoUserInfoBuilder() {
             @Override
             public ContainerRequestFilter build() {
-                return new NameBindingBasicAuthSecurityContextFilter<Void>(null, null,
+                return new NameBindingBasicAuthSecurityContextFilter<Void>(null,
                         asSecurityContextBiFunction(securityContextFunction()));
             }
         };

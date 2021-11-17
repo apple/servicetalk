@@ -26,16 +26,15 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-// FIXME: 0.42 - rename to ConcurrentContextMap
-final class ConcurrentAsyncContextMap implements ContextMap {
+final class ConcurrentContextMap implements ContextMap {
 
     private final ConcurrentMap<Key<?>, Object> theMap;
 
-    ConcurrentAsyncContextMap() {
+    ConcurrentContextMap() {
         theMap = new ConcurrentHashMap<>(4); // start with a smaller table
     }
 
-    private ConcurrentAsyncContextMap(ConcurrentAsyncContextMap rhs) {
+    private ConcurrentContextMap(ConcurrentContextMap rhs) {
         theMap = new ConcurrentHashMap<>(rhs.theMap);
     }
 
@@ -105,8 +104,8 @@ final class ConcurrentAsyncContextMap implements ContextMap {
 
     @Override
     public void putAll(final ContextMap map) {
-        if (map instanceof ConcurrentAsyncContextMap) {
-            final ConcurrentAsyncContextMap ccm = (ConcurrentAsyncContextMap) map;
+        if (map instanceof ConcurrentContextMap) {
+            final ConcurrentContextMap ccm = (ConcurrentContextMap) map;
             theMap.putAll(ccm.theMap);
         } else {
             ContextMap.super.putAll(map);
@@ -153,7 +152,7 @@ final class ConcurrentAsyncContextMap implements ContextMap {
 
     @Override
     public ContextMap copy() {
-        return new ConcurrentAsyncContextMap(this);
+        return new ConcurrentContextMap(this);
     }
 
     @Override
@@ -164,8 +163,8 @@ final class ConcurrentAsyncContextMap implements ContextMap {
         if (!(o instanceof ContextMap)) {
             return false;
         }
-        if (o instanceof ConcurrentAsyncContextMap) {
-            return theMap.equals(((ConcurrentAsyncContextMap) o).theMap);
+        if (o instanceof ConcurrentContextMap) {
+            return theMap.equals(((ConcurrentContextMap) o).theMap);
         }
         return ContextMapUtils.equals(this, (ContextMap) o);
     }
