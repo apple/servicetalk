@@ -69,7 +69,6 @@ import static org.mockito.Mockito.when;
 
 class BasicAuthHttpServiceFilterTest {
 
-    private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
     private static final CharSequence USER_ID_AC_HEADER_NAME = newAsciiString("test-userid-ac");
     private static final CharSequence USER_ID_RC_HEADER_NAME = newAsciiString("test-userid-rc");
     private static final ContextMap.Key<BasicUserInfo> USER_INFO_AC_KEY =
@@ -226,7 +225,6 @@ class BasicAuthHttpServiceFilterTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.status());
 
-        assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
@@ -319,7 +317,6 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(UNAUTHORIZED, response.status());
         assertEquals("Basic realm=\"" + REALM_VALUE + "\", charset=\"UTF-8\"",
                                 response.headers().get(WWW_AUTHENTICATE));
-        assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
 
@@ -376,7 +373,6 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(UNAUTHORIZED, response.status());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.headers().get(WWW_AUTHENTICATE));
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
-        assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
@@ -390,7 +386,6 @@ class BasicAuthHttpServiceFilterTest {
         assertEquals(PROXY_AUTHENTICATION_REQUIRED, response.status());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.headers().get(PROXY_AUTHENTICATE));
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
-        assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_AC_HEADER_NAME));
         assertFalse(response.headers().contains(USER_ID_RC_HEADER_NAME));
     }
@@ -409,7 +404,6 @@ class BasicAuthHttpServiceFilterTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.status());
 
-        assertTrue(response.headers().contains(USER_ID_HEADER_NAME, "userId"));
         assertTrue(response.headers().contains(USER_ID_AC_HEADER_NAME, "userId"));
         assertTrue(response.headers().contains(USER_ID_RC_HEADER_NAME, "userId"));
     }
@@ -424,7 +418,6 @@ class BasicAuthHttpServiceFilterTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.status());
 
-        assertTrue(response.headers().contains(USER_ID_HEADER_NAME, "userId"));
         assertTrue(response.headers().contains(USER_ID_AC_HEADER_NAME, "userId"));
         assertTrue(response.headers().contains(USER_ID_RC_HEADER_NAME, "userId"));
     }
