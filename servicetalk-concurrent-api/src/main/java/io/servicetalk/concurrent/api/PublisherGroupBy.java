@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -41,14 +43,14 @@ final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
 
     @Override
     void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber,
-                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                         ContextMap contextMap, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new GroupBySubscriber(subscriber, queueLimit, initialCapacityForGroups, contextMap,
                 contextProvider), contextMap, contextProvider);
     }
 
     private final class GroupBySubscriber extends AbstractGroupBySubscriber<Key, T> {
         GroupBySubscriber(final Subscriber<? super GroupedPublisher<Key, T>> target, final int maxQueueSize,
-                          final int initialCapacityForGroups, final AsyncContextMap contextMap,
+                          final int initialCapacityForGroups, final ContextMap contextMap,
                           final AsyncContextProvider contextProvider) {
             super(target, maxQueueSize, initialCapacityForGroups, contextMap, contextProvider);
         }

@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
@@ -46,7 +45,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
 /**
  * A connection factory filter that sends a `CONNECT` request for https proxying.
  *
- * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
+ * @param <ResolvedAddress> The type of resolved addresses that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
 final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends FilterableStreamingHttpConnection>
@@ -60,7 +59,6 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
     @Override
     public ConnectionFactory<ResolvedAddress, C> create(final ConnectionFactory<ResolvedAddress, C> original) {
-
         return new ProxyFilter(original);
     }
 
@@ -75,10 +73,11 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                                        @Nullable final TransportObserver observer) {
             return delegate().newConnection(resolvedAddress, observer).flatMap(c -> {
                 try {
-                    // We currently only have access to a StreamingHttpRequester, which means we are forced to provide
-                    // an HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the
-                    // connection filters we use the default strategy which should offload everything to be safe.
-                    return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                    // We currently only have access to a StreamingHttpRequester, which means we are required to provide
+                    // an HttpExecutionStrategy. We use the strategy from the connection execution context which is
+                    // influenced by connection filters.
+                    HttpExecutionStrategy strategy = c.connectionContext().executionContext().executionStrategy();
+                    return c.request(strategy, c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                             .flatMap(response -> handleConnectResponse(c, response))
                             // Close recently created connection in case of any error while it connects to the proxy:
                             .onErrorResume(t -> c.closeAsync().concat(failed(t)));

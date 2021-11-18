@@ -17,8 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -51,10 +49,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class HttpClientAsyncContextTest {
-    private static final AsyncContextMap.Key<CharSequence> K1 = AsyncContextMap.Key.newKey("k1");
+abstract class HttpClientAsyncContextTest {
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
+
+    abstract void putIntoAsyncContext(CharSequence value);
+
+    @Nullable
+    abstract CharSequence getFromAsyncContext();
+
+    abstract String keyToString();
 
     @ParameterizedTest(name = "{displayName} [{index}] useImmediate={0}")
     @ValueSource(booleans = {true, false})
@@ -62,7 +66,7 @@ class HttpClientAsyncContextTest {
         contextPreservedOverFilterBoundaries(useImmediate);
     }
 
-    private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
+    private void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
@@ -74,7 +78,7 @@ class HttpClientAsyncContextTest {
     }
 
     @Nonnull
-    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
             final boolean useImmediate, final Queue<Throwable> errorQueue, final ServerContext serverContext) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
                 serverHostAndPort(serverContext))
@@ -95,15 +99,15 @@ class HttpClientAsyncContextTest {
                 .toFuture().get();
     }
 
-    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        Object k1Value = AsyncContext.get(K1);
+    private void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
+        CharSequence k1Value = getFromAsyncContext();
         if (requestId != null && !requestId.equals(k1Value)) {
-            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
+            errorQueue.add(new AssertionError("AsyncContext[" + keyToString() + "]=[" + k1Value +
                     "], expected=[" + requestId + "]"));
         }
     }
 
-    private static final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
+    private final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
         private final Queue<Throwable> errorQueue;
 
         TestStreamingHttpClientFilter(final FilterableStreamingHttpClient delegate,
@@ -121,7 +125,7 @@ class HttpClientAsyncContextTest {
             // put this value in AsyncContext.
             CharSequence hdrRequestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (hdrRequestId != null) {
-                AsyncContext.put(K1, hdrRequestId);
+                putIntoAsyncContext(hdrRequestId);
                 request.headers().add(CONSUMED_REQUEST_ID_HEADER, hdrRequestId);
             } else {
                 hdrRequestId = request.headers().getAndRemove(CONSUMED_REQUEST_ID_HEADER);

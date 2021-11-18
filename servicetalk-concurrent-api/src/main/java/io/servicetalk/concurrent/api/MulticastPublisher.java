@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.DefaultPriorityQueue.Node;
 import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +78,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, ContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         state.addSubscriber(subscriber, contextMap, contextProvider);
     }
@@ -152,7 +153,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
             demandQueue.add(subscriber);
         }
 
-        void addSubscriber(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
+        void addSubscriber(Subscriber<? super T> subscriber, ContextMap contextMap,
                            AsyncContextProvider contextProvider) {
             final int sCount = subscribeCountUpdater.incrementAndGet(this);
             if (exactlyMinSubscribers && sCount > minSubscribers) {
@@ -474,7 +475,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         private int priorityQueueIndex = INDEX_NOT_IN_QUEUE;
 
         MulticastFixedSubscriber(final MulticastPublisher<T>.State root,
-                                 final Subscriber<? super T> subscriber, final AsyncContextMap contextMap,
+                                 final Subscriber<? super T> subscriber, final ContextMap contextMap,
                                  final AsyncContextProvider contextProvider, final int index) {
             this.root = root;
             this.index = index;

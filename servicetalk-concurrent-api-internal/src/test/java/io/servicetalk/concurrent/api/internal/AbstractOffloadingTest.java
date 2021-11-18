@@ -16,11 +16,11 @@
 package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.context.api.ContextMap;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 
@@ -41,8 +42,7 @@ public abstract class AbstractOffloadingTest {
     protected static final String ASYNC_CONTEXT_KEY = "OFFLOAD";
     protected static final String ASYNC_CONTEXT_VALUE = "TEST";
 
-    protected static final AsyncContextMap.Key<String> ASYNC_CONTEXT_CUSTOM_KEY =
-            AsyncContextMap.Key.newKey(ASYNC_CONTEXT_KEY);
+    protected static final ContextMap.Key<String> ASYNC_CONTEXT_CUSTOM_KEY = newKey(ASYNC_CONTEXT_KEY, String.class);
 
     public enum CaptureSlot {
         APP,
@@ -88,12 +88,12 @@ public abstract class AbstractOffloadingTest {
 
     protected final CaptureReferences<CaptureSlot, String> capturedThreads;
     protected final CaptureReferences<CaptureSlot, Throwable> capturedStacks;
-    protected final CaptureReferences<CaptureSlot, AsyncContextMap> capturedContexts;
+    protected final CaptureReferences<CaptureSlot, ContextMap> capturedContexts;
 
     protected AbstractOffloadingTest() {
         this.capturedThreads = new CaptureReferences(CaptureSlot.class, () -> Thread.currentThread().getName());
         this.capturedStacks = new CaptureReferences(CaptureSlot.class, () -> new Throwable("Stack Dump"));
-        this.capturedContexts = new CaptureReferences(CaptureSlot.class, AsyncContext::current);
+        this.capturedContexts = new CaptureReferences(CaptureSlot.class, AsyncContext::context);
     }
 
     protected void capture(CaptureSlot slot) {

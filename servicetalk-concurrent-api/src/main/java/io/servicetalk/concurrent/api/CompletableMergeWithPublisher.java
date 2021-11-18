@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -46,7 +47,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         if (delayError) {
             new MergerDelayError<>(subscriber, contextMap, contextProvider)
                     .merge(original, mergeWith, contextMap, contextProvider);
@@ -66,7 +67,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         @Nullable
         private volatile TerminalSignal terminal;
 
-        MergerDelayError(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
+        MergerDelayError(Subscriber<? super T> subscriber, ContextMap contextMap,
                AsyncContextProvider contextProvider) {
             // This is used only to deliver signals that originate from the mergeWith Publisher.
             this.wrappedSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
@@ -74,7 +75,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith,
-                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                   ContextMap contextMap, AsyncContextProvider contextProvider) {
             wrappedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, contextMap, contextProvider);
@@ -184,13 +185,13 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private Throwable completableError;
         private volatile int state;
 
-        Merger(Subscriber<? super T> subscriber, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        Merger(Subscriber<? super T> subscriber, ContextMap contextMap, AsyncContextProvider contextProvider) {
             this.wrappedSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
             completableSubscriber = new CompletableSubscriber();
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith,
-                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                   ContextMap contextMap, AsyncContextProvider contextProvider) {
             wrappedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, contextMap, contextProvider);

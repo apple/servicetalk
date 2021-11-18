@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 /**
  * Base class for all {@link Completable}s that are created with already realized result and does not generate result
  * asynchronously.
@@ -23,7 +25,7 @@ abstract class AbstractSynchronousCompletable extends AbstractNoHandleSubscribeC
 
     @Override
     final void handleSubscribe(Subscriber subscriber,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                               ContextMap contextMap, AsyncContextProvider contextProvider) {
         // We need to wrap the Subscriber to save/restore the AsyncContext on each operation or else the AsyncContext
         // may leak from another thread.
         doSubscribe(contextProvider.wrapCompletableSubscriber(subscriber, contextMap));

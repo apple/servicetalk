@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -38,7 +39,7 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
 
     @Override
     void handleSubscribe(final Subscriber subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
                 new ResumeSubscriber(this, subscriber, contextMap, contextProvider),
                 contextMap, contextProvider);
@@ -47,14 +48,14 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
     private static final class ResumeSubscriber implements Subscriber {
         private final OnErrorResumeCompletable parent;
         private final Subscriber subscriber;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
         private boolean resubscribed;
 
         ResumeSubscriber(OnErrorResumeCompletable parent, Subscriber subscriber,
-                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                         ContextMap contextMap, AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.subscriber = subscriber;
             this.contextMap = contextMap;

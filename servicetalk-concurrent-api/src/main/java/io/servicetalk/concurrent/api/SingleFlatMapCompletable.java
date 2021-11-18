@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -38,7 +39,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
     @Override
     void handleSubscribe(final Subscriber subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, contextMap, contextProvider),
                 contextMap, contextProvider);
     }
@@ -46,13 +47,13 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
     private static final class SubscriberImpl<T> implements SingleSource.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
         private final Function<T, ? extends Completable> nextFactory;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
 
         SubscriberImpl(Subscriber subscriber, Function<T, ? extends Completable> nextFactory,
-                       final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                       final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
             this.contextMap = contextMap;

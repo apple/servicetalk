@@ -16,12 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Completable} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it
- * overrides {@link Completable#handleSubscribe(Subscriber, AsyncContextMap, AsyncContextProvider)}.
+ * overrides {@link Completable#handleSubscribe(Subscriber, ContextMap, AsyncContextProvider)}.
  */
 abstract class AbstractNoHandleSubscribeCompletable extends Completable implements CompletableSource {
 

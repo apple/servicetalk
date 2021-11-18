@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,16 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMapHolder;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -94,7 +100,14 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
                 '}';
     }
 
-    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
+    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread,
+                                                                              ContextMapHolder {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(NettyIoThread.class);
+        private static final AtomicBoolean ASYNC_CONTEXT_MAP_DETECTED = new AtomicBoolean();
+
+        @Nullable
+        private ContextMap context;
         @Nullable
         private AsyncContextMap asyncContextMap;
 
@@ -102,15 +115,37 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
             super(group, target, name);
         }
 
+        @Nullable
+        @Override
+        public ContextMap context() {
+            return context;
+        }
+
+        @Override
+        public NettyIoThread context(@Nullable final ContextMap context) {
+            this.context = context;
+            return this;
+        }
+
         @Override
         public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
+            logWarning();
             this.asyncContextMap = asyncContextMap;
         }
 
         @Nullable
         @Override
         public AsyncContextMap asyncContextMap() {
+            logWarning();
             return asyncContextMap;
+        }
+
+        private static void logWarning() {
+            if (ASYNC_CONTEXT_MAP_DETECTED.compareAndSet(false, true)) {
+                LOGGER.warn("Detected usage of deprecated {}, migrate your code to {}",
+                        AsyncContextMapHolder.class.getCanonicalName(), ContextMapHolder.class.getCanonicalName(),
+                        new Throwable("Stack trace where AsyncContextMapHolder was used"));
+            }
         }
     }
 }
