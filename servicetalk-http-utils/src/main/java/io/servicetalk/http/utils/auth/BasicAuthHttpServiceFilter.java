@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package io.servicetalk.http.utils.auth;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
@@ -104,7 +104,11 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
         private final CredentialsVerifier<UserInfo> credentialsVerifier;
         private final String realm;
         @Nullable
-        private Key<UserInfo> userInfoKey;
+        private AsyncContextMap.Key<UserInfo> userInfoKey;
+        @Nullable
+        private ContextMap.Key<UserInfo> userInfoAsyncContextKey;
+        @Nullable
+        private ContextMap.Key<UserInfo> userInfoRequestContextKey;
         private boolean utf8;
 
         /**
@@ -117,8 +121,11 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
          * HttpRequestMetaData#userInfo() userinfo} field is deprecated by <a
          * href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
          * <p>
-         * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was
-         * configured via {@link Builder#userInfoKey(AsyncContextMap.Key)}.
+         * User info object of authenticated user can be stored in {@link AsyncContext} if
+         * {@link ContextMap.Key} is configured via {@link Builder#userInfoAsyncContextKey(ContextMap.Key)} or
+         * {@link HttpRequestMetaData#context() request context} if {@link ContextMap.Key} is configured via
+         * {@link Builder#userInfoRequestContextKey(ContextMap.Key)}. The same {@link ContextMap.Key key} can be reused
+         * for both context storages.
          * <p>
          * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in
          * conjunction with some external secure system such as TLS (Transport Layer Security, [<a
@@ -135,13 +142,40 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
         }
 
         /**
-         * Sets a {@link Key key} to store a user info object of authenticated user in {@link AsyncContextMap}.
+         * Sets a {@link AsyncContextMap.Key key} to store a user info object of authenticated user in
+         * {@link AsyncContext}.
          *
-         * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
+         * @param userInfoKey a key to store a user info object in {@link AsyncContext}
+         * @return {@code this}
+         * @deprecated Use {@link #userInfoAsyncContextKey(ContextMap.Key)}
+         */
+        @Deprecated
+        public Builder<UserInfo> userInfoKey(final AsyncContextMap.Key<UserInfo> userInfoKey) {
+            this.userInfoKey = requireNonNull(userInfoKey);
+            return this;
+        }
+
+        /**
+         * Sets a {@link ContextMap.Key key} to store a user info object of authenticated user in {@link AsyncContext}.
+         *
+         * @param userInfoAsyncContextKey a key to store a user info object in {@link AsyncContext}
          * @return {@code this}
          */
-        public Builder<UserInfo> userInfoKey(final Key<UserInfo> userInfoKey) {
-            this.userInfoKey = requireNonNull(userInfoKey);
+        public Builder<UserInfo> userInfoAsyncContextKey(final ContextMap.Key<UserInfo> userInfoAsyncContextKey) {
+            this.userInfoAsyncContextKey = requireNonNull(userInfoAsyncContextKey);
+            return this;
+        }
+
+        /**
+         * Sets a {@link ContextMap.Key key} to store a user info object of authenticated user in
+         * {@link HttpRequestMetaData#context() request context}.
+         *
+         * @param userInfoRequestContextKey a key to store a user info object in
+         * {@link HttpRequestMetaData#context() request context}
+         * @return {@code this}
+         */
+        public Builder<UserInfo> userInfoRequestContextKey(final ContextMap.Key<UserInfo> userInfoRequestContextKey) {
+            this.userInfoRequestContextKey = requireNonNull(userInfoRequestContextKey);
             return this;
         }
 
@@ -185,7 +219,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
          * @return a new {@link Builder}
          */
         public StreamingHttpServiceFilterFactory buildServer() {
-            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false, userInfoKey, utf8);
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false, userInfoKey,
+                    userInfoAsyncContextKey, userInfoRequestContextKey, utf8);
         }
 
         /**
@@ -212,7 +247,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
          * @return a new {@link StreamingHttpServiceFilterFactory}
          */
         public StreamingHttpServiceFilterFactory buildProxy() {
-            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true, userInfoKey, utf8);
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true, userInfoKey,
+                    userInfoAsyncContextKey, userInfoRequestContextKey, utf8);
         }
     }
 
@@ -221,18 +257,26 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
     private final String realm;
     private final boolean proxy;
     @Nullable
-    private final Key<UserInfo> userInfoKey;
+    private final AsyncContextMap.Key<UserInfo> userInfoKey;
+    @Nullable
+    private final ContextMap.Key<UserInfo> userInfoAsyncContextKey;
+    @Nullable
+    private final ContextMap.Key<UserInfo> userInfoRequestContextKey;
     private final boolean utf8;
 
     private BasicAuthHttpServiceFilter(final CredentialsVerifier<UserInfo> credentialsVerifier,
                                        final String realm,
                                        final boolean proxy,
-                                       @Nullable final Key<UserInfo> userInfoKey,
+                                       @Nullable final AsyncContextMap.Key<UserInfo> userInfoKey,
+                                       @Nullable final ContextMap.Key<UserInfo> userInfoAsyncContextKey,
+                                       @Nullable final ContextMap.Key<UserInfo> userInfoRequestContextKey,
                                        final boolean utf8) {
         this.credentialsVerifier = credentialsVerifier;
         this.realm = realm;
         this.proxy = proxy;
         this.userInfoKey = userInfoKey;
+        this.userInfoAsyncContextKey = userInfoAsyncContextKey;
+        this.userInfoRequestContextKey = userInfoRequestContextKey;
         this.utf8 = utf8;
         influencer = credentialsVerifier instanceof HttpExecutionStrategyInfluencer ?
                 (HttpExecutionStrategyInfluencer) credentialsVerifier :
@@ -358,6 +402,12 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
                                                               final UserInfo userInfo) {
             if (config.userInfoKey != null) {
                 AsyncContext.put(config.userInfoKey, userInfo);
+            }
+            if (config.userInfoAsyncContextKey != null) {
+                AsyncContext.put(config.userInfoAsyncContextKey, userInfo);
+            }
+            if (config.userInfoRequestContextKey != null) {
+                request.context().put(config.userInfoRequestContextKey, userInfo);
             }
             return delegate().handle(ctx, request, factory);
         }

@@ -17,10 +17,10 @@ package io.servicetalk.concurrent.api.test;
 
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.context.api.ContextMap;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -35,6 +35,7 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class CompletableStepVerifierTest {
-    private static final AsyncContextMap.Key<Integer> ASYNC_KEY = AsyncContextMap.Key.newKey();
+    private static final ContextMap.Key<Integer> ASYNC_KEY = newKey("ASYNC_KEY", Integer.class);
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
 
     @Override
     final void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                               final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                               final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.

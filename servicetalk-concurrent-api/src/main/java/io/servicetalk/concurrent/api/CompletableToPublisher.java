@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -41,7 +42,7 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
                 signalOffloader, contextMap, contextProvider);
     }
@@ -53,13 +54,13 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                 newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
         private volatile int terminated;
 
         private ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                     final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;

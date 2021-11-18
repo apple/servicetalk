@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -43,18 +44,31 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         };
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void authenticated(final boolean withUserInfo) throws Exception {
-        setUp(withUserInfo);
+    @Override
+    protected Application application(@Nullable final ContextMap.Key<BasicUserInfo> userInfoKey) {
+        return new TestApplication() {
+            @Override
+            public Set<Object> getSingletons() {
+                return singleton(userInfoKey != null ?
+                        BasicAuthSecurityContextFilters.forGlobalBinding(userInfoKey).build() :
+                        BasicAuthSecurityContextFilters.forGlobalBinding().build()
+                );
+            }
+        };
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
+    void authenticated(final boolean withUserInfo, final boolean withNewKey) throws Exception {
+        setUp(withUserInfo, withNewKey);
         assertBasicAuthSecurityContextPresent(GlobalBindingResource.PATH);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void notAuthenticated(final boolean withUserInfo) throws Exception {
-        setUp(withUserInfo);
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
+    void notAuthenticated(final boolean withUserInfo, final boolean withNewKey) throws Exception {
+        setUp(withUserInfo, withNewKey);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, false);
         assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, false);
     }

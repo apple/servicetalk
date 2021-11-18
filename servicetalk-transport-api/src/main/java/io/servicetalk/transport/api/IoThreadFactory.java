@@ -32,6 +32,7 @@ public interface IoThreadFactory<T extends Thread & IoThread> extends ThreadFact
      * Marker interface for IO Threads. All threads created by a {@link IoThreadFactory} are expected to implement this
      * interface.
      */
+    // FIXME: 0.42 - replace AsyncContextMapHolder with ContextMapHolder
     interface IoThread extends AsyncContextMapHolder {
     }
 

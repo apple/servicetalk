@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
@@ -33,7 +34,7 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static void deliverOnSubscribeAndOnError(Subscriber subscriber, SignalOffloader signalOffloader,
-                                             AsyncContextMap contextMap, AsyncContextProvider contextProvider,
+                                             ContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
         deliverErrorFromSource(
                 signalOffloader.offloadSubscriber(contextProvider.wrapCompletableSubscriber(subscriber, contextMap)),
@@ -77,7 +78,7 @@ final class PublishAndSubscribeOnCompletables {
 
         @Override
         void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //
@@ -123,7 +124,7 @@ final class PublishAndSubscribeOnCompletables {
 
         @Override
         void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //
@@ -169,7 +170,7 @@ final class PublishAndSubscribeOnCompletables {
 
         @Override
         void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //

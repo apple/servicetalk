@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -75,7 +76,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                         ContextMap contextMap, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
                 TimeoutSubscriber.newInstance(this, subscriber, signalOffloader, contextMap, contextProvider),
                 signalOffloader, contextMap, contextProvider);
@@ -135,7 +136,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         static <X> TimeoutSubscriber<X> newInstance(TimeoutPublisher<X> parent,
                                                     Subscriber<? super X> target,
                                                     SignalOffloader signalOffloader,
-                                                    AsyncContextMap contextMap,
+                                                    ContextMap contextMap,
                                                     AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader, contextProvider);
             try {
@@ -273,9 +274,9 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 processTimeout(cause);
             } else {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
-                // contextProvider.contextMap() here.
+                // contextProvider.context() here.
                 signalOffloader.offloadSignal(cause, contextProvider.wrapConsumer(this::processTimeout,
-                        contextProvider.contextMap()));
+                        contextProvider.context()));
             }
         }
 
@@ -301,7 +302,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * @param cause The exception.
          */
         private static <X> void handleConstructorException(TimeoutSubscriber<X> s, SignalOffloader offloader,
-                                                           AsyncContextMap contextMap,
+                                                           ContextMap contextMap,
                                                            AsyncContextProvider contextProvider, Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
             s.timerCancellable = LOCAL_IGNORE_CANCEL;

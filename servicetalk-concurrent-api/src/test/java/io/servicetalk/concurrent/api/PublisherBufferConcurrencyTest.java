@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.context.api.ContextMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,6 +31,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
@@ -43,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class PublisherBufferConcurrencyTest {
     private static final String THREAD_NAME_PREFIX = "buffer-concurrency-test";
-    private static final Key<Integer> CTX_KEY = Key.newKey("foo");
+    private static final ContextMap.Key<Integer> CTX_KEY = newKey("foo", Integer.class);
 
     @RegisterExtension
     final ExecutorExtension<Executor> executorExtension = withCachedExecutor(THREAD_NAME_PREFIX);

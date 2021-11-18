@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * A {@link Completable} created from a {@link Publisher}.
@@ -41,7 +42,7 @@ abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeComp
 
     @Override
     final void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                               final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.

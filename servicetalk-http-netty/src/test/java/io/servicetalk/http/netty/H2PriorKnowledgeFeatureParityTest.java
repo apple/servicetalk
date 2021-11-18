@@ -21,13 +21,13 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -121,6 +121,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -171,9 +172,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class H2PriorKnowledgeFeatureParityTest {
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
-    private static final AsyncContextMap.Key<String> K1 = AsyncContextMap.Key.newKey("k1");
-    private static final AsyncContextMap.Key<String> K2 = AsyncContextMap.Key.newKey("k2");
-    private static final AsyncContextMap.Key<String> K3 = AsyncContextMap.Key.newKey("k3");
+    private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
+    private static final ContextMap.Key<String> K2 = newKey("k2", String.class);
+    private static final ContextMap.Key<String> K3 = newKey("k3", String.class);
     private EventLoopGroup serverEventLoopGroup;
     private HttpExecutionStrategy clientExecutionStrategy;
     private boolean h2PriorKnowledge;
@@ -1673,7 +1674,7 @@ class H2PriorKnowledgeFeatureParityTest {
         });
     }
 
-    private static <T> void assertAsyncContext(AsyncContextMap.Key<T> key, T expectedValue,
+    private static <T> void assertAsyncContext(ContextMap.Key<T> key, T expectedValue,
                                                Queue<Throwable> errorQueue) {
         T actualValue = AsyncContext.get(key);
         if (!expectedValue.equals(actualValue)) {

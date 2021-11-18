@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.SingleToFuture;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +97,7 @@ public abstract class Single<T> {
      * New instance.
      *
      * @param executor {@link Executor} to use for this {@link Single}.
-     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link ContextMap} will not be made. This will
      * result in sharing {@link AsyncContext} between sources.
      */
     Single(Executor executor, boolean shareContextOnSubscribe) {
@@ -1625,13 +1626,13 @@ public abstract class Single<T> {
 
     /**
      * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link AsyncContextMap#copy() copy}.
+     * instead of making a {@link ContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Single} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed to.
+     * {@link ContextMap#copy() copy} when subscribed to.
      */
     public final Single<T> subscribeShareContext() {
         return new SingleSubscribeShareContext<>(this);
@@ -2559,16 +2560,15 @@ public abstract class Single<T> {
     //
 
     /**
-     * Subscribes to this {@link Single} and returns the {@link AsyncContextMap} associated for this subscribe
-     * operation.
+     * Subscribes to this {@link Single} and returns the {@link ContextMap} associated for this subscribe operation.
      *
      * @param subscriber the subscriber.
      * @param provider {@link AsyncContextProvider} to use.
-     * @return {@link AsyncContextMap} for this subscribe operation.
+     * @return {@link ContextMap} for this subscribe operation.
      */
-    final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        final AsyncContextMap contextMap = shareContextOnSubscribe ? provider.contextMap() :
-                provider.contextMap().copy();
+    final ContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        final ContextMap contextMap = shareContextOnSubscribe ? provider.context() :
+                provider.context().copy();
         subscribeWithContext(subscriber, provider, contextMap);
         return contextMap;
     }
@@ -2580,7 +2580,7 @@ public abstract class Single<T> {
      * @param provider {@link AsyncContextProvider} to use.
      */
     final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
+        subscribeWithContext(subscriber, provider, provider.context());
     }
 
     /**
@@ -2589,17 +2589,16 @@ public abstract class Single<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link SingleSource.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
     private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+                                      ContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
@@ -2630,11 +2629,10 @@ public abstract class Single<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link SingleSource.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
             Subscriber<? super T> offloaded =

@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ public abstract class Publisher<T> {
      * New instance.
      *
      * @param executor {@link Executor} to use for this {@link Publisher}.
-     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link ContextMap} will not be made. This will
      * result in sharing {@link AsyncContext} between sources.
      */
     Publisher(Executor executor, boolean shareContextOnSubscribe) {
@@ -2981,13 +2982,13 @@ public abstract class Publisher<T> {
 
     /**
      * Signifies that when the returned {@link Publisher} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link AsyncContextMap#copy() copy}.
+     * instead of making a {@link ContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Publisher} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed to.
+     * {@link ContextMap#copy() copy} when subscribed to.
      */
     public final Publisher<T> subscribeShareContext() {
         return new PublisherSubscribeShareContext<>(this);
@@ -3382,7 +3383,7 @@ public abstract class Publisher<T> {
     protected final void subscribeInternal(Subscriber<? super T> subscriber) {
         AsyncContextProvider provider = AsyncContext.provider();
         subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe ? provider.contextMap() : provider.contextMap().copy());
+                shareContextOnSubscribe ? provider.context() : provider.context().copy());
     }
 
     /**
@@ -3659,7 +3660,7 @@ public abstract class Publisher<T> {
      */
     final void subscribeWithSharedContext(Subscriber<? super T> subscriber) {
         AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider, provider.contextMap());
+        subscribeWithContext(subscriber, provider, provider.context());
     }
 
     /**
@@ -3668,17 +3669,16 @@ public abstract class Publisher<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
     private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+                                      ContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
@@ -3709,11 +3709,10 @@ public abstract class Publisher<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
             Subscriber<? super T> offloaded =

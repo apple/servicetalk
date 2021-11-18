@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
@@ -42,7 +43,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
                 signalOffloader, contextMap, contextProvider);
     }
@@ -58,7 +59,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 newUpdater(ConversionSubscriber.class, "state");
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
         @Nullable
@@ -66,7 +67,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private volatile int state;
 
         ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * Base class for all {@link Publisher}s that are created with already realized values and do not generate values
@@ -27,7 +28,7 @@ abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribe
 
     @Override
     final void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                               ContextMap contextMap, AsyncContextProvider contextProvider) {
         // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
         //

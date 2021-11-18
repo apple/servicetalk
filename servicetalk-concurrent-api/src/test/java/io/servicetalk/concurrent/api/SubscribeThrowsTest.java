@@ -58,7 +58,7 @@ class SubscribeThrowsTest {
             }
         };
         AsyncContextProvider provider = AsyncContext.provider();
-        p.delegateSubscribe(subscriber, offloader, provider.contextMap(), provider);
+        p.delegateSubscribe(subscriber, offloader, provider.context(), provider);
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 
@@ -87,7 +87,7 @@ class SubscribeThrowsTest {
             }
         };
         AsyncContextProvider provider = AsyncContext.provider();
-        s.delegateSubscribe(subscriber, offloader, provider.contextMap(), provider);
+        s.delegateSubscribe(subscriber, offloader, provider.context(), provider);
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 
@@ -114,7 +114,7 @@ class SubscribeThrowsTest {
             }
         };
         AsyncContextProvider provider = AsyncContext.provider();
-        c.delegateSubscribe(subscriber, offloader, provider.contextMap(), provider);
+        c.delegateSubscribe(subscriber, offloader, provider.context(), provider);
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 }

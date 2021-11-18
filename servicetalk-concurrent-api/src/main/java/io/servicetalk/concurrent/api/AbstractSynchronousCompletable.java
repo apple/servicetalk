@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * Base class for all {@link Completable}s that are created with already realized result and does not generate result
@@ -25,7 +26,7 @@ abstract class AbstractSynchronousCompletable extends AbstractNoHandleSubscribeC
 
     @Override
     final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
-                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                               ContextMap contextMap, AsyncContextProvider contextProvider) {
         // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
         // This saves the offload of doSubscribe since we know it is synchronous.

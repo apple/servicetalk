@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.CompletableToFuture;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,7 @@ public abstract class Completable {
      * New instance.
      *
      * @param executor {@link Executor} to use for this {@link Completable}.
-     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link ContextMap} will not be made. This will
      * result in sharing {@link AsyncContext} between sources.
      */
     Completable(Executor executor, boolean shareContextOnSubscribe) {
@@ -1652,13 +1653,13 @@ public abstract class Completable {
 
     /**
      * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link AsyncContextMap#copy() copy}.
+     * instead of making a {@link ContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
      * operator, that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed to.
+     * {@link ContextMap#copy() copy} when subscribed to.
      */
     public final Completable subscribeShareContext() {
         return new CompletableSubscribeShareContext(this);
@@ -1746,7 +1747,7 @@ public abstract class Completable {
     protected final void subscribeInternal(Subscriber subscriber) {
         AsyncContextProvider provider = AsyncContext.provider();
         subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe ? provider.contextMap() : provider.contextMap().copy());
+                shareContextOnSubscribe ? provider.context() : provider.context().copy());
     }
 
     /**
@@ -2218,7 +2219,7 @@ public abstract class Completable {
      * @param provider {@link AsyncContextProvider} to use.
      */
     final void subscribeWithSharedContext(Subscriber subscriber, AsyncContextProvider provider) {
-        subscribeWithContext(subscriber, provider, provider.contextMap());
+        subscribeWithContext(subscriber, provider, provider.context());
     }
 
     /**
@@ -2227,17 +2228,16 @@ public abstract class Completable {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
-                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
     private void subscribeWithContext(Subscriber subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+                                      ContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
         final Subscriber offloadedSubscriber;
@@ -2268,10 +2268,10 @@ public abstract class Completable {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
-    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
             Subscriber offloaded = signalOffloader.offloadSubscriber(

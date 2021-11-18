@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
@@ -41,7 +42,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
@@ -84,12 +85,12 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
 
         private final RedoPublisher<T> redoPublisher;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         private final SignalOffloader offloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       AsyncContextMap contextMap, AsyncContextProvider contextProvider,
+                       ContextMap contextMap, AsyncContextProvider contextProvider,
                        RedoPublisher<T> redoPublisher, SignalOffloader offloader) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;

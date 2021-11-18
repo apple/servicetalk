@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingSubscriptionSubscriber<T> implements Subscriber<T> {
-    final AsyncContextMap saved;
+    final ContextMap saved;
     final Subscriber<T> subscriber;
 
-    ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+    ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, ContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -51,6 +52,6 @@ final class ContextPreservingSubscriptionSubscriber<T> implements Subscriber<T> 
 
     @Override
     public String toString() {
-        return ContextPreservingSubscriptionSubscriber.class.getSimpleName() + "(" + subscriber + ')';
+        return getClass().getSimpleName() + '(' + subscriber + ')';
     }
 }

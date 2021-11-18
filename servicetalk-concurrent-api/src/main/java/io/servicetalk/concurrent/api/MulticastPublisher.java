@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +113,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                         ContextMap contextMap, AsyncContextProvider contextProvider) {
         for (;;) {
             final int subscriberCount = this.subscriberCount;
             if (subscriberCount == subscribers.length() || subscriberCount < 0) {

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,7 +39,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
     }
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                                AsyncContextProvider contextProvider) {
         // Offload signals to the passed Subscriber making sure they are not invoked in the thread that
         // asynchronously processes signals. This is because the thread that processes the signals may have different

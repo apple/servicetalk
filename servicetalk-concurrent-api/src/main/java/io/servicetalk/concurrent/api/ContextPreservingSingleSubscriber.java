@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,19 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
-    final AsyncContextMap saved;
+    final ContextMap saved;
     final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, ContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -40,14 +42,14 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
     @Override
     public final void onSubscribe(Cancellable cancellable) {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 invokeOnSubscribe(cancellable);
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             onSubscribeSlowPath(cancellable);
@@ -55,26 +57,26 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
     }
 
     private void onSubscribeSlowPath(Cancellable cancellable) {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             invokeOnSubscribe(cancellable);
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onSuccess(@Nullable T result) {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 subscriber.onSuccess(result);
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             onSuccessSlowPath(result);
@@ -82,26 +84,26 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
     }
 
     private void onSuccessSlowPath(@Nullable T result) {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             subscriber.onSuccess(result);
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 subscriber.onError(t);
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             onErrorSlowPath(t);
@@ -109,17 +111,17 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
     }
 
     private void onErrorSlowPath(Throwable t) {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             subscriber.onError(t);
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + subscriber + ')';
+        return getClass().getSimpleName() + '(' + subscriber + ')';
     }
 }

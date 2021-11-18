@@ -16,7 +16,7 @@
 package io.servicetalk.opentracing.asynccontext;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
@@ -25,14 +25,15 @@ import io.opentracing.Span;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link InMemoryScopeManager} that uses {@link AsyncContext} as the backing storage.
  */
 public final class AsyncContextInMemoryScopeManager implements InMemoryScopeManager {
-    private static final AsyncContextMap.Key<AsyncContextInMemoryScope> SCOPE_KEY = newKey("opentracing");
+    private static final ContextMap.Key<AsyncContextInMemoryScope> SCOPE_KEY =
+            newKey("opentracing", AsyncContextInMemoryScope.class);
     public static final InMemoryScopeManager SCOPE_MANAGER = new AsyncContextInMemoryScopeManager();
 
     private AsyncContextInMemoryScopeManager() {
@@ -41,8 +42,8 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
 
     @Override
     public Scope activate(final Span span) {
-        AsyncContextMap contextMap = AsyncContext.current();
-        AsyncContextInMemoryScope scope = new AsyncContextInMemoryScope(
+        final ContextMap contextMap = AsyncContext.context();
+        final AsyncContextInMemoryScope scope = new AsyncContextInMemoryScope(
                 contextMap.get(SCOPE_KEY), (InMemorySpan) span);
         contextMap.put(SCOPE_KEY, scope);
         return scope;

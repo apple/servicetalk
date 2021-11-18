@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.Test;
@@ -33,9 +33,9 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,7 +49,7 @@ public abstract class AbstractConditionalHttpFilterTest {
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HttpProtocolVersion.HTTP_1_1);
 
-    private static final AsyncContextMap.Key<String> CTX_KEY = newKey("test-key");
+    private static final ContextMap.Key<String> CTX_KEY = newKey("test-key", String.class);
 
     @RegisterExtension
     static final ExecutionContextExtension TEST_CTX = cached();

@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -35,7 +35,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.lang.Thread.currentThread;
 
-class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Test
     void newRequestsGetFreshContextImmediate() throws Exception {
@@ -86,17 +86,17 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
         return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService());
     }
 
-    private static StreamingHttpService newEmptyAsyncContextService() {
+    private StreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
             request.messageBody().ignoreElements().subscribe();
 
-            AsyncContextMap current = AsyncContext.current();
+            ContextMap current = AsyncContext.context();
             if (!current.isEmpty()) {
                 return succeeded(factory.internalServerError().payloadBody(from(current.toString()), textSerializer()));
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
-                current.put(K1, requestId);
+                putIntoAsyncContext(requestId);
                 return succeeded(factory.ok()
                         .setHeader(REQUEST_ID_HEADER, requestId));
             } else {
@@ -114,7 +114,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
         return serverBuilder.listenStreamingAndAwait(service(useImmediate, asyncService));
     }
 
-    private static StreamingHttpService service(final boolean useImmediate, final boolean asyncService) {
+    private StreamingHttpService service(final boolean useImmediate, final boolean asyncService) {
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -126,7 +126,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
 
             private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,
                                                            final StreamingHttpResponseFactory factory) {
-                CharSequence requestId = AsyncContext.get(K1);
+                CharSequence requestId = getFromAsyncContext();
                 // The test doesn't wait until the request body is consumed and only cares when the request is received
                 // from the client. So we force the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter.
@@ -136,7 +136,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
                                 // verify that if we expect to be offloaded, that we actually are
                                 return succeeded(factory.internalServerError());
                             }
-                            CharSequence requestId2 = AsyncContext.get(K1);
+                            CharSequence requestId2 = getFromAsyncContext();
                             if (requestId2 == requestId && requestId2 != null) {
                                 StreamingHttpResponse response = factory.ok();
                                 response.headers().set(REQUEST_ID_HEADER, requestId);

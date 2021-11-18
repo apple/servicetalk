@@ -18,12 +18,13 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Publisher} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link #handleSubscribe(Subscriber, SignalOffloader, AsyncContextMap, AsyncContextProvider)}.
+ * {@link Publisher#handleSubscribe(Subscriber, SignalOffloader, ContextMap, AsyncContextProvider)}.
  *
  * @param <T> Type of items emitted.
  */

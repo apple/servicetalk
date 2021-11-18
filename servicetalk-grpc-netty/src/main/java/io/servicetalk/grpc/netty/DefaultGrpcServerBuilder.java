@@ -63,6 +63,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_CONTEXT_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
@@ -259,7 +260,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
                     // during the context of handling this request.
                     try {
                         Long deadline = System.nanoTime() + timeout.toNanos();
-                        AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
+                        AsyncContext.put(GRPC_DEADLINE_CONTEXT_KEY, deadline);
                     } catch (UnsupportedOperationException ignored) {
                         LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");
                         // ignored -- async context has probably been disabled.

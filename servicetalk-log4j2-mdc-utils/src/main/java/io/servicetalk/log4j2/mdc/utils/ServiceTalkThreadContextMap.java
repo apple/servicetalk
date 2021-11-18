@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package io.servicetalk.log4j2.mdc.utils;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;
@@ -35,21 +34,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Collections.unmodifiableMap;
 
 /**
  * A {@link ThreadContext} that provides storage for MDC based upon {@link AsyncContext}.
  */
 public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, CleanableThreadContextMap {
-    private static final Key<Map<String, String>> key = Key.newKey("log4j2Mdc");
-    @SuppressWarnings("IllegalInstantiationOfString")
+    @SuppressWarnings("unchecked")
+    private static final ContextMap.Key<Map<String, String>> key = newKey("log4j2Mdc",
+            (Class<Map<String, String>>) (Class<?>) Map.class);
     private static final String NULL_STRING = "";
-
     private static final String[] KNOWN_CONFLICTS = {
             "io.servicetalk.log4j2.mdc.DefaultServiceTalkThreadContextMap",
             "io.servicetalk.opentracing.log4j2.ServiceTalkTracingThreadContextMap",
     };
-
     private static final String ADAPTER_CONFLICT_MESSAGE = "Detected multiple ServiceTalk MDC adapters in classpath." +
             " The %s MDC adapters should not be" +
             " loaded at the same time. Please exclude one from your dependencies.%n";
@@ -232,7 +231,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
     }
 
     static Map<String, String> getStorage() {
-        AsyncContextMap context = AsyncContext.current();
+        final ContextMap context = AsyncContext.context();
         Map<String, String> ret = context.get(key);
         if (ret == null) {
             // better be thread safe, since the context may be used in multiple operators which may use different

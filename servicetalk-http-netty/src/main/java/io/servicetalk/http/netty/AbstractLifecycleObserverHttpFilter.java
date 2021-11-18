@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
@@ -46,15 +46,16 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);
-    static final Key<Consumer<ConnectionInfo>> ON_CONNECTION_SELECTED_CONSUMER =
-            newKey("ON_CONNECTION_SELECTED_CONSUMER");
+    @SuppressWarnings("unchecked")
+    static final ContextMap.Key<Consumer<ConnectionInfo>> ON_CONNECTION_SELECTED_CONSUMER =
+            newKey("ON_CONNECTION_SELECTED_CONSUMER", (Class<Consumer<ConnectionInfo>>) (Class<?>) Consumer.class);
 
     private final HttpLifecycleObserver observer;
     private final boolean client;

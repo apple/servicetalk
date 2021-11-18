@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +58,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
 
     @Override
     protected void handleSubscribe(final Subscriber subscriber, final SignalOffloader offloader,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
                 TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap, contextProvider),
                 offloader, contextMap, contextProvider);
@@ -94,7 +95,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
         }
 
         static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target, SignalOffloader offloader,
-                                             AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                             ContextMap contextMap, AsyncContextProvider contextProvider) {
             TimeoutSubscriber s = new TimeoutSubscriber(parent, target, offloader, contextProvider);
             Cancellable localTimerCancellable;
             try {
@@ -175,10 +176,10 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // The timeout may be running on a different Executor than the original async source. If that is the
                 // case we should offload to the correct Executor.
                 // We rely upon the timeout Executor to save/restore the context. so we just use
-                // contextProvider.contextMap() here.
+                // contextProvider.context() here.
                 final Subscriber offloadedTarget = parent.timeoutExecutor == parent.executor() ? target :
                         offloader.offloadSubscriber(contextProvider.wrapCompletableSubscriber(target,
-                                contextProvider.contextMap()));
+                                contextProvider.context()));
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();

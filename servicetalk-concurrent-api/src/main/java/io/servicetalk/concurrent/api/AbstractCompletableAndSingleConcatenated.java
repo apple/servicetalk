@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -30,7 +31,7 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader offloader,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // Since we use the same Subscriber for two sources we always need to offload it. We do not subscribe to the
         // next source using the same offloader so we have the following cases:
         //
@@ -54,7 +55,7 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
     }
 
     abstract void delegateSubscribeToOriginal(Subscriber<? super T> offloadSubscriber, SignalOffloader offloader,
-                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+                                              ContextMap contextMap, AsyncContextProvider contextProvider);
 
     abstract static class AbstractConcatWithSubscriber<T> implements Subscriber<T>, CompletableSource.Subscriber {
 

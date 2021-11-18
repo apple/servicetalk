@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -39,7 +40,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -108,25 +108,32 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         }
     }
 
-    private static final Key<BasicUserInfo> TEST_USER_INFO_KEY = newKey("basicUserInfo");
+    private static final AsyncContextMap.Key<BasicUserInfo> TEST_USER_INFO_KEY =
+            AsyncContextMap.Key.newKey("basicUserInfo");
+    private static final ContextMap.Key<BasicUserInfo> TEST_USER_INFO_AC_KEY =
+            ContextMap.Key.newKey("basicUserInfo", BasicUserInfo.class);
 
     private ServerContext serverContext;
     private BlockingHttpClient httpClient;
 
-    void setUp(final boolean withUserInfo) throws Exception {
+    void setUp(final boolean withUserInfo, final boolean withNewKey) throws Exception {
         final Builder<BasicUserInfo> builder = new Builder<>(CREDENTIALS_VERIFIER, "test-realm");
         if (withUserInfo) {
-            builder.userInfoKey(TEST_USER_INFO_KEY);
+            builder.userInfoKey(TEST_USER_INFO_KEY)
+                    .userInfoAsyncContextKey(TEST_USER_INFO_AC_KEY);
         }
         serverContext = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(builder.buildServer())
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder()
-                        .buildStreaming(application(withUserInfo ? TEST_USER_INFO_KEY : null)));
+                        .buildStreaming(withNewKey ? application(withUserInfo ? TEST_USER_INFO_AC_KEY : null)
+                                : application(withUserInfo ? TEST_USER_INFO_KEY : null)));
 
         httpClient = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlocking();
     }
 
-    protected abstract Application application(@Nullable Key<BasicUserInfo> userInfoKey);
+    protected abstract Application application(@Nullable AsyncContextMap.Key<BasicUserInfo> userInfoKey);
+
+    protected abstract Application application(@Nullable ContextMap.Key<BasicUserInfo> userInfoKey);
 
     @AfterEach
     public void teardown() throws Exception {

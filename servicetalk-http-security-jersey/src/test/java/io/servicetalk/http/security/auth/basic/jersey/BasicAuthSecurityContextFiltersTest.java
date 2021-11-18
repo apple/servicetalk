@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
 
@@ -37,7 +37,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -84,7 +84,7 @@ class BasicAuthSecurityContextFiltersTest {
     @ValueSource(booleans = {true, false})
     void principalUserInfo(final boolean globalFilter) throws Exception {
         this.globalFilter = globalFilter;
-        final Key<Principal> userInfoKey = newKey("basicPrincipal");
+        final ContextMap.Key<Principal> userInfoKey = newKey("basicPrincipal", Principal.class);
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey).build();
 
         filter.filter(requestCtx);
@@ -117,7 +117,7 @@ class BasicAuthSecurityContextFiltersTest {
     @ValueSource(booleans = {true, false})
     void customPrincipalFunctionUserInfo(final boolean globalFilter) throws Exception {
         this.globalFilter = globalFilter;
-        final Key<String> userInfoKey = newKey("basicPrincipal");
+        final ContextMap.Key<String> userInfoKey = newKey("basicPrincipal", String.class);
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey)
                 .principalFunction((__, userInfo) -> TEST_USER_INFO.equals(userInfo) ? TEST_PRINCIPAL : null)
                 .build();
@@ -156,7 +156,7 @@ class BasicAuthSecurityContextFiltersTest {
         this.globalFilter = globalFilter;
         final SecurityContext securityContext = mock(SecurityContext.class);
 
-        final Key<String> userInfoKey = newKey("basicPrincipal");
+        final ContextMap.Key<String> userInfoKey = newKey("basicPrincipal", String.class);
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey)
                 .securityContextFunction((__, userInfo) -> TEST_USER_INFO.equals(userInfo) ? securityContext : null)
                 .build();
@@ -177,7 +177,7 @@ class BasicAuthSecurityContextFiltersTest {
                 BasicAuthSecurityContextFilters.forNameBinding();
     }
 
-    private <UserInfo> UserInfoBuilder<UserInfo> newFilterBuilder(final Key<UserInfo> userInfoKey) {
+    private <UserInfo> UserInfoBuilder<UserInfo> newFilterBuilder(final ContextMap.Key<UserInfo> userInfoKey) {
         return globalFilter ? BasicAuthSecurityContextFilters.forGlobalBinding(userInfoKey) :
                 BasicAuthSecurityContextFilters.forNameBinding(userInfoKey);
     }

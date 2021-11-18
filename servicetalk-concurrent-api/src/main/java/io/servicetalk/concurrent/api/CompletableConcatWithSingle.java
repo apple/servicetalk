@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -38,7 +39,7 @@ final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleC
 
     @Override
     void delegateSubscribeToOriginal(final Subscriber<? super T> offloadSubscriber, final SignalOffloader offloader,
-                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                     final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader, contextMap,
                 contextProvider);
     }

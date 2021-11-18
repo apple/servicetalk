@@ -30,7 +30,7 @@ single.map(response -> {
 })// do something else in the function composition chain
 
 // AuthenticationFilter.java
-public static final Key<String> USER_ID_KEY = Key.newKey("userId");
+public static final Key<String> USER_ID_KEY = Key.newKey("userId", String.class);
 
 public static Single<Resposne> authenticate(Single<Response> responseSingle) {
   AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
@@ -128,7 +128,7 @@ Due to the shared state across the asynchronous boundaries we need to make sure 
 boundary, save the `original` context before executing user code on the new thread, restore the `current` context
 while executing user code, and then restore the `original` context. This requires object wrapping/unwrapping and
 leveraging `ThreadLocal` (or an
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
+link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java[ContextMapHolder]
 ) to retain the state. We also need to capture the current context at `subscribe`, propagate it up the operator chain,
 and capture it effectively in the source (or in a wrapped `Subscriber` just outside the source). These mechanics are
 similar to how the
@@ -185,7 +185,7 @@ passing it. The `ThreadLocal` class provides general retention of thread local s
 frequency in which we need to save/restore the static state has been shown to introduce non-trivial costs. Since we know
 that all of our threads will require this thread local state we can have our threads explicitly have a `AsyncContext`
 member variable (see
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
+link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java[ContextMapHolder]
 ). There is also additional wrapping/unwrapping introduced on the asynchronous boundaries so there is additional object
 allocation.
 

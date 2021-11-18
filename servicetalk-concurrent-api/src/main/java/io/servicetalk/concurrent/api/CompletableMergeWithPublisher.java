@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -49,7 +50,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         if (delayError) {
             new MergerDelayError<>(subscriber, signalOffloader, contextMap, contextProvider)
                     .merge(original, mergeWith, signalOffloader, contextMap, contextProvider);
@@ -69,7 +70,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         @Nullable
         private volatile TerminalSignal terminal;
 
-        MergerDelayError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+        MergerDelayError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                AsyncContextProvider contextProvider) {
             // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to
             // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
@@ -80,7 +81,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader,
-                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                   ContextMap contextMap, AsyncContextProvider contextProvider) {
             offloadedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, signalOffloader, contextMap,
@@ -197,7 +198,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private Throwable completableError;
         private volatile int state;
 
-        Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+        Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, ContextMap contextMap,
                AsyncContextProvider contextProvider) {
             // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to
             // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
@@ -208,7 +209,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader,
-                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                   ContextMap contextMap, AsyncContextProvider contextProvider) {
             offloadedSubscriber.onSubscribe(
                     new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, signalOffloader, contextMap,

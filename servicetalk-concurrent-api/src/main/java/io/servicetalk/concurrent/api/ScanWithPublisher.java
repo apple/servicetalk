@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
@@ -47,7 +48,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
                 contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
@@ -68,7 +69,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         private final Subscriber<? super R> subscriber;
         private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         private final ScanWithMapper<? super T, ? extends R> mapper;
         private volatile long demand;
@@ -80,7 +81,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private Throwable errorCause;
 
         ScanWithSubscriber(final Subscriber<? super R> subscriber, final ScanWithMapper<? super T, ? extends R> mapper,
-                           final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
+                           final SignalOffloader signalOffloader, final ContextMap contextMap,
                            final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;

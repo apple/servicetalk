@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -38,7 +39,7 @@ final class CompletableConcatWithCompletables extends AbstractNoHandleSubscribeC
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber, SignalOffloader offloader, AsyncContextMap contextMap,
+    protected void handleSubscribe(Subscriber subscriber, SignalOffloader offloader, ContextMap contextMap,
                                    AsyncContextProvider contextProvider) {
         Subscriber offloadSubscriber = offloader.offloadSubscriber(
                 contextProvider.wrapCompletableSubscriber(subscriber, contextMap));

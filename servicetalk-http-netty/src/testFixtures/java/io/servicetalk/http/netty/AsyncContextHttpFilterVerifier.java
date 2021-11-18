@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -38,6 +38,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -55,9 +56,9 @@ import static org.hamcrest.Matchers.is;
  */
 public final class AsyncContextHttpFilterVerifier {
 
-    private static final AsyncContextMap.Key<String> K1 = AsyncContextMap.Key.newKey("k1");
-    private static final AsyncContextMap.Key<String> K2 = AsyncContextMap.Key.newKey("k2");
-    private static final AsyncContextMap.Key<String> K3 = AsyncContextMap.Key.newKey("k3");
+    private static final Key<String> K1 = newKey("k1", String.class);
+    private static final Key<String> K2 = newKey("k2", String.class);
+    private static final Key<String> K3 = newKey("k3", String.class);
 
     private static final String V1 = "v1";
     private static final String V2 = "v2";
@@ -144,7 +145,7 @@ public final class AsyncContextHttpFilterVerifier {
         };
     }
 
-    private static <T> void assertAsyncContext(final AsyncContextMap.Key<T> key, final T expectedValue,
+    private static <T> void assertAsyncContext(final Key<T> key, final T expectedValue,
                                                final Queue<Throwable> errorQueue) {
         final T actualValue = AsyncContext.get(key);
         if (!expectedValue.equals(actualValue)) {
