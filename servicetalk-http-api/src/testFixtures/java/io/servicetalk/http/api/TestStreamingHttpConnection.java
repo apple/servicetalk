@@ -25,7 +25,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toConnection;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public final class TestStreamingHttpConnection {
 
@@ -58,8 +57,7 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
+                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                         return failed(new UnsupportedOperationException());
                     }
 
@@ -114,9 +112,8 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return filterChain.request(strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return filterChain.request(request);
             }
 
             @Override
@@ -137,11 +134,6 @@ public final class TestStreamingHttpConnection {
             @Override
             public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
                 return filterChain.transportEventStream(eventKey);
-            }
-
-            @Override
-            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return filterChain.request(defaultStrategy(), request);
             }
 
             @Override

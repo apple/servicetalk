@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -90,9 +89,8 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                     }
                     return new StreamingHttpConnectionFilter(c) {
                         @Override
-                        public Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy,
-                                                                     StreamingHttpRequest request) {
-                            return delegate().request(strategy, request).whenOnError(t -> {
+                        public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+                            return delegate().request(request).whenOnError(t -> {
                                 try {
                                     assertThat("Unexpected exception type", t,
                                             instanceOf(RetryableException.class));

@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpApiConversions.requestStrategy;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -43,24 +43,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return request(requestStrategy(request, strategy), request);
-    }
-
-    @Override
     public ReservedBlockingStreamingHttpConnection reserveConnection(final HttpRequestMetaData metaData)
-            throws Exception {
-        return reserveConnection(requestStrategy(metaData, strategy), metaData);
-    }
-
-    @Override
-    public ReservedBlockingStreamingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
-                                                                     final HttpRequestMetaData metaData)
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
-        return new ReservedStreamingHttpConnectionToBlockingStreaming(
-                blockingInvocation(client.reserveConnection(strategy, metaData)), this.strategy, reqRespFactory);
+        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return blockingInvocation(client.reserveConnection(metaData)
+                .map(c -> new ReservedStreamingHttpConnectionToBlockingStreaming(c, this.strategy, reqRespFactory)));
     }
 
     @Override
@@ -69,9 +58,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                 final BlockingStreamingHttpRequest request) throws Exception {
-        return blockingInvocation(client.request(strategy, request.toStreamingRequest())).toBlockingStreamingResponse();
+    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return blockingInvocation(client.request(request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 
     @Override
@@ -147,11 +136,6 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         }
 
         @Override
-        public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-            return request(requestStrategy(request, strategy), request);
-        }
-
-        @Override
         public HttpConnectionContext connectionContext() {
             return context;
         }
@@ -162,9 +146,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         }
 
         @Override
-        public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                     final BlockingStreamingHttpRequest request) throws Exception {
-            return blockingInvocation(connection.request(strategy, request.toStreamingRequest()))
+        public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+            return blockingInvocation(connection.request(request.toStreamingRequest()))
                     .toBlockingStreamingResponse();
         }
 

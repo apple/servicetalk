@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -35,6 +36,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -106,7 +108,9 @@ class HttpClientOverrideOffloadingTest {
     void reserveRespectsDisable(final Params params) throws Exception {
         setUp(params);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        client.reserveConnection(this.overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
+        HttpRequest request = client.get("/");
+        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
+        client.reserveConnection(request).beforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread()));
@@ -120,7 +124,9 @@ class HttpClientOverrideOffloadingTest {
     void requestRespectsDisable(final Params params) throws Exception {
         setUp(params);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        client.request(this.overridingStrategy, client.get("/"))
+        HttpRequest request = client.get("/");
+        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
+        client.request(request)
                 .beforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response. " +

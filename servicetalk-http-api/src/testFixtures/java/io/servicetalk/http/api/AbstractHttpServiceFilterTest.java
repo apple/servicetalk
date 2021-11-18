@@ -92,9 +92,7 @@ public abstract class AbstractHttpServiceFilterTest {
 
         return new StreamingHttpRequester() {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return service.handle(mockConnectionContext, request, REQ_RES_FACTORY);
             }
 

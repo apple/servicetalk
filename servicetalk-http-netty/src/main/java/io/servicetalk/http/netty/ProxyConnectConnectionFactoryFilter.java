@@ -73,11 +73,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                                        @Nullable final TransportObserver observer) {
             return delegate().newConnection(resolvedAddress, observer).flatMap(c -> {
                 try {
-                    // We currently only have access to a StreamingHttpRequester, which means we are required to provide
-                    // an HttpExecutionStrategy. We use the strategy from the connection execution context which is
-                    // influenced by connection filters.
-                    HttpExecutionStrategy strategy = c.connectionContext().executionContext().executionStrategy();
-                    return c.request(strategy, c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                    return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                             .flatMap(response -> handleConnectResponse(c, response))
                             // Close recently created connection in case of any error while it connects to the proxy:
                             .onErrorResume(t -> c.closeAsync().concat(failed(t)));

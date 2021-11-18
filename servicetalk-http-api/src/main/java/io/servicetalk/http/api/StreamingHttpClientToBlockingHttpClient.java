@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpApiConversions.requestStrategy;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection.DEFAULT_BLOCKING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -42,19 +42,9 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     }
 
     @Override
-    public HttpResponse request(final HttpRequest request) throws Exception {
-        return request(requestStrategy(request, strategy), request);
-    }
-
-    @Override
     public ReservedBlockingHttpConnection reserveConnection(final HttpRequestMetaData metaData) throws Exception {
-        return reserveConnection(requestStrategy(metaData, strategy), metaData);
-    }
-
-    @Override
-    public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
-                                                            final HttpRequestMetaData metaData) throws Exception {
-        return blockingInvocation(client.reserveConnection(strategy, metaData)
+        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return blockingInvocation(client.reserveConnection(metaData)
                 .map(c -> new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(c, this.strategy,
                         reqRespFactory)));
     }
@@ -65,8 +55,9 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     }
 
     @Override
-    public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
-        return BlockingUtils.request(client, strategy, request);
+    public HttpResponse request(final HttpRequest request) throws Exception {
+        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        return BlockingUtils.request(client, request);
     }
 
     @Override
@@ -141,11 +132,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         }
 
         @Override
-        public HttpResponse request(final HttpRequest request) throws Exception {
-            return request(requestStrategy(request, strategy), request);
-        }
-
-        @Override
         public HttpConnectionContext connectionContext() {
             return context;
         }
@@ -156,8 +142,8 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         }
 
         @Override
-        public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
-            return BlockingUtils.request(connection, strategy, request);
+        public HttpResponse request(final HttpRequest request) throws Exception {
+            return BlockingUtils.request(connection, request);
         }
 
         @Override

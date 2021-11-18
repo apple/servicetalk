@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,27 +42,10 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
         return request(delegate, request);
     }
 
-    @Deprecated
-    @Override
-    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                       final StreamingHttpRequest request) {
-        return request(delegate, strategy, request);
-    }
-
     @Override
     public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
             final HttpRequestMetaData metaData) {
         return delegate.reserveConnection(metaData).map(ClientFilterToReservedConnectionFilter::new);
-    }
-
-    @Deprecated
-    @Override
-    public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-        return Single.defer(() -> {
-            metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return reserveConnection(metaData).subscribeShareContext();
-        });
     }
 
     @Override
@@ -112,28 +94,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
 
     /**
      * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on
-     * which to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
-     *
-     * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
-     * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
-     * @param request The request to delegate.
-     * @return the response.
-     * @deprecated Use {@link #request(StreamingHttpRequester, StreamingHttpRequest)}. If an
-     * {@link HttpExecutionStrategy} needs to be altered, provide a value for
-     * {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the {@link HttpRequestMetaData#context() request context}.
-     */
-    @Deprecated
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
-        return Single.defer(() -> {
-            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(delegate, request).subscribeShareContext();
-        });
-    }
-
-    /**
-     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on
      * which to call {@link StreamingHttpRequester#request(StreamingHttpRequest)}.
      *
      * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
@@ -155,12 +115,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return StreamingHttpClientFilter.this.request(delegate(), request);
-        }
-
-        @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
-            return StreamingHttpClientFilter.this.request(delegate, strategy, request);
         }
     }
 }

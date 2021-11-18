@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -105,7 +106,9 @@ class HttpStreamingClientOverrideOffloadingTest {
     @EnumSource(Params.class)
     void reserveRespectsDisable(final Params params) throws Exception {
         setUp(params);
-        client.reserveConnection(this.overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
+        StreamingHttpRequest request = client.get("/");
+        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
+        client.reserveConnection(request).beforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -124,7 +127,8 @@ class HttpStreamingClientOverrideOffloadingTest {
                         + currentThread()));
             }
         }));
-        client.request(this.overridingStrategy, req)
+        req.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
+        client.request(req)
                 .beforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +

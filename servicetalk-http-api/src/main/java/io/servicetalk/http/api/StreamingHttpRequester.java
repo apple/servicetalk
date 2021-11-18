@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
-
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
@@ -31,29 +29,7 @@ public interface StreamingHttpRequester extends StreamingHttpRequestFactory, Lis
      * @param request the request to send.
      * @return The response.
      */
-    default Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
-        // FIXME: 0.42 - remove default impl
-        throw new UnsupportedOperationException("Method request(StreamingHttpRequest) is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
-     * @param request the request to send.
-     * @return The response.
-     * @deprecated Use {@link #request(StreamingHttpRequest)}. If an {@link HttpExecutionStrategy} needs to be
-     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
-     * {@link HttpRequestMetaData#context() request context}.
-     */
-    @Deprecated
-    default Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request) {
-        return Single.defer(() -> {
-            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(request).subscribeShareContext();
-        });
-    }
+    Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

@@ -57,11 +57,10 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         return Single.defer(() -> {
            request.requestTarget(request.requestTarget(), charset);
-           return delegate.request(strategy, request).subscribeShareContext();
+           return delegate.request(request).subscribeShareContext();
         });
     }
 
@@ -70,9 +69,8 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RequestTargetEncoderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return RequestTargetEncoderHttpRequesterFilter.this.request(delegate, request);
             }
         };
     }
@@ -81,9 +79,8 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return RequestTargetEncoderHttpRequesterFilter.this.request(delegate(), strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return RequestTargetEncoderHttpRequesterFilter.this.request(delegate(), request);
             }
         };
     }

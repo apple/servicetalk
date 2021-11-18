@@ -117,22 +117,19 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
-                    return CatchAllHttpClientFilter.request(delegate, strategy, request);
+                    return CatchAllHttpClientFilter.request(delegate, request);
                 }
 
                 @Override
                 public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+                        final HttpRequestMetaData metaData) {
 
-                    return delegate().reserveConnection(strategy, metaData)
+                    return delegate().reserveConnection(metaData)
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
-                                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                                final HttpExecutionStrategy strategy,
-                                                                                final StreamingHttpRequest request) {
-                                    return CatchAllHttpClientFilter.request(delegate, strategy, request);
+                                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                    return CatchAllHttpClientFilter.request(delegate(), request);
                                 }
                             });
                 }
@@ -140,11 +137,10 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         }
 
         private static Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                             final HttpExecutionStrategy strategy,
                                                              final StreamingHttpRequest request) {
             final Single<StreamingHttpResponse> resp;
             try {
-                resp = delegate.request(strategy, request);
+                resp = delegate.request(request);
             } catch (Throwable t) {
                 return failed(toGrpcException(t));
             }

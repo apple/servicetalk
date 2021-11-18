@@ -64,9 +64,8 @@ public final class ContentCodingHttpRequesterFilter
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request)
+                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), request)
                         .subscribeShareContext());
             }
         };
@@ -76,9 +75,8 @@ public final class ContentCodingHttpRequesterFilter
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request)
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), request)
                         .subscribeShareContext());
             }
         };
@@ -91,13 +89,12 @@ public final class ContentCodingHttpRequesterFilter
     }
 
     private Single<StreamingHttpResponse> codecTransformBidirectionalIfNeeded(final StreamingHttpRequester delegate,
-                                                                              final HttpExecutionStrategy strategy,
                                                                               final StreamingHttpRequest request) {
         final BufferAllocator alloc = delegate.executionContext().bufferAllocator();
         setAcceptEncoding(request.headers(), acceptedEncodingsHeader);
         encodePayloadContentIfAvailable(request, alloc);
 
-        return decodePayloadContentIfEncoded(delegate.request(strategy, request), alloc);
+        return decodePayloadContentIfEncoded(delegate.request(request), alloc);
     }
 
     private Single<StreamingHttpResponse> decodePayloadContentIfEncoded(
