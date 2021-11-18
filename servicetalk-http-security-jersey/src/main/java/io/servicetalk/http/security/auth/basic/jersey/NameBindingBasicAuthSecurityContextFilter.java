@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BiFunction;
@@ -35,8 +34,7 @@ final class NameBindingBasicAuthSecurityContextFilter<UserInfo>
 
     NameBindingBasicAuthSecurityContextFilter(
             @Nullable final ContextMap.Key<UserInfo> userInfoKey,
-            @Nullable final AsyncContextMap.Key<UserInfo> userInfoAcmKey,
             final BiFunction<ContainerRequestContext, UserInfo, SecurityContext> securityContextFunction) {
-        super(userInfoKey, userInfoAcmKey, securityContextFunction);
+        super(userInfoKey, securityContextFunction);
     }
 }

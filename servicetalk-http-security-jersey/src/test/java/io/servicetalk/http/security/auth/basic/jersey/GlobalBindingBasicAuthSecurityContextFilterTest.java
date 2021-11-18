@@ -15,13 +15,12 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -30,19 +29,6 @@ import javax.ws.rs.core.Application;
 import static java.util.Collections.singleton;
 
 class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
-
-    @Override
-    protected Application application(@Nullable final Key<BasicUserInfo> userInfoKey) {
-        return new TestApplication() {
-            @Override
-            public Set<Object> getSingletons() {
-                return singleton(userInfoKey != null ?
-                        BasicAuthSecurityContextFilters.forGlobalBinding(userInfoKey).build() :
-                        BasicAuthSecurityContextFilters.forGlobalBinding().build()
-                );
-            }
-        };
-    }
 
     @Override
     protected Application application(@Nullable final ContextMap.Key<BasicUserInfo> userInfoKey) {
@@ -57,18 +43,18 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         };
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")
-    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
-    void authenticated(final boolean withUserInfo, final boolean withNewKey) throws Exception {
-        setUp(withUserInfo, withNewKey);
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
+    @ValueSource(booleans = {true, false})
+    void authenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextPresent(GlobalBindingResource.PATH);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")
-    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
-    void notAuthenticated(final boolean withUserInfo, final boolean withNewKey) throws Exception {
-        setUp(withUserInfo, withNewKey);
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
+    @ValueSource(booleans = {true, false})
+    void notAuthenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, false);
         assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, false);
     }

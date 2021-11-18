@@ -17,7 +17,6 @@ package io.servicetalk.http.utils.auth;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -110,8 +109,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
         private final CredentialsVerifier<UserInfo> credentialsVerifier;
         private final String realm;
         @Nullable
-        private AsyncContextMap.Key<UserInfo> userInfoKey;
-        @Nullable
         private ContextMap.Key<UserInfo> userInfoAsyncContextKey;
         @Nullable
         private ContextMap.Key<UserInfo> userInfoRequestContextKey;
@@ -145,20 +142,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
                        final String realm) {
             this.credentialsVerifier = requireNonNull(credentialsVerifier);
             this.realm = requireNonNull(realm);
-        }
-
-        /**
-         * Sets a {@link AsyncContextMap.Key key} to store a user info object of authenticated user in
-         * {@link AsyncContext}.
-         *
-         * @param userInfoKey a key to store a user info object in {@link AsyncContext}
-         * @return {@code this}
-         * @deprecated Use {@link #userInfoAsyncContextKey(ContextMap.Key)}
-         */
-        @Deprecated
-        public Builder<UserInfo> userInfoKey(final AsyncContextMap.Key<UserInfo> userInfoKey) {
-            this.userInfoKey = requireNonNull(userInfoKey);
-            return this;
         }
 
         /**
@@ -225,7 +208,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
          * @return a new {@link Builder}
          */
         public StreamingHttpServiceFilterFactory buildServer() {
-            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false, userInfoKey,
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false,
                     userInfoAsyncContextKey, userInfoRequestContextKey, utf8);
         }
 
@@ -253,7 +236,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
          * @return a new {@link StreamingHttpServiceFilterFactory}
          */
         public StreamingHttpServiceFilterFactory buildProxy() {
-            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true, userInfoKey,
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true,
                     userInfoAsyncContextKey, userInfoRequestContextKey, utf8);
         }
     }
@@ -261,8 +244,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
     private final CredentialsVerifier<UserInfo> credentialsVerifier;
     private final String realm;
     private final boolean proxy;
-    @Nullable
-    private final AsyncContextMap.Key<UserInfo> userInfoKey;
     @Nullable
     private final ContextMap.Key<UserInfo> userInfoAsyncContextKey;
     @Nullable
@@ -272,14 +253,12 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
     private BasicAuthHttpServiceFilter(final CredentialsVerifier<UserInfo> credentialsVerifier,
                                        final String realm,
                                        final boolean proxy,
-                                       @Nullable final AsyncContextMap.Key<UserInfo> userInfoKey,
                                        @Nullable final ContextMap.Key<UserInfo> userInfoAsyncContextKey,
                                        @Nullable final ContextMap.Key<UserInfo> userInfoRequestContextKey,
                                        final boolean utf8) {
         this.credentialsVerifier = credentialsVerifier;
         this.realm = realm;
         this.proxy = proxy;
-        this.userInfoKey = userInfoKey;
         this.userInfoAsyncContextKey = userInfoAsyncContextKey;
         this.userInfoRequestContextKey = userInfoRequestContextKey;
         this.utf8 = utf8;
@@ -402,9 +381,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
                                                               final StreamingHttpRequest request,
                                                               final StreamingHttpResponseFactory factory,
                                                               final UserInfo userInfo) {
-            if (config.userInfoKey != null) {
-                AsyncContext.put(config.userInfoKey, userInfo);
-            }
             if (config.userInfoAsyncContextKey != null) {
                 AsyncContext.put(config.userInfoAsyncContextKey, userInfo);
             }

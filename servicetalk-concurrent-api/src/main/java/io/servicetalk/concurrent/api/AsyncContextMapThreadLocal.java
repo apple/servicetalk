@@ -24,7 +24,7 @@ final class AsyncContextMapThreadLocal {
     static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL = withInitial(AsyncContextMapThreadLocal::newContextMap);
 
     private static ContextMap newContextMap() {
-        return new CopyOnWriteAsyncContextMap();
+        return new CopyOnWriteContextMap();
     }
 
     ContextMap get() {

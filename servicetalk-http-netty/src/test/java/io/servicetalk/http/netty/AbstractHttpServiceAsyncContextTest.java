@@ -16,7 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -49,6 +51,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
@@ -64,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class AbstractHttpServiceAsyncContextTest {
 
+    protected static final ContextMap.Key<CharSequence> K1 = newKey("k1", CharSequence.class);
     protected static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     protected static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
 
@@ -72,13 +76,6 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
     abstract ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                              boolean useImmediate, boolean asyncService) throws Exception;
-
-    abstract void putIntoAsyncContext(CharSequence value);
-
-    @Nullable
-    abstract CharSequence getFromAsyncContext();
-
-    abstract String keyToString();
 
     @Test
     void newRequestsGetFreshContext() throws Exception {
@@ -93,7 +90,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
         // The service should get an empty AsyncContext regardless of what is done outside the service.
         // There are utilities that may be accessed in a static context or before service initialization that
         // shouldn't pollute the service's AsyncContext.
-        putIntoAsyncContext(k1Value);
+        AsyncContext.put(K1, k1Value);
 
         try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0)),
                 useImmediate)) {
@@ -125,7 +122,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
             }
             latch.await();
             assertNull(causeRef.get());
-            assertEquals(k1Value, getFromAsyncContext());
+            assertEquals(k1Value, AsyncContext.get(K1));
         } finally {
             executorService.shutdown();
         }
@@ -179,7 +176,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 }
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
-                    putIntoAsyncContext(requestId);
+                    AsyncContext.put(K1, requestId);
                 }
                 final StreamingHttpRequest filteredRequest = request.transformMessageBody(pub ->
                         pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
@@ -219,10 +216,10 @@ abstract class AbstractHttpServiceAsyncContextTest {
         };
     }
 
-    private void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        CharSequence k1Value = getFromAsyncContext();
+    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
+        CharSequence k1Value = AsyncContext.get(K1);
         if (requestId != null && !requestId.equals(k1Value)) {
-            errorQueue.add(new AssertionError("AsyncContext[" + keyToString() + "]=[" + k1Value +
+            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
                     "], expected=[" + requestId + "]"));
         }
     }
@@ -235,7 +232,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
     final void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
         try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(context -> {
-                    putIntoAsyncContext("v1");
+                    AsyncContext.put(K1, "v1");
                     return completed();
                 })), serverUseImmediate);
 

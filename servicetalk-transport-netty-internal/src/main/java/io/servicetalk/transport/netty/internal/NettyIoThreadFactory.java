@@ -15,17 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.concurrent.api.AsyncContextMapHolder;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -100,16 +94,9 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
                 '}';
     }
 
-    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread,
-                                                                              ContextMapHolder {
-
-        private static final Logger LOGGER = LoggerFactory.getLogger(NettyIoThread.class);
-        private static final AtomicBoolean ASYNC_CONTEXT_MAP_DETECTED = new AtomicBoolean();
-
+    static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
         @Nullable
         private ContextMap context;
-        @Nullable
-        private AsyncContextMap asyncContextMap;
 
         NettyIoThread(@Nullable ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
@@ -125,27 +112,6 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
         public NettyIoThread context(@Nullable final ContextMap context) {
             this.context = context;
             return this;
-        }
-
-        @Override
-        public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
-            logWarning();
-            this.asyncContextMap = asyncContextMap;
-        }
-
-        @Nullable
-        @Override
-        public AsyncContextMap asyncContextMap() {
-            logWarning();
-            return asyncContextMap;
-        }
-
-        private static void logWarning() {
-            if (ASYNC_CONTEXT_MAP_DETECTED.compareAndSet(false, true)) {
-                LOGGER.warn("Detected usage of deprecated {}, migrate your code to {}",
-                        AsyncContextMapHolder.class.getCanonicalName(), ContextMapHolder.class.getCanonicalName(),
-                        new Throwable("Stack trace where AsyncContextMapHolder was used"));
-            }
         }
     }
 }

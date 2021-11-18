@@ -15,19 +15,20 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AsyncContextDisableTest {
-    private static final Key<String> K1 = Key.newKey("k1");
+    private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
 
     @Test
     void testDisableAsyncContext() throws Exception {
@@ -105,11 +106,11 @@ class AsyncContextDisableTest {
         }
     }
 
-    private static <T> void asyncContextPutExpectNoop(Key<T> key, T value) {
+    private static <T> void asyncContextPutExpectNoop(ContextMap.Key<T> key, T value) {
         int sizeBefore = AsyncContext.size();
         AsyncContext.put(key, value);
         assertThat("Size of AsyncContext unexpectedly changed", AsyncContext.size(), is(sizeBefore));
         assertThat("AsyncContext should not contain " + key + '=' + value,
-                AsyncContext.containsKey(key), is(false));
+                AsyncContext.contains(key, value), is(false));
     }
 }

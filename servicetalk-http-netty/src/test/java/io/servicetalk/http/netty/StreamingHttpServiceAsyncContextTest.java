@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static java.lang.Thread.currentThread;
 
-abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Test
     void newRequestsGetFreshContextImmediate() throws Exception {
@@ -95,7 +95,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
-                putIntoAsyncContext(requestId);
+                AsyncContext.put(K1, requestId);
                 return succeeded(factory.ok()
                         .setHeader(REQUEST_ID_HEADER, requestId));
             } else {
@@ -125,7 +125,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
 
             private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,
                                                            final StreamingHttpResponseFactory factory) {
-                CharSequence requestId = getFromAsyncContext();
+                CharSequence requestId = AsyncContext.get(K1);
                 // The test doesn't wait until the request body is consumed and only cares when the request is received
                 // from the client. So we force the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter.
@@ -135,7 +135,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
                                 // verify that if we expect to be offloaded, that we actually are
                                 return succeeded(factory.internalServerError());
                             }
-                            CharSequence requestId2 = getFromAsyncContext();
+                            CharSequence requestId2 = AsyncContext.get(K1);
                             if (requestId2 == requestId && requestId2 != null) {
                                 StreamingHttpResponse response = factory.ok();
                                 response.headers().set(REQUEST_ID_HEADER, requestId);

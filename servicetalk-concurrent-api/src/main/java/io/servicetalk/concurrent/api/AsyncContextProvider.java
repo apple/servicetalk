@@ -41,15 +41,6 @@ interface AsyncContextProvider {
      * Get the current context.
      *
      * @return The current context.
-     * @deprecated Use {@link #context()}.
-     */
-    @Deprecated
-    AsyncContextMap contextMap();
-
-    /**
-     * Get the current context.
-     *
-     * @return The current context.
      */
     ContextMap context();
 
