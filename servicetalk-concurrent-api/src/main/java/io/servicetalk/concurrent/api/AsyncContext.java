@@ -73,65 +73,12 @@ public final class AsyncContext {
     }
 
     /**
-     * Get the current {@link AsyncContextMap}.
-     *
-     * @return the current {@link AsyncContextMap}
-     * @deprecated Use {@link #context()}.
-     */
-    @Deprecated
-    public static AsyncContextMap current() {
-        return provider().contextMap();
-    }
-
-    /**
      * Get the current {@link ContextMap}.
      *
      * @return the current {@link ContextMap}
      */
     public static ContextMap context() {
         return provider().context();
-    }
-
-    /**
-     * Registers a new mapping between {@link AsyncContextMap.Key} and {@link ContextMap.Key} to allow smooth migration
-     * to the new API.
-     * <p>
-     * If the mapping is registered using this method, it will be possible to use both keys for {@link AsyncContext}
-     * operations at the same time, allowing step-by-step migration from deprecated to the new keys. For example, it
-     * will be possible to use {@link #put(AsyncContextMap.Key, Object)} and {@link #get(ContextMap.Key)} to retrieve
-     * the same value.
-     *
-     * @param acmKey {@link AsyncContextMap.Key} to map
-     * @param cmKey {@link ContextMap.Key} to map
-     * @param <T> type of the value for these keys
-     * @deprecated This method can be used only as a temporary approach until the full codebase is migrated to
-     * {@link ContextMap} API. This method will be removed in future releases.
-     */
-    @Deprecated
-    public static <T> void newKeyMapping(final AsyncContextMap.Key<T> acmKey, final ContextMap.Key<T> cmKey) {
-        AsyncContextMapToContextMapAdapter.newKeyMapping(acmKey, cmKey);
-    }
-
-    /**
-     * Convenience method to put a value to the current context.
-     *
-     * @param key   the key used to index {@code value}. Cannot be {@code null}.
-     * @param value the value to put.
-     * @param <T>   The type of object associated with {@code key}.
-     * @return The previous value associated with the {@code key}, or {@code null} if there was none. {@code null} can
-     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
-     * implementation).
-     * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
-     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
-     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
-     * implementation.
-     * @see AsyncContextMap#put(AsyncContextMap.Key, Object)
-     * @deprecated Use {@link #put(ContextMap.Key, Object)}
-     */
-    @Deprecated
-    @Nullable
-    public static <T> T put(final AsyncContextMap.Key<T> key, @Nullable final T value) {
-        return current().put(key, value);
     }
 
     /**
@@ -221,16 +168,15 @@ public final class AsyncContext {
      * @param map contains the entries that will be added.
      * @throws ConcurrentModificationException done on a best effort basis if the passed {@code map} is detected to be
      * modified while attempting to put all entries.
-     * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
-     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
-     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * @throws NullPointerException (optional behavior) if any of the {@code map} entries has a {@code null} {@code key}
+     * or {@code value} and the underlying {@link ContextMap} implementation doesn't support {@code null} keys or
+     * values.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
      * implementation.
-     * @see AsyncContextMap#putAll(Map)
-     * @deprecated Use {@link #putAllFromMap(Map)}
+     * @see ContextMap#putAll(Map)
      */
-    @Deprecated
-    public static void putAll(final Map<AsyncContextMap.Key<?>, Object> map) {
-        current().putAll(map);
+    public static void putAll(final Map<ContextMap.Key<?>, Object> map) {
+        context().putAll(map);
     }
 
     /**
@@ -245,29 +191,11 @@ public final class AsyncContext {
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
      * implementation.
      * @see ContextMap#putAll(Map)
+     * @deprecated Use {@link #putAll(Map)}
      */
-    // FIXME: 0.42 - add putAll(Map) alias method and consider deprecating putAllFromMap(Map).
-    //  A different name was used to avoid clashing with pre-existing forEach method.
+    @Deprecated // 0.43
     public static void putAllFromMap(final Map<ContextMap.Key<?>, Object> map) {
-        context().putAll(map);
-    }
-
-    /**
-     * Convenience method to remove an entry from the current context.
-     *
-     * @param <T> The type of object associated with {@code key}.
-     * @param key The key to remove.
-     * @return the previous value associated with {@code key}, or {@code null} if there was none. A {@code null}
-     * value may also indicate there was a previous value which was {@code null}.
-     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
-     * implementation.
-     * @see AsyncContextMap#remove(AsyncContextMap.Key)
-     * @deprecated Use {@link #remove(ContextMap.Key)}
-     */
-    @Deprecated
-    @Nullable
-    public static <T> T remove(final AsyncContextMap.Key<T> key) {
-        return current().remove(key);
+        putAll(map);
     }
 
     /**
@@ -289,18 +217,19 @@ public final class AsyncContext {
     }
 
     /**
-     * Convenience method to remove all the entries from the current context.
+     * Convenience method to remove all entries from the current context associated with the keys from the
+     * passed {@link Iterable}.
      *
-     * @param entries A {@link Iterable} which contains all the keys to remove.
+     * @param keys The {@link ContextMap.Key}s that identify entries for removal.
      * @return {@code true} if this map has changed as a result of this operation.
-     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * @throws NullPointerException (optional behavior) if any of the {@code keys} is {@code null} and the underlying
+     * {@link ContextMap} implementation doesn't support {@code null} keys.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
      * implementation.
-     * @see AsyncContextMap#removeAll(Iterable)
-     * @deprecated Use {@link #removeAllEntries(Iterable)}
+     * @see ContextMap#removeAll(Iterable)
      */
-    @Deprecated
-    public static boolean removeAll(final Iterable<AsyncContextMap.Key<?>> entries) {
-        return current().removeAll(entries);
+    public static boolean removeAll(final Iterable<ContextMap.Key<?>> keys) {
+        return context().removeAll(keys);
     }
 
     /**
@@ -314,11 +243,11 @@ public final class AsyncContext {
      * @throws UnsupportedOperationException if this method is not supported by the underlying {@link ContextMap}
      * implementation.
      * @see ContextMap#removeAll(Iterable)
+     * @deprecated Use {@link #removeAll(Iterable)}
      */
-    // FIXME: 0.42 - add removeAll(Iterable) alias method and consider deprecating removeAllEntries(Iterable).
-    //  A different name was used to avoid clashing with pre-existing forEach method.
+    @Deprecated // 0.43
     public static boolean removeAllEntries(final Iterable<ContextMap.Key<?>> keys) {
-        return context().removeAll(keys);
+        return removeAll(keys);
     }
 
     /**
@@ -330,25 +259,6 @@ public final class AsyncContext {
      */
     public static void clear() {
         context().clear();
-    }
-
-    /**
-     * Convenience method to get the value associated with {@code key} from the current context.
-     *
-     * @param key the key to lookup.
-     * @param <T> The anticipated type of object associated with {@code key}.
-     * @return the value associated with {@code key}, or {@code null} if no value is associated. {@code null} can
-     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
-     * underlying {@link AsyncContextMap} implementation).
-     * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
-     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
-     * @see AsyncContextMap#get(AsyncContextMap.Key)
-     * @deprecated Use {@link #get(ContextMap.Key)}
-     */
-    @Deprecated
-    @Nullable
-    public static <T> T get(final AsyncContextMap.Key<T> key) {
-        return current().get(key);
     }
 
     /**
@@ -384,22 +294,6 @@ public final class AsyncContext {
     @Nullable
     public static <T> T getOrDefault(final ContextMap.Key<T> key, T defaultValue) {
         return context().getOrDefault(key, defaultValue);
-    }
-
-    /**
-     * Convenience method to determine if the current context contains an entry corresponding to {@code key}.
-     *
-     * @param key the key to lookup.
-     * @return {@code true} if the current context contains an entry corresponding to {@code key}.
-     * {@code false} otherwise.
-     * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
-     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
-     * @see AsyncContextMap#containsKey(AsyncContextMap.Key)
-     * @deprecated Use {@link #containsKey(ContextMap.Key)}
-     */
-    @Deprecated
-    public static boolean containsKey(final AsyncContextMap.Key<?> key) {
-        return current().containsKey(key);
     }
 
     /**
@@ -472,16 +366,14 @@ public final class AsyncContext {
      * @param consumer Each entry will be passed as key and value arguments to this {@link BiPredicate}. A consumer
      * predicate should return {@code true} if it wants to keep iterating or {@code false} to stop iteration at the
      * current entry.
-     * @return {@code null} if {@code consumer} iterated through all entries or the {@link AsyncContextMap.Key} at which
-     * the iteration stopped.
+     * @return {@code null} if {@code consumer} iterated through all entries or the {@link ContextMap.Key} at which the
+     * iteration stopped.
      * @throws NullPointerException if {@code consumer} is null.
-     * @see AsyncContextMap#forEach(BiPredicate)
-     * @deprecated Use {@link #forEachEntry(BiPredicate)}
+     * @see ContextMap#forEach(BiPredicate)
      */
-    @Deprecated
     @Nullable
-    public static AsyncContextMap.Key<?> forEach(final BiPredicate<AsyncContextMap.Key<?>, Object> consumer) {
-        return current().forEach(consumer);
+    public static ContextMap.Key<?> forEach(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
+        return context().forEach(consumer);
     }
 
     /**
@@ -494,9 +386,9 @@ public final class AsyncContext {
      * iteration stopped.
      * @throws NullPointerException if {@code consumer} is null.
      * @see ContextMap#forEach(BiPredicate)
+     * @deprecated Use {@link #forEach(BiPredicate)}
      */
-    // FIXME: 0.42 - add forEach(BiPredicate) alias method and consider deprecating forEachPair(BiPredicate).
-    //  A different name was used to avoid clashing with pre-existing forEach method.
+    @Deprecated // 0.43
     @Nullable
     public static ContextMap.Key<?> forEachEntry(final BiPredicate<ContextMap.Key<?>, Object> consumer) {
         return context().forEach(consumer);

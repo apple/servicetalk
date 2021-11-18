@@ -32,7 +32,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 final class NoopAsyncContextProvider implements AsyncContextProvider {
@@ -42,12 +41,6 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
         // singleton
     }
 
-    @Override
-    public AsyncContextMap contextMap() {
-        return NoopAsyncContextMap.INSTANCE;
-    }
-
-    @Nonnull
     @Override
     public ContextMap context() {
         return NoopContextMap.INSTANCE;
@@ -160,72 +153,6 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func,
                                                         final ContextMap context) {
         return func;
-    }
-
-    @Deprecated
-    private static final class NoopAsyncContextMap implements AsyncContextMap {
-        @Deprecated
-        static final AsyncContextMap INSTANCE = new NoopAsyncContextMap();
-
-        private NoopAsyncContextMap() {
-            // singleton
-        }
-
-        @Nullable
-        @Override
-        public <T> T get(final Key<T> key) {
-            return null;
-        }
-
-        @Override
-        public boolean containsKey(final Key<?> key) {
-            return false;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-
-        @Nullable
-        @Override
-        public <T> T put(final Key<T> key, @Nullable final T value) {
-            return null;
-        }
-
-        @Override
-        public void putAll(final Map<Key<?>, Object> map) {
-        }
-
-        @Override
-        public <T> T remove(final Key<T> key) {
-            return null;
-        }
-
-        @Override
-        public boolean removeAll(final Iterable<Key<?>> entries) {
-            return false;
-        }
-
-        @Override
-        public void clear() {
-        }
-
-        @Nullable
-        @Override
-        public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-            return null;
-        }
-
-        @Override
-        public AsyncContextMap copy() {
-            return this;
-        }
     }
 
     private static final class NoopContextMap implements ContextMap {

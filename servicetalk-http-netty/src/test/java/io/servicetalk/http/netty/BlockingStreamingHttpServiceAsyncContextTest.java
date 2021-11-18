@@ -27,7 +27,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.Thread.currentThread;
 
-abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
@@ -36,7 +36,7 @@ abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttp
         return serverBuilder.listenBlockingStreamingAndAwait(newEmptyAsyncContextService());
     }
 
-    private BlockingStreamingHttpService newEmptyAsyncContextService() {
+    private static BlockingStreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, response) -> {
             request.payloadBody().forEach(__ -> { });
 
@@ -46,7 +46,7 @@ abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttp
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
-                putIntoAsyncContext(requestId);
+                AsyncContext.put(K1, requestId);
                 response.setHeader(REQUEST_ID_HEADER, requestId);
             } else {
                 response.status(BAD_REQUEST);
@@ -62,7 +62,7 @@ abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttp
         return serverBuilder.listenBlockingStreamingAndAwait(service());
     }
 
-    private BlockingStreamingHttpService service() {
+    private static BlockingStreamingHttpService service() {
         return new BlockingStreamingHttpService() {
             @Override
             public void handle(final HttpServiceContext ctx,
@@ -73,7 +73,7 @@ abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttp
 
             private void doHandle(final BlockingStreamingHttpRequest request,
                                   final BlockingStreamingHttpServerResponse response) throws Exception {
-                CharSequence requestId = getFromAsyncContext();
+                CharSequence requestId = AsyncContext.get(K1);
                 // The test forces the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter.
                 request.payloadBody().forEach(__ -> { });
@@ -84,7 +84,7 @@ abstract class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttp
                     return;
                 }
 
-                CharSequence requestId2 = getFromAsyncContext();
+                CharSequence requestId2 = AsyncContext.get(K1);
                 if (requestId2 == requestId && requestId2 != null) {
                     response.setHeader(REQUEST_ID_HEADER, requestId);
                 } else {

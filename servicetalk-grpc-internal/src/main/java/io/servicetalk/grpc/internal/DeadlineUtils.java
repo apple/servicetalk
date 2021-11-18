@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.internal;
 
-import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -45,21 +43,10 @@ public final class DeadlineUtils {
     public static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
 
     /**
-     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
-     * included in the request can be calculated.
-     *
-     * @deprecated Use {@link #GRPC_DEADLINE_CONTEXT_KEY}
-     */
-    @Deprecated
-    public static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY =
-            AsyncContextMap.Key.newKey("grpc-deadline");
-
-    /**
      * gRPC timeout is stored in a context as a deadline so that when propagated to a new request the remaining time to
      * be included in the request can be calculated.
      */
-    public static final ContextMap.Key<Long> GRPC_DEADLINE_CONTEXT_KEY =
-            ContextMap.Key.newKey("grpc-deadline", Long.class);
+    public static final ContextMap.Key<Long> GRPC_DEADLINE_KEY = ContextMap.Key.newKey("grpc-deadline", Long.class);
 
     /**
      * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
@@ -107,10 +94,6 @@ public final class DeadlineUtils {
      * Allowed time units for gRPC timeout
      */
     private static final char[] TIMEOUT_UNIT_CHARS = "numSMH".toCharArray();
-
-    static {
-        AsyncContext.newKeyMapping(GRPC_DEADLINE_KEY, GRPC_DEADLINE_CONTEXT_KEY);
-    }
 
     private DeadlineUtils() {
         // No instances.

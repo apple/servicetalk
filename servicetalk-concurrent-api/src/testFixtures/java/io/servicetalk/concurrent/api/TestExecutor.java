@@ -321,7 +321,7 @@ public class TestExecutor implements Executor {
      *  Also ensures a unique object each time, so the same Runnable can be executed multiple times.
      *  Sets the thread name to {@code TestExecutor-#} while running the task so that capturing the thread name makes
      *  sense and during debugging the execution context is more obvious.
-     *  Captures and sets the AsyncContextMap since the thread executing the {@code Runnable} may be different than the
+     *  Captures and sets the AsyncContext map since the thread executing the {@code Runnable} may be different than the
      *  thread which called {@link #execute(Runnable)}.
      */
     private static final class RunnableWrapper implements Runnable {
