@@ -492,8 +492,5 @@ public interface HttpRequestMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpRequestMetaData context(ContextMap context) {
-        HttpMetaData.super.context(context);
-        return this;
-    }
+    HttpRequestMetaData context(ContextMap context);
 }

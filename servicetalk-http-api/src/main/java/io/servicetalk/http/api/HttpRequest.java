@@ -223,8 +223,5 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpRequest context(ContextMap context) {
-        HttpRequestMetaData.super.context(context);
-        return this;
-    }
+    HttpRequest context(ContextMap context);
 }
