@@ -98,7 +98,6 @@ public final class TcpConnector {
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                 ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory, observer);
                 try {
-
                     Future<?> connectFuture = connect0(localAddress, resolvedRemoteAddress, config, autoRead,
                             executionContext, connectHandler);
                     connectHandler.connectFuture(connectFuture);

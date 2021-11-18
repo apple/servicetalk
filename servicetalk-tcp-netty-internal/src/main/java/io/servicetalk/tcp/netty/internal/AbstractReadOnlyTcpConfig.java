@@ -51,7 +51,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
     }
 
     AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig<SecurityConfig> from) {
-        options = nonNullOptions(from.options());
+        options = from.options();
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
