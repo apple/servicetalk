@@ -161,11 +161,10 @@ class GrpcSslAndNonSslConnectionsTest {
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
                      .initializeHttp(builder -> builder
-                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                                     .peerHost(serverPemHostname()).build())
+                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                     .inferPeerHost(false)
                      .inferSniHostname(false))
-                     .buildBlocking(clientFactory());
-        ) {
+                     .buildBlocking(clientFactory())) {
             final TesterProto.TestResponse response = client.test(REQUEST);
             assertThat(response, is(notNullValue()));
             assertThat(response.getMessage(), is(notNullValue()));
@@ -183,11 +182,10 @@ class GrpcSslAndNonSslConnectionsTest {
              BlockingTesterClient client = GrpcClients.forAddress(
                      getLoopbackAddress().getHostName(), serverHostAndPort(serverContext).port())
                      .initializeHttp(builder -> builder
-                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                                     .peerHost(serverPemHostname()).build())
+                             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                             .inferPeerHost(false)
                              .inferSniHostname(false))
-                     .buildBlocking(clientFactory());
-        ) {
+                     .buildBlocking(clientFactory())) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> client.test(REQUEST));
             assertThat(e.getCause(), instanceOf(SSLHandshakeException.class));
         }

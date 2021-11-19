@@ -24,11 +24,14 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forResolvedAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -91,12 +94,9 @@ class DefaultSingleAddressHttpClientBuilderTest {
             try {
                 SSLSession sslSession = conn.connectionContext().sslSession();
                 assertNotNull(sslSession);
-                assertEquals(hostName, sslSession.getPeerHost());
-                if (port == null) {
-                    assertEquals(-1, sslSession.getPeerPort());
-                } else {
-                    assertEquals(port.intValue(), sslSession.getPeerPort());
-                }
+                assertThat(sslSession.getPeerHost(), startsWith(hostName));
+                InetSocketAddress socketAddress = (InetSocketAddress) conn.connectionContext().remoteAddress();
+                assertEquals(socketAddress.getPort(), sslSession.getPeerPort());
             } finally {
                 conn.release();
             }

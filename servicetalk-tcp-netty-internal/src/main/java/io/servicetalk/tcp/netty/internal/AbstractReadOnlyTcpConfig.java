@@ -50,6 +50,13 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
         wireLoggerConfig = from.wireLoggerConfig();
     }
 
+    AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig<SecurityConfig> from) {
+        options = from.options();
+        idleTimeoutMs = from.idleTimeoutMs();
+        flushStrategy = from.flushStrategy();
+        wireLoggerConfig = from.wireLoggerConfig();
+    }
+
     @SuppressWarnings("rawtypes")
     static Map<ChannelOption, Object> nonNullOptions(@Nullable Map<ChannelOption, Object> options) {
         return options == null ? emptyMap() : unmodifiableMap(new HashMap<>(options));

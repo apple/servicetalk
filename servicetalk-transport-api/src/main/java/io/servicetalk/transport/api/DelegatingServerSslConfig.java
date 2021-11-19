@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.transport.api;
 
-import io.servicetalk.transport.api.ServerSslConfig;
-import io.servicetalk.transport.api.SslClientAuthMode;
-
-class DelegatingServerSslConfig extends DelegatingSslConfig<ServerSslConfig> implements ServerSslConfig {
-    DelegatingServerSslConfig(final ServerSslConfig delegate) {
+/**
+ * Wrap a {@link ServerSslConfig} and delegate all methods to it.
+ */
+public class DelegatingServerSslConfig extends DelegatingSslConfig<ServerSslConfig> implements ServerSslConfig {
+    /**
+     * Create a new instance.
+     * @param delegate The instance to delegate to.
+     */
+    protected DelegatingServerSslConfig(final ServerSslConfig delegate) {
         super(delegate);
     }
 
