@@ -29,7 +29,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
@@ -60,17 +59,16 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
         }, newFilterFactory()));
 
         HttpRequest request = client.get("/");
-        HttpResponse response = client.request(noOffloadsStrategy(), request);
+        HttpResponse response = client.request(request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-        response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(OK));
 
         // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and perform relative redirect
-        response = client.request(noOffloadsStrategy(),
-                client.get("/")
-                        .version(HTTP_1_0)
-                        .addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(client.get("/")
+                .version(HTTP_1_0)
+                .addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(OK));
     }
 
@@ -87,17 +85,16 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
             return succeeded(responseFactory.ok());
         }, newFilterFactory()));
         HttpRequest request = client.get("/");
-        HttpResponse response = client.request(noOffloadsStrategy(), request);
+        HttpResponse response = client.request(request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-        response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(OK));
 
         // HTTP/1.0 doesn't support HOST => we can not infer that the absolute-form location is relative, don't redirect
-        response = client.request(noOffloadsStrategy(),
-                client.get("/")
-                        .version(HTTP_1_0)
-                        .addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(client.get("/")
+                .version(HTTP_1_0)
+                .addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
     }
 
@@ -114,10 +111,10 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
             return succeeded(responseFactory.ok());
         }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
-        HttpResponse response = client.request(noOffloadsStrategy(), request);
+        HttpResponse response = client.request(request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-        response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(OK));
     }
 
@@ -134,10 +131,10 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
             return succeeded(responseFactory.ok());
         }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io:80");
-        HttpResponse response = client.request(noOffloadsStrategy(), request);
+        HttpResponse response = client.request(request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-        response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
+        response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
         assertThat(response.status(), equalTo(OK));
     }
 

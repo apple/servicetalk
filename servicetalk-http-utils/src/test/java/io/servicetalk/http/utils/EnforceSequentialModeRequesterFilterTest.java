@@ -34,7 +34,6 @@ import java.util.concurrent.TimeoutException;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -53,9 +52,9 @@ class EnforceSequentialModeRequesterFilterTest {
 
     @BeforeEach
     void setUp() {
-        when(client.request(any(), any())).thenAnswer(invocation -> {
+        when(client.request(any())).thenAnswer(invocation -> {
             // Simulate consumption of the request payload body:
-            StreamingHttpRequest request = invocation.getArgument(1);
+            StreamingHttpRequest request = invocation.getArgument(0);
             request.payloadBody().forEach(__ -> { /* noop */ });
             return succeeded(REQ_RES_FACTORY.ok());
         });
@@ -67,7 +66,7 @@ class EnforceSequentialModeRequesterFilterTest {
         StreamingHttpRequest request = REQ_RES_FACTORY.post("/").payloadBody(payloadBody);
 
         FilterableStreamingHttpClient client = EnforceSequentialModeRequesterFilter.INSTANCE.create(this.client);
-        StepVerifiers.create(client.request(defaultStrategy(), request))
+        StepVerifiers.create(client.request(request))
                 .expectCancellable()
                 .then(payloadBody::onComplete)
                 .expectSuccess()
@@ -80,7 +79,7 @@ class EnforceSequentialModeRequesterFilterTest {
 
         StreamingHttpClientFilter client = EnforceSequentialModeRequesterFilter.INSTANCE.create(this.client);
         AssertionError e = assertThrows(AssertionError.class,
-                () -> StepVerifiers.create(client.request(defaultStrategy(), request))
+                () -> StepVerifiers.create(client.request(request))
                         .expectCancellable()
                         .expectSuccess()
                         .verify(Duration.ofMillis(100)));
@@ -91,7 +90,7 @@ class EnforceSequentialModeRequesterFilterTest {
     void withoutFilterResponseCompletesIndependently() {
         StreamingHttpRequest request = REQ_RES_FACTORY.post("/").payloadBody(never());
 
-        StepVerifiers.create(this.client.request(defaultStrategy(), request))
+        StepVerifiers.create(this.client.request(request))
                 .expectCancellable()
                 .expectSuccess()
                 .verify();

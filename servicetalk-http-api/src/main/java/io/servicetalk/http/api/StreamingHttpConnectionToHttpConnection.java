@@ -55,11 +55,6 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpRequest request) {
-        return request(strategy, request);
-    }
-
-    @Override
     public HttpConnectionContext connectionContext() {
         return context;
     }
@@ -75,8 +70,9 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
-        return connection.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
+    public Single<HttpResponse> request(final HttpRequest request) {
+        return connection.request(request.toStreamingRequest())
+                .flatMap(response -> response.toResponse().subscribeShareContext());
     }
 
     @Override

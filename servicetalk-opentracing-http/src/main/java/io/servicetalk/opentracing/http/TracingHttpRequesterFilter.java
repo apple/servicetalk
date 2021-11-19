@@ -106,9 +106,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate, strategy, request).subscribeShareContext());
+                return Single.defer(() -> trackRequest(delegate, request).subscribeShareContext());
             }
        };
     }
@@ -118,9 +117,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         return new StreamingHttpConnectionFilter(connection) {
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate(), strategy, request).subscribeShareContext());
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return Single.defer(() -> trackRequest(delegate(), request).subscribeShareContext());
             }
        };
     }
@@ -132,12 +130,11 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
     }
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
-                                                       final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
         ScopeTracker tracker = newTracker(request);
         Single<StreamingHttpResponse> response;
         try {
-            response = delegate.request(strategy, request);
+            response = delegate.request(request);
         } catch (Throwable t) {
             tracker.onError(t);
             return Single.failed(t);

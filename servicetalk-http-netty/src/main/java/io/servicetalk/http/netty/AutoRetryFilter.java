@@ -20,7 +20,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -30,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 /**
  * A {@link StreamingHttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer}
- * not being ready for {@link #request(HttpExecutionStrategy, StreamingHttpRequest)} and retry/delay requests until the
+ * not being ready for {@link #request(StreamingHttpRequest)} and retry/delay requests until the
  * {@link LoadBalancer} is ready.
  */
 final class AutoRetryFilter extends StreamingHttpClientFilter {
@@ -43,15 +42,14 @@ final class AutoRetryFilter extends StreamingHttpClientFilter {
 
     @Override
     public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-        return delegate().reserveConnection(strategy, metaData)
+            final HttpRequestMetaData metaData) {
+        return delegate().reserveConnection(metaData)
                 .retryWhen(retryStrategy);
     }
 
     @Override
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
-        return delegate.request(strategy, request).retryWhen(retryStrategy);
+        return delegate.request(request).retryWhen(retryStrategy);
     }
 }

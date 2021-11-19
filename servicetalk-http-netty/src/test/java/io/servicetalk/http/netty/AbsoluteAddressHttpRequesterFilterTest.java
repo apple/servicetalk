@@ -35,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -56,15 +55,15 @@ class AbsoluteAddressHttpRequesterFilterTest {
 
     @BeforeEach
     void setup() {
-        when(delegate.request(any(), any())).thenReturn(succeeded(response));
+        when(delegate.request(any())).thenReturn(succeeded(response));
         filter = new AbsoluteAddressHttpRequesterFilter("http", "host:80").create(delegate);
     }
 
     @Test
     void shouldAddAuthorityToOriginFormRequestTarget() throws Exception {
         request.requestTarget("/path?query");
-        filter.request(noOffloadsStrategy(), request).toFuture().get();
-        verify(delegate).request(any(), requestCapture.capture());
+        filter.request(request).toFuture().get();
+        verify(delegate).request(requestCapture.capture());
 
         final StreamingHttpRequest capturedRequest = requestCapture.getValue();
         MatcherAssert.assertThat(capturedRequest.requestTarget(), is("http://host:80/path?query"));
@@ -73,8 +72,8 @@ class AbsoluteAddressHttpRequesterFilterTest {
     @Test
     void shouldNotAddAuthorityToAbsoluteFormRequestTarget() throws Exception {
         request.requestTarget("https://otherhost:443/otherpath?otherQuery");
-        filter.request(noOffloadsStrategy(), request).toFuture().get();
-        verify(delegate).request(any(), requestCapture.capture());
+        filter.request(request).toFuture().get();
+        verify(delegate).request(requestCapture.capture());
 
         final StreamingHttpRequest capturedRequest = requestCapture.getValue();
         MatcherAssert.assertThat(capturedRequest.requestTarget(), is("https://otherhost:443/otherpath?otherQuery"));

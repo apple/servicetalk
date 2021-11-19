@@ -19,22 +19,12 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
 public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    @Override   // FIXME: 0.42 - remove, this method is defined in HttpRequester
-    Single<HttpResponse> request(HttpRequest request);
-
     /**
      * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
      *
@@ -44,29 +34,6 @@ public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
     Single<ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData);
-
-    /**
-     * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
-     * <p>
-     * <b>Note:</b> reserved connections may not be restricted by the max pipelined requests count.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
-     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
-     * For example this may provide some insight into shard or other info.
-     * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
-     * @deprecated Use {@link #reserveConnection(HttpRequestMetaData)}. If an {@link HttpExecutionStrategy} needs to be
-     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
-     * {@link HttpRequestMetaData#context() request context}.
-     */
-    @Deprecated
-    default Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                             HttpRequestMetaData metaData) {
-        return Single.defer(() -> {
-            metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return reserveConnection(metaData).subscribeShareContext();
-        });
-    }
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.

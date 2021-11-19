@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -95,11 +94,10 @@ class ResponseTimeoutTest {
                 .appendClientFilter(client -> new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return Single.succeeded(null)
                                 .afterOnSubscribe(delayedClientCancels::add)
-                                .concat(delegate().request(strategy, request)
+                                .concat(delegate().request(request)
                                         .liftSync(target -> new Subscriber<StreamingHttpResponse>() {
                                             @Override
                                             public void onSubscribe(final Cancellable cancellable) {

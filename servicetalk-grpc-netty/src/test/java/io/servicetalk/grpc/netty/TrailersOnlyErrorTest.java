@@ -26,7 +26,6 @@ import io.servicetalk.grpc.netty.TesterProto.Tester;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -223,9 +222,8 @@ class TrailersOnlyErrorTest {
                 return new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
-                        return super.request(delegate, strategy, request)
+                        return super.request(delegate, request)
                                 .map(response -> {
                                     assertGrpcStatusInHeaders(response, errors);
                                     return response;

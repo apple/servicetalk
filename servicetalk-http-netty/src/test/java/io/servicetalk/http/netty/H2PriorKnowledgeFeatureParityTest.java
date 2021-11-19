@@ -147,10 +147,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -461,7 +461,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             assertThat(client.request(client.get("/").payloadBody("", textSerializerUtf8()))
-                    .payloadBody(textSerializerUtf8()), isEmptyString());
+                    .payloadBody(textSerializerUtf8()), is(emptyString()));
         }
     }
 
@@ -605,13 +605,12 @@ class H2PriorKnowledgeFeatureParityTest {
                 .appendClientFilter(client1 -> new StreamingHttpClientFilter(client1) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return request.toRequest().map(req -> {
                             req.headers().remove(TRANSFER_ENCODING);
                             headersModifier.accept(req.headers(), req.payloadBody().readableBytes());
                             return req.toStreamingRequest();
-                        }).flatMap(req -> delegate.request(strategy, req));
+                        }).flatMap(delegate::request);
                     }
                 }).buildBlocking()) {
             HttpRequest request = client.get("/").payloadBody("a", textSerializerUtf8());
@@ -941,7 +940,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             assertThat(client.request(client.get("/").payloadBody("", textSerializerUtf8()))
-                    .payloadBody(textSerializerUtf8()), isEmptyString());
+                    .payloadBody(textSerializerUtf8()), is(emptyString()));
         }
     }
 
@@ -1097,9 +1096,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 .appendClientFilter(client2 -> new StreamingHttpClientFilter(client2) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
-                        return asyncContextTestRequest(errorQueue, delegate, strategy, request);
+                        return asyncContextTestRequest(errorQueue, delegate, request);
                     }
                 })
                 .buildBlocking()) {
@@ -1124,9 +1122,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 .executionStrategy(clientExecutionStrategy)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
-                        return asyncContextTestRequest(errorQueue, delegate(), strategy, request);
+                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                        return asyncContextTestRequest(errorQueue, delegate(), request);
                     }
                 })
                 .buildBlocking()) {
@@ -1585,15 +1582,14 @@ class H2PriorKnowledgeFeatureParityTest {
         return result.toString();
     }
 
-    private static Single<StreamingHttpResponse> asyncContextTestRequest(Queue<Throwable> errorQueue,
+    private static Single<StreamingHttpResponse> asyncContextTestRequest(final Queue<Throwable> errorQueue,
                                                                          final StreamingHttpRequester delegate,
-                                                                         final HttpExecutionStrategy strategy,
                                                                          final StreamingHttpRequest request) {
         final String v1 = "v1";
         final String v2 = "v2";
         final String v3 = "v3";
         AsyncContext.put(K1, v1);
-        return delegate.request(strategy, request.transformMessageBody(pub -> {
+        return delegate.request(request.transformMessageBody(pub -> {
             AsyncContext.put(K2, v2);
             assertAsyncContext(K1, v1, errorQueue);
             assertAsyncContext(K2, v2, errorQueue);

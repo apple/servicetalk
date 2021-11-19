@@ -38,7 +38,6 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -100,9 +99,7 @@ abstract class AbstractEchoServerBasedHttpRequesterTest {
                 from(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
             request.headers().set(HOST, "mock.servicetalk.io");
 
-            StreamingHttpResponse resp = awaitIndefinitelyNonNull(
-                requester.request(defaultStrategy(), request)
-                    .retryWhen(
+            StreamingHttpResponse resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                         retryWithExponentialBackoffFullJitter(10, t -> true, ofMillis(100), ofDays(10),
                                                               CTX.executor())));
 

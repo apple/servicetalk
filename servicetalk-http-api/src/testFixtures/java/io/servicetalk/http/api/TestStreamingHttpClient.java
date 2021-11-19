@@ -45,13 +45,12 @@ public final class TestStreamingHttpClient {
 
                     @Override
                     public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+                            final HttpRequestMetaData metaData) {
                         return failed(new UnsupportedOperationException());
                     }
 
                     @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
+                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                         return failed(new UnsupportedOperationException());
                     }
 
@@ -91,9 +90,8 @@ public final class TestStreamingHttpClient {
     public static StreamingHttpClient from(FilterableStreamingHttpClient filterChain) {
         return new StreamingHttpClient() {
             @Override
-            public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                             final HttpRequestMetaData metaData) {
-                return filterChain.reserveConnection(strategy, metaData)
+            public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
+                return filterChain.reserveConnection(metaData)
                         .map(rc -> new ReservedStreamingHttpConnection() {
                             @Override
                             public ReservedHttpConnection asConnection() {
@@ -118,7 +116,7 @@ public final class TestStreamingHttpClient {
 
                             @Override
                             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                                return rc.request(strategy, request);
+                                return rc.request(request);
                             }
 
                             @Override
@@ -129,12 +127,6 @@ public final class TestStreamingHttpClient {
                             @Override
                             public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> settingKey) {
                                 return rc.transportEventStream(settingKey);
-                            }
-
-                            @Override
-                            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                         final StreamingHttpRequest request) {
-                                return rc.request(strategy, request);
                             }
 
                             @Override
@@ -191,12 +183,6 @@ public final class TestStreamingHttpClient {
             }
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return filterChain.request(strategy, request);
-            }
-
-            @Override
             public HttpExecutionContext executionContext() {
                 return filterChain.executionContext();
             }
@@ -208,12 +194,7 @@ public final class TestStreamingHttpClient {
 
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return filterChain.request(HttpExecutionStrategies.defaultStrategy(), request);
-            }
-
-            @Override
-            public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-                return reserveConnection(HttpExecutionStrategies.defaultStrategy(), metaData);
+                return filterChain.request(request);
             }
 
             @Override

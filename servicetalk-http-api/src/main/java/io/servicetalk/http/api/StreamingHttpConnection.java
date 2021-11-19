@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
-import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -25,15 +24,6 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  * {@link StreamingHttpResponse}.
  */
 public interface StreamingHttpConnection extends FilterableStreamingHttpConnection, GracefulAutoCloseable {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    @Override   // FIXME: 0.42 - remove, this method is defined in StreamingHttpRequester
-    Single<StreamingHttpResponse> request(StreamingHttpRequest request);
-
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link HttpConnection} API.
      * <p>

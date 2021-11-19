@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -29,7 +29,6 @@ import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 
 public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
@@ -38,17 +37,15 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
             StreamingHttpRequestResponseFactory factory,
             final HttpExecutionContext ctx,
-            final BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
         return (T) new TestStreamingHttpClient(factory, ctx) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return doRequest.apply(strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return doRequest.apply(request);
             }
 
             @Override
-            public Single<ReservedStreamingHttpConnection> reserveConnection(
-                    final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+            public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
                 return failed(new UnsupportedOperationException());
             }
         };
@@ -102,16 +99,6 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         @Override
         public final boolean isClosed() {
             return closed.get();
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return request(noOffloadsStrategy(), request);
-        }
-
-        @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-            return reserveConnection(noOffloadsStrategy(), metaData);
         }
 
         @Override

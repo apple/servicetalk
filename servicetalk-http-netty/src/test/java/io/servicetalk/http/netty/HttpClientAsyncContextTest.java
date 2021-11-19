@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -115,7 +114,6 @@ class HttpClientAsyncContextTest {
 
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             // The first filter will remove the REQUEST_ID_HEADER and put it into AsyncContext.
             // The second filter will remove the CONSUMED_REQUEST_ID_HEADER and verify the first filter
@@ -153,7 +151,7 @@ class HttpClientAsyncContextTest {
                             assertAsyncContext(requestId, errorQueue);
                         }
                     }));
-            return delegate.request(strategy, requestWithPayloadAssert).map(resp -> {
+            return delegate.request(requestWithPayloadAssert).map(resp -> {
                 assertAsyncContext(requestId, errorQueue);
                 return resp.transformMessageBody(pub ->
                         pub.afterSubscriber(() -> new Subscriber<Object>() {

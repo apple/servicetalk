@@ -26,15 +26,6 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  */
 public interface StreamingHttpClient extends FilterableStreamingHttpClient, GracefulAutoCloseable {
     /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    @Override   // FIXME: 0.42 - remove, this method is defined in StreamingHttpRequester
-    Single<StreamingHttpResponse> request(StreamingHttpRequest request);
-
-    /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
@@ -42,13 +33,8 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient, Grac
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    @Override   // FIXME: 0.42 - remove, this method is defined in FilterableStreamingHttpClient
-    Single<ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
-
-    @Deprecated
     @Override
-    Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                              HttpRequestMetaData metaData);
+    Single<ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link HttpClient} API.

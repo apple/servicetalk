@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -229,10 +228,9 @@ class TracingHttpRequesterFilterTest {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     LOGGER.debug(logLinePrefix[0], request.path());
-                    return delegate.request(strategy, request).map(response -> {
+                    return delegate.request(request).map(response -> {
                         LOGGER.debug(logLinePrefix[1], request.path());
                         return response.transformMessageBody(payload -> {
                             LOGGER.debug(logLinePrefix[2], request.path());

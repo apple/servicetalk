@@ -27,7 +27,6 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DelegatingHttpConnectionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -176,9 +175,8 @@ class ConnectionFactoryFilterTest {
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
-            return delegate().request(strategy, request)
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return delegate().request(request)
                     .map(resp -> resp.addHeader(HEADER_FOR_FACTORY, "true"));
         }
 

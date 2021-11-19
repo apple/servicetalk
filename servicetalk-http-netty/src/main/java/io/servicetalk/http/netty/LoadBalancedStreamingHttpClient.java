@@ -32,7 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.http.netty.AbstractLifecycleObserverHttpFilter.ON_CONNECTION_SELECTED_CONSUMER;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.requestExecutionStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
@@ -65,8 +66,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         // We have to do the incrementing/decrementing in the Client instead of LoadBalancedStreamingHttpConnection
         // because it is possible that someone can use the ConnectionFactory exported by this Client before the
         // LoadBalancer takes ownership of it (e.g. connection initialization) and in that case they will not be
@@ -79,7 +79,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                 }
                 final OwnedRunnable ownedRunnable = c.connectionContext().protocol().major() <= 1 ? null :
                         new OwnedRunnable(c::requestFinished);
-                return c.request(strategy, ownedRunnable == null ? request :
+                return c.request(ownedRunnable == null ? request :
                                 new StreamingHttpRequestWithContext(request, ownedRunnable))
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                             @Override
@@ -128,13 +128,16 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
-    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                     final HttpRequestMetaData metaData) {
-        Single<ReservedStreamingHttpConnection> connection =
-                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity());
-        return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                connection.publishOn(executionContext.executor(), IoThreadFactory.IoThread::currentThreadIsIoThread) :
-                connection;
+    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
+        return Single.defer(() -> {
+            Single<ReservedStreamingHttpConnection> connection =
+                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity());
+            final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
+                    executionContext().executionStrategy());
+            return (strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
+                    connection.publishOn(executionContext.executor(), IoThread::currentThreadIsIoThread) : connection)
+                    .subscribeShareContext();
+        });
     }
 
     @Override

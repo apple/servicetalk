@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
@@ -65,22 +64,18 @@ public class HttpLifecycleObserverRequesterFilter extends AbstractLifecycleObser
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return trackLifecycle(null, request, r -> delegate.request(strategy, r));
+                return trackLifecycle(null, request, delegate::request);
             }
 
             @Override
             public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                    final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-                return delegate().reserveConnection(strategy, metaData)
+                    final HttpRequestMetaData metaData) {
+                return delegate().reserveConnection(metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
-                            protected Single<StreamingHttpResponse> request(
-                                    final StreamingHttpRequester delegate,
-                                    final HttpExecutionStrategy strategy,
-                                    final StreamingHttpRequest request) {
-                                return trackLifecycle(connectionContext(), request, r -> delegate.request(strategy, r));
+                            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                return trackLifecycle(connectionContext(), request, r -> delegate().request(r));
                             }
                         });
             }
@@ -92,9 +87,8 @@ public class HttpLifecycleObserverRequesterFilter extends AbstractLifecycleObser
         return new StreamingHttpConnectionFilter(connection) {
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return trackLifecycle(connectionContext(), request, r -> delegate().request(strategy, r));
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return trackLifecycle(connectionContext(), request, r -> delegate().request(r));
             }
         };
     }
