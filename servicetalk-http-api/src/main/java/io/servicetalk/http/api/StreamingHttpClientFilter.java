@@ -141,7 +141,7 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
      * @return the response.
      */
     // An overload that takes StreamingHttpRequester as an argument helps to delegate to a reserved connection, applying
-    // the business logic of a filter.
+    // the business logic of this filter.
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final StreamingHttpRequest request) {
         return delegate.request(request);

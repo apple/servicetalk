@@ -42,7 +42,11 @@ public interface BlockingHttpRequester extends HttpRequestFactory, GracefulAutoC
      * @param request the request to send.
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
+     * @deprecated Use {@link #request(HttpRequest)}. If an {@link HttpExecutionStrategy} needs to be altered, provide a
+     * value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
+     * {@link HttpRequestMetaData#context() request context}.
      */
+    @Deprecated
     default HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception {
         request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
         return request(request);
