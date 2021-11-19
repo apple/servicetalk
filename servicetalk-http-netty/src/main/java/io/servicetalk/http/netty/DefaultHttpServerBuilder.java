@@ -339,9 +339,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         return doBind(executionContext, connectionAcceptor, filteredService)
-                .afterOnSuccess(serverContext -> {
-                    LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
-                });
+                .afterOnSuccess(serverContext -> LOGGER.debug("Server for address {} uses strategy {}",
+                        serverContext.listenAddress(), strategy));
     }
 
     private Single<ServerContext> doBind(final HttpExecutionContext executionContext,

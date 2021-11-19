@@ -111,7 +111,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
-            return new FilterableClientToClient(urlClient, executionContext.executionStrategy(),
+            return new FilterableClientToClient(urlClient,
                     buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();

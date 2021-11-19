@@ -48,7 +48,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
+import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Character.isDigit;
 import static java.util.Objects.requireNonNull;
@@ -148,7 +148,7 @@ class ServerEffectiveStrategyTest {
         Params(final ServiceType serviceType, boolean addFilter,
                @Nullable final HttpExecutionStrategy strategy, final Offloads expectedOffloads) {
             this.addFilter = addFilter;
-            this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategyNoVerify(strategy);
+            this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategy(strategy);
             offloadPoints = expectedOffloads.forServiceType(serviceType);
             nonOffloadPoints = EnumSet.complementOf(offloadPoints);
         }
