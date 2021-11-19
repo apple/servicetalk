@@ -31,8 +31,8 @@ import static java.util.Collections.binarySearch;
 /**
  * A set of utility functions for {@link ServiceDiscoverer}.
  *
- * @deprecated This is an internal class and will be removed in 0.42. If you depend on it, consider replicating its
- * logic.
+ * @deprecated This is an internal class and will be removed in a future release. If you depend on it, consider
+ * replicating its logic.
  */
 @Deprecated
 public final class ServiceDiscovererUtils {
@@ -54,8 +54,8 @@ public final class ServiceDiscovererUtils {
      * @param <T> The type of address.
      * @return A list of {@link ServiceDiscovererEvent}s which represents the changes between
      * {@code currentActiveAddresses} and {@code newActiveAddresses}, or {@code null} if there are no changes.
-     * @deprecated This is an internal class and will be removed in 0.42. If you depend on it, consider replicating its
-     * logic.
+     * @deprecated This is an internal class and will be removed in a future release. If you depend on it, consider
+     * replicating its logic.
      */
     @Deprecated
     @Nullable
@@ -94,6 +94,8 @@ public final class ServiceDiscovererUtils {
      * @param <T> The type of resolved address.
      * @return the relative complement of {@code sortedA} and {@code sortedB} (elements in {@code sortedB} and not in
      * {@code sortedA}).
+     * @deprecated This is an internal class and will be removed in a future release. If you depend on it, consider
+     * replicating its logic.
      */
     @Deprecated
     @Nullable
@@ -146,8 +148,8 @@ public final class ServiceDiscovererUtils {
      * {@link ServiceDiscovererEvent} when address present in current list but not in the new one.
      * @return A list of {@link ServiceDiscovererEvent}s which represents the changes between
      * {@code currentActiveAddresses} and {@code newActiveAddresses}, or {@code null} if there are no changes.
-     * @deprecated This is an internal class and will be removed in 0.42. If you depend on it, consider replicating its
-     * logic.
+     * @deprecated This is an internal class and will be removed in a future release. If you depend on it, consider
+     * replicating its logic.
      */
     @Deprecated
     @Nullable
@@ -241,8 +243,8 @@ public final class ServiceDiscovererUtils {
     /**
      * Represents an operation that accepts two {@code int}-valued arguments and returns no result.
      *
-     * @deprecated This interface is defined by an internal class and will be removed in 0.42. If you depend on it,
-     * consider replicating it.
+     * @deprecated This interface is defined by an internal class and will be removed in a future release. If you depend
+     * on it, consider replicating it.
      */
     @Deprecated
     @FunctionalInterface
