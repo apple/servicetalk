@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpApiConversions.requestStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -43,13 +44,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     @Override
     public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return request(strategy, request);
+        return request(requestStrategy(request, strategy), request);
     }
 
     @Override
     public ReservedBlockingStreamingHttpConnection reserveConnection(final HttpRequestMetaData metaData)
             throws Exception {
-        return reserveConnection(strategy, metaData);
+        return reserveConnection(requestStrategy(metaData, strategy), metaData);
     }
 
     @Override
@@ -147,7 +148,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
         @Override
         public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-            return request(strategy, request);
+            return request(requestStrategy(request, strategy), request);
         }
 
         @Override

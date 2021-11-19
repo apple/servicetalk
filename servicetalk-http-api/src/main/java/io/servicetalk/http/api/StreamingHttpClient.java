@@ -31,6 +31,7 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient, Grac
      * @param request the request to send.
      * @return The response.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in StreamingHttpRequester
     Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
@@ -41,8 +42,10 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient, Grac
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in FilterableStreamingHttpClient
     Single<ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
 
+    @Deprecated
     @Override
     Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
                                                               HttpRequestMetaData metaData);

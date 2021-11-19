@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
+import static io.servicetalk.http.api.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 
 public final class ConditionalFilterFactory
         implements StreamingHttpConnectionFilterFactory, StreamingHttpClientFilterFactory {
@@ -42,8 +43,10 @@ public final class ConditionalFilterFactory
     }
 
     public FilterFactory append(FilterFactory append) {
-        StreamingHttpClientFilterFactory clientFactory = appendClientFilterFactory(this, append);
-        StreamingHttpConnectionFilterFactory connectionFactory = appendConnectionFilterFactory(this, append);
+        StreamingHttpClientFilterFactory clientFactory = appendClientFilterFactory(
+                appendClientFilterFactory(this, append), NEW_TO_DEPRECATED_FILTER);
+        StreamingHttpConnectionFilterFactory connectionFactory = appendConnectionFilterFactory(
+                appendConnectionFilterFactory(this, append), NEW_TO_DEPRECATED_FILTER);
         return new FilterFactory() {
             @Override
             public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {

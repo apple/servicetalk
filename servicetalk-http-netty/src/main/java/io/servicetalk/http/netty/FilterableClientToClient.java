@@ -44,6 +44,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.requestStrategy;
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
@@ -59,12 +60,13 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request(strategy, request);
+        return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
     }
 
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-        return reserveConnection(strategy, metaData);
+        return Single.defer(() -> reserveConnection(requestStrategy(metaData, strategy), metaData)
+                .subscribeShareContext());
     }
 
     @Override
@@ -111,7 +113,8 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 // Use the strategy from the client as the underlying ReservedStreamingHttpConnection may be user
                 // created and hence could have an incorrect default strategy. Doing this makes sure we never call the
                 // method without strategy just as we do for the regular connection.
-                return rc.request(FilterableClientToClient.this.strategy, request);
+                return Single.defer(() -> rc.request(requestStrategy(request, FilterableClientToClient.this.strategy),
+                        request).subscribeShareContext());
             }
 
             @Override

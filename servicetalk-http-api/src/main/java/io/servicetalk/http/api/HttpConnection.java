@@ -32,6 +32,7 @@ public interface HttpConnection extends HttpRequester, GracefulAutoCloseable {
      * @param request the request to send.
      * @return The response.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in HttpRequester
     Single<HttpResponse> request(HttpRequest request);
 
     /**

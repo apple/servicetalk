@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
@@ -375,6 +376,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private static StreamingHttpClientFilterFactory appendFilter(
             @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
+        return appendFilter0(appendFilter0(currClientFilterFactory, appendClientFilterFactory),
+                NEW_TO_DEPRECATED_FILTER);
+    }
+
+    private static StreamingHttpClientFilterFactory appendFilter0(
+            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+            final StreamingHttpClientFilterFactory appendClientFilterFactory) {
         if (currClientFilterFactory == null) {
             return appendClientFilterFactory;
         } else {
@@ -471,7 +479,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         requireNonNull(factory);
-        connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
+        connectionFilterFactory = appendConnectionFilter(appendConnectionFilter(connectionFilterFactory, factory),
+                NEW_TO_DEPRECATED_FILTER);
         influencerChainBuilder.add(factory);
         return this;
     }

@@ -93,13 +93,13 @@ abstract class HttpClientAsyncContextTest {
         return clientBuilder;
     }
 
-    private static void makeClientRequestWithId(StreamingHttpClient connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpClient client, String requestId)
             throws ExecutionException, InterruptedException {
-        StreamingHttpRequest request = connection.get("/");
+        StreamingHttpRequest request = client.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
-        StreamingHttpResponse response = connection.request(request).toFuture().get();
-        assertEquals(OK, response.status());
-        response.messageBody().ignoreElements().toFuture().get();
+        client.request(request).whenOnSuccess(response -> assertEquals(OK, response.status()))
+                .flatMapCompletable(response -> response.messageBody().ignoreElements())
+                .toFuture().get();
     }
 
     private void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
