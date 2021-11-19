@@ -18,18 +18,41 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+
 /**
  * Provides a means to make a HTTP request.
  */
 public interface HttpRequester extends HttpRequestFactory, ListenableAsyncCloseable {
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the request to send.
+     * @return The response.
+     */
+    default Single<HttpResponse> request(HttpRequest request) {
+        // FIXME: 0.42 - remove default impl
+        throw new UnsupportedOperationException("Method request(HttpRequest) is not supported by " +
+                getClass().getName());
+    }
+
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
      * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
      * @param request the request to send.
      * @return The response.
+     * @deprecated Use {@link #request(HttpRequest)}. If an {@link HttpExecutionStrategy} needs to be altered, provide a
+     * value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
+     * {@link HttpRequestMetaData#context() request context}.
      */
-    Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
+    @Deprecated
+    default Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request) {
+        return Single.defer(() -> {
+            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            return request(request).subscribeShareContext();
+        });
+    }
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

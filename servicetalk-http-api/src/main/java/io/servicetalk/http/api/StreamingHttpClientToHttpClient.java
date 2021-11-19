@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpApiConversions.requestStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -43,12 +44,13 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
-        return request(strategy, request);
+        return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
     }
 
     @Override
     public Single<ReservedHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-        return reserveConnection(strategy, metaData);
+        return Single.defer(() -> reserveConnection(requestStrategy(metaData, strategy), metaData)
+                .subscribeShareContext());
     }
 
     @Override
@@ -154,7 +156,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
-            return request(strategy, request);
+            return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
         }
 
         @Override

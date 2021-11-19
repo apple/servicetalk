@@ -29,6 +29,7 @@ public interface BlockingStreamingHttpConnection extends BlockingStreamingHttpRe
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
+    @Override   // FIXME: 0.42 - remove, this method is defined in BlockingHttpRequester
     BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**

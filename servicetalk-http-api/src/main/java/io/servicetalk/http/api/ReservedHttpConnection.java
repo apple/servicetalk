@@ -19,8 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 
 /**
  * A special type of {@link HttpConnection} for the exclusive use of the caller of
- * {@link HttpClient#reserveConnection(HttpRequestMetaData)} and
- * {@link HttpClient#reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
+ * {@link HttpClient#reserveConnection(HttpRequestMetaData)}.
  */
 public interface ReservedHttpConnection extends HttpConnection {
     /**

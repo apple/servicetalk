@@ -32,7 +32,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -56,14 +57,10 @@ class HttpClientAsyncContextTest {
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
 
-    @Test
-    void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
-        contextPreservedOverFilterBoundaries(false);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
-        contextPreservedOverFilterBoundaries(true);
+    @ParameterizedTest(name = "{displayName} [{index}] useImmediate={0}")
+    @ValueSource(booleans = {true, false})
+    void contextPreservedOverFilterBoundariesOffloaded(boolean useImmediate) throws Exception {
+        contextPreservedOverFilterBoundaries(useImmediate);
     }
 
     private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
@@ -90,13 +87,13 @@ class HttpClientAsyncContextTest {
         return clientBuilder;
     }
 
-    private static void makeClientRequestWithId(StreamingHttpClient connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpClient client, String requestId)
             throws ExecutionException, InterruptedException {
-        StreamingHttpRequest request = connection.get("/");
+        StreamingHttpRequest request = client.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
-        StreamingHttpResponse response = connection.request(request).toFuture().get();
-        assertEquals(OK, response.status());
-        response.messageBody().ignoreElements().toFuture().get();
+        client.request(request).whenOnSuccess(response -> assertEquals(OK, response.status()))
+                .flatMapCompletable(response -> response.messageBody().ignoreElements())
+                .toFuture().get();
     }
 
     private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {

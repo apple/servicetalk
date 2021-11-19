@@ -19,12 +19,14 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ReservedStreamingHttpConnectionFilter} that delegates all methods to a different
  * {@link ReservedStreamingHttpConnectionFilter}.
  */
+// FIXME: 0.42 - extend StreamingHttpConnectionFilter
 public class ReservedStreamingHttpConnectionFilter implements FilterableReservedStreamingHttpConnection {
     private final FilterableReservedStreamingHttpConnection delegate;
 
@@ -52,6 +54,12 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
         return delegate.transportEventStream(eventKey);
     }
 
+    @Override
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return delegate.request(request);
+    }
+
+    @Deprecated
     @Override
     public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
@@ -110,10 +118,17 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
      * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
      * @param request The request to delegate.
      * @return the response.
+     * @deprecated Use {@link #request(StreamingHttpRequest)}. If an {@link HttpExecutionStrategy} needs to be altered,
+     * provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
+     * {@link HttpRequestMetaData#context() request context}.
      */
+    @Deprecated
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
-        return delegate.request(strategy, request);
+        return Single.defer(() -> {
+            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            return request(request).subscribeShareContext();
+        });
     }
 }
