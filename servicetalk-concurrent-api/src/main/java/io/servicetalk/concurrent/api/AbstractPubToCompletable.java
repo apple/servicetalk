@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * A {@link Completable} created from a {@link Publisher}.
@@ -39,7 +40,7 @@ abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeComp
 
     @Override
     final void handleSubscribe(final Subscriber subscriber,
-                               final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                               final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, wrap Subscription to preserve the
         // context.
         PublisherSource.Subscriber<? super T> wrappedSubscriber =

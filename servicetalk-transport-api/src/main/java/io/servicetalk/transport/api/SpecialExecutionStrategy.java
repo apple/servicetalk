@@ -36,16 +36,5 @@ enum SpecialExecutionStrategy implements ExecutionStrategy {
         public boolean hasOffloads() {
             return true;
         }
-    };
-
-    private final ExecutionStrategyInfluencer<?> influencer = ExecutionStrategyInfluencer.newInfluencer(this);
-
-    /**
-     * Returns an instance that implements the influencer interface with the provided offloads
-     *
-     * @return an instance that implements the influencer interface with the provided offloads
-     */
-    public final ExecutionStrategyInfluencer<?> asInfluencer() {
-        return influencer;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
 
 final class ContextPreservingSubscriberAndSubscription<T> extends ContextPreservingSubscriber<T> {
-    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, AsyncContextMap current) {
+    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, ContextMap current) {
         super(subscriber, current);
     }
 
+    @Override
     void invokeOnSubscribe(PublisherSource.Subscription s) {
         subscriber.onSubscribe(ContextPreservingSubscription.wrap(s, saved));
     }

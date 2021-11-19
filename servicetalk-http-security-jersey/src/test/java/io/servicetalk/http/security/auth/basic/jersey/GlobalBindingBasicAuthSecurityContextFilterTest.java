@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
@@ -31,7 +31,7 @@ import static java.util.Collections.singleton;
 class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
-    protected Application application(@Nullable final Key<BasicUserInfo> userInfoKey) {
+    protected Application application(@Nullable final ContextMap.Key<BasicUserInfo> userInfoKey) {
         return new TestApplication() {
             @Override
             public Set<Object> getSingletons() {
@@ -43,7 +43,7 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         };
     }
 
-    @ParameterizedTest(name = "withUserInfo={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
     @ValueSource(booleans = {true, false})
     void authenticated(final boolean withUserInfo) throws Exception {
         setUp(withUserInfo);
@@ -51,7 +51,7 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
-    @ParameterizedTest(name = "withUserInfo={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
     @ValueSource(booleans = {true, false})
     void notAuthenticated(final boolean withUserInfo) throws Exception {
         setUp(withUserInfo);

@@ -17,6 +17,9 @@ package io.servicetalk.transport.api;
 
 /**
  * An execution strategy for all transports.
+ *
+ * <p>Implementations should not override the default {@link Object#equals(Object)} and {@link Object#hashCode()} method
+ * implementations. Default instance equality and hash-code behavior should be consistent across all instances.
  */
 @FunctionalInterface
 public interface ExecutionStrategy {
@@ -29,7 +32,8 @@ public interface ExecutionStrategy {
     boolean hasOffloads();
 
     /**
-     * Returns an {@link ExecutionStrategy} that requires no offloading.
+     * Returns an {@link ExecutionStrategy} that requires no offloading and is compatible with all other offloading
+     * strategies.
      *
      * @return an {@link ExecutionStrategy} that requires no offloading.
      */

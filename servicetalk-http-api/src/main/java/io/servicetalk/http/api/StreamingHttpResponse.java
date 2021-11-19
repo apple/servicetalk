@@ -289,8 +289,5 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     }
 
     @Override
-    default StreamingHttpResponse context(ContextMap context) {
-        HttpResponseMetaData.super.context(context);
-        return this;
-    }
+    StreamingHttpResponse context(ContextMap context);
 }

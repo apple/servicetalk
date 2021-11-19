@@ -39,6 +39,7 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.requestStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -88,7 +89,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return filteredConnection.request(streamingStrategy, request);
+        return filteredConnection.request(requestStrategy(request, streamingStrategy), request);
     }
 
     @Override

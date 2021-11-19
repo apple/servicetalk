@@ -333,7 +333,7 @@ public abstract class AbstractHttpRequesterFilterTest {
         final StreamingHttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
+                                                         final StreamingHttpRequest request) {
                 return rwch.request(REQ_RES_FACTORY, connectionContext(), request);
             }
         };

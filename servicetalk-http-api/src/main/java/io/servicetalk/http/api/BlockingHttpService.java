@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_STRATEGY;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -40,7 +40,8 @@ public interface BlockingHttpService extends ExecutionStrategyInfluencer<HttpExe
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {
-        return OFFLOAD_NONE_STRATEGY;
+        // safe default--implementations are expected to override
+        return OFFLOAD_RECEIVE_DATA_STRATEGY;
     }
 
     @Override

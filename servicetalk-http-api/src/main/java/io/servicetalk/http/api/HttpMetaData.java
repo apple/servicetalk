@@ -214,9 +214,7 @@ public interface HttpMetaData extends ContextMapHolder {
      */
     @Nonnull
     @Override
-    default ContextMap context() {  // FIXME: remove `default` impl after cherry-pick for 0.41
-        throw new UnsupportedOperationException("Method context() is not supported by " + getClass().getName());
-    }
+    ContextMap context();
 
     /**
      * Sets a context for this {@link HttpMetaData}.
@@ -228,8 +226,5 @@ public interface HttpMetaData extends ContextMapHolder {
      * @return {@code this}.
      */
     @Override
-    default HttpMetaData context(ContextMap context) {  // FIXME: remove `default` impl after cherry-pick for 0.41
-        throw new UnsupportedOperationException("Method context(ContextMap) is not supported by " +
-                getClass().getName());
-    }
+    HttpMetaData context(ContextMap context);
 }

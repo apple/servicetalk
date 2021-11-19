@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -86,18 +85,17 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
         return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService());
     }
 
-    private static StreamingHttpService newEmptyAsyncContextService() {
+    private StreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
             request.messageBody().ignoreElements().subscribe();
 
-            AsyncContextMap current = AsyncContext.current();
-            if (!current.isEmpty()) {
-                return succeeded(factory.internalServerError().payloadBody(from(current.toString()),
+            if (!AsyncContext.isEmpty()) {
+                return succeeded(factory.internalServerError().payloadBody(from(AsyncContext.context().toString()),
                         appSerializerUtf8FixLen()));
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
-                current.put(K1, requestId);
+                AsyncContext.put(K1, requestId);
                 return succeeded(factory.ok()
                         .setHeader(REQUEST_ID_HEADER, requestId));
             } else {
@@ -115,7 +113,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
         return serverBuilder.listenStreamingAndAwait(service(useImmediate, asyncService));
     }
 
-    private static StreamingHttpService service(final boolean useImmediate, final boolean asyncService) {
+    private StreamingHttpService service(final boolean useImmediate, final boolean asyncService) {
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

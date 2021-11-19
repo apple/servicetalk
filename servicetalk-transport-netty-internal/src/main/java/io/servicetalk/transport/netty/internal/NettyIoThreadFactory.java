@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
@@ -96,21 +96,22 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
 
     static final class NettyIoThread extends FastThreadLocalThread implements IoThreadFactory.IoThread {
         @Nullable
-        private AsyncContextMap asyncContextMap;
+        private ContextMap context;
 
         NettyIoThread(@Nullable ThreadGroup group, Runnable target, String name) {
             super(group, target, name);
         }
 
-        @Override
-        public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
-            this.asyncContextMap = asyncContextMap;
-        }
-
         @Nullable
         @Override
-        public AsyncContextMap asyncContextMap() {
-            return asyncContextMap;
+        public ContextMap context() {
+            return context;
+        }
+
+        @Override
+        public NettyIoThread context(@Nullable final ContextMap context) {
+            this.context = context;
+            return this;
         }
     }
 }

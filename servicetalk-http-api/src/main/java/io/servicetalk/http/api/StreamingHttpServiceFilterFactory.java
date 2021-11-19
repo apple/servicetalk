@@ -15,13 +15,11 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
-
 /**
  * A factory for {@link StreamingHttpServiceFilter}.
  */
 @FunctionalInterface
-public interface StreamingHttpServiceFilterFactory extends HttpFilterFactory {
+public interface StreamingHttpServiceFilterFactory extends DefaultHttpExecutionStrategyInfluencer {
 
     /**
      * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
@@ -30,9 +28,4 @@ public interface StreamingHttpServiceFilterFactory extends HttpFilterFactory {
      * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
      */
     StreamingHttpServiceFilter create(StreamingHttpService service);
-
-    @Override
-    default HttpExecutionStrategy requiredOffloads() {
-        return OFFLOAD_RECEIVE_META_STRATEGY;
-    }
 }

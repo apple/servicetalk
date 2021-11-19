@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -32,7 +32,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -43,6 +44,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -51,18 +53,14 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HttpClientAsyncContextTest {
-    private static final AsyncContextMap.Key<CharSequence> K1 = AsyncContextMap.Key.newKey("k1");
+    private static final ContextMap.Key<CharSequence> K1 = newKey("k1", CharSequence.class);
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
 
-    @Test
-    void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
-        contextPreservedOverFilterBoundaries(false);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
-        contextPreservedOverFilterBoundaries(true);
+    @ParameterizedTest(name = "{displayName} [{index}] useImmediate={0}")
+    @ValueSource(booleans = {true, false})
+    void contextPreservedOverFilterBoundariesOffloaded(boolean useImmediate) throws Exception {
+        contextPreservedOverFilterBoundaries(useImmediate);
     }
 
     private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
@@ -89,17 +87,17 @@ class HttpClientAsyncContextTest {
         return clientBuilder;
     }
 
-    private static void makeClientRequestWithId(StreamingHttpClient connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpClient client, String requestId)
             throws ExecutionException, InterruptedException {
-        StreamingHttpRequest request = connection.get("/");
+        StreamingHttpRequest request = client.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
-        StreamingHttpResponse response = connection.request(request).toFuture().get();
-        assertEquals(OK, response.status());
-        response.messageBody().ignoreElements().toFuture().get();
+        client.request(request).whenOnSuccess(response -> assertEquals(OK, response.status()))
+                .flatMapCompletable(response -> response.messageBody().ignoreElements())
+                .toFuture().get();
     }
 
     private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        Object k1Value = AsyncContext.get(K1);
+        CharSequence k1Value = AsyncContext.get(K1);
         if (requestId != null && !requestId.equals(k1Value)) {
             errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
                     "], expected=[" + requestId + "]"));

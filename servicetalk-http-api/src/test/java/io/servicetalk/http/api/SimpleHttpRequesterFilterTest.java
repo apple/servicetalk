@@ -38,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasToString;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
@@ -250,25 +251,20 @@ class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
     @MethodSource("requesterTypes")
     void unauthorizedConnectionRefusingFilterWithInvalidPrincipal(final RequesterType type,
-                                                                  final SecurityType security)
-        throws Exception {
+                                                                  final SecurityType security) throws Exception {
+        assumeFalse(type == Client, "Clients don't carry SSL Context");
         setUp(security);
 
         BlockingHttpRequester filter = asBlockingRequester(createFilter(type, new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(defaultStrategy(), filter.get("/"));
-
-        if (type == Client) {
-            return; // Clients don't carry SSL Context
-        }
-
         assertThat(resp.status(), equalTo(UNAUTHORIZED));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
     @MethodSource("requesterTypes")
     void unauthorizedConnectionRefusingFilterWithValidPrincipal(final RequesterType type,
-                                                                final SecurityType security)
-        throws Exception {
+                                                                final SecurityType security) throws Exception {
+        assumeFalse(type == Client, "Clients don't carry SSL Context");
         setUp(security);
         final Principal principal = mock(Principal.class);
         lenient().when(principal.getName()).thenReturn("unit.test.auth");
@@ -276,10 +272,6 @@ class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
 
         BlockingHttpRequester filter = asBlockingRequester(createFilter(type, new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(defaultStrategy(), filter.get("/"));
-
-        if (type == Client) {
-            return; // Clients don't carry SSL Context
-        }
 
         if (security == Insecure) {
             assertThat(resp.status(), equalTo(UNAUTHORIZED));

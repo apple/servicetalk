@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -25,13 +26,13 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber,
-                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         final Subscriber<? super T> wrappedSubscriber = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
         delegateSubscribeToOriginal(wrappedSubscriber, contextMap, contextProvider);
     }
 
     abstract void delegateSubscribeToOriginal(Subscriber<? super T> offloadSubscriber,
-                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider);
+                                              ContextMap contextMap, AsyncContextProvider contextProvider);
 
     abstract static class AbstractConcatWithSubscriber<T> implements Subscriber<T>, CompletableSource.Subscriber {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
+package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
-final class NoopExecutionStrategy implements ExecutionStrategy {
-
-    static final ExecutionStrategy NOOP_STRATEGY = new NoopExecutionStrategy();
-
-    private NoopExecutionStrategy() {
-        // Singleton
-    }
+interface DefaultHttpExecutionStrategyInfluencer extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     @Override
-    public boolean hasOffloads() {
-        return false;
+    default HttpExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
+        return HttpExecutionStrategies.offloadAll();
     }
 }

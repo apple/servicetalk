@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.FlowControlUtils;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
@@ -43,13 +44,13 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     }
 
     @Override
-    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.contextMap();
+    ContextMap contextForSubscribe(AsyncContextProvider provider) {
+        return provider.context();
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(),
                 contextProvider, contextMap), contextMap, contextProvider);
     }
@@ -69,7 +70,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private static final long INVALID_DEMAND = -1;
 
         private final Subscriber<? super R> subscriber;
-        private final AsyncContextMap contextMap;
+        private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         private final ScanWithMapper<? super T, ? extends R> mapper;
         private volatile long demand;
@@ -81,7 +82,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private Throwable errorCause;
 
         ScanWithSubscriber(final Subscriber<? super R> subscriber, final ScanWithMapper<? super T, ? extends R> mapper,
-                           final AsyncContextProvider contextProvider, final AsyncContextMap contextMap) {
+                           final AsyncContextProvider contextProvider, final ContextMap contextMap) {
             this.subscriber = subscriber;
             this.contextProvider = contextProvider;
             this.contextMap = contextMap;

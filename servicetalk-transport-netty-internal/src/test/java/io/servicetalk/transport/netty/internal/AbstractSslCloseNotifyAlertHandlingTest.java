@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.ChannelDuplexHandler;
@@ -32,7 +33,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
-import static io.servicetalk.transport.netty.internal.NoopExecutionStrategy.NOOP_STRATEGY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -76,7 +76,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                         }
                         ctx.write(msg, promise);
                     }
-                })), NOOP_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient)
+                })), ExecutionStrategy.anyStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient)
                 .toFuture().get();
     }
 

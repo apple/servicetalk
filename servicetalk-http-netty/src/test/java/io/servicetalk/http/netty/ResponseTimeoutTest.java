@@ -278,11 +278,6 @@ class ResponseTimeoutTest {
             this.status = status;
         }
 
-        HttpResponseStatusException(HttpResponseStatus status, @Nullable final String message) {
-            super(message);
-            this.status = status;
-        }
-
         @Override
         public String getMessage() {
             return status + (null != super.getMessage() ? " : " + super.getMessage() : "");

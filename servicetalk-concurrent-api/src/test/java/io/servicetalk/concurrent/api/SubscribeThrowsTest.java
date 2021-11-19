@@ -78,7 +78,7 @@ class SubscribeThrowsTest {
             }
         };
         AsyncContextProvider provider = AsyncContext.provider();
-        c.delegateSubscribe(subscriber, provider.contextMap(), provider);
+        c.delegateSubscribe(subscriber, provider.context(), provider);
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 }

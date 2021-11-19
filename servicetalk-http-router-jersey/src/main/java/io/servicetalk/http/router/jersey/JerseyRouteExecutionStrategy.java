@@ -31,23 +31,6 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public int hashCode() {
-        return 31 * delegate.hashCode() + executor.hashCode();
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final JerseyRouteExecutionStrategy that = (JerseyRouteExecutionStrategy) o;
-        return delegate.equals(that.delegate) && executor.equals(that.executor);
-    }
-
-    @Override
     public String toString() {
         return delegate.toString();
     }

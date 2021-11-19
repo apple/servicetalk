@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,46 +15,30 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
+
 import static java.lang.ThreadLocal.withInitial;
 
 final class AsyncContextMapThreadLocal {
-    static final ThreadLocal<AsyncContextMap> contextThreadLocal =
-            withInitial(AsyncContextMapThreadLocal::newContextMap);
+    static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL = withInitial(AsyncContextMapThreadLocal::newContextMap);
 
-    private static AsyncContextMap newContextMap() {
-        return new CopyOnWriteAsyncContextMap();
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
     }
 
-    AsyncContextMap get() {
+    ContextMap get() {
         final Thread t = Thread.currentThread();
-        if (t instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) t;
-            AsyncContextMap map = asyncContextMapHolder.asyncContextMap();
+        if (t instanceof ContextMapHolder) {
+            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
+            ContextMap map = contextMapHolder.context();
             if (map == null) {
                 map = newContextMap();
-                asyncContextMapHolder.asyncContextMap(map);
+                contextMapHolder.context(map);
             }
             return map;
         } else {
-            return contextThreadLocal.get();
-        }
-    }
-
-    void set(AsyncContextMap asyncContextMap) {
-        final Thread t = Thread.currentThread();
-        if (t instanceof AsyncContextMapHolder) {
-            ((AsyncContextMapHolder) t).asyncContextMap(asyncContextMap);
-        } else {
-            contextThreadLocal.set(asyncContextMap);
-        }
-    }
-
-    void remove() {
-        final Thread t = Thread.currentThread();
-        if (t instanceof AsyncContextMapHolder) {
-            ((AsyncContextMapHolder) t).asyncContextMap(null);
-        } else {
-            contextThreadLocal.remove();
+            return CONTEXT_THREAD_LOCAL.get();
         }
     }
 }

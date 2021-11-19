@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -26,11 +26,11 @@ import javax.ws.rs.core.SecurityContext;
 
 abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements ContainerRequestFilter {
     @Nullable
-    private final Key<UserInfo> userInfoKey;
+    private final ContextMap.Key<UserInfo> userInfoKey;
     private final BiFunction<ContainerRequestContext, UserInfo, SecurityContext> securityContextFunction;
 
     AbstractBasicAuthSecurityContextFilter(
-            @Nullable final Key<UserInfo> userInfoKey,
+            @Nullable final ContextMap.Key<UserInfo> userInfoKey,
             final BiFunction<ContainerRequestContext, UserInfo, SecurityContext> securityContextFunction) {
         this.userInfoKey = userInfoKey;
         this.securityContextFunction = securityContextFunction;
@@ -46,15 +46,11 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
 
     @Nullable
     private SecurityContext securityContext(final ContainerRequestContext requestCtx) {
-        if (userInfoKey == null) {
+        if (userInfoKey != null) {
+            final UserInfo userInfo = AsyncContext.get(userInfoKey);
+            return userInfo == null ? null : securityContextFunction.apply(requestCtx, userInfo);
+        } else {
             return securityContextFunction.apply(requestCtx, null);
         }
-
-        final UserInfo userInfo = AsyncContext.get(userInfoKey);
-        if (userInfo == null) {
-            return null;
-        }
-
-        return securityContextFunction.apply(requestCtx, userInfo);
     }
 }

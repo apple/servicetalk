@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,22 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellable implements Cancellable {
-    private final AsyncContextMap saved;
+    private final ContextMap saved;
     private final Cancellable delegate;
 
-    private ContextPreservingCancellable(Cancellable delegate, AsyncContextMap current) {
+    private ContextPreservingCancellable(Cancellable delegate, ContextMap current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
     }
 
-    static Cancellable wrap(Cancellable delegate, AsyncContextMap current) {
+    static Cancellable wrap(Cancellable delegate, ContextMap current) {
         // The double wrapping can be observed when folks manually create a Single/Completable and directly call the
         // onSubscribe method.
         return delegate instanceof ContextPreservingCancellable &&
@@ -40,14 +42,14 @@ final class ContextPreservingCancellable implements Cancellable {
     @Override
     public void cancel() {
         final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
             try {
-                asyncContextMapHolder.asyncContextMap(saved);
+                asyncContextMapHolder.context(saved);
                 delegate.cancel();
             } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
+                asyncContextMapHolder.context(prev);
             }
         } else {
             slowPath();
@@ -55,17 +57,17 @@ final class ContextPreservingCancellable implements Cancellable {
     }
 
     private void slowPath() {
-        AsyncContextMap prev = contextThreadLocal.get();
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         try {
-            contextThreadLocal.set(saved);
+            CONTEXT_THREAD_LOCAL.set(saved);
             delegate.cancel();
         } finally {
-            contextThreadLocal.set(prev);
+            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public String toString() {
-        return ContextPreservingCancellable.class.getSimpleName() + "(" + delegate + ')';
+        return getClass().getSimpleName() + '(' + delegate + ')';
     }
 }

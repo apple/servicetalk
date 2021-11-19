@@ -335,8 +335,5 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     }
 
     @Override
-    default BlockingStreamingHttpRequest context(ContextMap context) {
-        HttpRequestMetaData.super.context(context);
-        return this;
-    }
+    BlockingStreamingHttpRequest context(ContextMap context);
 }

@@ -17,8 +17,7 @@ package io.servicetalk.http.api;
 
 /**
  * A special type of {@link BlockingHttpConnection} for the exclusive use of the caller of
- * {@link BlockingHttpClient#reserveConnection(HttpRequestMetaData)} and
- * {@link BlockingHttpClient#reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
+ * {@link BlockingHttpClient#reserveConnection(HttpRequestMetaData)}.
  */
 public interface ReservedBlockingHttpConnection extends BlockingHttpConnection {
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.context.api.ContextMap;
 
 import java.security.Principal;
 import java.util.function.BiFunction;
@@ -40,6 +40,7 @@ public final class BasicAuthSecurityContextFilters {
      * @param <PF> the principal function type
      * @param <SCF> the security context function type
      */
+    @SuppressWarnings("rawtypes")
     public abstract static class AbstractBuilder<B extends AbstractBuilder, PF, SCF> {
         private final Function<PF, SCF> principalToSecurityContextFunction;
 
@@ -93,6 +94,9 @@ public final class BasicAuthSecurityContextFilters {
 
     /**
      * A builder that can be used when user info is stored in {@link AsyncContext}.
+     * <p>
+     * For example, it can be used with {@code io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter} configured
+     * with {@code userInfoAsyncContextKey(ContextMap.Key)} at the builder.
      *
      * @param <UserInfo> the type of user info object expected in {@link AsyncContext}'s {@code userInfoKey} entry
      */
@@ -130,14 +134,12 @@ public final class BasicAuthSecurityContextFilters {
      * Creates a new {@link UserInfoBuilder} instance for building a {@link ContainerRequestFilter} that needs to be
      * globally bound to the JAX-RS {@link Application}.
      *
-     * @param userInfoKey the {@link Key} to use to get the user info from {@link AsyncContext}
+     * @param userInfoKey the {@link ContextMap.Key} to use to get the user info from {@link AsyncContext}
      * @param <UserInfo> the type of user info object expected in {@link AsyncContext}'s {@code userInfoKey} entry
      * @return a new {@link UserInfoBuilder} instance
      */
-    public static <UserInfo> UserInfoBuilder<UserInfo> forGlobalBinding(final Key<UserInfo> userInfoKey) {
-        //noinspection ResultOfMethodCallIgnored
+    public static <UserInfo> UserInfoBuilder<UserInfo> forGlobalBinding(final ContextMap.Key<UserInfo> userInfoKey) {
         requireNonNull(userInfoKey);
-
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
@@ -166,14 +168,12 @@ public final class BasicAuthSecurityContextFilters {
      * Creates a new {@link UserInfoBuilder} instance for building a {@link ContainerRequestFilter} that needs to be
      * explicitly bound to resources via the {@link BasicAuthenticated} annotation.
      *
-     * @param userInfoKey the {@link Key} to use to get the user info from {@link AsyncContext}
+     * @param userInfoKey the {@link ContextMap.Key} to use to get the user info from {@link AsyncContext}
      * @param <UserInfo> the type of user info object expected in {@link AsyncContext}'s {@code userInfoKey} entry
      * @return a new {@link UserInfoBuilder} instance
      */
-    public static <UserInfo> UserInfoBuilder<UserInfo> forNameBinding(final Key<UserInfo> userInfoKey) {
-        //noinspection ResultOfMethodCallIgnored
+    public static <UserInfo> UserInfoBuilder<UserInfo> forNameBinding(final ContextMap.Key<UserInfo> userInfoKey) {
         requireNonNull(userInfoKey);
-
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
