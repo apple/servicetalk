@@ -17,9 +17,6 @@ package io.servicetalk.client.api;
 
 import java.util.Locale;
 
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
-
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
  * @param <ResolvedAddress> the type of address after resolution.
@@ -34,27 +31,9 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     /**
      * {@link Status Status} of the event instructing the {@link ServiceDiscoverer} what actions
      * to take upon the associated {@link #address() address}.
-     * <p>
-     * Note, the default implementation calls {@link #isAvailable()} to allow frictionless adoption, but once the
-     * implementing class removes the override for the deprecated method {@link #isAvailable()},
-     * it will be also necessary to override {@link #status()}.
      * @return {@link Status Status} of the associated {@link #address()}.
      */
-    default Status status() {
-        return isAvailable() ? AVAILABLE : UNAVAILABLE;
-    }
-
-    /**
-     * Determine if {@link #address()} is now available or unavailable.
-     * @return {@code true} if {@link #address()} is now available or false if the {@link #address()} is now
-     * unavailable.
-     * @deprecated Implement and use {@link #status()}. This method will be removed.
-     */
-    @Deprecated
-    default boolean isAvailable() {
-        throw new UnsupportedOperationException("Migrate to status() method. This method may be implemented" +
-                " temporarily until migration to status() is complete.");
-    }
+    Status status();
 
     /**
      * Status provided by the {@link ServiceDiscoverer} system that guides the actions of {@link LoadBalancer} upon the
