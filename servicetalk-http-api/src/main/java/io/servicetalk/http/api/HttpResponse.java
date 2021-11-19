@@ -172,8 +172,5 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpResponse context(ContextMap context) {
-        HttpResponseMetaData.super.context(context);
-        return this;
-    }
+    HttpResponse context(ContextMap context);
 }

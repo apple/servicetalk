@@ -90,8 +90,5 @@ public interface HttpResponseMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpResponseMetaData context(ContextMap context) {
-        HttpMetaData.super.context(context);
-        return this;
-    }
+    HttpResponseMetaData context(ContextMap context);
 }
