@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
@@ -44,6 +45,11 @@ import static java.util.Objects.requireNonNull;
  */
 abstract class AbstractTcpConfig<SslConfigType> {
 
+    /**
+     * If true then the default behavior will be to offload the async close {@link Completable}
+     */
+    private static final boolean DEFAULT_ASYNC_CLOSE_OFFLOAD = true;
+
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
@@ -58,7 +64,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     /**
      * If true then close {@link io.servicetalk.concurrent.api.Completable} signals are offloaded.
      */
-    private boolean asyncCloseOffload = true;
+    private Boolean asyncCloseOffload;
 
     protected AbstractTcpConfig() {
     }
@@ -103,7 +109,16 @@ abstract class AbstractTcpConfig<SslConfigType> {
      * @return true if completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
      */
     public final boolean isAsyncCloseOffloaded() {
-        return asyncCloseOffload;
+        return null == asyncCloseOffload ? DEFAULT_ASYNC_CLOSE_OFFLOAD : asyncCloseOffload.booleanValue();
+    }
+
+    /**
+     * Returns true {@link #asyncCloseOffload(boolean)} has been explicitly configured.
+     *
+     * @return true {@link #asyncCloseOffload(boolean)} has been explicitly configured.
+     */
+    public final boolean isAsyncCloseOffloadedConfigured() {
+        return asyncCloseOffload != null;
     }
 
     /**

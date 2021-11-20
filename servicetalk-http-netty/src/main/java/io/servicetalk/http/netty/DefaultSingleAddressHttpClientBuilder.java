@@ -243,8 +243,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
-        // XXX This should probably be somewhere else
-        if (noOffloadsStrategy() == executionContext.executionStrategy()) {
+        // XXX This modifies the builder state. Suggestions for allowing execution strategy to override but not
+        // affecting builder?
+        if (noOffloadsStrategy() == executionContext.executionStrategy() &&
+                !ctx.builder.config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
             ctx.builder.config.tcpConfig().asyncCloseOffload(false);
         }
 

@@ -323,7 +323,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
 
         @Override
         public HttpServerBuilder asyncCloseOffload(final boolean offload) {
-            return delegate.asyncCloseOffload(offload);
+            delegate.asyncCloseOffload(offload);
+            return this;
         }
 
         @Override

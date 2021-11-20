@@ -331,8 +331,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        if (noOffloadsStrategy() == strategy) {
-            config.tcpConfig().asyncCloseOffload(false);
+        // XXX This modifies the builder state.
+        if (noOffloadsStrategy() == executionContext.executionStrategy() &&
+                !config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
+           config.tcpConfig().asyncCloseOffload(false);
         }
 
         return doBind(executionContext, connectionAcceptor, filteredService)

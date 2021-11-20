@@ -100,7 +100,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         return flushStrategyHolder.currentStrategy();
     }
 
-    public boolean isAsyncCloseOffload() {
+    /**
+     * Returns true if the async close {@link Completable} signals are offloaded.
+     *
+     * @return true if the async close {@link Completable} signals are offloaded.
+     */
+    boolean isAsyncCloseOffloaded() {
         return asyncCloseOffload;
     }
 

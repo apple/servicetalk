@@ -349,7 +349,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     parentContext.executionContext(),
                                     closeHandler,
                                     parentContext.flushStrategyHolder.currentStrategy(),
-                                    parentContext.isAsyncCloseOffload(), parentContext.idleTimeoutMs,
+                                    parentContext.isAsyncCloseOffloaded(), parentContext.idleTimeoutMs,
                                     HTTP_2_0,
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
