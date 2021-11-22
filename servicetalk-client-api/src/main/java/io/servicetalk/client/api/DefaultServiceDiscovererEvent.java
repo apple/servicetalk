@@ -15,8 +15,6 @@
  */
 package io.servicetalk.client.api;
 
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -26,19 +24,6 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
     private final Status status;
-
-    /**
-     * Create a new instance.
-     * @param address The address returned by {@link #address()}.
-     * @param available Value used to determine {@link #status()}.
-     * @deprecated Use
-     * {@link #DefaultServiceDiscovererEvent(Object, io.servicetalk.client.api.ServiceDiscovererEvent.Status)}.
-     */
-    @Deprecated
-    public DefaultServiceDiscovererEvent(T address, boolean available) {
-        this.address = requireNonNull(address);
-        this.status = available ? AVAILABLE : UNAVAILABLE;
-    }
 
     /**
      * Create a new instance.
@@ -58,11 +43,6 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     @Override
     public Status status() {
         return status;
-    }
-
-    @Override
-    public boolean isAvailable() {
-        return AVAILABLE.equals(status);
     }
 
     @Override
@@ -89,7 +69,6 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
         return "DefaultServiceDiscovererEvent{" +
                 "address=" + address +
                 ", status=" + status +
-                ", available=" + isAvailable() +
                 '}';
     }
 }

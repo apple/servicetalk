@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -63,11 +65,14 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
         mixedEvents = new ArrayList<>(ops);
         for (int i = 1; i <= ops; ++i) {
             if (i % removalStride == 0) {
-                mixedEvents.add(new DefaultServiceDiscovererEvent<>(createUnresolved("127.0.0." + (i - 1), 0), false));
+                mixedEvents.add(new DefaultServiceDiscovererEvent<>(
+                        createUnresolved("127.0.0." + (i - 1), 0), UNAVAILABLE));
             } else {
-                mixedEvents.add(new DefaultServiceDiscovererEvent<>(createUnresolved("127.0.0." + i, 0), true));
+                mixedEvents.add(new DefaultServiceDiscovererEvent<>(
+                        createUnresolved("127.0.0." + i, 0), AVAILABLE));
             }
-            availableEvents.add(new DefaultServiceDiscovererEvent<>(createUnresolved("127.0.0." + i, 0), true));
+            availableEvents.add(new DefaultServiceDiscovererEvent<>(
+                    createUnresolved("127.0.0." + i, 0), AVAILABLE));
         }
     }
 
