@@ -24,13 +24,12 @@ import io.servicetalk.concurrent.api.Single;
  */
 public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable {
     /**
-     * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
+     * Send a {@code request}.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
      * @param request the request to send.
      * @return The response.
      */
-    Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request);
+    Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

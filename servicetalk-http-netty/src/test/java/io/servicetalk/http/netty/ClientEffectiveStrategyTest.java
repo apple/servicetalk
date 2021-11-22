@@ -329,10 +329,8 @@ class ClientEffectiveStrategyTest {
 
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
-                    return delegate.request(strategy,
-                            request.transformPayloadBody(payload ->
+                    return delegate.request(request.transformPayloadBody(payload ->
                                     payload.beforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
                             .beforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
                             .map(resp -> resp.transformPayloadBody(payload ->

@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -84,15 +83,12 @@ class LoadBalancerReadyHttpClientTest {
     private final StreamingHttpClientFilterFactory testHandler = client -> new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(newOkResponse()));
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(
-                final HttpExecutionStrategy strategy,
-                final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }
     };

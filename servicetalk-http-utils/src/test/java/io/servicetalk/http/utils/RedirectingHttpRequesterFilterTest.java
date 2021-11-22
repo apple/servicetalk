@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -58,7 +57,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -179,9 +177,8 @@ class RedirectingHttpRequesterFilterTest {
         StreamingHttpClientFilterFactory mockResponse = client -> new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
-                        return httpClient.request(strategy, request);
+                        return httpClient.request(request);
                     }
                 };
 
@@ -250,7 +247,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void connectRequestsDoesNotRedirectByDefault() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(SEE_OTHER), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(SEE_OTHER), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
 
         StreamingHttpRequest request = client.newRequest(CONNECT, "servicetalk.io")
@@ -261,7 +258,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void redirectResponseWithEmptyLocation() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 succeeded(reqRespFactory.newResponse(MOVED_PERMANENTLY)),   // no "location" header returned
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
@@ -278,7 +275,7 @@ class RedirectingHttpRequesterFilterTest {
     private void testNoRedirectWasDone(final HttpRequestMethod method,
                                        final HttpResponseStatus status,
                                        final RedirectConfig config) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(status), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(status), okResponse());
         StreamingHttpClient client = newClient(config);
 
         verifyDoesNotRedirect(client, newRequest(client, method), status);
@@ -289,7 +286,7 @@ class RedirectingHttpRequesterFilterTest {
     @Test
     void maxRedirectsReached() throws Exception {
         AtomicInteger counter = new AtomicInteger();
-        when(httpClient.request(any(), any()))
+        when(httpClient.request(any()))
                 .thenAnswer(invocation -> redirectResponse(MOVED_PERMANENTLY, counter.incrementAndGet()));
 
         final int maxRedirects = MAX_REDIRECTS;
@@ -300,7 +297,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void requestWithNullResponse() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(succeeded(null));
+        when(httpClient.request(any())).thenReturn(succeeded(null));
         StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
 
         assertThat(client.request(newRequest(client, GET)).toFuture().get(), nullValue());
@@ -308,7 +305,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void http10WithoutHostHeader() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
 
         StreamingHttpRequest request = newRequest(client, GET).version(HTTP_1_0);
@@ -360,7 +357,7 @@ class RedirectingHttpRequesterFilterTest {
     private void testRedirected(final HttpRequestMethod method,
                                 final HttpResponseStatus status,
                                 final RedirectConfig config) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(status), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(status), okResponse());
         StreamingHttpClient client = newClient(config);
 
         verifyRedirected(client, newRequest(client, method), true, false);
@@ -370,7 +367,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void multipleFollowUpRedirects() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, 1),
                 redirectResponse(MOVED_PERMANENTLY, 2),
                 redirectResponse(MOVED_PERMANENTLY, 3),
@@ -384,7 +381,7 @@ class RedirectingHttpRequesterFilterTest {
     @ValueSource(booleans = {true, false})
     void getRequestForRedirectWithAbsoluteFormRequestTargetToRelativeLocation(
             boolean allowNonRelativeRedirects) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
 
@@ -395,7 +392,7 @@ class RedirectingHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
     @ValueSource(booleans = {true, false})
     void redirectWithAbsoluteFormRelativeLocation(boolean allowNonRelativeRedirects) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -407,7 +404,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void redirectForOnlyRelativeWithAbsoluteFormRelativeLocationWithPort() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://servicetalk.io:80"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -436,7 +433,7 @@ class RedirectingHttpRequesterFilterTest {
 
     private void crossSchemeRedirects(String fromScheme, String toScheme,
                                       boolean allowNonRelativeRedirects) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, toScheme + "://servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -454,7 +451,7 @@ class RedirectingHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
     @ValueSource(booleans = {true, false})
     void redirectFromRelativeFormToAbsoluteFormNonRelativeLocation(boolean allowNonRelativeRedirects) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -472,7 +469,7 @@ class RedirectingHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
     @ValueSource(booleans = {true, false})
     void redirectFromAbsoluteFormToAbsoluteFormNonRelativeLocation(boolean allowNonRelativeRedirects) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -504,7 +501,7 @@ class RedirectingHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
     @ValueSource(ints = {301, 302})
     void changePostToGet(int statusCode) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(HttpResponseStatus.of(statusCode, "")),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -520,7 +517,7 @@ class RedirectingHttpRequesterFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] manyHeaders={0}")
     @ValueSource(booleans = {false, true})
     void configureRedirectOfHeadersAndMessageBodyForNonRelativeRedirects(boolean manyHeaders) throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         final CharSequence[] headersToRedirect = manyHeaders ? new CharSequence[]{CUSTOM_HEADER, TRANSFER_ENCODING,
@@ -538,7 +535,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void configureRedirectOfPayloadBodyForNonRelativeRedirects() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -566,7 +563,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void misConfigureRedirectOfHeadersAndMessageBodyForNonRelativeRedirects() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -581,7 +578,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void manuallyRedirectHeadersAndMessageBodyForNonRelativeRedirects() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "http://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -599,7 +596,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void prepareRequestThrows() {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectRequestTransformer((relative, original, response, redirect) -> {
                     throw DELIBERATE_EXCEPTION;
@@ -612,7 +609,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void shouldRedirectThrows() {
-        when(httpClient.request(any(), any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectPredicate((relative, count, request, response) -> {
                     throw DELIBERATE_EXCEPTION;
@@ -625,7 +622,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void invalidLocation() {
-        when(httpClient.request(any(), any())).thenReturn(
+        when(httpClient.request(any())).thenReturn(
                 redirectResponse(MOVED_PERMANENTLY, "://non-relative.servicetalk.io"),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -638,7 +635,7 @@ class RedirectingHttpRequesterFilterTest {
 
     @Test
     void failedResponse() {
-        when(httpClient.request(any(), any())).thenReturn(failed(DELIBERATE_EXCEPTION));
+        when(httpClient.request(any())).thenReturn(failed(DELIBERATE_EXCEPTION));
         StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> client.request(newRequest(client, GET)).toFuture().get());
@@ -648,9 +645,9 @@ class RedirectingHttpRequesterFilterTest {
     @Test
     void indexesOfPayloadBodyAreNotMoved() throws Exception {
         AtomicInteger counter = new AtomicInteger();
-        when(httpClient.request(any(), any())).thenAnswer(invocation -> {
+        when(httpClient.request(any())).thenAnswer(invocation -> {
             if (counter.incrementAndGet() == 1) {
-                StreamingHttpRequest request = invocation.getArgument(1);
+                StreamingHttpRequest request = invocation.getArgument(0);
                 // Simulate payload body write:
                 request.payloadBody().map(buffer -> buffer.skipBytes(buffer.readableBytes())).toFuture().get();
                 return redirectResponse(MOVED_PERMANENTLY);
@@ -741,7 +738,7 @@ class RedirectingHttpRequesterFilterTest {
                                                 int numberOfInvocations,
                                                 @Nullable HttpRequestMethod expectedMethod) throws Exception {
         ArgumentCaptor<StreamingHttpRequest> requestCaptor = forClass(StreamingHttpRequest.class);
-        StreamingHttpResponse response = client.request(defaultStrategy(), request).toFuture().get();
+        StreamingHttpResponse response = client.request(request).toFuture().get();
         assertThat(response, is(notNullValue()));
         assertThat("Unexpected response status", response.status(), is(expectedStatus));
         if (expectedLocationN > 0) {
@@ -751,7 +748,7 @@ class RedirectingHttpRequesterFilterTest {
         } else {
             assertThat("Unexpected location", response.headers().get(LOCATION), nullValue());
         }
-        verify(httpClient, times(numberOfInvocations)).request(any(), requestCaptor.capture());
+        verify(httpClient, times(numberOfInvocations)).request(requestCaptor.capture());
         StreamingHttpRequest redirectedRequest = requestCaptor.getValue();
         if (expectedMethod != null) {
             assertThat("Unexpected request method", redirectedRequest.method(), is(expectedMethod));

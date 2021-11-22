@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -29,7 +29,6 @@ import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,12 +38,11 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
             StreamingHttpRequestResponseFactory factory,
             final HttpExecutionContext ctx,
-            final BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
         return (T) new TestStreamingHttpConnection(factory, ctx) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return doRequest.apply(strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return doRequest.apply(request);
             }
         };
     }
@@ -115,11 +113,6 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return factory.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return request(noOffloadsStrategy(), request);
         }
 
         @Override

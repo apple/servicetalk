@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -26,14 +25,6 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  * Represents a single fixed connection to a HTTP server.
  */
 public interface HttpConnection extends HttpRequester, GracefulAutoCloseable {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    Single<HttpResponse> request(HttpRequest request);
-
     /**
      * Get the {@link HttpConnectionContext}.
      *

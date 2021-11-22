@@ -38,15 +38,14 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     @Override
-    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                       final StreamingHttpRequest request) {
-        return request(delegate, strategy, request);
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return request(delegate, request);
     }
 
     @Override
     public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-        return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
+            final HttpRequestMetaData metaData) {
+        return delegate.reserveConnection(metaData).map(ClientFilterToReservedConnectionFilter::new);
     }
 
     @Override
@@ -95,17 +94,17 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
 
     /**
      * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on
-     * which to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     * which to call {@link StreamingHttpRequester#request(StreamingHttpRequest)}.
      *
      * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
-     * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
      * @param request The request to delegate.
      * @return the response.
      */
+    // An overload that takes StreamingHttpRequester as an argument helps to delegate to a reserved connection, applying
+    // the business logic of this filter.
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
-        return delegate.request(strategy, request);
+        return delegate.request(request);
     }
 
     private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {
@@ -114,9 +113,8 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
-            return StreamingHttpClientFilter.this.request(delegate, strategy, request);
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return StreamingHttpClientFilter.this.request(delegate(), request);
         }
     }
 }

@@ -39,9 +39,8 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return delegate.request(strategy, request);
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return delegate.request(request);
     }
 
     @Override
@@ -94,7 +93,7 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
      *
      * @return the {@link FilterableStreamingHttpConnection} this method delegates to.
      */
-    protected final FilterableStreamingHttpConnection delegate() {
+    protected FilterableStreamingHttpConnection delegate() {
         return delegate;
     }
 }

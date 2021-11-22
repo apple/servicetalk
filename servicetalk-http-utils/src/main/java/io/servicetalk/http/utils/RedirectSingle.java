@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 
@@ -50,7 +51,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
-    private final HttpExecutionStrategy strategy;
     private final SingleSource<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
     private final StreamingHttpRequester requester;
@@ -61,7 +61,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
      *
      * @param requester The {@link StreamingHttpRequester} to send redirected requests.
-     * @param strategy Sets the {@link HttpExecutionStrategy} when performing redirects.
      * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
      * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be
      * applied.
@@ -69,13 +68,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
      * @param config Other configuration options.
      */
     RedirectSingle(final StreamingHttpRequester requester,
-                   final HttpExecutionStrategy strategy,
                    final StreamingHttpRequest originalRequest,
                    final Single<StreamingHttpResponse> originalResponse,
                    final boolean allowNonRelativeRedirects,
                    final RedirectConfig config) {
         this.requester = requester;
-        this.strategy = strategy;
         this.originalRequest = originalRequest;
         this.originalResponse = toSource(originalResponse);
         this.allowNonRelativeRedirects = allowNonRelativeRedirects;
@@ -188,7 +185,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
                 terminalDelivered = true;   // Mark as "delivered" because we do not own `target` from this point
                 toSource(response.messageBody().ignoreElements()    // Consume any payload of the redirect response
-                        .concat(redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
+                        .concat(redirectSingle.requester.request(newRequest)))
                         .subscribe(new RedirectSubscriber(target, redirectSingle, newRequest, redirectCount + 1,
                                 sequentialCancellable));
             } catch (Throwable cause) {
@@ -280,6 +277,12 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         requestHostAndPort.hostName() + ':' + redirectPort);
             }
             // nothing to do if non-relative redirects are not allowed
+
+            final HttpExecutionStrategy strategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+            if (strategy != null) {
+                redirectRequest.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            }
+
             return redirectRequest;
         }
 

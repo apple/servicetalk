@@ -21,7 +21,6 @@ import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.ContentEncodingHttpServiceFilter;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -103,7 +102,6 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                  .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
                      @Override
                      protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                     final HttpExecutionStrategy strategy,
                                                                      final StreamingHttpRequest request) {
                         return Single.defer(() -> {
                             assertHeader(() -> clientEncoding.encoder == null ? null :
@@ -111,7 +109,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                                     request.headers().get(CONTENT_ENCODING), true);
                             assertHeader(clientDecoder.group::advertisedMessageEncoding,
                                     request.headers().get(ACCEPT_ENCODING), false);
-                            return delegate.request(strategy, request).subscribeShareContext();
+                            return delegate.request(request).subscribeShareContext();
                         });
                      }
                  })

@@ -24,6 +24,10 @@ import java.util.Locale;
 public interface ServiceDiscovererEvent<ResolvedAddress> {
     /**
      * Get the resolved address which is the subject of this event.
+     * <p>
+     * Note: all subsequent events for the same address override its {@link #status()} or any additional meta-data
+     * associated with the address.
+     *
      * @return a resolved address that can be used for connecting.
      */
     ResolvedAddress address();

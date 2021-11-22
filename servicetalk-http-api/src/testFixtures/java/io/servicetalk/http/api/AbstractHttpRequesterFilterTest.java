@@ -187,8 +187,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     /**
-     * Handler for {@link HttpRequester#request(HttpExecutionStrategy, HttpRequest)} calls as delegated from the filter
-     * under test.
+     * Handler for {@link HttpRequester#request(HttpRequest)} calls as delegated from the filter under test.
      */
     @FunctionalInterface
     public interface RequestHandler {
@@ -221,8 +220,8 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     /**
-     * Handler for {@link HttpRequester#request(HttpExecutionStrategy, HttpRequest)} calls with {@link
-     * ConnectionContext} information as delegated from the filter under test.
+     * Handler for {@link HttpRequester#request(HttpRequest)} calls with {@link ConnectionContext} information as
+     * delegated from the filter under test.
      */
     @FunctionalInterface
     public interface RequestWithContextHandler {
@@ -291,12 +290,6 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return connection.request(strategy, request);
-            }
-
-            @Override
             public HttpExecutionContext executionContext() {
                 return connection.executionContext();
             }
@@ -332,8 +325,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                                                   @Nullable final StreamingHttpConnectionFilterFactory filterFactory) {
         final StreamingHttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return rwch.request(REQ_RES_FACTORY, connectionContext(), request);
             }
         };
@@ -349,22 +341,18 @@ public abstract class AbstractHttpRequesterFilterTest {
 
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return rh.request(REQ_RES_FACTORY, request);
                     }
 
                     @Override
                     public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+                            final HttpRequestMetaData metaData) {
                         return succeeded(newReservedConnection()).map(rc ->
                                 new ReservedStreamingHttpConnectionFilter(rc) {
                                     @Override
-                                    protected Single<StreamingHttpResponse> request(
-                                            final StreamingHttpRequester delegate,
-                                            final HttpExecutionStrategy strategy,
-                                            final StreamingHttpRequest request) {
-                                        return rwch.request(delegate.httpResponseFactory(), connectionContext(),
+                                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                        return rwch.request(delegate().httpResponseFactory(), connectionContext(),
                                                 request);
                                     }
                                 });

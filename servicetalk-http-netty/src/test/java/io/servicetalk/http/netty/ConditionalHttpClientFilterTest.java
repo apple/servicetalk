@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -37,7 +36,6 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
     private static final StreamingHttpClientFilterFactory REQ_FILTER = client -> new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return TEST_REQ_HANDLER.apply(request, delegate.httpResponseFactory());
         }
@@ -55,9 +53,8 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
             return new ConditionalHttpClientFilter(TEST_REQ_PREDICATE, new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
-                    return delegate.request(strategy, markFiltered(request));
+                    return delegate.request(markFiltered(request));
                 }
 
                 @Override

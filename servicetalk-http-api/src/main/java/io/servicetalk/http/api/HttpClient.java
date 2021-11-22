@@ -26,14 +26,6 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  */
 public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
     /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    Single<HttpResponse> request(HttpRequest request);
-
-    /**
      * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
@@ -42,19 +34,6 @@ public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
     Single<ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData);
-
-    /**
-     * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
-     * <p>
-     * <b>Note:</b> reserved connections may not be restricted by the max pipelined requests count.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
-     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
-     * For example this may provide some insight into shard or other info.
-     * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
-     */
-    Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy, HttpRequestMetaData metaData);
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.

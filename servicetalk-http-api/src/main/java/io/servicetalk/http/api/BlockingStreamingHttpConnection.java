@@ -23,15 +23,6 @@ import io.servicetalk.concurrent.PublisherSource;
  */
 public interface BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
     /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     */
-    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
-
-    /**
      * Get the {@link HttpConnectionContext}.
      *
      * @return the {@link HttpConnectionContext}.

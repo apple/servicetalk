@@ -29,6 +29,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -51,6 +52,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
@@ -102,9 +104,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
             initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
-            @Nullable
-            final GrpcExecutionStrategy strategy = metadata.strategy();
-            return (strategy == null ? client.request(httpRequest) : client.request(strategy, httpRequest))
+            assignStrategy(httpRequest, metadata);
+            return client.request(httpRequest)
                     .map(response -> validateResponseAndGetPayload(response, responseContentType,
                             client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
                                     deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding)))
@@ -147,10 +148,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request,
                     streamingHttpClient.executionContext().bufferAllocator()));
-            @Nullable
-            final GrpcExecutionStrategy strategy = metadata.strategy();
-            return (strategy == null ? streamingHttpClient.request(httpRequest) :
-                    streamingHttpClient.request(strategy, httpRequest))
+            assignStrategy(httpRequest, metadata);
+            return streamingHttpClient.request(httpRequest)
                     .flatMapPublisher(response -> validateResponseAndGetPayload(response, responseContentType,
                             streamingHttpClient.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
                                     response.headers(), deserializerIdentity, deserializers,
@@ -235,10 +234,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
             try {
-                @Nullable
-                final GrpcExecutionStrategy strategy = metadata.strategy();
-                final HttpResponse response = strategy == null ? client.request(httpRequest) :
-                        client.request(strategy, httpRequest);
+                assignStrategy(httpRequest, metadata);
+                final HttpResponse response = client.request(httpRequest);
                 return validateResponseAndGetPayload(response, responseContentType,
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
                                 deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding));
@@ -285,10 +282,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             httpRequest.payloadBody(serializer.serialize(request,
                     streamingHttpClient.executionContext().bufferAllocator()));
             try {
-                @Nullable
-                final GrpcExecutionStrategy strategy = metadata.strategy();
-                final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
-                        client.request(strategy, httpRequest);
+                assignStrategy(httpRequest, metadata);
+                final BlockingStreamingHttpResponse response = client.request(httpRequest);
                 return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
                                 response.headers(), deserializerIdentity, deserializers,
@@ -379,7 +374,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
      * @param metaDataTimeout the timeout specified in client metadata or null for no timeout
      * @return The timeout {@link Duration}, potentially negative or null if no timeout.
      */
-    private @Nullable Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
+    @Nullable
+    private Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
         Long deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
         @Nullable
         Duration contextTimeout = null != deadline ? Duration.ofNanos(deadline - System.nanoTime()) : null;
@@ -446,5 +442,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     private static <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
         return new GrpcDeserializer<>(methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
+    }
+
+    private static void assignStrategy(HttpRequestMetaData requestMetaData, GrpcClientMetadata grpcMetadata) {
+        @Nullable
+        final GrpcExecutionStrategy strategy = grpcMetadata.strategy();
+        if (strategy != null) {
+            requestMetaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        }
     }
 }

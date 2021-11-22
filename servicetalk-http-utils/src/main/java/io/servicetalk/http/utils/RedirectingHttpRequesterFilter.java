@@ -89,23 +89,19 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
+                return RedirectingHttpRequesterFilter.this.request(delegate, request,
                         config.allowNonRelativeRedirects());
             }
 
             @Override
             public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                    final HttpExecutionStrategy strategy,
                     final HttpRequestMetaData metaData) {
-                return delegate().reserveConnection(strategy, metaData)
+                return delegate().reserveConnection(metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
-                            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                            final HttpExecutionStrategy strategy,
-                                                                            final StreamingHttpRequest request) {
-                                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, false);
+                            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                return RedirectingHttpRequesterFilter.this.request(delegate(), request, false);
                             }
                         });
             }
@@ -116,18 +112,16 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request, false);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return RedirectingHttpRequesterFilter.this.request(delegate(), request, false);
             }
         };
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
                                                   final boolean allowNonRelativeRedirects) {
-        final Single<StreamingHttpResponse> response = delegate.request(strategy,
+        final Single<StreamingHttpResponse> response = delegate.request(
                 // Duplicate each payload buffer chunk to allow safely replaying it without worry that indexes can move
                 request.transformMessageBody(p -> p.map(item -> {
                     if (item instanceof Buffer) {
@@ -138,7 +132,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
         if (config.maxRedirects() <= 0) {
             return response;
         }
-        return new RedirectSingle(delegate, strategy, request, response, allowNonRelativeRedirects, config);
+        return new RedirectSingle(delegate, request, response, allowNonRelativeRedirects, config);
     }
 
     @Override

@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -79,9 +78,8 @@ class ResponseCancelTest {
         client = forSingleAddress(serverHostAndPort(ctx))
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
-                        return delegate().request(strategy, request)
+                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                        return delegate().request(request)
                                 .liftSync(target -> new Subscriber<StreamingHttpResponse>() {
                                     @Override
                                     public void onSubscribe(final Cancellable cancellable) {

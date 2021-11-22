@@ -88,7 +88,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return filteredConnection.request(streamingStrategy, request);
+        return filteredConnection.request(request);
     }
 
     @Override
@@ -99,12 +99,6 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
     @Override
     public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
         return filteredConnection.transportEventStream(eventKey);
-    }
-
-    @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return filteredConnection.request(strategy, request);
     }
 
     @Override

@@ -157,14 +157,13 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
+                final HttpRequestMetaData metaData) {
+            return defer(() -> selectClient(metaData).reserveConnection(metaData).subscribeShareContext());
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
-            return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return defer(() -> selectClient(request).request(request).subscribeShareContext());
         }
 
         @Override
@@ -207,8 +206,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return failed(ex);
         }
 
@@ -238,8 +236,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
             return failed(ex);
         }
 

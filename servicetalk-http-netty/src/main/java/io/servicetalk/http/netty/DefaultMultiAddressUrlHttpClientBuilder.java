@@ -270,10 +270,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
-                final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+                final HttpRequestMetaData metaData) {
             return defer(() -> {
                 try {
-                    return selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext();
+                    return selectClient(metaData).reserveConnection(metaData).subscribeShareContext();
                 } catch (Throwable t) {
                     return Single.<FilterableReservedStreamingHttpConnection>failed(t).subscribeShareContext();
                 }
@@ -281,11 +281,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
                 try {
-                    return selectClient(request).request(strategy, request).subscribeShareContext();
+                    return selectClient(request).request(request).subscribeShareContext();
                 } catch (Throwable t) {
                     return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
                 }

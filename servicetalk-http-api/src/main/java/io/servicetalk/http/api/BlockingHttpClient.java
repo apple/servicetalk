@@ -20,15 +20,6 @@ package io.servicetalk.http.api;
  */
 public interface BlockingHttpClient extends BlockingHttpRequester {
     /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     */
-    HttpResponse request(HttpRequest request) throws Exception;
-
-    /**
      * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param metaData Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
@@ -38,19 +29,6 @@ public interface BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the reservation process.
      */
     ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception;
-
-    /**
-     * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param metaData Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
-     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
-     * For example this may provide some insight into shard or other info.
-     * @return a {@link ReservedBlockingHttpConnection}.
-     * @throws Exception if a exception occurs during the reservation process.
-     */
-    ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
-                                                     HttpRequestMetaData metaData) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link StreamingHttpClient} API.

@@ -22,15 +22,12 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
  */
 public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, GracefulAutoCloseable {
     /**
-     * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
+     * Send a {@code request}.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
      * @param request the request to send.
      * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
      */
-    BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
-                                          BlockingStreamingHttpRequest request) throws Exception;
+    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

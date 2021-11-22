@@ -28,6 +28,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -46,6 +47,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
@@ -102,8 +104,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return defer(() -> {
             Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
@@ -123,6 +124,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 addRequestTransferEncodingIfNecessary(request);
             }
 
+            final HttpExecutionStrategy strategy = requestExecutionStrategy(request,
+                    executionContext().executionStrategy());
             if (strategy.isSendOffloaded()) {
                 flatRequest = flatRequest.subscribeOn(connectionContext.executionContext().executor(),
                         IoThreadFactory.IoThread::currentThreadIsIoThread);
@@ -142,6 +145,12 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
             return resp.subscribeShareContext();
         });
+    }
+
+    static HttpExecutionStrategy requestExecutionStrategy(final HttpRequestMetaData metaData,
+                                                          final HttpExecutionStrategy fallback) {
+        final HttpExecutionStrategy strategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+        return strategy != null ? strategy : fallback;
     }
 
     @Nullable

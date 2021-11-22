@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
+import io.servicetalk.transport.api.DelegatingServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfig;
 
 import java.util.LinkedHashMap;

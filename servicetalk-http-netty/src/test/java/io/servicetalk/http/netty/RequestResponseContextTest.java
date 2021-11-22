@@ -24,7 +24,6 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -92,8 +91,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
         this.api = api;
         connectionFilterFactory(connection -> new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy,
-                                                         StreamingHttpRequest request) {
+            public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
                 final List<String> requestCtxValue = request.context().get(CLIENT_REQUEST_KEY);
                 try {
                     assertThat(requestCtxValue, is(notNullValue()));
@@ -102,7 +100,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                 } catch (Throwable t) {
                     asyncError.add(t);
                 }
-                return delegate().request(strategy, request).map(response -> {
+                return delegate().request(request).map(response -> {
                     response.context().put(CLIENT_RESPONSE_KEY, valueOf(response.headers().get(CONTEXT_HEADER)));
                     return response;
                 });

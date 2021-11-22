@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -98,8 +97,7 @@ class HttpAuthConnectionFactoryClientTest {
         public Single<C> newConnection(
                 final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
             return super.newConnection(resolvedAddress, observer).flatMap(cnx ->
-                    cnx.request(defaultStrategy(),
-                            newTestRequest(cnx, "/auth"))
+                    cnx.request(newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();
                                 return failed(new IllegalStateException(

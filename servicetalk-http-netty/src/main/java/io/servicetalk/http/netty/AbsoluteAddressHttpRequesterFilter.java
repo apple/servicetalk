@@ -59,9 +59,8 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return AbsoluteAddressHttpRequesterFilter.this.request(delegate, strategy, request);
+                return AbsoluteAddressHttpRequesterFilter.this.request(delegate, request);
             }
         };
     }
@@ -70,9 +69,8 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return AbsoluteAddressHttpRequesterFilter.this.request(delegate(), strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return AbsoluteAddressHttpRequesterFilter.this.request(delegate(), request);
             }
         };
     }
@@ -84,12 +82,11 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         return defer(() -> {
             final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
             request.requestTarget(effectiveRequestUri);
-            return delegate.request(strategy, request).subscribeShareContext();
+            return delegate.request(request).subscribeShareContext();
         });
     }
 }

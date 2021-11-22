@@ -23,13 +23,12 @@ import io.servicetalk.concurrent.api.Single;
  */
 public interface HttpRequester extends HttpRequestFactory, ListenableAsyncCloseable {
     /**
-     * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
+     * Send a {@code request}.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
      * @param request the request to send.
      * @return The response.
      */
-    Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
+    Single<HttpResponse> request(HttpRequest request);
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

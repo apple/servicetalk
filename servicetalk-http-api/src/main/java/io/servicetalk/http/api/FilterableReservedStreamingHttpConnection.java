@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 
 /**
  * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
- * {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
+ * {@link StreamingHttpClient#reserveConnection(HttpRequestMetaData)}.
  */
 public interface FilterableReservedStreamingHttpConnection extends FilterableStreamingHttpConnection {
     /**

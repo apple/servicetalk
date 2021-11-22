@@ -26,14 +26,12 @@ public interface FilterableStreamingHttpClient extends
     /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
      * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
      * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
-     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
+     * @return a {@link Single} that provides a {@link FilterableReservedStreamingHttpConnection} upon completion.
      */
-    Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                                  HttpRequestMetaData metaData);
+    Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
 
     @Override
     default HttpExecutionStrategy requiredOffloads() {

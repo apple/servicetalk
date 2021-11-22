@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.DelegatingClientSslConfig;
 
 import io.netty.handler.ssl.SslContext;
 
@@ -23,6 +24,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forClient;
+import static java.util.Objects.requireNonNull;
 
 /**
  Read only view of {@link TcpClientConfig}.
@@ -37,6 +39,16 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<Cli
         super(from);
         sslConfig = from.sslConfig();
         sslContext = sslConfig == null ? null : forClient(sslConfig);
+    }
+
+    private ReadOnlyTcpClientConfig(final ReadOnlyTcpClientConfig config, final String peerHost,
+                                    final int peerPort, @Nullable final String sniHostname,
+                                    @Nullable final String hostnameVerificationAlgorithm) {
+        super(config);
+        sslConfig = new PeerHostNameOverrideClientSslConfig(requireNonNull(config.sslConfig), peerHost, peerPort,
+                sniHostname, hostnameVerificationAlgorithm);
+        // peerHost, peerPort, sniHostname do not impact the sslContext, so we can avoid the costly rebuilding.
+        sslContext = config.sslContext;
     }
 
     @Nullable
@@ -67,5 +79,59 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<Cli
     @Nullable
     public ClientSslConfig sslConfig() {
         return sslConfig;
+    }
+
+    /**
+     * Create a new {@link ReadOnlyTcpClientConfig} replacing {@link ClientSslConfig#peerHost()},
+     * {@link ClientSslConfig#peerPort()}, and {@link ClientSslConfig#sniHostname()}.
+     * @param peerHost The new value for {@link ClientSslConfig#peerHost()}.
+     * @param peerPort The new value for {@link ClientSslConfig#peerPort()}.
+     * @param sniHostname The new value for {@link ClientSslConfig#sniHostname()}.
+     * @param hostnameVerificationAlgorithm The new value for {@link ClientSslConfig#hostnameVerificationAlgorithm()}.
+     * @return a new {@link ReadOnlyTcpClientConfig} replacing {@link ClientSslConfig#peerHost()} and
+     * {@link ClientSslConfig#peerPort()}.
+     */
+    public ReadOnlyTcpClientConfig withSslConfigPeerHost(String peerHost, int peerPort, @Nullable String sniHostname,
+                                                         @Nullable final String hostnameVerificationAlgorithm) {
+        return new ReadOnlyTcpClientConfig(this, peerHost, peerPort, sniHostname, hostnameVerificationAlgorithm);
+    }
+
+    private static final class PeerHostNameOverrideClientSslConfig extends DelegatingClientSslConfig {
+        private final String peerHost;
+        private final int peerPort;
+        @Nullable
+        private final String sniHostname;
+        @Nullable
+        private final String hostnameVerificationAlgorithm;
+
+        PeerHostNameOverrideClientSslConfig(final ClientSslConfig delegate, final String peerHost, final int peerPort,
+                                            @Nullable final String sniHostname,
+                                            @Nullable final String hostnameVerificationAlgorithm) {
+            super(delegate);
+            this.peerHost = peerHost;
+            this.peerPort = peerPort;
+            this.sniHostname = sniHostname;
+            this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
+        }
+
+        @Override
+        public String peerHost() {
+            return peerHost;
+        }
+
+        @Override
+        public int peerPort() {
+            return peerPort;
+        }
+
+        @Override
+        public String sniHostname() {
+            return sniHostname;
+        }
+
+        @Override
+        public String hostnameVerificationAlgorithm() {
+            return hostnameVerificationAlgorithm;
+        }
     }
 }
