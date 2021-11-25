@@ -76,7 +76,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberAndIterator.class);
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
-        private final BlockingQueue<Object> data;
+        private final BlockingQueue<Object> data; // TODO(dariusz): This makes it difficult to introduce virtual time
         private final DelayedSubscription subscription = new DelayedSubscription();
         private final int requestN;
         /**

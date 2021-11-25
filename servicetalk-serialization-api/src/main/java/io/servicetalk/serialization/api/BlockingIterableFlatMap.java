@@ -72,6 +72,9 @@ final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
                     // We do not check for timeout expiry here and instead let hasNext(), next() determine what a
                     // timeout of <= 0 means. It may be that those methods decide to throw a TimeoutException or provide
                     // a fallback value.
+                    // TODO(dariusz): Why raw Iterable/Iterator? This prevents virtual time.
+                    // - actually the only real use is in Deprecated StreamingDeserializer,
+                    // so this class is unnecessary.
                     intermediate = mapper.apply(originalIterator.next(remainingTimeoutNanos, NANOSECONDS)).iterator();
                     timeStampANanos = nanoTime();
                     remainingTimeoutNanos -= timeStampANanos - timeStampBNanos;

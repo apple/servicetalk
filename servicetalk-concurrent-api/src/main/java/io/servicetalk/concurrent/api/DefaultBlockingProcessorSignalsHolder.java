@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 
 final class DefaultBlockingProcessorSignalsHolder<T> extends AbstractProcessorBuffer
         implements BlockingProcessorSignalsHolder<T> {
-    private final BlockingQueue<Object> signals;
+    private final BlockingQueue<Object> signals; // TODO(dariusz): this makes it difficult to introduce virtual time
 
     DefaultBlockingProcessorSignalsHolder(final int maxBuffer) {
         this.signals = new LinkedBlockingQueue<>(maxBuffer);

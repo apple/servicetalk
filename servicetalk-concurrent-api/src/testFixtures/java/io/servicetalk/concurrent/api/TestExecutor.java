@@ -152,6 +152,16 @@ public class TestExecutor implements Executor {
         return unit.convert(currentNanos, NANOSECONDS);
     }
 
+    @Override
+    public long currentTime() {
+        return currentNanos();
+    }
+
+    @Override
+    public TimeUnit currentTimeUnits() {
+        return NANOSECONDS;
+    }
+
     /**
      * Advance the internal clock time by {@code time} in the specified {@code unit}s, executing scheduled tasks
      * whose time has come.

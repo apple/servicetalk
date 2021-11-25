@@ -17,9 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 abstract class AbstractExecutor implements Executor {
@@ -30,6 +32,16 @@ abstract class AbstractExecutor implements Executor {
     @SuppressWarnings("unused")
     @Nullable
     private volatile CompletableProcessor onClose;
+
+    @Override
+    public long currentTime() {
+        return System.nanoTime();
+    }
+
+    @Override
+    public TimeUnit currentTimeUnits() {
+        return NANOSECONDS;
+    }
 
     @Override
     public Completable onClose() {

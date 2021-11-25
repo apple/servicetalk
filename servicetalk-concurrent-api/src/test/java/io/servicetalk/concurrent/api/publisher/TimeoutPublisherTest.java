@@ -310,7 +310,7 @@ class TimeoutPublisherTest {
                             try {
                                 // Sleep for at least enough time for the expiration time to fire before invoking
                                 // the run() method.
-                                Thread.sleep(100);
+                                Thread.sleep(100); // TODO(dariusz): advance mock time instead
                                 task.run();
                             } catch (Throwable cause) {
                                 causeRef.compareAndSet(null, cause);
@@ -324,6 +324,18 @@ class TimeoutPublisherTest {
                     }
                 }
                 return IGNORE_CANCEL;
+            }
+
+            @Override
+            public long currentTime() {
+                // TODO(dariusz): use mock timer
+                return System.nanoTime();
+            }
+
+            @Override
+            public TimeUnit currentTimeUnits() {
+                // TODO(dariusz): use mock timer
+                return NANOSECONDS;
             }
 
             @Override

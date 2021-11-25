@@ -102,6 +102,16 @@ public abstract class DelegatingExecutor implements Executor {
     }
 
     @Override
+    public long currentTime() {
+        return delegate.currentTime();
+    }
+
+    @Override
+    public TimeUnit currentTimeUnits() {
+        return delegate.currentTimeUnits();
+    }
+
+    @Override
     public Completable onClose() {
         return delegate.onClose();
     }
