@@ -152,7 +152,7 @@ public interface ConnectionObserver {
          */
         default void streamIdAssigned(long streamId) {  // Use long to comply with HTTP/3 requirements
             // FIXME: 0.42 - remove default impl
-            throw new UnsupportedOperationException("Method streamIdAssigned(int) is not yet implemented by "
+            throw new UnsupportedOperationException("Method streamIdAssigned(long) is not yet implemented by "
                     + getClass().getName());
         }
 
