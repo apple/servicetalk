@@ -55,10 +55,14 @@ public interface ConnectionObserver {
      * Callback when a security handshake is initiated.
      * <p>
      * For the typical TCP connection, this callback is invoked after {@link #onTcpHandshakeComplete()}. When
-     * {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is used and the Fast Open feature is supported by
-     * the OS, this callback may be invoked earlier.
+     * {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is configured and the Fast Open feature is supported
+     * by the OS, this callback may be invoked earlier. Note, even if the Fast Open is available and configured, it may
+     * not actually happen if the
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is {@code null} or
+     * rejected by the server.
      *
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
+     * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
      */
     SecurityHandshakeObserver onSecurityHandshake();
 
