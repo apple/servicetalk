@@ -32,7 +32,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -231,8 +230,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return new SubscribableSingle<StreamingHttpResponse>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -289,11 +287,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
                     final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
-                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, originalReq, observer,
+                        childChannelActive(promise, subscriber, sequentialCancellable, originalReq, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
-                                future, subscriber, sequentialCancellable, strategy, originalReq, observer,
+                                future, subscriber, sequentialCancellable, originalReq, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable));
                     }
                 }
@@ -324,7 +322,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private void childChannelActive(Future<Http2StreamChannel> future,
                                         Subscriber<? super StreamingHttpResponse> subscriber,
                                         SequentialCancellable sequentialCancellable,
-                                        HttpExecutionStrategy strategy,
                                         StreamingHttpRequest request,
                                         StreamObserver streamObserver,
                                         boolean allowDropTrailersReadFromTransport,
@@ -362,7 +359,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
                             executionContext(), reqRespFactory, headersFactory, allowDropTrailersReadFromTransport)
-                            .request(strategy, request));
+                            .request(request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {

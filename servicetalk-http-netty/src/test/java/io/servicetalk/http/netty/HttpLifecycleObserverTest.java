@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.Http2Exception;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
@@ -214,7 +213,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
     void testConnectionFailsRequestBeforeWrite(HttpProtocol protocol) throws Exception {
         connectionFilterFactory(client -> new StreamingHttpConnectionFilter(client) {
             @Override
-            public Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request) {
+            public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
                 return failed(DELIBERATE_EXCEPTION);
             }
         });

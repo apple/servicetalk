@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
-
-import io.servicetalk.transport.api.ClientSslConfig;
+package io.servicetalk.transport.api;
 
 import javax.annotation.Nullable;
 
-class DelegatingClientSslConfig extends DelegatingSslConfig<ClientSslConfig> implements ClientSslConfig {
-    DelegatingClientSslConfig(final ClientSslConfig delegate) {
+/**
+ * Wrap a {@link ClientSslConfig} and delegate all methods to it.
+ */
+public class DelegatingClientSslConfig extends DelegatingSslConfig<ClientSslConfig> implements ClientSslConfig {
+    /**
+     * Create a new instance.
+     * @param delegate The instance to delegate to.
+     */
+    protected DelegatingClientSslConfig(final ClientSslConfig delegate) {
         super(delegate);
     }
 

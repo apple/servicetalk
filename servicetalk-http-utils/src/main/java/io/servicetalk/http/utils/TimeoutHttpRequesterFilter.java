@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -119,10 +118,8 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.withTimeout(request,
-                        r -> delegate.request(strategy, r),
+                return TimeoutHttpRequesterFilter.this.withTimeout(request, delegate::request,
                         client.executionContext().executor());
             }
         };
@@ -132,10 +129,8 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.withTimeout(request,
-                        r -> delegate().request(strategy, r),
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate().request(r),
                         connection.executionContext().executor());
             }
         };

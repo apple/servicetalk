@@ -55,13 +55,12 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
     }
 
     private static Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                         final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
         return Single.defer(() -> {
             CompletableSource.Processor requestSent = newCompletableProcessor();
             StreamingHttpRequest r = request.transformMessageBody(messageBody -> messageBody
                     .whenFinally(requestSent::onComplete));
-            return fromSource(requestSent).merge(delegate.request(strategy, r).toPublisher()).firstOrError()
+            return fromSource(requestSent).merge(delegate.request(r).toPublisher()).firstOrError()
                     .subscribeShareContext();
         });
     }
@@ -71,9 +70,8 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return EnforceSequentialModeRequesterFilter.request(delegate, strategy, request);
+                return EnforceSequentialModeRequesterFilter.request(delegate, request);
             }
         };
     }
@@ -82,9 +80,8 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return EnforceSequentialModeRequesterFilter.request(delegate(), strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return EnforceSequentialModeRequesterFilter.request(delegate(), request);
             }
         };
     }

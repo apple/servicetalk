@@ -17,7 +17,6 @@ package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -44,9 +43,8 @@ final class ResponseCheckingClientFilter implements StreamingHttpClientFilterFac
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return delegate.request(strategy, request).flatMap(response -> {
+                return delegate.request(request).flatMap(response -> {
                     if (!OK.equals(response.status())) {
                         return failed(new BadResponseStatusException("Bad response status from " + backendName + ": " +
                                 response.status()));

@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -139,10 +138,9 @@ class MalformedDataAfterHttpMessageTest {
                         .buildWithConstantBackoffFullJitter(ofNanos(1)))
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
+                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                         contextQueue.add(connectionContext());
-                        return super.request(strategy, request);
+                        return super.request(request);
                     }
                 })
                 .buildBlocking()) {

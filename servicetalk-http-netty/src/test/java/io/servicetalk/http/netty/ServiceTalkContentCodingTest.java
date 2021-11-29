@@ -22,7 +22,6 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.ContentCodingHttpRequesterFilter;
 import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -137,9 +136,8 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
-                    return super.request(delegate, strategy, request).map(response -> {
+                    return super.request(delegate, request).map(response -> {
                         if (INTERNAL_SERVER_ERROR.equals(response.status())) {
                             // Ignore any further validations
                             return response;

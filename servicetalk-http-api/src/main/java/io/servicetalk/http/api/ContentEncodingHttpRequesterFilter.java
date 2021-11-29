@@ -59,9 +59,8 @@ public final class ContentEncodingHttpRequesterFilter implements
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return applyEncodingAndDecoding(delegate, strategy, request);
+                return applyEncodingAndDecoding(delegate, request);
             }
         };
     }
@@ -70,9 +69,8 @@ public final class ContentEncodingHttpRequesterFilter implements
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return applyEncodingAndDecoding(delegate(), strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return applyEncodingAndDecoding(delegate(), request);
             }
         };
     }
@@ -84,7 +82,6 @@ public final class ContentEncodingHttpRequesterFilter implements
     }
 
     private Single<StreamingHttpResponse> applyEncodingAndDecoding(final StreamingHttpRequester delegate,
-                                                                   final HttpExecutionStrategy strategy,
                                                                    final StreamingHttpRequest request) {
         return Single.defer(() -> {
             boolean decompressResponse = false;
@@ -103,7 +100,7 @@ public final class ContentEncodingHttpRequesterFilter implements
                 encodedRequest = request;
             }
 
-            Single<StreamingHttpResponse> respSingle = delegate.request(strategy, encodedRequest);
+            Single<StreamingHttpResponse> respSingle = delegate.request(encodedRequest);
             return (decompressResponse ? respSingle.map(response -> {
                 Iterator<? extends CharSequence> contentEncodingItr =
                         response.headers().valuesIterator(CONTENT_ENCODING);

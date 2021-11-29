@@ -31,7 +31,6 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -90,13 +89,12 @@ class SingleRequestOrResponseApiTest {
                 .initializeHttp(builder -> builder.appendClientFilter(origin -> new StreamingHttpClientFilter(origin) {
                     @Override
                     protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
-                                                                    HttpExecutionStrategy strategy,
                                                                     StreamingHttpRequest request) {
                         // Change path to send the request to the route API that expects only a single request item
                         // and generates requested number of response items:
                         return defer(() -> {
                             request.requestTarget(BlockingTestResponseStreamRpc.PATH);
-                            return delegate.request(strategy, request).subscribeShareContext();
+                            return delegate.request(request).subscribeShareContext();
                         });
                     }
                 }));

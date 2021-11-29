@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
-
-import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.api.SslProvider;
+package io.servicetalk.transport.api;
 
 import java.io.InputStream;
 import java.util.List;
@@ -27,13 +24,25 @@ import javax.net.ssl.TrustManagerFactory;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class DelegatingSslConfig<T extends SslConfig> implements SslConfig {
+/**
+ * Wrap a {@link SslConfig} and delegate all methods to it.
+ * @param <T> The type of {@link SslConfig} to delegate to.
+ */
+public abstract class DelegatingSslConfig<T extends SslConfig> implements SslConfig {
     private final T delegate;
 
-    DelegatingSslConfig(final T delegate) {
+    /**
+     * Create a new instance.
+     * @param delegate The instance to delegate to.
+     */
+    protected DelegatingSslConfig(final T delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
+    /**
+     * Get the {@link T} to delegate to.
+     * @return the {@link T} to delegate to.
+     */
     protected T delegate() {
         return delegate;
     }

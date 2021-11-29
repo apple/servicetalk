@@ -29,7 +29,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
@@ -186,7 +185,7 @@ class HostHeaderHttpRequesterFilterTest {
         if (hostHeader != null) {
             request.setHeader(HOST, hostHeader);
         }
-        HttpResponse response = requester.request(noOffloadsStrategy(), request);
+        HttpResponse response = requester.request(request);
         assertThat(response.status(), equalTo(OK));
         assertThat(response.version(), equalTo(httpVersionConfig.version()));
         // "Host" header is not required for HTTP/1.0. Therefore, we may expect "null" here.

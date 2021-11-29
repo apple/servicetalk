@@ -17,8 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
-
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -29,29 +27,7 @@ public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpReq
      * @param request the request to send.
      * @return The response.
      */
-    default BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception {
-        // FIXME: 0.42 - remove default impl
-        throw new UnsupportedOperationException("Method request(HttpRequest) is not supported by " +
-                getClass().getName());
-    }
-
-    /**
-     * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     * @deprecated Use {@link #request(BlockingStreamingHttpRequest)}. If an {@link HttpExecutionStrategy} needs to be
-     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
-     * {@link HttpRequestMetaData#context() request context}.
-     */
-    @Deprecated
-    default BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
-                                          BlockingStreamingHttpRequest request) throws Exception {
-        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-        return request(request);
-    }
+    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Get the {@link HttpExecutionContext} used during construction of this object.

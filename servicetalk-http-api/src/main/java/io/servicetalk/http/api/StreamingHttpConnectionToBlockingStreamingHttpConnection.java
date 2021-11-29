@@ -50,11 +50,6 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return request(strategy, request);
-    }
-
-    @Override
     public HttpConnectionContext connectionContext() {
         return context;
     }
@@ -70,9 +65,8 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                 final BlockingStreamingHttpRequest request) throws Exception {
-        return blockingInvocation(connection.request(strategy, request.toStreamingRequest()))
+    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+        return blockingInvocation(connection.request(request.toStreamingRequest()))
                 .toBlockingStreamingResponse();
     }
 

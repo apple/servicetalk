@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -49,8 +48,7 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         final boolean b;
         try {
             b = predicate.test(request);
@@ -59,10 +57,10 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
         }
 
         if (b) {
-            return predicatedConnection.request(strategy, request);
+            return predicatedConnection.request(request);
         }
 
-        return delegate().request(strategy, request);
+        return delegate().request(request);
     }
 
     @Override

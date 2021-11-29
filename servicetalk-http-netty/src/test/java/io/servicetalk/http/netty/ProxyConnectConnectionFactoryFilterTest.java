@@ -151,7 +151,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(OK);
         when(response.messageBody()).thenReturn(messageBody);
-        when(connection.request(any(), any())).thenReturn(succeeded(response));
+        when(connection.request(any())).thenReturn(succeeded(response));
     }
 
     private void configureConnectRequest() {
@@ -178,13 +178,13 @@ class ProxyConnectConnectionFactoryFilterTest {
 
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(connection).connect(any());
-        verify(connection, never()).request(any(), any());
+        verify(connection, never()).request(any());
         assertConnectionClosed();
     }
 
     @Test
     void connectRequestFails() {
-        when(connection.request(any(), any())).thenReturn(failed(DELIBERATE_EXCEPTION));
+        when(connection.request(any())).thenReturn(failed(DELIBERATE_EXCEPTION));
 
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
@@ -200,7 +200,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(INTERNAL_SERVER_ERROR);
         when(response.messageBody()).thenReturn(messageBody);
-        when(connection.request(any(), any())).thenReturn(succeeded(response));
+        when(connection.request(any())).thenReturn(succeeded(response));
 
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
@@ -334,7 +334,7 @@ class ProxyConnectConnectionFactoryFilterTest {
 
     private void assertConnectPayloadConsumed(boolean expected) {
         verify(connection).connect(any());
-        verify(connection).request(any(), any());
+        verify(connection).request(any());
         assertThat("CONNECT response payload body was " + (expected ? "was" : "unnecessarily") + " consumed",
                 messageBody.isSubscribed(), is(expected));
     }

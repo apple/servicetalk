@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
@@ -157,11 +156,11 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
             throws Exception {
 
         BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
-        requester.request(defaultStrategy(), newRequest(requester, "first")).subscribe(responses::add);
+        requester.request(newRequest(requester, "first")).subscribe(responses::add);
         firstRequestReceivedLatch.await();
 
         AtomicReference<Cancellable> cancellable = new AtomicReference<>();
-        StepVerifiers.create(requester.request(defaultStrategy(), newRequest(requester, "second"))
+        StepVerifiers.create(requester.request(newRequest(requester, "second"))
                         .whenOnSuccess(responses::add)) // Add response to the queue to verify that we never receive it
                 .expectCancellableConsumed(cancellable::set)
                 .then(() -> {

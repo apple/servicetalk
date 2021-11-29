@@ -15,22 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
-
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public interface BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     */
-    @Override   // FIXME: 0.42 - remove, this method is defined in BlockingHttpRequester
-    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
-
     /**
      * Reserve a {@link BlockingStreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
@@ -41,26 +29,6 @@ public interface BlockingStreamingHttpClient extends BlockingStreamingHttpReques
      * @throws Exception if a exception occurs during the reservation process.
      */
     ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception;
-
-    /**
-     * Reserve a {@link BlockingStreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param metaData Allows the underlying layers to know what {@link BlockingStreamingHttpConnection}s are valid to
-     * reserve for future {@link BlockingStreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
-     * For example this may provide some insight into shard or other info.
-     * @return a {@link ReservedBlockingStreamingHttpConnection}.
-     * @throws Exception if an exception occurs during the reservation process.
-     * @deprecated Use {@link #reserveConnection(HttpRequestMetaData)}. If an {@link HttpExecutionStrategy} needs to be
-     * altered, provide a value for {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY} in the
-     * {@link HttpRequestMetaData#context() request context}.
-     */
-    @Deprecated
-    default ReservedBlockingStreamingHttpConnection reserveConnection(
-            HttpExecutionStrategy strategy, HttpRequestMetaData metaData) throws Exception {
-        metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-        return reserveConnection(metaData);
-    }
 
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link StreamingHttpClient} API.

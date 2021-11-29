@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -122,9 +121,8 @@ class H2ConcurrencyControllerTest {
             .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
             .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                 @Override
-                public Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy,
-                                                             StreamingHttpRequest request) {
-                    return delegate().request(strategy, request)
+                public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+                    return delegate().request(request)
                         .liftSync(subscriber -> new SingleSource.Subscriber<StreamingHttpResponse>() {
                             @Override
                             public void onSubscribe(final Cancellable cancellable) {

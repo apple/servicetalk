@@ -57,9 +57,8 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate, request);
             }
         };
     }
@@ -68,9 +67,8 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return HostHeaderHttpRequesterFilter.this.request(delegate(), request);
             }
         };
     }
@@ -82,14 +80,13 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         return defer(() -> {
             // "Host" header is not required for HTTP/1.0
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
                 request.setHeader(HOST, fallbackHost);
             }
-            return delegate.request(strategy, request).subscribeShareContext();
+            return delegate.request(request).subscribeShareContext();
         });
     }
 }

@@ -37,6 +37,7 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURREN
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
 final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     H2LBHttpConnectionFactory(
@@ -56,13 +57,13 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
             final ResolvedAddress resolvedAddress, final TransportObserver observer) {
         assert config.h2Config() != null;
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
+        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, config.tcpConfig());
         // Auto read is required for h2
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
+        return TcpConnector.connect(null, resolvedAddress, tcpConfig, true, executionContext,
                 (channel, connectionObserver) -> H2ClientParentConnectionContext.initChannel(channel,
                         executionContext,
-                        config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0), roTcpClientConfig.flushStrategy(),
-                        roTcpClientConfig.isAsyncCloseOffloaded(), roTcpClientConfig.idleTimeoutMs(),
+                        config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(),
+                        tcpConfig.isAsyncCloseOffloaded(), tcpConfig.idleTimeoutMs(),
                         new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver,
                         config.allowDropTrailersReadFromTransport()), observer);

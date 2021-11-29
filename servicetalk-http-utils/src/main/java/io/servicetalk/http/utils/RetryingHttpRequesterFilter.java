@@ -57,11 +57,10 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
                                                   final BiIntFunction<Throwable, Completable> retryStrategy,
                                                   final Executor executor) {
-        return delegate.request(strategy, request).retryWhen((count, t) -> {
+        return delegate.request(request).retryWhen((count, t) -> {
             if (settings.isRetryable(request, t)) {
                 if (settings.evaluateDelayedRetries() && t instanceof DelayedRetry) {
                    final Duration constant = ((DelayedRetry) t).delay();
@@ -84,9 +83,8 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy, executor);
+                return RetryingHttpRequesterFilter.this.request(delegate, request, retryStrategy, executor);
             }
         };
     }
@@ -100,9 +98,8 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                     settings.newStrategy(executor);
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy, executor);
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return RetryingHttpRequesterFilter.this.request(delegate(), request, retryStrategy, executor);
             }
        };
     }

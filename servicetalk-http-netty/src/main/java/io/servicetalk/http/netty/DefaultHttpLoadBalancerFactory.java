@@ -163,9 +163,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
-            return delegate.request(strategy, request);
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return delegate.request(request);
         }
 
         @Override
