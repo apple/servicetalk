@@ -70,6 +70,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onTcpHandshakeComplete() {
+            first.onTcpHandshakeComplete();
+            second.onTcpHandshakeComplete();
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return new BiSecurityHandshakeObserver(first.onSecurityHandshake(), second.onSecurityHandshake());
         }

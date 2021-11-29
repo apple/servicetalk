@@ -72,8 +72,6 @@ class SecurityHandshakeObserverTest {
     static final ExecutionContextExtension CLIENT_CTX =
         ExecutionContextExtension.cached("client-io", "client-executor");
 
-
-
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
     private final SecurityHandshakeObserver clientSecurityHandshakeObserver;

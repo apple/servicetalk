@@ -45,7 +45,18 @@ public interface ConnectionObserver {
     void onFlush();
 
     /**
+     * Callback when a TCP handshake completes.
+     */
+    default void onTcpHandshakeComplete() {
+        // FIXME: 0.42 - remove default impl
+    }
+
+    /**
      * Callback when a security handshake is initiated.
+     * <p>
+     * For the typical TCP connection, this callback is invoked after {@link #onTcpHandshakeComplete()}. When
+     * {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is used and the Fast Open feature is supported by
+     * the OS, this callback may be invoked earlier.
      *
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
      */

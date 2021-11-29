@@ -67,6 +67,10 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onTcpHandshakeComplete() {
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return NoopSecurityHandshakeObserver.INSTANCE;
         }
