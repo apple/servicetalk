@@ -149,6 +149,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 connection.trackActiveStream(streamChannel);
                                 StreamObserver streamObserver =
                                         parentChannelInitializer.multiplexedObserver.onNewStream();
+                                assert streamChannel.stream().id() > 0;
+                                streamObserver.streamIdAssigned(streamChannel.stream().id());
 
                                 // Netty To ServiceTalk type conversion
                                 final CloseHandler closeHandler = forNonPipelined(false, streamChannel.config());

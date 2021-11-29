@@ -233,6 +233,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
         private class AsyncContextCaptureStreamObserver implements StreamObserver {
 
             @Override
+            public void streamIdAssigned(final long streamId) {
+                // AsyncContext may be unknown at this point if the streamId is assigned by the transport
+            }
+
+            @Override
             public DataObserver streamEstablished() {
                 storageMap.put("streamEstablished", valueOf(AsyncContext.get(key)));
                 return new AsyncContextCaptureDataObserver();
