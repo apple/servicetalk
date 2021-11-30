@@ -27,6 +27,8 @@
     </Console>
   </Appenders>
   <Loggers>
+    <!-- FIXME: remove after verifying CI logs -->
+    <Logger name="io.servicetalk.transport.netty.internal.NettyIoExecutors" level="DEBUG"/>
     <Logger name="servicetalk-tests-wire-logger" level="${wireLogLevel}"/>
     <Logger name="servicetalk-tests-h2-frame-logger" level="${h2FrameLogLevel}"/>
     <Logger name="servicetalk-tests-lifecycle-observer-logger" level="${lifecycleObserverLogLevel}"/>
