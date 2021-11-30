@@ -38,9 +38,11 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
     }
 
     /**
-     * Return the {@link HttpExecutionStrategy} describing offloads required by this instance.
+     * {@inheritDoc}
      *
-     * @return the {@link HttpExecutionStrategy} describing offloads required by this instance
+     * <p>The provided default implementation requests offloading of all operations. Implementations that require no
+     * offloading should be careful to return {@link HttpExecutionStrategies#anyStrategy()} rather than
+     * {@link HttpExecutionStrategies#noOffloadsStrategy()}.
      */
     @Override
     default HttpExecutionStrategy requiredOffloads() {

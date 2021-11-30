@@ -46,7 +46,6 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -56,6 +55,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
@@ -119,7 +119,7 @@ final class NettyHttpServer {
     static Single<ServerContext> bind(final HttpExecutionContext executionContext,
                                       final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
+                                      @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
         if (config.h1Config() == null) {

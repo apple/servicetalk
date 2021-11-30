@@ -17,13 +17,13 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.slf4j.Logger;
@@ -78,7 +78,7 @@ public class TcpServer {
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext bind(ExecutionContext<?> executionContext, int port,
-                              @Nullable ConnectionAcceptor connectionAcceptor,
+                              @Nullable InfluencerConnectionAcceptor connectionAcceptor,
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {

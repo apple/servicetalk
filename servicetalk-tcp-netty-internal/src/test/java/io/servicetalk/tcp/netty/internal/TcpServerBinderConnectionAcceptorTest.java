@@ -21,10 +21,12 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,41 +53,47 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
 
     enum FilterMode {
-        ACCEPT_ALL(true, false, (executor, context) -> completed()),
-        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
-        REJECT_ALL(false, false, (executor, context) -> failed(DELIBERATE_EXCEPTION)),
-        DELAY_REJECT_ALL(false, false, (executor, context) ->
+        ACCEPT_ALL(true, false, false, (executor, context) -> completed()),
+        ACCEPT_ALL_OFFLOAD(true, false, true, (executor, context) -> completed()),
+        DELAY_ACCEPT_ALL(true, false, true,
+                (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
+        REJECT_ALL(false, false, false, (executor, context) -> failed(DELIBERATE_EXCEPTION)),
+        DELAY_REJECT_ALL(false, false, true, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
-        THROW_EXCEPTION(false, false, (executor, context) -> {
+        THROW_EXCEPTION(false, false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
-        DELAY_SINGLE_ERROR(false, false, (executor, context) ->
+        DELAY_SINGLE_ERROR(false, false, true, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
-        SINGLE_ERROR(false, false, (executor, context) -> failed(new DeliberateException())),
-        INITIALIZER_THROW(false, true, (executor, context) -> completed()),
-        DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
+        SINGLE_ERROR(false, false, false, (executor, context) -> failed(new DeliberateException())),
+        INITIALIZER_THROW(false, true, false, (executor, context) -> completed()),
+        DELAY_INITIALIZER_THROW(false, true, true, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concat(completed())),
-        ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> completed()) {
+        ACCEPT_ALL_CONSTANT(true, false, false, (executor, context) -> completed()) {
             @Override
-            ConnectionAcceptor getContextFilter(final Executor executor) {
-                return ConnectionAcceptor.ACCEPT_ALL;
+            InfluencerConnectionAcceptor getContextFilter(final Executor executor) {
+                return InfluencerConnectionAcceptor.withStrategy(ConnectionAcceptor.ACCEPT_ALL,
+                        ConnectExecutionStrategy.anyStrategy());
             }
         };
 
         private final boolean expectAccept;
         private final boolean initializerThrow;
+        private final boolean offload;
         private final BiFunction<Executor, ConnectionContext, Completable>
                 contextFilterFunction;
 
-        FilterMode(boolean expectAccept, boolean initializerThrow, BiFunction<Executor, ConnectionContext,
-                Completable> contextFilterFunction) {
+        FilterMode(boolean expectAccept, boolean initializerThrow, final boolean offload,
+                   BiFunction<Executor, ConnectionContext, Completable> contextFilterFunction) {
             this.expectAccept = expectAccept;
             this.initializerThrow = initializerThrow;
+            this.offload = offload;
             this.contextFilterFunction = contextFilterFunction;
         }
 
-        ConnectionAcceptor getContextFilter(Executor executor) {
-            return (context) -> contextFilterFunction.apply(executor, context);
+        InfluencerConnectionAcceptor getContextFilter(Executor executor) {
+            return InfluencerConnectionAcceptor.withStrategy(context -> contextFilterFunction.apply(executor, context),
+                    offload ? ConnectExecutionStrategy.offload() : ConnectExecutionStrategy.anyStrategy());
         }
     }
 

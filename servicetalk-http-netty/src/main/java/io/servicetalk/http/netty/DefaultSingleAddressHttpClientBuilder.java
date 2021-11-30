@@ -50,6 +50,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -254,12 +255,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
+            ExecutionStrategy connectionFactoryStrategy =
+                    ctx.builder.strategyComputation.buildForConnectionFactory();
 
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
-                connectionFactoryFilter = appendConnectionFactoryFilter(
-                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress()), connectionFactoryFilter);
+                ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress());
+                connectionFactoryFilter = proxy.append(connectionFactoryFilter);
+                connectionFactoryStrategy = connectionFactoryStrategy.merge(proxy.requiredOffloads());
             }
 
             final HttpExecutionStrategy executionStrategy = executionContext.executionStrategy();
@@ -267,13 +272,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
                     executionContext.bufferAllocator());
+
             if (roConfig.isH2PriorKnowledge()) {
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 assert h2Config != null;
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
-                        ctx.builder.strategyComputation.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
+                        connectionFactoryStrategy, connectionFactoryFilter,
+                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
@@ -282,15 +288,15 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                                 executionContext.bufferAllocator(),
                                 h1Config == null ? null : h1Config.headersFactory(),
                                 h2Config == null ? null : h2Config.headersFactory()),
-                        ctx.builder.strategyComputation.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
+                        connectionFactoryStrategy, connectionFactoryFilter,
+                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 assert h1Config != null;
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
-                        ctx.builder.strategyComputation.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
+                        connectionFactoryStrategy, connectionFactoryFilter,
+                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
 
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
@@ -472,17 +478,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        requireNonNull(factory);
-        connectionFactoryFilter = appendConnectionFactoryFilter(connectionFactoryFilter, factory);
+        connectionFactoryFilter = connectionFactoryFilter.append(requireNonNull(factory));
         strategyComputation.add(factory);
         return this;
-    }
-
-    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> current,
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> next) {
-        // This has default execution strategy, but that is OK because strategyComputation captures real strategy
-        return connection -> current.create(next.create(connection));
     }
 
     @Override
