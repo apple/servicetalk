@@ -59,6 +59,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
+        asyncCloseOffload = from.isAsyncCloseOffloaded();
     }
 
     @SuppressWarnings("rawtypes")

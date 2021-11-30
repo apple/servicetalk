@@ -64,6 +64,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     /**
      * If true then close {@link io.servicetalk.concurrent.api.Completable} signals are offloaded.
      */
+    @Nullable
     private Boolean asyncCloseOffload;
 
     protected AbstractTcpConfig() {

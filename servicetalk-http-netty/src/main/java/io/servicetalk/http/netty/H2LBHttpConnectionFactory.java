@@ -64,7 +64,7 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
                         executionContext,
                         config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(),
                         tcpConfig.isAsyncCloseOffloaded(), tcpConfig.idleTimeoutMs(),
-                        new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
+                        new TcpClientChannelInitializer(tcpConfig, connectionObserver).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver,
                         config.allowDropTrailersReadFromTransport()), observer);
     }
