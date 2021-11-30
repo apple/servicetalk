@@ -24,8 +24,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isEpollAvailable;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isIoUringAvailable;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isKQueueAvailable;
 import static java.lang.Runtime.getRuntime;
 import static java.util.Objects.requireNonNull;
@@ -34,6 +38,8 @@ import static java.util.Objects.requireNonNull;
  * A static factory to create or convert to {@link NettyIoExecutor}.
  */
 public final class NettyIoExecutors {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyIoExecutors.class);
 
     private NettyIoExecutors() {
         // No instances.
@@ -110,9 +116,12 @@ public final class NettyIoExecutors {
     private static <T extends Thread & IoThread> EventLoopGroup createEventLoopGroup(int ioThreads,
             IoThreadFactory<T> threadFactory) {
         validateIoThreads(ioThreads);
-        return isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
-                isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
-                        new NioEventLoopGroup(ioThreads, threadFactory);
+        final EventLoopGroup group = isIoUringAvailable() ? new IOUringEventLoopGroup(ioThreads, threadFactory) :
+                isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
+                        isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
+                                new NioEventLoopGroup(ioThreads, threadFactory);
+        LOGGER.debug("Created {} for {} threads using {}.", group.getClass().getSimpleName(), ioThreads, threadFactory);
+        return group;
     }
 
     /**

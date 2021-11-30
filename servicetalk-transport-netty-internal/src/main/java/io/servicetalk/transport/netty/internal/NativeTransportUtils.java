@@ -24,11 +24,16 @@ import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.incubator.channel.uring.IOUring;
+import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
 import io.netty.util.internal.PlatformDependent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static io.netty.util.internal.PlatformDependent.normalizedArch;
+import static java.lang.Boolean.getBoolean;
 
 /**
  * Utility to check availability of Netty <a href="https://netty.io/wiki/native-transports.html">native transports</a>.
@@ -42,11 +47,13 @@ final class NativeTransportUtils {
 
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
+    private static final AtomicBoolean TRY_IO_URING;
 
     static {
         final String os = PlatformDependent.normalizedOs();
         IS_LINUX = "linux".equals(os);
         IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
+        TRY_IO_URING = new AtomicBoolean(getBoolean("io.servicetalk.transport.netty.tryIoUring"));
 
         if (IS_LINUX && !Epoll.isAvailable()) {
             logUnavailability("epoll", os, Epoll.unavailabilityCause());
@@ -63,6 +70,15 @@ final class NativeTransportUtils {
         LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
                         "performance of the application. See https://netty.io/wiki/native-transports.html",
                 transport, os, normalizedArch(), cause);
+    }
+
+    /**
+     * Determine if {@link IOUring} is available.
+     *
+     * @return {@code true} if {@link IOUring} is available
+     */
+    static boolean isIoUringAvailable() {
+        return IS_LINUX && TRY_IO_URING.get() && IOUring.isAvailable();
     }
 
     /**
@@ -84,6 +100,22 @@ final class NativeTransportUtils {
     }
 
     /**
+     * Returns {@code true} if native {@link IOUring} transport could be used.
+     *
+     * @param group the used {@link EventLoopGroup}
+     * @return {@code true} if native {@link IOUring} transport could be used
+     */
+    static boolean useIoUring(final EventLoopGroup group) {
+        if (!isIoUringAvailable()) {
+            return false;
+        }
+        // Check if we should use the io_uring transport. This is true if either the IOUringEventLoopGroup is used
+        // directly or if the passed group is an EventLoop and it's parent is an IOUringEventLoopGroup.
+        return group instanceof IOUringEventLoopGroup || (group instanceof EventLoop &&
+                ((EventLoop) group).parent() instanceof IOUringEventLoopGroup);
+    }
+
+    /**
      * Returns {@code true} if native {@link Epoll} transport could be used.
      *
      * @param group the used {@link EventLoopGroup}
@@ -94,7 +126,7 @@ final class NativeTransportUtils {
             return false;
         }
         // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
-        // or if the passed group is a EventLoop and it's parent is an EpollEventLoopGroup.
+        // or if the passed group is an EventLoop and it's parent is an EpollEventLoopGroup.
         return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
                 ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
     }
@@ -110,7 +142,7 @@ final class NativeTransportUtils {
             return false;
         }
         // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
-        // or if the passed group is a EventLoop and it's parent is an KQueueEventLoopGroup.
+        // or if the passed group is an EventLoop and it's parent is an KQueueEventLoopGroup.
         return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
                 ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
     }
@@ -133,5 +165,9 @@ final class NativeTransportUtils {
      */
     static boolean isFileDescriptorSocketAddressSupported(final EventLoopGroup group) {
         return useEpoll(group) || useKQueue(group);
+    }
+
+    static void tryIoUring(final boolean tryIoUring) {
+        TRY_IO_URING.set(tryIoUring);
     }
 }
