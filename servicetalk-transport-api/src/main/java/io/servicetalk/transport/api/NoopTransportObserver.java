@@ -140,6 +140,10 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void streamIdAssigned(final long streamId) {
+        }
+
+        @Override
         public DataObserver streamEstablished() {
             return NoopDataObserver.INSTANCE;
         }

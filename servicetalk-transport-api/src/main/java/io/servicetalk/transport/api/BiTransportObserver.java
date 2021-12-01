@@ -170,6 +170,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void streamIdAssigned(final long streamId) {
+            first.streamIdAssigned(streamId);
+            second.streamIdAssigned(streamId);
+        }
+
+        @Override
         public DataObserver streamEstablished() {
             return new BiDataObserver(first.streamEstablished(), second.streamEstablished());
         }
