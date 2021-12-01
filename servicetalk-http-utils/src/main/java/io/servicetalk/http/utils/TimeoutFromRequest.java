@@ -15,14 +15,19 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
@@ -37,10 +42,24 @@ public interface TimeoutFromRequest extends
      *
      * @param request the current request
      * @return The timeout or null for no timeout
+     * @deprecated Use {@link #apply(HttpRequestMetaData, TimeSource)}. This method will be removed in a future release.
      */
     @Override
+    @Deprecated
     @Nullable
-    Duration apply(HttpRequestMetaData request);
+    default Duration apply(HttpRequestMetaData request) {
+        return apply(request, (unit) -> unit.convert(nanoTime(), NANOSECONDS));
+    }
+
+    /**
+     * Determine timeout duration, if present, from a request and/or apply default timeout durations.
+     *
+     * @param request the current request
+     * @param timeSource {@link TimeSource} for calculating the timeout
+     * @return The timeout or null for no timeout
+     */
+    @Nullable
+    Duration apply(HttpRequestMetaData request, TimeSource timeSource);
 
     /**
      * {@inheritDoc}
@@ -61,13 +80,13 @@ public interface TimeoutFromRequest extends
      * @return {@link TimeoutFromRequest} instance which applies the provided function and requires the specified
      * strategy.
      */
-    static TimeoutFromRequest toTimeoutFromRequest(final Function<HttpRequestMetaData, Duration> function,
+    static TimeoutFromRequest toTimeoutFromRequest(final BiFunction<HttpRequestMetaData, TimeSource, Duration> function,
                                                    final HttpExecutionStrategy requiredStrategy) {
         return new TimeoutFromRequest() {
             @Nullable
             @Override
-            public Duration apply(final HttpRequestMetaData request) {
-                return function.apply(request);
+            public Duration apply(final HttpRequestMetaData request, final TimeSource timeSource) {
+                return function.apply(request, timeSource);
             }
 
             @Override

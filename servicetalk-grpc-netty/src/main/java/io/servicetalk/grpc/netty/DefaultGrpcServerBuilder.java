@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -66,6 +67,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder {
 
@@ -167,7 +169,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
-        return toTimeoutFromRequest((HttpRequestMetaData request) -> {
+        return toTimeoutFromRequest((HttpRequestMetaData request, TimeSource timeSource) -> {
                 /*
                 * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
                 *
@@ -183,10 +185,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                     // Store the timeout in the context as a deadline to be used for any client requests created
                     // during the context of handling this request.
                     try {
-                        // TODO(dariusz): TimeoutForRequest should be a
-                        //  BiFunction<HttpRequestMetaData, TimeSource, Duration> so that executor#currentTime
-                        //  can be used instead of System#nanoTime.
-                        Long deadline = System.nanoTime() + timeout.toNanos();
+                        Long deadline = timeSource.currentTime(NANOSECONDS) + timeout.toNanos();
                         AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
                     } catch (UnsupportedOperationException ignored) {
                         LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");

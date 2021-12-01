@@ -94,7 +94,7 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     private void responseWithNonPositiveTimeout(Duration timeout, boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
-        StepVerifiers.create(applyFilter(__ -> timeout, fullRequestResponse, responseSingle))
+        StepVerifiers.create(applyFilter((req, ts) -> timeout, fullRequestResponse, responseSingle))
                 .expectError(TimeoutException.class)
                 .verify();
         assertThat("No subscribe for payload body", responseSingle.isSubscribed(), is(true));

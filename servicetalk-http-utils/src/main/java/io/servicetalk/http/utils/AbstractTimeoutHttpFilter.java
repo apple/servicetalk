@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -31,8 +32,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static java.lang.System.nanoTime;
 import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     /**
@@ -87,23 +90,23 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction,
             @Nullable final Executor contextExecutor) {
 
+        // FIXME: global default executor is implicit and actually is the Executors.immediate() executor.
         // timeoutExecutor → context executor → global default executor
         final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
+        final TimeSource timeSource = null != useForTimeout ? useForTimeout :
+                (unit) -> unit.convert(nanoTime(), NANOSECONDS); // FIXME: use global executor instead
 
         return Single.defer(() -> {
-            // TODO(dariusz): TimeoutForRequest should be a
-            //  BiFunction<HttpRequestMetaData, TimeSource, Duration> and accept contextExecutor
-            final Duration timeout = timeoutForRequest.apply(request);
+            final Duration timeout = timeoutForRequest.apply(request, timeSource);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
                 final Single<StreamingHttpResponse> timeoutResponse = useForTimeout == null ?
                         response.timeout(timeout) : response.timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
-                    // TODO(dariusz): swap nanoTime() with timeSource.currentTime(TimeUnit.NANOSECONDS)
-                    final long deadline = System.nanoTime() + timeout.toNanos();
+                    final long deadline = timeSource.currentTime(NANOSECONDS) + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
-                        final Duration remaining = ofNanos(deadline - System.nanoTime());
+                        final Duration remaining = ofNanos(deadline - timeSource.currentTime(NANOSECONDS));
                         return (useForTimeout == null ?
                                 body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, useForTimeout))
                                 .onErrorMap(TimeoutException.class, t ->
@@ -148,7 +151,7 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
         }
 
         @Override
-        public Duration apply(final HttpRequestMetaData request) {
+        public Duration apply(final HttpRequestMetaData request, final TimeSource timeSource) {
             return duration;
         }
 

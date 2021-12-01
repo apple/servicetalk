@@ -57,7 +57,8 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
      * A function which determines the timeout for a given request.
      */
     private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR =
-            toTimeoutFromRequest(DeadlineUtils::readTimeoutHeader, HttpExecutionStrategies.anyStrategy());
+            toTimeoutFromRequest((request, timeSource) -> DeadlineUtils.readTimeoutHeader(request),
+                    HttpExecutionStrategies.anyStrategy());
 
     @Nullable
     private Duration defaultTimeout;
