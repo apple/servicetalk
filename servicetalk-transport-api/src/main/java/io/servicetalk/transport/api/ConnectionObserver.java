@@ -156,7 +156,7 @@ public interface ConnectionObserver {
 
         /**
          * Callback when the stream is established and ready to be used. It may or may not have an already assigned
-         * {@code streamId} at this time.
+         * {@code streamId} at the time.
          *
          * @return a new {@link DataObserver} that provides visibility into read and write events
          * @see #streamIdAssigned(long)
