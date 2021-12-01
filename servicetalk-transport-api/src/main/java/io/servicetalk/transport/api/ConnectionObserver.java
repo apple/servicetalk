@@ -144,9 +144,22 @@ public interface ConnectionObserver {
     interface StreamObserver {
 
         /**
-         * Callback when the stream is established and ready.
+         * Callback when a {@code streamId} is assigned.
+         * <p>
+         * Stream identifier may be deferred until after the first write is made on a newly established stream.
+         *
+         * @param streamId assigned stream identifier
+         */
+        default void streamIdAssigned(long streamId) {  // Use long to comply with HTTP/3 requirements
+            // FIXME: 0.42 - remove default impl
+        }
+
+        /**
+         * Callback when the stream is established and ready to be used. It may or may not have an already assigned
+         * {@code streamId} at the time.
          *
          * @return a new {@link DataObserver} that provides visibility into read and write events
+         * @see #streamIdAssigned(long)
          */
         DataObserver streamEstablished();
 

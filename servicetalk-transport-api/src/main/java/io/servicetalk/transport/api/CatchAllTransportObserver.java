@@ -174,6 +174,11 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void streamIdAssigned(final long streamId) {
+            safeReport(() -> observer.streamIdAssigned(streamId), observer, "streamId assigned");
+        }
+
+        @Override
         public DataObserver streamEstablished() {
             return safeReport(observer::streamEstablished, observer, "stream established",
                     CatchAllDataObserver::new, NoopDataObserver.INSTANCE);
