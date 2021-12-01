@@ -89,7 +89,6 @@ import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculat
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static java.lang.System.nanoTime;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -140,7 +139,8 @@ final class DefaultDnsClient implements DnsClient {
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor.asExecutor());
-        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
+        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL,
+                nettyIoExecutor.asExecutor());
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -563,7 +563,8 @@ final class DefaultDnsClient implements DnsClient {
                     if (ttlNanos < 0) {
                         doQuery0();
                     } else {
-                        final long durationNs = nanoTime() - resolveDoneNoScheduleTime;
+                        final long durationNs =
+                                nettyIoExecutor.asExecutor().currentTime(NANOSECONDS) - resolveDoneNoScheduleTime;
                         if (durationNs > ttlNanos) {
                             doQuery0();
                         } else {
@@ -662,7 +663,7 @@ final class DefaultDnsClient implements DnsClient {
                         if (--pendingRequests > 0) {
                             scheduleQuery0(ttlNanos);
                         } else {
-                            resolveDoneNoScheduleTime = nanoTime();
+                            resolveDoneNoScheduleTime = nettyIoExecutor.asExecutor().currentTime(NANOSECONDS);
                             cancellableForQuery = null;
                         }
                         try {

@@ -183,6 +183,9 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                     // Store the timeout in the context as a deadline to be used for any client requests created
                     // during the context of handling this request.
                     try {
+                        // TODO(dariusz): TimeoutForRequest should be a
+                        //  BiFunction<HttpRequestMetaData, TimeSource, Duration> so that executor#currentTime
+                        //  can be used instead of System#nanoTime.
                         Long deadline = System.nanoTime() + timeout.toNanos();
                         AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
                     } catch (UnsupportedOperationException ignored) {

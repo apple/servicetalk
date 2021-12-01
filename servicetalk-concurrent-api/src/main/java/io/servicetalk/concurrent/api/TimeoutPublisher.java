@@ -135,8 +135,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                                     AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, contextProvider);
             try {
-                s.lastStartNS = NANOSECONDS.convert(parent.timeoutExecutor.currentTime(),
-                        parent.timeoutExecutor.currentTimeUnits());
+                s.lastStartNS = parent.timeoutExecutor.currentTime(NANOSECONDS);
                 // CAS is just in case the timer fired, the timerFires method schedule a new timer before this thread is
                 // able to set the initial timer value. In this case we don't want to overwrite the active timer.
                 //
@@ -166,8 +165,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Override
         public void onNext(final X x) {
             if (parent.restartAtOnNext) {
-                lastStartNS = NANOSECONDS.convert(parent.timeoutExecutor.currentTime(),
-                        parent.timeoutExecutor.currentTimeUnits());
+                lastStartNS = parent.timeoutExecutor.currentTime(NANOSECONDS);
             }
             target.onNext(x);
         }
@@ -225,9 +223,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             // Instead of recursion we use a 2 level for loop structure.
             for (;;) {
-                // TODO(dariusz): perhaps long TimeSource::currentTime(TimeUnit) would be better suited for this
-                final long currentTimeNs = NANOSECONDS.convert(parent.timeoutExecutor.currentTime(),
-                        parent.timeoutExecutor.currentTimeUnits());
+                final long currentTimeNs = parent.timeoutExecutor.currentTime(NANOSECONDS);
                 final long nextTimeoutNs = parent.durationNs - (currentTimeNs - lastStartNS);
                 if (nextTimeoutNs <= 0) { // Timeout!
                     offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +

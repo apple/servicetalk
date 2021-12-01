@@ -91,6 +91,8 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
         final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
 
         return Single.defer(() -> {
+            // TODO(dariusz): TimeoutForRequest should be a
+            //  BiFunction<HttpRequestMetaData, TimeSource, Duration> and accept contextExecutor
             final Duration timeout = timeoutForRequest.apply(request);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
@@ -98,6 +100,7 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
                         response.timeout(timeout) : response.timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
+                    // TODO(dariusz): swap nanoTime() with timeSource.currentTime(TimeUnit.NANOSECONDS)
                     final long deadline = System.nanoTime() + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
                         final Duration remaining = ofNanos(deadline - System.nanoTime());

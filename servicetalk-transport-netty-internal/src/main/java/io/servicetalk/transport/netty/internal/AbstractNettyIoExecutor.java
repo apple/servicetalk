@@ -112,14 +112,4 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
         ScheduledFuture<?> future = eventLoop.schedule(task, delay, unit);
         return () -> future.cancel(interruptOnCancel);
     }
-
-    @Override
-    public long currentTime() {
-        return System.nanoTime();
-    }
-
-    @Override
-    public TimeUnit currentTimeUnits() {
-        return NANOSECONDS;
-    }
 }

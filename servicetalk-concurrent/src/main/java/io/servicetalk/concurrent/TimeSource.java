@@ -17,8 +17,6 @@ package io.servicetalk.concurrent;
 
 import java.util.concurrent.TimeUnit;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 /**
  * A source of time that can be represented as a {@code long}.
  */
@@ -26,16 +24,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public interface TimeSource {
 
     /**
-     * Get the current time. The units are determined by {@link #currentTimeUnits()}.
-     * @return The current time. The units are determined by {@link #currentTimeUnits()}.
+     * Returns the internal clock time in the specified {@code unit}.
+     * @param unit the time unit to calculate
+     * @return the internal clock time in the specified {@code unit}.
      */
-    long currentTime();
-
-    /**
-     * Get the units for {@link #currentTime()}.
-     * @return The units for {@link #currentTime()}.
-     */
-    default TimeUnit currentTimeUnits() {
-        return NANOSECONDS;
-    }
+    long currentTime(TimeUnit unit);
 }

@@ -44,13 +44,8 @@ final class ContextPreservingStExecutor implements Executor {
     }
 
     @Override
-    public long currentTime() {
-        return delegate.currentTime();
-    }
-
-    @Override
-    public TimeUnit currentTimeUnits() {
-        return delegate.currentTimeUnits();
+    public long currentTime(TimeUnit unit) {
+        return delegate.currentTime(unit);
     }
 
     @Override
