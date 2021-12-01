@@ -25,7 +25,6 @@ import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -35,6 +34,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
@@ -82,7 +82,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     static Single<ServerContext> bind(final HttpExecutionContext executionContext,
                                       final ReadOnlyHttpServerConfig config,
                                       final SocketAddress listenAddress,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
+                                      @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
         if (config.h2Config() == null) {

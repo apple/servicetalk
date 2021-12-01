@@ -34,6 +34,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -49,7 +50,7 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
     void httpClientWithStaticLoadBalancing() throws Exception {
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
-                (InetSocketAddress) serverContext.listenAddress(), true);
+                (InetSocketAddress) serverContext.listenAddress(), AVAILABLE);
 
         sendRequestAndValidate(Publisher.from(sdEvent));
     }
@@ -60,7 +61,7 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
         TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
-                (InetSocketAddress) serverContext.listenAddress(), true);
+                (InetSocketAddress) serverContext.listenAddress(), AVAILABLE);
 
         // Simulate delayed discovery
         CTX.executor().schedule(() -> {

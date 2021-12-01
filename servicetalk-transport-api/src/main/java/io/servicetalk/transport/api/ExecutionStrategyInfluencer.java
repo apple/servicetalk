@@ -24,8 +24,7 @@ package io.servicetalk.transport.api;
 public interface ExecutionStrategyInfluencer<S extends ExecutionStrategy> {
 
     /**
-     * Return an {@link ExecutionStrategy} that describes the offloads required by the influencer. The provided
-     * default implementation requests offloading of all operations.
+     * Return an {@link ExecutionStrategy} that describes the offloads required by the influencer.
      *
      * @return the {@link ExecutionStrategy} required by the influencer.
      */
