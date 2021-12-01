@@ -34,8 +34,10 @@ import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2FrameStream;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,6 +71,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AbstractH2DuplexHandlerTest {
 
@@ -119,7 +122,7 @@ class AbstractH2DuplexHandlerTest {
         abstract Http2Headers setHeaders(Http2Headers headers);
     }
 
-    private final EmbeddedChannel channel = new EmbeddedChannel();
+    private final EmbeddedChannel channel = new EmbeddedHttp2StreamChannel();
     private final CloseHandler closeHandler = mock(CloseHandler.class);
 
     void setUp(Variant variant) {
@@ -398,5 +401,15 @@ class AbstractH2DuplexHandlerTest {
         dataFrame = channel.readOutbound();
         assertThat("Unexpected endStream flag value at last frame", dataFrame.isEndStream(), is(true));
         assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
+    }
+
+    private static final class EmbeddedHttp2StreamChannel extends EmbeddedChannel implements Http2StreamChannel {
+
+        @Override
+        public Http2FrameStream stream() {
+            Http2FrameStream streamMock = mock(Http2FrameStream.class);
+            when(streamMock.id()).thenReturn(3);
+            return streamMock;
+        }
     }
 }

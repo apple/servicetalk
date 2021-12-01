@@ -66,6 +66,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.lenient;
@@ -397,6 +398,8 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(serverMultiplexedObserver).onNewStream();
 
             verify(clientStreamObserver).streamEstablished();
+            verify(clientStreamObserver).streamIdAssigned(eq(3L));
+            verify(serverStreamObserver).streamIdAssigned(eq(3L));
             verify(serverStreamObserver).streamEstablished();
 
             verify(clientDataObserver).onNewRead();

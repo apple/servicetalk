@@ -31,6 +31,7 @@ import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 
 import javax.annotation.Nullable;
 
@@ -85,7 +86,15 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2Headers.scheme(scheme.name());
                 h2Headers.path(metaData.requestTarget());
             }
-            writeMetaData(ctx, metaData, h2Headers, promise);
+            try {
+                writeMetaData(ctx, metaData, h2Headers, promise);
+            } finally {
+                final Http2StreamChannel streamChannel = (Http2StreamChannel) ctx.channel();
+                final int streamId = streamChannel.stream().id();
+                if (streamId > 0) {
+                    observer.streamIdAssigned(streamId);
+                }
+            }
         } else if (msg instanceof Buffer) {
             writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {
