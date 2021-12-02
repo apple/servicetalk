@@ -16,9 +16,8 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -29,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 
@@ -62,8 +60,7 @@ public final class GlobalExecutionContext {
 
         static {
             final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(GlobalIoExecutor.NAME_PREFIX));
-            final Executor executor = new GlobalExecutor(newCachedThreadExecutor(
-                    new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX)));
+            final Executor executor = Executors.global();
             INSTANCE = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR, ioExecutor, executor, offloadAll());
             LOGGER.debug("Initialized GlobalExecutionContext");
         }
@@ -135,34 +132,6 @@ public final class GlobalExecutionContext {
         @Override
         public Executor asExecutor() {
             return delegate.asExecutor();
-        }
-    }
-
-    private static final class GlobalExecutor extends DelegatingExecutor {
-
-        private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExecutor.class);
-
-        static final String NAME_PREFIX = "servicetalk-global-executor";
-
-        GlobalExecutor(final Executor delegate) {
-            super(delegate);
-        }
-
-        @Override
-        public String toString() {
-            return this.getClass().getSimpleName() + "{delegate=" + delegate() + "}";
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate().closeAsync()
-                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsync()"));
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate().closeAsyncGracefully()
-                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsyncGracefully()"));
         }
     }
 

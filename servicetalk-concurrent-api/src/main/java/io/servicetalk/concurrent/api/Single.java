@@ -42,7 +42,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -606,7 +606,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -620,11 +620,11 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, global());
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -644,7 +644,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -658,7 +658,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
-        return timeout(duration, immediate());
+        return timeout(duration, global());
     }
 
     /**
