@@ -44,4 +44,9 @@
     <Class name="io.servicetalk.http.api.InvalidMetadataValuesTest"/>
     <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
   </Match>
+  <!-- Not interested in returned values -->
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
 </FindBugsFilter>
