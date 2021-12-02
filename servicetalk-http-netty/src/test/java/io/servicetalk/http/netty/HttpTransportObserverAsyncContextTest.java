@@ -193,6 +193,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
+            public void onTransportHandshakeComplete() {
+                // AsyncContext is unknown at this point because this event is triggered by network
+            }
+
+            @Override
             public SecurityHandshakeObserver onSecurityHandshake() {
                 // AsyncContext is unknown at this point because this event is triggered by network
                 return NoopSecurityHandshakeObserver.INSTANCE;

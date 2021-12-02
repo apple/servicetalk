@@ -47,7 +47,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (observer != NoopConnectionObserver.INSTANCE) {
-            delegate = delegate.andThen(new ConnectionObserverInitializer(observer, config.sslContext() != null));
+            delegate = delegate.andThen(
+                    new ConnectionObserverInitializer(observer, config.sslContext() != null, false));
         }
 
         if (config.idleTimeoutMs() != null) {
