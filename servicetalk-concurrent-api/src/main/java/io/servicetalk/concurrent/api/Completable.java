@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -468,7 +468,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, global());
     }
 
     /**
@@ -505,7 +505,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(Duration duration) {
-        return timeout(duration, immediate());
+        return timeout(duration, global());
     }
 
     /**

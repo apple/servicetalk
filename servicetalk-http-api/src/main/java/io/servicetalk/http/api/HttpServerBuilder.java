@@ -19,8 +19,11 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
@@ -172,6 +175,11 @@ public interface HttpServerBuilder {
      * <pre>
      *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
+     *
+     * <p>The connection acceptor will, by default, not be offloaded. If your filter requires the
+     * {@link ConnectionAcceptor#accept(ConnectionContext)} to be offloaded then your
+     * {@link ConnectionAcceptorFactory} will need to return {@link ConnectExecutionStrategy#offloadAll()} from the
+     * {@link ExecutionStrategyInfluencer#requiredOffloads()}.
      *
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.

@@ -193,6 +193,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
+            public void onTransportHandshakeComplete() {
+                // AsyncContext is unknown at this point because this event is triggered by network
+            }
+
+            @Override
             public SecurityHandshakeObserver onSecurityHandshake() {
                 // AsyncContext is unknown at this point because this event is triggered by network
                 return NoopSecurityHandshakeObserver.INSTANCE;
@@ -231,6 +236,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
         }
 
         private class AsyncContextCaptureStreamObserver implements StreamObserver {
+
+            @Override
+            public void streamIdAssigned(final long streamId) {
+                // AsyncContext may be unknown at this point if the streamId is assigned by the transport
+            }
 
             @Override
             public DataObserver streamEstablished() {

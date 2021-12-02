@@ -23,9 +23,9 @@ import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -51,7 +51,7 @@ final class DeferredServerChannelBinder {
     static Single<ServerContext> bind(final HttpExecutionContext executionContext,
                                       final ReadOnlyHttpServerConfig config,
                                       final SocketAddress listenAddress,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
+                                      @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody,
                                       final boolean sniOnly) {

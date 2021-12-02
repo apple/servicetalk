@@ -47,7 +47,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
-    private final StreamObserver observer;
+    final StreamObserver observer;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
                             StreamObserver observer) {

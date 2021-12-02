@@ -39,7 +39,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.serializer.api.SerializationException;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
@@ -47,6 +46,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +124,15 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             throw new IllegalArgumentException(desc + " required offloading : " + requires);
         }
         return obj;
+    }
+
+    private static HttpExecutionStrategy requiredOffloads(Object anything, HttpExecutionStrategy defaultOffloads) {
+        if (anything instanceof ExecutionStrategyInfluencer) {
+            ExecutionStrategy requiredOffloads = ((ExecutionStrategyInfluencer<?>) anything).requiredOffloads();
+            return HttpExecutionStrategy.from(requiredOffloads);
+        } else {
+            return defaultOffloads;
+        }
     }
 
     @Override
@@ -304,8 +313,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * the server could not be started.
      */
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
-        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
-           connectionAcceptorFactory.create(ACCEPT_ALL);
+        InfluencerConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                InfluencerConnectionAcceptor.withStrategy(connectionAcceptorFactory.create(ACCEPT_ALL),
+                        connectionAcceptorFactory.requiredOffloads());
 
         final StreamingHttpService filteredService;
         final HttpExecutionContext executionContext;
@@ -344,7 +354,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     private Single<ServerContext> doBind(final HttpExecutionContext executionContext,
-                                         @Nullable final ConnectionAcceptor connectionAcceptor,
+                                         @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                          StreamingHttpService service) {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         service = applyInternalFilters(service, roConfig.lifecycleObserver());
@@ -369,15 +379,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
     }
 
-    private static HttpExecutionStrategy requiredOffloads(Object anything, HttpExecutionStrategy defaultOffloads) {
-        if (anything instanceof ExecutionStrategyInfluencer) {
-            ExecutionStrategy requiredOffloads = ((ExecutionStrategyInfluencer<?>) anything).requiredOffloads();
-            return HttpExecutionStrategy.from(requiredOffloads);
-        } else {
-            return defaultOffloads;
-        }
-    }
-
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
         service = ExceptionMapperServiceFilter.INSTANCE.create(service);
@@ -393,8 +394,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     /**
      * Internal filter that makes sure we handle all exceptions from user-defined service and filters.
      */
-    private static final class ExceptionMapperServiceFilter
-            implements StreamingHttpServiceFilterFactory {
+    private static final class ExceptionMapperServiceFilter implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new ExceptionMapperServiceFilter();
 
