@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -119,7 +120,7 @@ abstract class RoundRobinLoadBalancerTest {
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
-    final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
+    final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher = new TestPublisher<>();
     private DelegatingConnectionFactory connectionFactory =
             new DelegatingConnectionFactory(this::newRealizedConnectionSingle);
 
@@ -451,10 +452,9 @@ abstract class RoundRobinLoadBalancerTest {
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
-                        .eagerConnectionShutdown(eagerConnectionShutdown())
                         .healthCheckFailedConnectionsThreshold(-1)
                         .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -520,7 +520,6 @@ abstract class RoundRobinLoadBalancerTest {
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
-                        .eagerConnectionShutdown(eagerConnectionShutdown())
                         .healthCheckFailedConnectionsThreshold(1)
                         .backgroundExecutor(new DelegatingExecutor(testExecutor) {
 
@@ -533,7 +532,7 @@ abstract class RoundRobinLoadBalancerTest {
                             }
                         })
                         .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -626,14 +625,14 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    void handleDiscoveryEventsWithNoEagernessSetting() throws Exception {
+    void handleAllDiscoveryEvents() throws Exception {
         serviceDiscoveryPublisher.onComplete();
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -675,9 +674,10 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void sendServiceDiscoveryEvents(TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
-                                            final ServiceDiscovererEvent... events) {
-        serviceDiscoveryPublisher.onNext(events);
+    private void sendServiceDiscoveryEvents(
+            TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            final ServiceDiscovererEvent... events) {
+        serviceDiscoveryPublisher.onNext(Arrays.asList(events));
     }
 
     ServiceDiscovererEvent upEvent(final String address) {
@@ -685,7 +685,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     ServiceDiscovererEvent downEvent(final String address) {
-        return new DefaultServiceDiscovererEvent<>(address, UNAVAILABLE);
+        return new DefaultServiceDiscovererEvent<>(address, eagerConnectionShutdown() ? UNAVAILABLE : EXPIRED);
     }
 
     ServiceDiscovererEvent downEvent(final String address, ServiceDiscovererEvent.Status status) {
@@ -697,14 +697,13 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-        final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher,
+        final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
         final DelegatingConnectionFactory connectionFactory) {
         return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
-                        .eagerConnectionShutdown(eagerConnectionShutdown())
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
     }
 
     @SafeVarargs

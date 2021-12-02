@@ -15,14 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.ServiceDiscovererEvent;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -48,34 +42,32 @@ class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         assertThat(lb.usedAddresses(), hasSize(0));
     }
 
-    @ParameterizedTest(name = "down-status-expired={0}")
-    @ValueSource(booleans = {true, false})
-    void handleDiscoveryEvents(boolean downStatusExpired) {
-        ServiceDiscovererEvent.Status downStatus = downStatusExpired ? EXPIRED : UNAVAILABLE;
+    @Test
+    void handleDiscoveryEvents() {
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
-        sendServiceDiscoveryEvents(downEvent("address-3", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
-        sendServiceDiscoveryEvents(downEvent("address-2", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-2"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
-        sendServiceDiscoveryEvents(downEvent("address-3", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state

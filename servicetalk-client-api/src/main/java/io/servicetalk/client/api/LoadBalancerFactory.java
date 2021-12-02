@@ -20,8 +20,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.util.Collection;
-
-import static java.util.function.Function.identity;
+import java.util.Collections;
 
 /**
  * A factory for creating {@link LoadBalancer} instances.
@@ -47,9 +46,12 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * please use that method instead.
      */
     @Deprecated
-    <T extends C> LoadBalancer<T> newLoadBalancer(
+    default <T extends C> LoadBalancer<T> newLoadBalancer(
             Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> connectionFactory);
+            ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return newLoadBalancer("UNKNOWN",
+                eventPublisher.map(Collections::singletonList), connectionFactory);
+    }
 
     /**
      * Create a new {@link LoadBalancer}.
@@ -70,12 +72,10 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * @param <T> Type of connections created by the passed {@link ConnectionFactory}.
      * @return a new {@link LoadBalancer}.
      */
-    default <T extends C> LoadBalancer<T> newLoadBalancer(
+    <T extends C> LoadBalancer<T> newLoadBalancer(
             String targetResource,
             Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return newLoadBalancer(eventPublisher.flatMapConcatIterable(identity()), connectionFactory);
-    }
+            ConnectionFactory<ResolvedAddress, T> connectionFactory);
 
     @Override
     default ExecutionStrategy requiredOffloads() {
