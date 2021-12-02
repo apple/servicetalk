@@ -32,6 +32,15 @@ public interface ExecutionStrategy {
     boolean hasOffloads();
 
     /**
+     * Returns {@code true} if the instance has offloading for any operation.
+     *
+     * @return {@code true} if the instance has offloading for any operation.
+     */
+    default boolean isCloseOffloaded() {
+        return true;
+    }
+
+    /**
      * Returns an {@link ExecutionStrategy} that requires no offloading and is compatible with all other offloading
      * strategies.
      *
