@@ -81,8 +81,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void onTcpHandshakeComplete() {
-            safeReport(observer::onTcpHandshakeComplete, observer, "flush");
+        public void onTransportHandshakeComplete() {
+            safeReport(observer::onTransportHandshakeComplete, observer, "flush");
         }
 
         @Override

@@ -193,7 +193,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void onTcpHandshakeComplete() {
+            public void onTransportHandshakeComplete() {
                 // AsyncContext is unknown at this point because this event is triggered by network
             }
 

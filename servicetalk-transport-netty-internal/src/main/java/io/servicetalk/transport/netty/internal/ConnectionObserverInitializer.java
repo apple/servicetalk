@@ -113,7 +113,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         void reportTcpHandshakeComplete() {
             if (!tcpHandshakeComplete) {
                 tcpHandshakeComplete = true;
-                observer.onTcpHandshakeComplete();
+                observer.onTransportHandshakeComplete();
             }
         }
 
