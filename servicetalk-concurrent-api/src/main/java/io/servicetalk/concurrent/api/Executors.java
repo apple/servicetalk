@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.api.GlobalExecutor.GLOBAL_EXECUTOR;
 import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR;
 
 /**
@@ -46,6 +47,17 @@ public final class Executors {
      */
     public static Executor immediate() {
         return IMMEDIATE_EXECUTOR;
+    }
+
+    /**
+     * Returns a global {@link Executor} instance, which should be used for operations that do not involve I/O and
+     * are expected to happen concurrently.
+     * It creates as many threads as required but reuses threads when possible. It is therefore 'safe to block' when
+     * using it.
+     * @return An {@link Executor} which serves as a global mechanism for executing concurrent operations.
+     */
+    public static Executor global() {
+        return GLOBAL_EXECUTOR;
     }
 
     /**

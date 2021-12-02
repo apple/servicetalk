@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCancelSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCompleteSupplier;
@@ -1505,7 +1505,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, global());
     }
 
     /**
@@ -1523,7 +1523,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
-        return timeout(duration, immediate());
+        return timeout(duration, global());
     }
 
     /**
@@ -1578,7 +1578,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration) {
-        return timeoutTerminal(duration, immediate());
+        return timeoutTerminal(duration, global());
     }
 
     /**
@@ -1614,7 +1614,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
-        return timeoutTerminal(duration, unit, immediate());
+        return timeoutTerminal(duration, unit, global());
     }
 
     /**
