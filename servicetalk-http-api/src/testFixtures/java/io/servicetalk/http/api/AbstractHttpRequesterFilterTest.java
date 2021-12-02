@@ -45,6 +45,7 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityTy
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
@@ -371,7 +372,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                     }
                 };
 
-        return TestStreamingHttpClient.from(REQ_RES_FACTORY, mockExecutionContext,
-                appendClientFilterFactory(filterFactory, handlerFilter));
+        return TestStreamingHttpClient.from(REQ_RES_FACTORY, mockExecutionContext, appendClientFilterFactory(
+                appendClientFilterFactory(filterFactory, NEW_TO_DEPRECATED_FILTER), handlerFilter));
     }
 }
