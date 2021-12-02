@@ -60,7 +60,7 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
                                                   final StreamingHttpRequest request) {
         return Single.defer(() -> {
            request.requestTarget(request.requestTarget(), charset);
-           return delegate.request(request).subscribeShareContext();
+           return delegate.request(request).shareContextOnSubscribe();
         });
     }
 

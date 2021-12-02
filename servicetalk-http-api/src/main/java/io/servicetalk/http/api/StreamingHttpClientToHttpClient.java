@@ -47,8 +47,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         return Single.defer(() -> {
             request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return client.request(request.toStreamingRequest())
-                    .flatMap(response -> response.toResponse().subscribeShareContext())
-                    .subscribeShareContext();
+                    .flatMap(response -> response.toResponse().shareContextOnSubscribe())
+                    .shareContextOnSubscribe();
         });
     }
 
@@ -59,7 +59,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
             return client.reserveConnection(metaData)
                     .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, this.strategy,
                             reqRespFactory))
-                    .subscribeShareContext();
+                    .shareContextOnSubscribe();
         });
     }
 
@@ -164,7 +164,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
             return connection.request(request.toStreamingRequest())
-                    .flatMap(response -> response.toResponse().subscribeShareContext());
+                    .flatMap(response -> response.toResponse().shareContextOnSubscribe());
         }
 
         @Override

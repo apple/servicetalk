@@ -116,11 +116,11 @@ public final class ContentCodingHttpServiceFilter implements StreamingHttpServic
                             encodePayloadContentIfAvailable(request.headers(), request.method(), responseCodings,
                                     response, allocator);
                             return response;
-                        }).subscribeShareContext();
+                        }).shareContextOnSubscribe();
                     } catch (UnsupportedContentEncodingException cause) {
                         LOGGER.error("Request failed for service={}, connection={}", service, this, cause);
                         // see https://tools.ietf.org/html/rfc7231#section-3.1.2.2
-                        return succeeded(responseFactory.unsupportedMediaType()).subscribeShareContext();
+                        return succeeded(responseFactory.unsupportedMediaType()).shareContextOnSubscribe();
                     }
                 });
             }

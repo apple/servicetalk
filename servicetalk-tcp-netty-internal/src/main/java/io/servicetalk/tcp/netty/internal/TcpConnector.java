@@ -245,7 +245,7 @@ public final class TcpConnector {
         @Override
         public void accept(final Channel channel) {
             toSource(connectionFactory.apply(channel, connectionObserver)
-                    .subscribeShareContext())
+                    .shareContextOnSubscribe())
                     .subscribe(new Subscriber<C>() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
