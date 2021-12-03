@@ -24,6 +24,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,24 +59,20 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     void add(StreamingHttpClientFilterFactory clientFilter) {
-        HttpExecutionStrategy filterOffloads = clientFilter.requiredOffloads();
-        if (defaultStrategy() == filterOffloads || noOffloadsStrategy() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal filter required strategy ({}) for {}", filterOffloads, clientFilter);
-            filterOffloads = anyStrategy();
-        }
-        if (defaultStrategy() != filterOffloads && filterOffloads.hasOffloads()) {
-            clientChain = null != clientChain ? clientChain.merge(filterOffloads) : filterOffloads;
-        }
+        add("filter", clientFilter, clientFilter.requiredOffloads());
     }
 
     void add(HttpLoadBalancerFactory<?> lb) {
-        HttpExecutionStrategy filterOffloads = lb.requiredOffloads();
-        if (defaultStrategy() == filterOffloads || noOffloadsStrategy() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal load balancer required strategy ({}) for {}", filterOffloads, lb);
-            filterOffloads = anyStrategy();
+        add("load balancer", lb, lb.requiredOffloads());
+    }
+
+    private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
+        if (defaultStrategy() == strategy || noOffloadsStrategy() == strategy) {
+            LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
+            strategy = anyStrategy();
         }
-        if (defaultStrategy() != filterOffloads && filterOffloads.hasOffloads()) {
-            clientChain = null != clientChain ? clientChain.merge(filterOffloads) : filterOffloads;
+        if (strategy.hasOffloads()) {
+            clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
         }
     }
 
@@ -99,17 +96,21 @@ final class ClientStrategyInfluencerChainBuilder {
                     filterOffloads, connectionFilter);
             filterOffloads = anyStrategy();
         }
-        if (defaultStrategy() != filterOffloads && filterOffloads.hasOffloads()) {
+        if (filterOffloads.hasOffloads()) {
             connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
         }
     }
 
     HttpExecutionStrategy buildForClient(HttpExecutionStrategy transportStrategy) {
-        // We merge against default in case transport strategy is default.
-        return transportStrategy.merge(null != clientChain ? clientChain : defaultStrategy())
-                .merge(null != connFilterChain ? connFilterChain : defaultStrategy())
-                .merge(null != connFactoryChain ?
-                        HttpExecutionStrategy.from(buildForConnectionFactory()) : defaultStrategy());
+        HttpExecutionStrategy clientStrategy =
+                null != clientChain ? transportStrategy.merge(clientChain) : transportStrategy;
+        if (null != connFilterChain) {
+            clientStrategy = clientStrategy.merge(connFilterChain);
+        }
+        if (null != connFactoryChain) {
+            clientStrategy = clientStrategy.merge(HttpExecutionStrategy.from(buildForConnectionFactory()));
+        }
+        return clientStrategy;
     }
 
     ExecutionStrategy buildForConnectionFactory() {

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -56,23 +57,17 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
@@ -172,17 +167,8 @@ class ClientEffectiveStrategyTest {
                   @Nullable final HttpExecutionStrategy filterStrategy,
                   @Nullable final HttpExecutionStrategy lbStrategy,
                   @Nullable final HttpExecutionStrategy cfStrategy) throws Exception {
-        HttpExecutionStrategy effectiveStrategy = null == builderStrategy ?
-                defaultStrategy() : builderStrategy;
-        effectiveStrategy = null == filterStrategy || anyStrategy() == filterStrategy ||
-                defaultStrategy() == filterStrategy || noOffloadsStrategy() == filterStrategy ?
-                effectiveStrategy : effectiveStrategy.merge(filterStrategy);
-        effectiveStrategy = null == lbStrategy || anyStrategy() == lbStrategy ||
-                defaultStrategy() == lbStrategy || noOffloadsStrategy() == lbStrategy ?
-                effectiveStrategy : effectiveStrategy.merge(lbStrategy);
-        effectiveStrategy = null == cfStrategy || anyStrategy() == cfStrategy ||
-                defaultStrategy() == cfStrategy || noOffloadsStrategy() == cfStrategy ?
-                effectiveStrategy : effectiveStrategy.merge(cfStrategy);
+        HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
+                builderStrategy, filterStrategy, lbStrategy, cfStrategy);
 
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 HttpClients.forSingleAddress(serverHostAndPort(context));
@@ -243,57 +229,71 @@ class ClientEffectiveStrategyTest {
         }
     }
 
+    /**
+     * Computes the base execution strategy that the client will use based on the selected builder strategy, filter
+     * strategy, load balancer strategy, connection factory filter strategy.
+     *
+     * @param builderStrategy strategy specified for client builder or null to use builder default.
+     * @param filterStrategy strategy specified for client stream filter to be added to client builder or null if no
+     * filter will be added.
+     * @param lbStrategy strategy specified for load balancer factory to be added to client builder or null if no
+     * load balancer will be added.
+     * @param cfStrategy strategy specified for connection filter factory to be added to client builder or null if no
+     * connection filter will be added.
+     * @return The str
+     */
+    private HttpExecutionStrategy computeClientExecutionStrategy(@Nullable final HttpExecutionStrategy builderStrategy,
+                                                                 @Nullable final HttpExecutionStrategy filterStrategy,
+                                                                 @Nullable final HttpExecutionStrategy lbStrategy,
+                                                                 @Nullable final HttpExecutionStrategy cfStrategy) {
+        // null means assume default strategy which is, unsurprisingly, defaultStrategy()
+        HttpExecutionStrategy computed = null == builderStrategy ?
+                defaultStrategy() : builderStrategy;
+        // null mean no filter
+        computed = null == filterStrategy || anyStrategy() == filterStrategy ||
+                defaultStrategy() == filterStrategy || noOffloadsStrategy() == filterStrategy ?
+                computed : computed.merge(filterStrategy);
+        computed = null == lbStrategy || anyStrategy() == lbStrategy ||
+                defaultStrategy() == lbStrategy || noOffloadsStrategy() == lbStrategy ?
+                computed : computed.merge(lbStrategy);
+        computed = null == cfStrategy || anyStrategy() == cfStrategy ||
+                defaultStrategy() == cfStrategy || noOffloadsStrategy() == cfStrategy ?
+                computed : computed.merge(cfStrategy);
+
+        return computed;
+    }
+
     private String getResponse(ClientType clientType, StreamingHttpClient client) throws Exception {
-        Iterable<Buffer> buffers;
         switch (clientType) {
             case Blocking:
                 BlockingHttpClient blockingClient = client.asBlockingClient();
-                buffers = Collections.singleton(blockingClient.request(blockingClient.get("/")).payloadBody());
-                break;
+                return blockingClient.request(blockingClient.get("/")).payloadBody()
+                        .toString(StandardCharsets.US_ASCII);
             case BlockingStreaming:
                 BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
-                buffers = blockingStreamingClient.request(blockingStreamingClient.get("/")).payloadBody();
-                break;
+                Supplier<CompositeBuffer> supplier = client.executionContext().bufferAllocator()::newCompositeBuffer;
+                return StreamSupport.stream(
+                                blockingStreamingClient.request(blockingStreamingClient.get("/"))
+                                        .payloadBody().spliterator(), false)
+                        .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
+                                        ((CompositeBuffer) base) : supplier.get().addBuffer(base)).addBuffer(buffer))
+                        .map(buffer -> buffer.toString(StandardCharsets.US_ASCII))
+                        .orElse("");
             case AsyncStreaming:
-                buffers = client.request(client.get("/")).flatMapPublisher(StreamingHttpResponse::payloadBody)
-                        .toFuture().get();
-                break;
+                return client.request(client.get("/")).flatMap(resp -> resp.payloadBody().collect(() ->
+                                        client.executionContext().bufferAllocator().newCompositeBuffer(),
+                                CompositeBuffer::addBuffer))
+                        .toFuture().get()
+                        .toString(StandardCharsets.US_ASCII);
             case Async:
                 HttpClient httpClient = client.asClient();
-                buffers = Collections.singleton(
-                        httpClient.request(httpClient.get("/")).toFuture().get().payloadBody());
-                break;
+                return httpClient.request(httpClient.get("/")).toFuture().get().payloadBody()
+                        .toString(StandardCharsets.US_ASCII);
             default:
                 fail("Unexpected client type " + clientType);
                 /* NOTREACHED */
                 return "failed";
         }
-        return buffersToString(buffers, StandardCharsets.US_ASCII);
-    }
-
-    private static String buffersToString(Iterable<? extends Buffer> buffers, Charset charset) {
-        CharsetDecoder decoder = charset.newDecoder();
-        Iterator<? extends Buffer> eachBuffer = buffers.iterator();
-        StringBuilder stringBuilder = new StringBuilder();
-        CharBuffer charBuffer = CharBuffer.allocate(256);
-            while (eachBuffer.hasNext()) {
-                ByteBuffer byteBuffer = eachBuffer.next().toNioBuffer();
-                CoderResult coderResult;
-                do {
-                    coderResult = decoder.decode(byteBuffer, charBuffer, !eachBuffer.hasNext());
-                    if (coderResult.isError()) {
-                        try {
-                            coderResult.throwException();
-                        } catch (CharacterCodingException conversionError) {
-                            throw new IllegalArgumentException("Unconvertable input", conversionError);
-                        }
-                    }
-                    charBuffer.flip();
-                    stringBuilder.append(charBuffer);
-                    charBuffer.clear();
-                } while (CoderResult.OVERFLOW == coderResult);
-            }
-        return stringBuilder.toString();
     }
 
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
@@ -318,9 +318,6 @@ class ClientEffectiveStrategyTest {
                     offloadPoints.add(ResponseData);
                 }
             }
-
-            System.out.printf("API=%s effectiveStrategy=%s offloads=%s%n",
-                    clientType, effectiveStrategy, offloadPoints);
         }
 
         @Override
