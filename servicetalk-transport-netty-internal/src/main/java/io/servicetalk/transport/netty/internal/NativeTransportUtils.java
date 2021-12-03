@@ -64,7 +64,7 @@ final class NativeTransportUtils {
 
     private static void logUnavailability(final String transport, final String os, final Throwable cause) {
         if (NETTY_NO_NATIVE) {
-            LOGGER.warn("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
+            LOGGER.info("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
                     "may impact responsiveness, reliability, and performance of the application. For more information" +
                     ", see https://netty.io/wiki/native-transports.html", transport, NETTY_NO_NATIVE_NAME);
             return;
