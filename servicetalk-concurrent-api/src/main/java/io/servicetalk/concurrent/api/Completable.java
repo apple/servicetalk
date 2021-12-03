@@ -1661,8 +1661,24 @@ public abstract class Completable {
      * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
      * {@link ContextMap#copy() copy} when subscribed to.
      */
+    public final Completable shareContextOnSubscribe() {
+        return new CompletableShareContextOnSubscribe(this);
+    }
+
+    /**
+     * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
+     * instead of making a {@link ContextMap#copy() copy}.
+     * <p>
+     * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
+     * operator, that means this must be the "last operator" in the chain for this to have an impact.
+     *
+     * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
+     * {@link ContextMap#copy() copy} when subscribed to.
+     * @deprecated Use {@link #shareContextOnSubscribe()}.
+     */
+    @Deprecated
     public final Completable subscribeShareContext() {
-        return new CompletableSubscribeShareContext(this);
+        return shareContextOnSubscribe();
     }
 
     /**

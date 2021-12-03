@@ -18,10 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.context.api.ContextMap;
 
-final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSingle<T> {
+final class SingleShareContextOnSubscribe<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
 
-    SingleSubscribeShareContext(Single<T> original) {
+    SingleShareContextOnSubscribe(Single<T> original) {
         super(original.executor(), true);
         this.original = original;
     }

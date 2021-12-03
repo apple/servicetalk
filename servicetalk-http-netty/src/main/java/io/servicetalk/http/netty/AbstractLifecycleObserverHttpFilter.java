@@ -138,7 +138,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                 responseSingle = responseFunction.apply(transformed);
             } catch (Throwable t) {
                 onExchange.onResponseError(t);
-                return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
+                return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
             }
             return responseSingle
                     .liftSync(new BeforeFinallyHttpOperator(exchangeContext, /* discardEventsAfterCancel */ true))
@@ -150,7 +150,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                     .map(resp -> {
                         exchangeContext.onResponse(resp);
                         return resp.transformMessageBody(p -> p.beforeOnNext(exchangeContext::onResponseBody));
-                    }).subscribeShareContext();
+                    }).shareContextOnSubscribe();
         });
     }
 

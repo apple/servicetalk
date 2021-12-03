@@ -166,7 +166,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                return asyncFilter ? defer(() -> doHandle(ctx, request, factory).subscribeShareContext()) :
+                return asyncFilter ? defer(() -> doHandle(ctx, request, factory).shareContextOnSubscribe()) :
                         doHandle(ctx, request, factory);
             }
 

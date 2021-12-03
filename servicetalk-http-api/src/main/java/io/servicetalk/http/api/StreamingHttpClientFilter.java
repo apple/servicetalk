@@ -60,7 +60,7 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
             final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
             metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return reserveConnection(metaData).subscribeShareContext();
+            return reserveConnection(metaData).shareContextOnSubscribe();
         });
     }
 
@@ -126,7 +126,7 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
                                                     final StreamingHttpRequest request) {
         return Single.defer(() -> {
             request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(delegate, request).subscribeShareContext();
+            return request(delegate, request).shareContextOnSubscribe();
         });
     }
 

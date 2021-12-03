@@ -90,7 +90,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
                 return merge(payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(
                                 oldMessageBody.liftSync(new PreserveTrailersBufferOperator(trailersProcessor)))),
-                        fromSource(trailersProcessor)).subscribeShareContext();
+                        fromSource(trailersProcessor)).shareContextOnSubscribe();
             });
         } else {
             messageBody = payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(messageBody));
@@ -118,7 +118,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 final Publisher<Buffer> transformedPayloadBody = transformer.apply(oldMessageBody.liftSync(
                         new PreserveTrailersBufferOperator(trailersProcessor)));
                 payloadInfo.setEmpty(transformedPayloadBody == EMPTY);
-                return merge(transformedPayloadBody, fromSource(trailersProcessor)).subscribeShareContext();
+                return merge(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
             });
         } else {
             final Publisher<Buffer> transformedPayloadBody = transformer.apply(payloadBody());
@@ -137,7 +137,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         if (messageBody == null) {
             messageBody = defer(() ->
                 from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
-                        headersFactory.newEmptyTrailers())).subscribeShareContext());
+                        headersFactory.newEmptyTrailers())).shareContextOnSubscribe());
         } else {
             payloadInfo.setEmpty(false);    // transformer may add payload content
             messageBody = messageBody.scanWith(() -> new ScanWithMapper<Object, Object>() {

@@ -96,7 +96,7 @@ class SingleRequestOrResponseApiTest {
                         // and generates requested number of response items:
                         return defer(() -> {
                             request.requestTarget(BlockingTestResponseStreamRpc.PATH);
-                            return delegate.request(strategy, request).subscribeShareContext();
+                            return delegate.request(strategy, request).shareContextOnSubscribe();
                         });
                     }
                 }));

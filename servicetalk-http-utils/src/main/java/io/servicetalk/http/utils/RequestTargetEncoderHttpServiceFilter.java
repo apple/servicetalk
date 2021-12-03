@@ -67,7 +67,7 @@ public final class RequestTargetEncoderHttpServiceFilter implements StreamingHtt
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return defer(() -> {
                     request.requestTarget(request.requestTarget(), charset);
-                    return delegate().handle(ctx, request, responseFactory).subscribeShareContext();
+                    return delegate().handle(ctx, request, responseFactory).shareContextOnSubscribe();
                 });
             }
         };

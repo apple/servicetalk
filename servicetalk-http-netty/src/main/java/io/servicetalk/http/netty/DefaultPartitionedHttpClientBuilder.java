@@ -174,14 +174,14 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                 final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
-            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
+            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).shareContextOnSubscribe());
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
 
-            return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
+            return defer(() -> selectClient(request).request(strategy, request).shareContextOnSubscribe());
         }
 
         @Override

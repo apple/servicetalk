@@ -90,7 +90,7 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
                 request.setHeader(HOST, fallbackHost);
             }
-            return delegate.request(strategy, request).subscribeShareContext();
+            return delegate.request(strategy, request).shareContextOnSubscribe();
         });
     }
 }

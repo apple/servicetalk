@@ -60,13 +60,13 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
+        return Single.defer(() -> request(requestStrategy(request, strategy), request).shareContextOnSubscribe());
     }
 
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> reserveConnection(requestStrategy(metaData, strategy), metaData)
-                .subscribeShareContext());
+                .shareContextOnSubscribe());
     }
 
     @Override
@@ -114,7 +114,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 // created and hence could have an incorrect default strategy. Doing this makes sure we never call the
                 // method without strategy just as we do for the regular connection.
                 return Single.defer(() -> rc.request(requestStrategy(request, FilterableClientToClient.this.strategy),
-                        request).subscribeShareContext());
+                        request).shareContextOnSubscribe());
             }
 
             @Override

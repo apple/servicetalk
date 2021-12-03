@@ -119,10 +119,10 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                                 }
                             }
                         }))
-                        // subscribeShareContext is used because otherwise the AsyncContext modified during response
+                        // shareContextOnSubscribe is used because otherwise the AsyncContext modified during response
                         // meta data processing will not be visible during processing of the response payload for
                         // ConnectionFilters (it already is visible on ClientFilters).
-                        .subscribeShareContext();
+                        .shareContextOnSubscribe();
             });
     }
 

@@ -63,7 +63,7 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
             StreamingHttpRequest r = request.transformMessageBody(messageBody -> messageBody
                     .whenFinally(requestSent::onComplete));
             return fromSource(requestSent).merge(delegate.request(strategy, r).toPublisher()).firstOrError()
-                    .subscribeShareContext();
+                    .shareContextOnSubscribe();
         });
     }
 

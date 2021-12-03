@@ -64,7 +64,7 @@ public interface HttpClient extends HttpRequester, GracefulAutoCloseable {
                                                              HttpRequestMetaData metaData) {
         return Single.defer(() -> {
             metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return reserveConnection(metaData).subscribeShareContext();
+            return reserveConnection(metaData).shareContextOnSubscribe();
         });
     }
 

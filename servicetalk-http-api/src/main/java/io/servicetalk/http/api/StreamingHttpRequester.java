@@ -51,7 +51,7 @@ public interface StreamingHttpRequester extends StreamingHttpRequestFactory, Lis
     default Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request) {
         return Single.defer(() -> {
             request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(request).subscribeShareContext();
+            return request(request).shareContextOnSubscribe();
         });
     }
 

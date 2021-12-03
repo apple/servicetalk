@@ -45,7 +45,7 @@ public final class TimeoutServer {
 
                             return succeeded(responseFactory.ok()
                                     .payloadBody("Hello World!", textSerializer()))
-                                    .subscribeShareContext();
+                                    .shareContextOnSubscribe();
                         }))
                 .awaitShutdown();
     }

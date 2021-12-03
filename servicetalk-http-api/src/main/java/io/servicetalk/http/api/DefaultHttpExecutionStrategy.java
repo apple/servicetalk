@@ -104,7 +104,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         Publisher<Object> resp;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             final StreamingHttpRequest r = request;
-            resp = e.submit(() -> service.apply(r).subscribeShareContext())
+            resp = e.submit(() -> service.apply(r).shareContextOnSubscribe())
                     .onErrorReturn(cause -> errorHandler.apply(cause, e))
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());
@@ -142,7 +142,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                     final Single<StreamingHttpResponse> resp;
                     if (diff.isMetadataReceiveOffloaded()) {
                         final StreamingHttpRequest r = request;
-                        resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                        resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).shareContextOnSubscribe())
                                 // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
                                 .flatMap(identity());
                     } else {

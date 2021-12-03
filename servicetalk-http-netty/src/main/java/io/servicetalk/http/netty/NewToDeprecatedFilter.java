@@ -60,7 +60,7 @@ final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, S
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> delegate.request(
                                 requestStrategy(request, delegate.executionContext().executionStrategy()), request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
 
             @Override
@@ -81,10 +81,10 @@ final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, S
                                 return Single.defer(() -> delegate().request(
                                         requestStrategy(request, delegate().executionContext().executionStrategy()),
                                                 request)
-                                        .subscribeShareContext());
+                                        .shareContextOnSubscribe());
                             }
                         })
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
 
             @Override
@@ -102,7 +102,7 @@ final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, S
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return Single.defer(() -> delegate().request(
                                 requestStrategy(request, delegate().executionContext().executionStrategy()), request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
 
             @Override

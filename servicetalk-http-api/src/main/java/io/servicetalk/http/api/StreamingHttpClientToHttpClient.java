@@ -45,13 +45,13 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
-        return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
+        return Single.defer(() -> request(requestStrategy(request, strategy), request).shareContextOnSubscribe());
     }
 
     @Override
     public Single<ReservedHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> reserveConnection(requestStrategy(metaData, strategy), metaData)
-                .subscribeShareContext());
+                .shareContextOnSubscribe());
     }
 
     @Override
@@ -158,7 +158,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
-            return Single.defer(() -> request(requestStrategy(request, strategy), request).subscribeShareContext());
+            return Single.defer(() -> request(requestStrategy(request, strategy), request).shareContextOnSubscribe());
         }
 
         @Override

@@ -128,7 +128,7 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
                                                     final StreamingHttpRequest request) {
         return Single.defer(() -> {
             request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(request).subscribeShareContext();
+            return request(request).shareContextOnSubscribe();
         });
     }
 }

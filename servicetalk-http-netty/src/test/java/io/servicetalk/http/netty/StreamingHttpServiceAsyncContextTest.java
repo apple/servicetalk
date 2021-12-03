@@ -120,7 +120,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? defer(() -> doHandle(request, responseFactory).subscribeShareContext()) :
+                return asyncService ? defer(() -> doHandle(request, responseFactory).shareContextOnSubscribe()) :
                         doHandle(request, responseFactory);
             }
 

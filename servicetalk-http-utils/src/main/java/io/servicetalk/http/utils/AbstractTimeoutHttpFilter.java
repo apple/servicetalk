@@ -105,14 +105,14 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                                 .onErrorMap(TimeoutException.class, t ->
                                         new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
                                                 "ms", t))
-                                .subscribeShareContext();
+                                .shareContextOnSubscribe();
                     })));
                 } else {
                     response = timeoutResponse;
                 }
             }
 
-            return response.subscribeShareContext();
+            return response.shareContextOnSubscribe();
         });
     }
 

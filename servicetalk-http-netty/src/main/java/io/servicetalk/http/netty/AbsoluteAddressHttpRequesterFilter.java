@@ -90,7 +90,7 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
         return defer(() -> {
             final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
             request.requestTarget(effectiveRequestUri);
-            return delegate.request(strategy, request).subscribeShareContext();
+            return delegate.request(strategy, request).shareContextOnSubscribe();
         });
     }
 }

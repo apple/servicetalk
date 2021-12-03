@@ -50,7 +50,7 @@ public interface HttpRequester extends HttpRequestFactory, ListenableAsyncClosea
     default Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request) {
         return Single.defer(() -> {
             request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return request(request).subscribeShareContext();
+            return request(request).shareContextOnSubscribe();
         });
     }
 

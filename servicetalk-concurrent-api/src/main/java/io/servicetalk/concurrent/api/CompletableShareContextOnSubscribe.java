@@ -18,20 +18,20 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.context.api.ContextMap;
 
-final class PublisherSubscribeShareContext<T> extends AbstractNoHandleSubscribePublisher<T> {
-    private final Publisher<T> original;
+final class CompletableShareContextOnSubscribe extends AbstractNoHandleSubscribeCompletable {
+    private final Completable original;
 
-    PublisherSubscribeShareContext(final Publisher<T> original) {
+    CompletableShareContextOnSubscribe(final Completable original) {
         super(original.executor(), true);
         this.original = original;
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> singleSubscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
                          final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // This operator currently only targets the subscribe method. Given this limitation if we try to change the
-        // ContextMap now it is possible that operators downstream in the subscribe call stack may have modified
-        // the ContextMap and we don't want to discard those changes by using a different ContextMap.
-        original.handleSubscribe(singleSubscriber, signalOffloader, contextMap, contextProvider);
+        // AsyncContextMap now it is possible that operators downstream in the subscribe call stack may have modified
+        // the AsyncContextMap and we don't want to discard those changes by using a different AsyncContextMap.
+        original.handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 }

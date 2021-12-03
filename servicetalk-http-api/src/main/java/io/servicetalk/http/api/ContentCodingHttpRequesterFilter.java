@@ -67,7 +67,7 @@ public final class ContentCodingHttpRequesterFilter
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
         };
     }
@@ -79,7 +79,7 @@ public final class ContentCodingHttpRequesterFilter
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
                 return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
         };
     }

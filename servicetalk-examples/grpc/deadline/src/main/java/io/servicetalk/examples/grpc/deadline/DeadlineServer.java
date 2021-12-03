@@ -60,7 +60,7 @@ public class DeadlineServer {
                 }
 
                 return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())
-                        .subscribeShareContext();
+                        .shareContextOnSubscribe();
             });
         }
     }
