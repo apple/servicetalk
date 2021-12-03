@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter.BackOffPolicy;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter.DefaultRequestRetryPolicyBuilder;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.DefaultRequestRetryPolicyBuilder;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

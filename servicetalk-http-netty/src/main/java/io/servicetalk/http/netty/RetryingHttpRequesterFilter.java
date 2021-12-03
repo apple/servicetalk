@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
@@ -28,19 +28,14 @@ import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.InjectableStreamingClientFilterFactory;
-import io.servicetalk.http.api.LoadBalancerReadinessAware;
-import io.servicetalk.http.api.ServiceDiscoveryStatusAware;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -90,9 +85,7 @@ import static java.util.Objects.requireNonNull;
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter
-        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
-                   InjectableStreamingClientFilterFactory,
-                   LoadBalancerReadinessAware, ServiceDiscoveryStatusAware {
+        implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -105,6 +98,7 @@ public final class RetryingHttpRequesterFilter
     private Publisher<Object> lbEventStream;
     @Nullable
     private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
+
     @Nullable
     private Completable sdStatus;
 
@@ -131,6 +125,12 @@ public final class RetryingHttpRequesterFilter
         this.maxTotalRetries = 0;
         this.retryForResponsesMapper = null;
         this.retryForRequestsMapper = null;
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 
     @Deprecated
@@ -202,12 +202,10 @@ public final class RetryingHttpRequesterFilter
         };
     }
 
-    @Override
     public void inject(final Publisher<Object> lbEventStream) {
         this.lbEventStream = lbEventStream;
     }
 
-    @Override
     public void inject(final Completable sdStatus) {
         this.sdStatus = ignoreSdErrors ? null : sdStatus;
     }
@@ -215,24 +213,6 @@ public final class RetryingHttpRequesterFilter
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new ContextAwareClientFilter(client);
-    }
-
-    @Override
-    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
-        //TODO
-        return new StreamingHttpConnectionFilter(connection) {
-            private final Executor executor = connection.executionContext().executor();
-            private final BiIntFunction<Throwable, Completable> retryStrategy =
-                    settings.newStrategy(executor);
-
-            @Override
-            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                if (settings != null) {
-                    return RetryingHttpRequesterFilter.this.request(delegate(), request, retryStrategy, executor);
-                }
-                return RetryingHttpRequesterFilter.this.request(delegate(), request, executor);
-            }
-       };
     }
 
     @Override
