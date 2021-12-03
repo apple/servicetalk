@@ -50,9 +50,7 @@ public interface ConnectionObserver {
      * Transport protocols that require a handshake in order to connect. Example:
      * <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
      */
-    default void onTransportHandshakeComplete() {
-        // FIXME: 0.42 - remove default impl
-    }
+    void onTransportHandshakeComplete();
 
     /**
      * Callback when a security handshake is initiated.
@@ -173,9 +171,7 @@ public interface ConnectionObserver {
          *
          * @param streamId assigned stream identifier
          */
-        default void streamIdAssigned(long streamId) {  // Use long to comply with HTTP/3 requirements
-            // FIXME: 0.42 - remove default impl
-        }
+        void streamIdAssigned(long streamId);   // Use long to comply with HTTP/3 requirements
 
         /**
          * Callback when the stream is established and ready to be used. It may or may not have an already assigned
