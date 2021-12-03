@@ -36,8 +36,8 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public boolean hasOffloads() {
-        return delegate.hasOffloads();
+    public boolean isRequestResponseOffloaded() {
+        return delegate.isRequestResponseOffloaded();
     }
 
     @Override
@@ -53,6 +53,11 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public boolean isSendOffloaded() {
         return delegate.isSendOffloaded();
+    }
+
+    @Override
+    public boolean isEventOffloaded() {
+        return delegate.isEventOffloaded();
     }
 
     @Override

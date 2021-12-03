@@ -79,6 +79,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpServerBuilder.class);
 
+    private static final HttpExecutionStrategy REQRESP_OFFLOADS = HttpExecutionStrategies.customStrategyBuilder()
+            .offloadReceiveMetadata().offloadReceiveData().offloadSend().build();
+
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     private final List<StreamingHttpServiceFilterFactory> noOffloadServiceFilters = new ArrayList<>();
@@ -312,17 +315,17 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                         connectionAcceptorFactory.requiredOffloads());
 
         final StreamingHttpService filteredService;
-        HttpExecutionContext serviceContext;
+        HttpExecutionContext executionContext;
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
-            serviceContext = buildExecutionContext(strategy);
+            executionContext = buildExecutionContext(strategy);
         } else {
             Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
 
-            if (strategy.hasOffloads()) {
-                serviceContext = buildExecutionContext(noOffloadsStrategy());
-                BooleanSupplier shouldOffload = serviceContext.ioExecutor().shouldOffloadSupplier();
+            if (strategy.isRequestResponseOffloaded()) {
+                executionContext = buildExecutionContext(REQRESP_OFFLOADS.missing(strategy));
+                BooleanSupplier shouldOffload = executionContext.ioExecutor().shouldOffloadSupplier();
                 // We are going to have to offload, even if just to the raw service
                 OffloadingFilter offloadingFilter =
                         new OffloadingFilter(strategy, buildFactory(serviceFilters), shouldOffload);
@@ -330,36 +333,35 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             } else {
                 // All the filters can be appended.
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
-                serviceContext = buildExecutionContext(strategy);
+                executionContext = buildExecutionContext(strategy);
             }
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody)
+        return doBind(executionContext, connectionAcceptor, filteredService)
                 .afterOnSuccess(serverContext -> {
                     LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
                 });
     }
 
-    private Single<ServerContext> doListen(@Nullable final InfluencerConnectionAcceptor connectionAcceptor,
-                                           final HttpExecutionContext serviceContext,
-                                           StreamingHttpService service,
-                                           final boolean drainRequestPayloadBody) {
-        final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        service = applyInternalFilters(service, roConfig.lifecycleObserver());
+    private Single<ServerContext> doBind(final HttpExecutionContext executionContext,
+                                         @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                         final StreamingHttpService service) {
+        ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
+        StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
         if (roConfig.tcpConfig().isAlpnConfigured()) {
-            return DeferredServerChannelBinder.bind(serviceContext, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody, false);
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, false);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
-            return DeferredServerChannelBinder.bind(serviceContext, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody, true);
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, true);
         } else if (roConfig.isH2PriorKnowledge()) {
-            return H2ServerParentConnectionContext.bind(serviceContext, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody);
+            return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody);
         }
-        return NettyHttpServer.bind(serviceContext, roConfig, address, connectionAcceptor,
-                service, drainRequestPayloadBody);
+        return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
+                filteredService, drainRequestPayloadBody);
     }
 
     private HttpExecutionStrategy computeServiceStrategy(Object service) {

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import java.util.EnumSet;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_SEND;
@@ -38,6 +39,15 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     OFFLOAD_SEND_STRATEGY(EnumSet.of(OFFLOAD_SEND)),
     OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_SEND)),
     OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND)),
+    OFFLOAD_ALL_REQRESP_STRATEGY(EnumSet.allOf(HttpExecutionStrategies.HttpOffload.class)),
+
+    OFFLOAD_EVENT_STRATEGY(EnumSet.of(OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_META_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_DATA_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA, OFFLOAD_EVENT)),
+    OFFLOAD_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_SEND, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_META_AND_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_SEND, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_DATA_AND_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND, OFFLOAD_EVENT)),
     OFFLOAD_ALL_STRATEGY(EnumSet.allOf(HttpExecutionStrategies.HttpOffload.class));
 
     private static final DefaultHttpExecutionStrategy[] VALUES = values();
@@ -77,6 +87,11 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean isEventOffloaded() {
+        return offloaded(OFFLOAD_EVENT);
+    }
+
+    @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
         if (this == other) {
             return this;
@@ -100,7 +115,8 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 ((DefaultHttpExecutionStrategy) strategy).offloads :
         (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA.mask() : 0) |
                 (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META.mask() : 0) |
-                (strategy.isSendOffloaded() ? OFFLOAD_SEND.mask() : 0));
+                (strategy.isSendOffloaded() ? OFFLOAD_SEND.mask() : 0) |
+                (strategy.isEventOffloaded() ? OFFLOAD_EVENT.mask() : 0));
     }
 
     // Visible for testing

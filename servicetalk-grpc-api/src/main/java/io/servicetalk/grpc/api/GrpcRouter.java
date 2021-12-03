@@ -176,7 +176,7 @@ final class GrpcRouter {
                     HttpExecutionStrategies.noOffloadsStrategy() :
                     executionContext.executionStrategy().missing(routeStrategy);
             verifyNoOverrides(allRoutes.put(path,
-                    null != routeStrategy && missing.hasOffloads() ?
+                    null != routeStrategy && missing.isRequestResponseOffloaded() ?
                               StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
                                   adapterHolder.serviceInvocationStrategy(),
                                   executionContext.executor(),

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_REQRESP_STRATEGY;
 
 final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyInfluencer {
 
@@ -28,6 +28,6 @@ final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyI
 
     @Override
     public HttpExecutionStrategy requiredOffloads() {
-        return OFFLOAD_ALL_STRATEGY;
+        return OFFLOAD_ALL_REQRESP_STRATEGY;
     }
 }

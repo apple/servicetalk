@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
@@ -35,8 +34,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.SharedExecutor;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +43,6 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
@@ -74,10 +70,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.EAGER_CONNECTION_SHUTDOWN_ENABLED;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.FACTORY_COUNT;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -90,11 +82,8 @@ import static java.util.stream.Collectors.toList;
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
- * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to provide instances of this
- * {@link LoadBalancer}. This class will become package-private in the future.
  */
-@Deprecated
-public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
+final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
@@ -138,67 +127,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     /**
      * Creates a new instance.
      *
-     * @param eventPublisher provides a stream of addresses to connect to.
-     * @param connectionFactory a function which creates new connections.
-     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of this {@link LoadBalancer}.
-     */
-    @Deprecated
-    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
-        this(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
-                new HealthCheckConfig(SharedExecutor.getInstance(),
-                        DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
-    }
-
-    /**
-     * Creates a new instance.
-     *
-     * @param eventPublisher provides a stream of addresses to connect to.
-     * @param connectionFactory a function which creates new connections.
-     * @param eagerConnectionShutdown setting controlling whether {@link ServiceDiscovererEvent events}
-     * with {@link ServiceDiscovererEvent.Status#UNAVAILABLE} or {@link ServiceDiscovererEvent.Status#EXPIRED} statuses
-     * should be eagerly closed.
-     * When {@code false}, {@link ServiceDiscovererEvent.Status#UNAVAILABLE} addresses
-     * will be treated as {@link ServiceDiscovererEvent.Status#EXPIRED} and established connections will be used
-     * for sending requests, but new connections will not be requested, allowing the server to drive
-     * the connection closure and shifting traffic to other addresses.
-     * When {@code true}, {@link ServiceDiscovererEvent.Status#EXPIRED} addresses will be treated as
-     * {@link ServiceDiscovererEvent.Status#UNAVAILABLE} and connections will be immediately terminated.
-     * {@code null} disables the mapping.
-     * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
-     * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
-     * continues being eligible for connecting on the request path).
-     * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
-     * @deprecated Use
-     * {@link #RoundRobinLoadBalancer(String, Publisher, ConnectionFactory, Boolean, HealthCheckConfig)}.
-     */
-    @Deprecated
-    RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                           final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                           @Nullable final Boolean eagerConnectionShutdown,
-                           @Nullable final HealthCheckConfig healthCheckConfig) {
-        this("unknown#" + FACTORY_COUNT.incrementAndGet(), eventPublisher.map(Collections::singletonList),
-                connectionFactory, eagerConnectionShutdown, healthCheckConfig);
-    }
-
-    /**
-     * Creates a new instance.
-     *
      * @param targetResource {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
-     * @param eagerConnectionShutdown setting controlling whether {@link ServiceDiscovererEvent events}
-     * with {@link ServiceDiscovererEvent.Status#UNAVAILABLE} or {@link ServiceDiscovererEvent.Status#EXPIRED} statuses
-     * should be eagerly closed.
-     * When {@code false}, {@link ServiceDiscovererEvent.Status#UNAVAILABLE} addresses
-     * will be treated as {@link ServiceDiscovererEvent.Status#EXPIRED} and established connections will be used
-     * for sending requests, but new connections will not be requested, allowing the server to drive
-     * the connection closure and shifting traffic to other addresses.
-     * When {@code true}, {@link ServiceDiscovererEvent.Status#EXPIRED} addresses will be treated as
-     * {@link ServiceDiscovererEvent.Status#UNAVAILABLE} and connections will be immediately terminated.
-     * {@code null} disables the mapping.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
      * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
      * continues being eligible for connecting on the request path).
@@ -208,7 +140,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-            @Nullable final Boolean eagerConnectionShutdown,
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResource);
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
@@ -231,9 +162,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             @Override
             public void onNext(final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
                 for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-                    final ServiceDiscovererEvent.Status actualStatus = inferStatus(event);
+                    final ServiceDiscovererEvent.Status eventStatus = event.status();
                     LOGGER.debug("Load balancer for {}: received new ServiceDiscoverer event {}. Inferred status: {}.",
-                            targetResource, event, actualStatus);
+                            targetResource, event, eventStatus);
 
                     @SuppressWarnings("unchecked")
                     final List<Host<ResolvedAddress, C>> usedAddresses =
@@ -246,15 +177,15 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 final List<Host<ResolvedAddress, C>> oldHostsTyped =
                                         (List<Host<ResolvedAddress, C>>) oldHosts;
 
-                                if (AVAILABLE.equals(actualStatus)) {
+                                if (AVAILABLE.equals(eventStatus)) {
                                     return addHostToList(oldHostsTyped, addr);
-                                } else if (EXPIRED.equals(actualStatus)) {
+                                } else if (EXPIRED.equals(eventStatus)) {
                                     if (oldHostsTyped.isEmpty()) {
                                         return emptyList();
                                     } else {
                                         return markHostAsExpired(oldHostsTyped, addr);
                                     }
-                                } else if (UNAVAILABLE.equals(actualStatus)) {
+                                } else if (UNAVAILABLE.equals(eventStatus)) {
                                     return listWithHostRemoved(oldHostsTyped, host -> {
                                         boolean match = host.address.equals(addr);
                                         if (match) {
@@ -265,7 +196,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 } else {
                                     LOGGER.error("Load balancer for {}: Unexpected Status in event:" +
                                             " {} (mapped to {}). Leaving usedHosts unchanged: {}",
-                                            targetResource, event, actualStatus, oldHosts);
+                                            targetResource, event, eventStatus, oldHosts);
                                     return oldHosts;
                                 }
                             });
@@ -273,7 +204,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     LOGGER.debug("Load balancer for {}: now using {} addresses: {}.",
                             targetResource, usedAddresses.size(), usedAddresses);
 
-                    if (AVAILABLE.equals(actualStatus)) {
+                    if (AVAILABLE.equals(eventStatus)) {
                         if (usedAddresses.size() == 1) {
                             eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                         }
@@ -281,18 +212,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
                     }
                 }
-            }
-
-            private ServiceDiscovererEvent.Status inferStatus(final ServiceDiscovererEvent<ResolvedAddress> event) {
-                ServiceDiscovererEvent.Status status = event.status();
-                if (eagerConnectionShutdown != null) {
-                    if (eagerConnectionShutdown && EXPIRED.equals(status)) {
-                        status = UNAVAILABLE;
-                    } else if (!eagerConnectionShutdown && UNAVAILABLE.equals(status)) {
-                        status = EXPIRED;
-                    }
-                }
-                return status;
             }
 
             private List<Host<ResolvedAddress, C>> markHostAsExpired(
@@ -394,28 +313,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         });
     }
 
-    /**
-     * Please use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} instead of this factory.
-     *
-     * @param <ResolvedAddress> The resolved address type.
-     * @param <C> The type of connection.
-     * @return a {@link LoadBalancerFactory} that creates instances of this class.
-     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of this {@link LoadBalancer}.
-     */
-    @Deprecated
-    public static <ResolvedAddress, C extends LoadBalancedConnection>
-    RoundRobinLoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
-        return new RoundRobinLoadBalancerFactory<>();
-    }
-
     private static <T> Single<T> failedLBClosed(String targetResource) {
         return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
     }
 
     @Override
     public Single<C> selectConnection(Predicate<C> selector) {
-        return defer(() -> selectConnection0(selector).subscribeShareContext());
+        return defer(() -> selectConnection0(selector).shareContextOnSubscribe());
     }
 
     @Override
@@ -527,45 +431,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     // Visible for testing
     List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
         return usedHosts.stream().map(Host::asEntry).collect(toList());
-    }
-
-    /**
-     * Please use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} instead of this factory.
-     *
-     * @param <ResolvedAddress> The resolved address type.
-     * @param <C> The type of connection.
-     * @deprecated Use {@link io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory} to build instances
-     * of this {@link LoadBalancer}
-     */
-    @Deprecated
-    public static final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
-            implements LoadBalancerFactory<ResolvedAddress, C> {
-
-        @Override
-        public <T extends C> LoadBalancer<T> newLoadBalancer(
-                final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
-                    new HealthCheckConfig(SharedExecutor.getInstance(),
-                            DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
-        }
-
-        @Override
-        public <T extends C> LoadBalancer<T> newLoadBalancer(
-                final String targetResource,
-                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-                final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
-                    eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
-                    new HealthCheckConfig(SharedExecutor.getInstance(),
-                            DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
-        }
-
-        @Override
-        public ExecutionStrategy requiredOffloads() {
-            // We do not block
-            return ExecutionStrategy.anyStrategy();
-        }
     }
 
     static final class HealthCheckConfig {

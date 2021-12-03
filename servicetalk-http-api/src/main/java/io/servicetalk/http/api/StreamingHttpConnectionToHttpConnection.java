@@ -72,7 +72,7 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
         return connection.request(request.toStreamingRequest())
-                .flatMap(response -> response.toResponse().subscribeShareContext());
+                .flatMap(response -> response.toResponse().shareContextOnSubscribe());
     }
 
     @Override

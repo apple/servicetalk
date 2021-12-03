@@ -25,9 +25,12 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.kqueue.KQueue;
 
 import javax.annotation.Nullable;
 
+import static io.netty.channel.ChannelOption.TCP_FASTOPEN_CONNECT;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 import static java.util.Objects.requireNonNull;
 
@@ -38,16 +41,20 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     private final ConnectionObserver observer;
     private final boolean secure;
+    private final boolean client;
 
     /**
      * Creates a new instance.
      *
      * @param observer {@link ConnectionObserver} to report network events.
      * @param secure {@code true} if the observed connection is secure
+     * @param client {@code true} if this initializer is used on the client-side
      */
-    public ConnectionObserverInitializer(final ConnectionObserver observer, final boolean secure) {
+    public ConnectionObserverInitializer(final ConnectionObserver observer, final boolean secure,
+                                         final boolean client) {
         this.observer = requireNonNull(observer);
         this.secure = secure;
+        this.client = client;
     }
 
     @Override
@@ -60,34 +67,54 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 observer.connectionClosed(t);
             }
         });
-        channel.pipeline().addLast(new ConnectionObserverHandler(observer, secure));
+        channel.pipeline().addLast(new ConnectionObserverHandler(observer, secure, isFastOpen(channel)));
+    }
+
+    private boolean isFastOpen(final Channel channel) {
+        return client && secure && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+                (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
     }
 
     static final class ConnectionObserverHandler extends ChannelDuplexHandler {
 
         private final ConnectionObserver observer;
         private final boolean secure;
+        private boolean tcpHandshakeComplete;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
 
-        ConnectionObserverHandler(final ConnectionObserver observer, final boolean secure) {
+        ConnectionObserverHandler(final ConnectionObserver observer, final boolean secure, final boolean fastOpen) {
             this.observer = observer;
             this.secure = secure;
+            if (fastOpen) {
+                reportSecurityHandshakeStarting();
+            }
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            if (secure && ctx.channel().isActive()) {
-                reportSecurityHandshakeStarting();
+            if (ctx.channel().isActive()) {
+                reportTcpHandshakeComplete();
+                if (secure) {
+                    reportSecurityHandshakeStarting();
+                }
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
+            reportTcpHandshakeComplete();
             if (secure) {
                 reportSecurityHandshakeStarting();
             }
             ctx.fireChannelActive();
+        }
+
+        void reportTcpHandshakeComplete() {
+            if (!tcpHandshakeComplete) {
+                tcpHandshakeComplete = true;
+                observer.onTransportHandshakeComplete();
+            }
         }
 
         void reportSecurityHandshakeStarting() {

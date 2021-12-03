@@ -36,7 +36,7 @@ final class ClientStrategyInfluencerChainBuilder {
         connFactoryChain = new ConnectAndHttpExecutionStrategy(ConnectExecutionStrategy.anyStrategy(),
                 HttpExecutionStrategies.defaultStrategy());
         connFilterChain = HttpExecutionStrategies.anyStrategy();
-        clientChain = HttpExecutionStrategies.anyStrategy();
+        clientChain = HttpExecutionStrategies.customStrategyBuilder().offloadEvent().build();
     }
 
     private ClientStrategyInfluencerChainBuilder(ClientStrategyInfluencerChainBuilder from) {

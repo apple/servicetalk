@@ -173,7 +173,7 @@ public final class AsyncContextHttpFilterVerifier {
                             assertAsyncContext(K1, V1, errorQueue);
                             assertAsyncContext(K2, V2, errorQueue);
                             assertAsyncContext(K3, V3, errorQueue);
-                        })).subscribeShareContext();
+                        })).shareContextOnSubscribe();
             }
         };
     }
