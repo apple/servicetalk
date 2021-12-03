@@ -87,43 +87,6 @@ public abstract class AbstractRetryingFilterBuilder<Builder
     }
 
     /**
-     * Creates a new retrying {@link Filter} which retries without delay.
-     * @return a new retrying {@link Filter} which retries without delay.
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithImmediateRetries() {
-        return build(readOnlySettings(null, NULL_JITTER, null, null, false, evaluateDelayedRetries));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @param delay Constant {@link Duration} of delay between retries
-     * @return A new retrying {@link Filter} which adds a constant delay between retries
-     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, null, false, evaluateDelayedRetries));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @param delay Constant {@link Duration} of delay between retries
-     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
-     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
-     * @return A new retrying {@link Filter} which adds a constant delay between retries
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
-     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, timerExecutor, false, evaluateDelayedRetries));
-    }
-
-    /**
      * Creates a new retrying {@link Filter} which adds a randomized delay between retries and uses the passed
      * {@link Duration} as a maximum delay possible. This additionally adds a "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
