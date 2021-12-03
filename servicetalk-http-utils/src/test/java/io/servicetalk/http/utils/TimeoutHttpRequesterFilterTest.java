@@ -15,15 +15,18 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,7 +46,8 @@ public class TimeoutHttpRequesterFilterTest extends AbstractTimeoutHttpFilterTes
     }
 
     @Override
-    Single<StreamingHttpResponse> applyFilter(TimeoutFromRequest timeoutForRequest, boolean fullRequestResponse,
+    Single<StreamingHttpResponse> applyFilter(BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+                                              boolean fullRequestResponse,
                                               Single<StreamingHttpResponse> responseSingle) {
         return applyFilter(new TimeoutHttpRequesterFilter(timeoutForRequest, fullRequestResponse), responseSingle);
     }

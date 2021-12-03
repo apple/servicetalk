@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -23,6 +24,7 @@ import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -58,9 +61,10 @@ abstract class AbstractTimeoutHttpFilterTest {
     abstract Single<StreamingHttpResponse> applyFilter(Duration duration, boolean fullRequestResponse,
                                                        Single<StreamingHttpResponse> responseSingle);
 
-    abstract Single<StreamingHttpResponse> applyFilter(TimeoutFromRequest timeoutForRequest,
-                                                       boolean fullRequestResponse,
-                                                       Single<StreamingHttpResponse> responseSingle);
+    abstract Single<StreamingHttpResponse> applyFilter(
+            BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+            boolean fullRequestResponse,
+            Single<StreamingHttpResponse> responseSingle);
 
     @Test
     void constructorValidatesDuration() {
@@ -94,7 +98,7 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     private void responseWithNonPositiveTimeout(Duration timeout, boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
-        StepVerifiers.create(applyFilter(__ -> timeout, fullRequestResponse, responseSingle))
+        StepVerifiers.create(applyFilter((req, ts) -> timeout, fullRequestResponse, responseSingle))
                 .expectError(TimeoutException.class)
                 .verify();
         assertThat("No subscribe for payload body", responseSingle.isSubscribed(), is(true));

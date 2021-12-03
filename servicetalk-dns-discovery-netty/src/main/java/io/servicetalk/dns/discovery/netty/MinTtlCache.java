@@ -15,6 +15,8 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.concurrent.TimeSource;
+
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DnsCache;
@@ -30,7 +32,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * While netty's {@link DnsCache} can be called by any thread calling the {@link DnsNameResolver}, we ensure, in
@@ -44,10 +46,12 @@ final class MinTtlCache implements DnsCache {
     private final DnsCache cache;
     private final long initialTtl;
     private final Map<String, Long> minExpiryMap = new HashMap<>();
+    private final TimeSource timeSource;
 
-    MinTtlCache(final DnsCache cache, final long initialTtl) {
+    MinTtlCache(final DnsCache cache, final long initialTtl, final TimeSource timeSource) {
         this.cache = cache;
         this.initialTtl = initialTtl;
+        this.timeSource = timeSource;
     }
 
     void prepareForResolution(final String hostname) {
@@ -59,7 +63,7 @@ final class MinTtlCache implements DnsCache {
         if (minExpiry == null) {
             return initialTtl;
         } else {
-            final long minTtl = minExpiry - NANOSECONDS.toSeconds(System.nanoTime());
+            final long minTtl = minExpiry - timeSource.currentTime(SECONDS);
             return minTtl >= 0 ? minTtl : initialTtl;
         }
     }
@@ -92,7 +96,7 @@ final class MinTtlCache implements DnsCache {
     @Override
     public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address,
                                final long originalTtl, final EventLoop loop) {
-        final long currentTime = NANOSECONDS.toSeconds(System.nanoTime());
+        final long currentTime = timeSource.currentTime(SECONDS);
         minExpiryMap.merge(hostname, currentTime + max(initialTtl, originalTtl), Math::min);
         return cache.cache(hostname, additionals, address, originalTtl, loop);
     }
