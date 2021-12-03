@@ -538,7 +538,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
-        if (factory instanceof RetryingHttpRequesterFilter) {
+        if (factory instanceof RetryingHttpRequesterFilter ||
+                factory.getClass().getSimpleName().contains("RetryingHttpRequesterFilter")) {
+            // TODO 0.42 remove this extra test with class-name
             if (retryingHttpRequesterFilter != null) {
                 throw new IllegalStateException("Retrying HTTP requester filter was already found in the filter " +
                         "chain, only a single instance of that is allowed.");

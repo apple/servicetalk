@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
-import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
 import io.servicetalk.client.api.LoadBalancerReadySubscriber;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -102,9 +100,6 @@ public final class RetryingHttpRequesterFilter
     @Nullable
     private Completable sdStatus;
 
-    @Nullable
-    private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
-
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, BackOffPolicy> retryForResponsesMapper,
@@ -114,42 +109,12 @@ public final class RetryingHttpRequesterFilter
         this.maxTotalRetries = maxTotalRetries;
         this.retryForResponsesMapper = retryForResponsesMapper;
         this.retryForRequestsMapper = retryForRequestsMapper;
-        this.settings = null;
-    }
-
-    @Deprecated
-    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
-        this.settings = settings;
-        this.waitForLb = false;
-        this.ignoreSdErrors = false;
-        this.maxTotalRetries = 0;
-        this.retryForResponsesMapper = null;
-        this.retryForRequestsMapper = null;
     }
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         // No influence since we do not block.
         return strategy;
-    }
-
-    @Deprecated
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final StreamingHttpRequest request,
-                                                  final BiIntFunction<Throwable, Completable> retryStrategy,
-                                                  final Executor executor) {
-        assert settings != null;
-        return delegate.request(request).retryWhen((count, t) -> {
-            if (settings.isRetryable(request, t)) {
-                if (settings.evaluateDelayedRetries() && t instanceof DelayedRetry) {
-                    final Duration constant = ((DelayedRetry) t).delay();
-                    return retryStrategy.apply(count, t).concat(executor.timer(constant));
-                }
-
-                return retryStrategy.apply(count, t);
-            }
-            return failed(t);
-        });
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -228,9 +193,6 @@ public final class RetryingHttpRequesterFilter
 
         private final Executor executor;
 
-        @Nullable
-        private final BiIntFunction<Throwable, Completable> retryStrategy;
-
         /**
          * Create a new instance.
          *
@@ -239,7 +201,6 @@ public final class RetryingHttpRequesterFilter
         private ContextAwareClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
             this.executor = delegate.executionContext().executor();
-            this.retryStrategy = settings != null ? settings.newStrategy(executor) : null;
             init();
         }
 
@@ -268,10 +229,6 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            if (settings != null) {
-                assert retryStrategy != null;
-                return RetryingHttpRequesterFilter.this.request(delegate(), request, retryStrategy, executor);
-            }
             return RetryingHttpRequesterFilter.this.request(delegate(), request, executor);
         }
 
@@ -613,56 +570,6 @@ public final class RetryingHttpRequesterFilter
 
                 return null;
             };
-        }
-    }
-
-    /**
-     * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
-     * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
-     * @deprecated This will be removed in future versions of ServiceTalk.
-     * Alternatively use {@link RetryingHttpRequesterFilterBuilder}
-     */
-    @Deprecated
-    public static final class Builder
-            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
-
-        /**
-         * The retrying-filter will also evaluate the {@link DelayedRetry} marker interface
-         * of an exception and use the provided {@link DelayedRetry#delay() constant-delay} in the retry period.
-         * In case a max-delay was set in this builder, the {@link DelayedRetry#delay() constant-delay} overrides
-         * it and takes precedence.
-         *
-         * @param evaluate Evaluate the {@link Throwable errors} for the {@link DelayedRetry} marker interface, and
-         * if matched, then use the {@link DelayedRetry#delay() constant-delay} additionally to the backoff
-         * strategy in use.
-         * @return {@code this}.
-         */
-        public Builder evaluateDelayedRetries(final boolean evaluate) {
-            this.evaluateDelayedRetries = evaluate;
-            return this;
-        }
-
-        @Override
-        protected RetryingHttpRequesterFilter build(
-                final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
-            return new RetryingHttpRequesterFilter(readOnlySettings);
-        }
-
-        /**
-         * Behaves as {@link #defaultRetryForPredicate()}, but also retries
-         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
-         * <p>
-         * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
-         * {@link StreamingHttpRequest#payloadBody() payload body} that is
-         * <a href="http://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to
-         * the payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or which
-         * are created from in-memory data are typically replayable.
-         *
-         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
-         */
-        public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
-            return defaultRetryForPredicate().or((meta, throwable) ->
-                    throwable instanceof IOException && meta.method().properties().isIdempotent());
         }
     }
 

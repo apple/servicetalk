@@ -25,6 +25,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;

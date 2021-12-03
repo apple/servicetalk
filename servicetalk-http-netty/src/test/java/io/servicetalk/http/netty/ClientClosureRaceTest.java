@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.AfterAll;

@@ -22,7 +22,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
