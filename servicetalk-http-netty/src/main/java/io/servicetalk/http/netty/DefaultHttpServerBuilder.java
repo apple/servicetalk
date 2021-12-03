@@ -351,9 +351,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         return doBind(executionContext, connectionAcceptor, filteredService)
-                .afterOnSuccess(serverContext -> {
-                    LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
-                });
+                .afterOnSuccess(serverContext ->
+                        LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy));
     }
 
     private Single<ServerContext> doBind(final HttpExecutionContext executionContext,
@@ -363,17 +362,17 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
         if (roConfig.tcpConfig().isAlpnConfigured()) {
-            return DeferredServerChannelBinder.bind(
-                    executionContext, roConfig, address, connectionAcceptor, filteredService, drainRequestPayloadBody, false);
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, false);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
-            return DeferredServerChannelBinder.bind(
-                    executionContext, roConfig, address, connectionAcceptor, filteredService, drainRequestPayloadBody, true);
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, true);
         } else if (roConfig.isH2PriorKnowledge()) {
-            return H2ServerParentConnectionContext.bind(
-                    executionContext, roConfig, address, connectionAcceptor, filteredService, drainRequestPayloadBody);
+            return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody);
         }
-        return NettyHttpServer.bind(
-                executionContext, roConfig, address, connectionAcceptor, filteredService, drainRequestPayloadBody);
+        return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
+                filteredService, drainRequestPayloadBody);
     }
 
     private HttpExecutionStrategy computeServiceStrategy(Object service) {
