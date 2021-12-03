@@ -59,12 +59,14 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> Single<T> publishOn(final Single<T> original,
-                                   final BooleanSupplier shouldOffload, final Executor executor) {
+                                   final BooleanSupplier shouldOffload,
+                                   final io.servicetalk.concurrent.Executor executor) {
         return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
     static <T> Single<T> subscribeOn(final Single<T> original,
-                                     final BooleanSupplier shouldOffload, final Executor executor) {
+                                     final BooleanSupplier shouldOffload,
+                                     final io.servicetalk.concurrent.Executor executor) {
         return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
@@ -78,7 +80,7 @@ final class PublishAndSubscribeOnSingles {
     private static final class PublishOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         PublishOn(final Single<T> original,
-                  final BooleanSupplier shouldOffload, final Executor executor) {
+                  final BooleanSupplier shouldOffload, final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 
@@ -113,7 +115,8 @@ final class PublishAndSubscribeOnSingles {
     private static final class SubscribeOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         SubscribeOn(final Single<T> original,
-                    final BooleanSupplier shouldOffload, final Executor executor) {
+                    final BooleanSupplier shouldOffload,
+                    final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 
