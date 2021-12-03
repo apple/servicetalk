@@ -251,8 +251,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> void injectRetryingFilterDependencies(final HttpClientBuildContext<U, R> ctx,
             final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
-        ctx.builder.retryingHttpRequesterFilter.inject(ctx.sdStatus);
-        ctx.builder.retryingHttpRequesterFilter.inject(loadBalancer.eventStream());
+        if (ctx.builder.retryingHttpRequesterFilter != null) {
+            ctx.builder.retryingHttpRequesterFilter.inject(ctx.sdStatus);
+            ctx.builder.retryingHttpRequesterFilter.inject(loadBalancer.eventStream());
+        }
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {

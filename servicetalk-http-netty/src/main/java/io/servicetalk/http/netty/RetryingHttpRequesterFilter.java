@@ -28,7 +28,6 @@ import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -37,6 +36,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
 
 import java.io.IOException;
@@ -83,7 +83,7 @@ import static java.util.Objects.requireNonNull;
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter
-        implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
+        implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -109,12 +109,6 @@ public final class RetryingHttpRequesterFilter
         this.maxTotalRetries = maxTotalRetries;
         this.retryForResponsesMapper = retryForResponsesMapper;
         this.retryForRequestsMapper = retryForRequestsMapper;
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence since we do not block.
-        return strategy;
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
