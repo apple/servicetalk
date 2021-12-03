@@ -21,7 +21,6 @@ import io.servicetalk.context.api.ContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
@@ -46,21 +45,21 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
     private final Completable original;
     private final BooleanSupplier shouldOffload;
-    private final Executor executor;
+    private final io.servicetalk.concurrent.Executor executor;
 
     TaskBasedAsyncCompletableOperator(final Completable original,
                                       final BooleanSupplier shouldOffload,
-                                      final Executor executor) {
+                                      final io.servicetalk.concurrent.Executor executor) {
         this.original = original;
-        this.shouldOffload = Objects.requireNonNull(shouldOffload, "shouldOffload");
-        this.executor = Objects.requireNonNull(executor, "executor");
+        this.shouldOffload = requireNonNull(shouldOffload, "shouldOffload");
+        this.executor = requireNonNull(executor, "executor");
     }
 
     final BooleanSupplier shouldOffload() {
         return shouldOffload;
     }
 
-    final Executor executor() {
+    final io.servicetalk.concurrent.Executor executor() {
         return executor;
     }
 
@@ -83,7 +82,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
                 newUpdater(AbstractOffloadedSingleValueSubscriber.class, "state");
 
         private final BooleanSupplier shouldOffload;
-        final Executor executor;
+        final io.servicetalk.concurrent.Executor executor;
         @Nullable
         // Visibility: Task submitted to executor happens-before task execution.
         private Cancellable cancellable;
@@ -92,7 +91,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
         private volatile int state = STATE_INIT;
         private boolean hasOffloaded;
 
-        AbstractOffloadedSingleValueSubscriber(final BooleanSupplier shouldOffload, final Executor executor) {
+        AbstractOffloadedSingleValueSubscriber(final BooleanSupplier shouldOffload,
+                                               final io.servicetalk.concurrent.Executor executor) {
             this.shouldOffload = shouldOffload;
             this.executor = executor;
         }
@@ -239,7 +239,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
         private final Subscriber subscriber;
 
         CompletableSubscriberOffloadedTerminals(final Subscriber subscriber,
-                                                final BooleanSupplier shouldOffload, final Executor executor) {
+                                                final BooleanSupplier shouldOffload,
+                                                final io.servicetalk.concurrent.Executor executor) {
             super(shouldOffload, executor);
             this.subscriber = requireNonNull(subscriber);
         }
@@ -290,10 +291,11 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
     static final class CompletableSubscriberOffloadedCancellable implements Subscriber {
         private final Subscriber subscriber;
         private final BooleanSupplier shouldOffload;
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
 
         CompletableSubscriberOffloadedCancellable(final Subscriber subscriber,
-                                                  final BooleanSupplier shouldOffload, final Executor executor) {
+                                                  final BooleanSupplier shouldOffload,
+                                                  final io.servicetalk.concurrent.Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.shouldOffload = shouldOffload;
             this.executor = executor;
@@ -321,10 +323,11 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
     static final class OffloadedCancellable implements Cancellable {
         private final Cancellable cancellable;
         private final BooleanSupplier shouldOffload;
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
 
         OffloadedCancellable(final Cancellable cancellable,
-                             final BooleanSupplier shouldOffload, final Executor executor) {
+                             final BooleanSupplier shouldOffload,
+                             final io.servicetalk.concurrent.Executor executor) {
             this.cancellable = requireNonNull(cancellable);
             this.shouldOffload = shouldOffload;
             this.executor = executor;
