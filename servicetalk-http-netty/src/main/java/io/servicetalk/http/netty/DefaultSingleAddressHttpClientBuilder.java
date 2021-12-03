@@ -126,6 +126,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
+    //TODO to be removed when auto-retry is removed.
+    @Deprecated
+    boolean customAutoRetry;
+
+    //TODO to be removed when auto-retry is removed.
+    @Deprecated
+    boolean retryingFilterAppended;
+
     @Nullable
     private RetryingHttpRequesterFilter retryingHttpRequesterFilter;
 
@@ -166,6 +174,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
         retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
+        retryingFilterAppended = from.retryingFilterAppended;
+        customAutoRetry = from.customAutoRetry;
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
@@ -336,9 +346,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(executionContext, lb, reqRespFactory));
-            if (ctx.builder.autoRetry != null && ctx.builder.retryingHttpRequesterFilter == null) {
+            if (ctx.builder.customAutoRetry) {
+                lbClient = new AutoRetryFilter(lbClient,
+                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
+            } else if (ctx.builder.autoRetry != null && !ctx.builder.retryingFilterAppended) {
+                ctx.builder.retryingHttpRequesterFilter = new RetryingHttpRequesterFilterBuilder().build();
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        new RetryingHttpRequesterFilterBuilder().build());
+                        ctx.builder.retryingHttpRequesterFilter);
             }
             HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
@@ -520,6 +534,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :
                 requireNonNull(autoRetryStrategyProvider);
+        customAutoRetry = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
+        retryingFilterAppended = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
         return this;
     }
 
@@ -540,14 +556,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
+        // TODO 0.42 remove this extra test with class-name
         if (factory instanceof RetryingHttpRequesterFilter ||
                 factory.getClass().getSimpleName().contains("RetryingHttpRequesterFilter")) {
-            // TODO 0.42 remove this extra test with class-name
-            if (retryingHttpRequesterFilter != null) {
-                throw new IllegalStateException("Retrying HTTP requester filter was already found in the filter " +
-                        "chain, only a single instance of that is allowed.");
+            if (retryingFilterAppended) {
+                throw new IllegalStateException("Retrying HTTP requester filter (or AutoRetry) was already found in " +
+                        "the filter chain, only a single instance of that is allowed.");
             }
-            retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
+            retryingFilterAppended = true;
+            if (factory instanceof RetryingHttpRequesterFilter) {
+                retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
+            }
         }
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
