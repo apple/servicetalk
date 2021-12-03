@@ -20,30 +20,30 @@ package io.servicetalk.http.api;
  *
  * @param <Payload> Type of payload this transformer receives.
  */
-public class StatelessTrailersTransformer<Payload> implements TrailersTransformer<Object, Payload> {
+public class StatelessTrailersTransformer<Payload> implements TrailersTransformer<Void, Payload> {
     @Override
-    public final Object newState() {
+    public final Void newState() {
         return null;
     }
 
     @Override
-    public final Payload accept(final Object __, final Payload payload) {
+    public final Payload accept(final Void __, final Payload payload) {
         return accept(payload);
     }
 
     @Override
-    public final HttpHeaders payloadComplete(final Object __, final HttpHeaders trailers) {
+    public final HttpHeaders payloadComplete(final Void __, final HttpHeaders trailers) {
         return payloadComplete(trailers);
     }
 
     @Override
-    public final HttpHeaders catchPayloadFailure(final Object __, final Throwable cause, final HttpHeaders trailers)
+    public final HttpHeaders catchPayloadFailure(final Void __, final Throwable cause, final HttpHeaders trailers)
             throws Throwable {
         return payloadFailed(cause, trailers);
     }
 
     /**
-     * Same as {@link #accept(Object, Object)} but without the state.
+     * Same as {@link #accept(Void, Object)} but without the state.
      *
      * @param payload {@link Payload} to accept.
      * @return Potentially transformed {@link Payload} instance.
@@ -53,7 +53,7 @@ public class StatelessTrailersTransformer<Payload> implements TrailersTransforme
     }
 
     /**
-     * Same as {@link #payloadComplete(Object, HttpHeaders)} but without the state.
+     * Same as {@link #payloadComplete(Void, HttpHeaders)} but without the state.
      *
      * @param trailers Trailer for the streaming HTTP request/response that is transformed.
      * @return Potentially transformed trailers.
@@ -63,7 +63,7 @@ public class StatelessTrailersTransformer<Payload> implements TrailersTransforme
     }
 
     /**
-     * Same as {@link #catchPayloadFailure(Object, Throwable, HttpHeaders)} but without the state.
+     * Same as {@link #catchPayloadFailure(Void, Throwable, HttpHeaders)} but without the state.
      *
      * @param cause of the payload stream failure.
      * @param trailers Trailer for the streaming HTTP request/response that is transformed.
