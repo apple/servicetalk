@@ -17,9 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -41,6 +43,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
@@ -119,13 +122,18 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     ConnectionContext ctx = filteredConnection.connectionContext();
                     Completable onClosing;
                     if (ctx instanceof NettyConnectionContext) {
+                        // bondolo - I don't believe this is necessary, always the same as filteredConnection.onClose()
+                        // perhaps this is only needed for testing where the mock doesn't implement onClose()?
                         onClosing = ((NettyConnectionContext) ctx).onClosing();
                     } else {
                         onClosing = filteredConnection.onClose();
                     }
+                    final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency =
+                            filteredConnection.transportEventStream(MAX_CONCURRENCY);
+                    final ReservableRequestConcurrencyController concurrencyController =
+                            newConcurrencyController(maxConcurrency, onClosing);
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
-                            newConcurrencyController(filteredConnection, onClosing),
-                            executionContext.executionStrategy(),
+                            concurrencyController, executionContext.executionStrategy(),
                             connectStrategy instanceof HttpExecutionStrategy ?
                                     (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.anyStrategy());
                 });
@@ -142,7 +150,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
             ResolvedAddress resolvedAddress, TransportObserver observer);
 
     abstract ReservableRequestConcurrencyController newConcurrencyController(
-            FilterableStreamingHttpConnection connection, Completable onClosing);
+            Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, Completable onClosing);
 
     @Override
     public final Completable onClose() {

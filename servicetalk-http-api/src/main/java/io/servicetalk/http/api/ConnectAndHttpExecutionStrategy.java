@@ -84,6 +84,11 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
     }
 
     @Override
+    public boolean isEventOffloaded() {
+        return httpStrategy.isEventOffloaded();
+    }
+
+    @Override
     public boolean isConnectOffloaded() {
         return connectStrategy.isConnectOffloaded();
     }
