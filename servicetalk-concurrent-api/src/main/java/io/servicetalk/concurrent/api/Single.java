@@ -1464,22 +1464,6 @@ public abstract class Single<T> {
     }
 
     /**
-     * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link ContextMap#copy() copy}.
-     * <p>
-     * This operator only impacts behavior if the returned {@link Single} is subscribed directly after this operator,
-     * that means this must be the "last operator" in the chain for this to have an impact.
-     *
-     * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
-     * {@link ContextMap#copy() copy} when subscribed to.
-     * @deprecated Use {@link #shareContextOnSubscribe()}.
-     */
-    @Deprecated
-    public final Single<T> subscribeShareContext() {
-        return shareContextOnSubscribe();
-    }
-
-    /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>

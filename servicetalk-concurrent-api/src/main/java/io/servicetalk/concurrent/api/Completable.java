@@ -1519,22 +1519,6 @@ public abstract class Completable {
     }
 
     /**
-     * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
-     * instead of making a {@link ContextMap#copy() copy}.
-     * <p>
-     * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
-     * operator, that means this must be the "last operator" in the chain for this to have an impact.
-     *
-     * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
-     * {@link ContextMap#copy() copy} when subscribed to.
-     * @deprecated Use {@link #shareContextOnSubscribe()}.
-     */
-    @Deprecated
-    public final Completable subscribeShareContext() {
-        return shareContextOnSubscribe();
-    }
-
-    /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of either this
      * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
      * result is said to be <strong>ambiguous</strong> relative to which source it originated from. After the first
