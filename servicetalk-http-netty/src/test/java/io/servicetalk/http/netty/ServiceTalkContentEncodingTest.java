@@ -109,7 +109,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                                     request.headers().get(CONTENT_ENCODING), true);
                             assertHeader(clientDecoder.group::advertisedMessageEncoding,
                                     request.headers().get(ACCEPT_ENCODING), false);
-                            return delegate.request(request).subscribeShareContext();
+                            return delegate.request(request).shareContextOnSubscribe();
                         });
                      }
                  })

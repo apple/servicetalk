@@ -2972,8 +2972,24 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
      * {@link ContextMap#copy() copy} when subscribed to.
      */
+    public final Publisher<T> shareContextOnSubscribe() {
+        return new PublisherShareContextOnSubscribe<>(this);
+    }
+
+    /**
+     * Signifies that when the returned {@link Publisher} is subscribed to, the {@link AsyncContext} will be shared
+     * instead of making a {@link ContextMap#copy() copy}.
+     * <p>
+     * This operator only impacts behavior if the returned {@link Publisher} is subscribed directly after this operator,
+     * that means this must be the "last operator" in the chain for this to have an impact.
+     *
+     * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
+     * {@link ContextMap#copy() copy} when subscribed to.
+     * @deprecated Use {@link #shareContextOnSubscribe()}.
+     */
+    @Deprecated
     public final Publisher<T> subscribeShareContext() {
-        return new PublisherSubscribeShareContext<>(this);
+        return shareContextOnSubscribe();
     }
 
     /**

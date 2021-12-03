@@ -319,7 +319,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
     @Override
     public Single<C> selectConnection(Predicate<C> selector) {
-        return defer(() -> selectConnection0(selector).subscribeShareContext());
+        return defer(() -> selectConnection0(selector).shareContextOnSubscribe());
     }
 
     @Override

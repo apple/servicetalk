@@ -147,7 +147,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                                 IoThreadFactory.IoThread::currentThreadIsIoThread)));
             }
 
-            return resp.subscribeShareContext();
+            return resp.shareContextOnSubscribe();
         });
     }
 
