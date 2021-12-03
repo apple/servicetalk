@@ -26,14 +26,17 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 /**
  * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
  * The result is a {@link Duration} which may be null if no timeout is to be applied. If the function blocks then
  * {@link #requiredOffloads()} } should alter the execution strategy as required.
+ * @deprecated In areas which require {@link TimeoutFromRequest} use variants that accept
+ * {@link java.util.function.BiFunction}&lt;{@link HttpRequestMetaData}, {@link TimeSource}, {@link Duration}&gt;.
+ * E.g.:
+ * {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean)},
+ * {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean)} for filters.
  */
+@Deprecated
 public interface TimeoutFromRequest extends
             Function<HttpRequestMetaData, Duration>, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
@@ -42,24 +45,10 @@ public interface TimeoutFromRequest extends
      *
      * @param request the current request
      * @return The timeout or null for no timeout
-     * @deprecated Use {@link #apply(HttpRequestMetaData, TimeSource)}. This method will be removed in a future release.
      */
     @Override
-    @Deprecated
     @Nullable
-    default Duration apply(HttpRequestMetaData request) {
-        return apply(request, (unit) -> unit.convert(nanoTime(), NANOSECONDS));
-    }
-
-    /**
-     * Determine timeout duration, if present, from a request and/or apply default timeout durations.
-     *
-     * @param request the current request
-     * @param timeSource {@link TimeSource} for calculating the timeout
-     * @return The timeout or null for no timeout
-     */
-    @Nullable
-    Duration apply(HttpRequestMetaData request, TimeSource timeSource);
+    Duration apply(HttpRequestMetaData request);
 
     /**
      * {@inheritDoc}
@@ -80,13 +69,13 @@ public interface TimeoutFromRequest extends
      * @return {@link TimeoutFromRequest} instance which applies the provided function and requires the specified
      * strategy.
      */
-    static TimeoutFromRequest toTimeoutFromRequest(final BiFunction<HttpRequestMetaData, TimeSource, Duration> function,
+    static TimeoutFromRequest toTimeoutFromRequest(final Function<HttpRequestMetaData, Duration> function,
                                                    final HttpExecutionStrategy requiredStrategy) {
         return new TimeoutFromRequest() {
             @Nullable
             @Override
-            public Duration apply(final HttpRequestMetaData request, final TimeSource timeSource) {
-                return function.apply(request, timeSource);
+            public Duration apply(final HttpRequestMetaData request) {
+                return function.apply(request);
             }
 
             @Override

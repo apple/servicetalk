@@ -36,7 +36,6 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.http.utils.TimeoutFromRequest;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -53,6 +52,7 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -62,9 +62,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -168,8 +166,9 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         return interceptor;
     }
 
-    private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
-        return toTimeoutFromRequest((HttpRequestMetaData request, TimeSource timeSource) -> {
+    private static BiFunction<HttpRequestMetaData, TimeSource, Duration> grpcDetermineTimeout(
+            @Nullable Duration defaultTimeout) {
+        return (HttpRequestMetaData request, TimeSource timeSource) -> {
                 /*
                 * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
                 *
@@ -196,7 +195,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                 }
 
                 return timeout;
-            }, anyStrategy());
+            };
     }
 
     @Override
