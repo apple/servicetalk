@@ -43,7 +43,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -91,7 +91,7 @@ class SslAndNonSslConnectionsTest {
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
         final String serverHostHeader = hostHeader(serverHostAndPort(serverCtx));
         requestTarget = "http://" + serverHostHeader + "/";
@@ -109,7 +109,7 @@ class SslAndNonSslConnectionsTest {
         secureServerCtx = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         final String secureServerHostHeader = hostHeader(serverHostAndPort(secureServerCtx));
         secureRequestTarget = "https://" + secureServerHostHeader + "/";

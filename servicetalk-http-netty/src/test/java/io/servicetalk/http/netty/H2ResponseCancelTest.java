@@ -110,7 +110,7 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                             return delegate().newConnection(inetSocketAddress, observer);
                         });
                     }
-                }, ExecutionStrategy.anyStrategy()));
+                }, ExecutionStrategy.offloadNone()));
         setUp(CACHED, CACHED_SERVER);
     }
 

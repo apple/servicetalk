@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 final class ClientStrategyInfluencerChainBuilder {
 
@@ -67,9 +67,9 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
-        if (noOffloadsStrategy() == strategy) {
+        if (offloadNever() == strategy) {
             LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
-            strategy = anyStrategy();
+            strategy = offloadNone();
         }
         if (strategy.hasOffloads()) {
             clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
@@ -78,10 +78,10 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
-        if (noOffloadsStrategy() == filterOffloads) {
+        if (offloadNever() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
                     filterOffloads, connectionFactoryFilter);
-            filterOffloads = anyStrategy();
+            filterOffloads = offloadNone();
         }
         if (filterOffloads.hasOffloads()) {
             connFactoryChain = null != connFactoryChain ?
@@ -91,10 +91,10 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
-        if (noOffloadsStrategy() == filterOffloads) {
+        if (offloadNever() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
                     filterOffloads, connectionFilter);
-            filterOffloads = anyStrategy();
+            filterOffloads = offloadNone();
         }
         if (filterOffloads.hasOffloads()) {
             connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
@@ -115,12 +115,12 @@ final class ClientStrategyInfluencerChainBuilder {
 
     ExecutionStrategy buildForConnectionFactory() {
         return null == connFactoryChain ?
-                ExecutionStrategy.anyStrategy() :
+                ExecutionStrategy.offloadNone() :
                 defaultStrategy() != connFactoryChain.httpStrategy() ?
-                        ConnectExecutionStrategy.anyStrategy() != connFactoryChain.connectStrategy() ?
+                        ConnectExecutionStrategy.offloadNone() != connFactoryChain.connectStrategy() ?
                                 connFactoryChain : connFactoryChain.httpStrategy() :
-                        ConnectExecutionStrategy.anyStrategy() != connFactoryChain.connectStrategy() ?
-                                connFactoryChain.connectStrategy() : ExecutionStrategy.anyStrategy();
+                        ConnectExecutionStrategy.offloadNone() != connFactoryChain.connectStrategy() ?
+                                connFactoryChain.connectStrategy() : ExecutionStrategy.offloadNone();
     }
 
     ClientStrategyInfluencerChainBuilder copy() {

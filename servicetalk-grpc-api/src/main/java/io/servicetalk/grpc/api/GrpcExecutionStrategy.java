@@ -34,8 +34,8 @@ public interface GrpcExecutionStrategy extends HttpExecutionStrategy {
         GrpcExecutionStrategy result;
         if (httpExecutionStrategy instanceof GrpcExecutionStrategy) {
             result = (GrpcExecutionStrategy) httpExecutionStrategy;
-        } else if (HttpExecutionStrategies.noOffloadsStrategy() == httpExecutionStrategy) {
-            result = GrpcExecutionStrategies.noOffloadsStrategy();
+        } else if (HttpExecutionStrategies.offloadNever() == httpExecutionStrategy) {
+            result = GrpcExecutionStrategies.offloadNever();
         } else if (HttpExecutionStrategies.defaultStrategy() == httpExecutionStrategy) {
             result = GrpcExecutionStrategies.defaultStrategy();
         } else {

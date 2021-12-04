@@ -43,7 +43,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -69,9 +69,9 @@ class NettyHttpServerConnectionTest {
     private static Stream<Arguments> executionStrategies() {
         return Stream.of(
                 Arguments.of(defaultStrategy(), defaultStrategy()),
-                Arguments.of(noOffloadsStrategy(), defaultStrategy()),
-                Arguments.of(defaultStrategy(), noOffloadsStrategy()),
-                Arguments.of(noOffloadsStrategy(), noOffloadsStrategy()));
+                Arguments.of(offloadNever(), defaultStrategy()),
+                Arguments.of(defaultStrategy(), offloadNever()),
+                Arguments.of(offloadNever(), offloadNever()));
     }
 
     @AfterEach

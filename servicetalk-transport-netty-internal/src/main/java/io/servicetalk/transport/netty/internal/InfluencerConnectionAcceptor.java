@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.transport.api.ConnectExecutionStrategy.anyStrategy;
+import static io.servicetalk.transport.api.ConnectExecutionStrategy.offloadNone;
 
 /**
  * A contract that defines the connection acceptance criterion.
@@ -37,7 +37,7 @@ public interface InfluencerConnectionAcceptor extends ConnectionAcceptor,
     /**
      * ACCEPT all connections.
      */
-    InfluencerConnectionAcceptor ACCEPT_ALL = withStrategy((context) -> completed(), anyStrategy());
+    InfluencerConnectionAcceptor ACCEPT_ALL = withStrategy((context) -> completed(), offloadNone());
 
     @Override
     default Completable closeAsync() {
@@ -47,7 +47,7 @@ public interface InfluencerConnectionAcceptor extends ConnectionAcceptor,
     @Override
     default ConnectExecutionStrategy requiredOffloads() {
         // "safe" default -- implementations are expected to override
-        return ConnectExecutionStrategy.offload();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**

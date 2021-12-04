@@ -127,7 +127,7 @@ class AutoRetryTest {
 
         @Override
         public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.anyStrategy();
+            return ExecutionStrategy.offloadNone();
         }
     }
 

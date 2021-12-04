@@ -116,7 +116,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
@@ -403,7 +403,7 @@ class ProtocolCompatibilityTest {
                                                        final String compression)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_RESPONSE, ssl,
-                noOffloadsStrategy(), compression, null);
+                offloadNever(), compression, null);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testGrpcError(client, server, false, streaming, compression);
     }
@@ -457,7 +457,7 @@ class ProtocolCompatibilityTest {
         final boolean streaming,
         final String compression) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl,
-                noOffloadsStrategy(), compression, null);
+                offloadNever(), compression, null);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testGrpcError(client, server, true, streaming, compression);
     }
@@ -602,7 +602,7 @@ class ProtocolCompatibilityTest {
         Duration serverTimeout = clientInitiatedTimeout ? null : DEFAULT_DEADLINE;
         BlockingQueue<Throwable> serverErrorQueue = new ArrayBlockingQueue<>(16);
         final TestServerContext server = stServer ?
-                serviceTalkServer(ErrorMode.NONE, false, noOffloadsStrategy(), null, null, serverErrorQueue) :
+                serviceTalkServer(ErrorMode.NONE, false, offloadNever(), null, null, serverErrorQueue) :
                 grpcJavaServer(ErrorMode.NONE, false, null);
         try (ServerContext proxyCtx = buildTimeoutProxy(server.listenAddress(), serverTimeout, false)) {
             final CompatClient client = stClient ?
@@ -632,7 +632,7 @@ class ProtocolCompatibilityTest {
     private static ServerContext buildTimeoutProxy(SocketAddress serverAddress, @Nullable Duration forcedTimeout,
                                                    boolean ssl) throws Exception {
         HttpServerBuilder proxyBuilder = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .protocols(h2().build());
         if (ssl) {
             proxyBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
@@ -650,7 +650,7 @@ class ProtocolCompatibilityTest {
                                  boolean ssl) {
             SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                     HttpClients.forResolvedAddress((InetSocketAddress) serverAddress)
-                            .executionStrategy(noOffloadsStrategy())
+                            .executionStrategy(offloadNever())
                             .protocols(h2().build());
             if (ssl) {
                 builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)

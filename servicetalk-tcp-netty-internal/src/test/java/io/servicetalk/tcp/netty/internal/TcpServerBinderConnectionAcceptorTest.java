@@ -73,7 +73,7 @@ class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
             @Override
             InfluencerConnectionAcceptor getContextFilter(final Executor executor) {
                 return InfluencerConnectionAcceptor.withStrategy(ConnectionAcceptor.ACCEPT_ALL,
-                        ConnectExecutionStrategy.anyStrategy());
+                        ConnectExecutionStrategy.offloadNone());
             }
         };
 
@@ -93,7 +93,7 @@ class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
 
         InfluencerConnectionAcceptor getContextFilter(Executor executor) {
             return InfluencerConnectionAcceptor.withStrategy(context -> contextFilterFunction.apply(executor, context),
-                    offload ? ConnectExecutionStrategy.offload() : ConnectExecutionStrategy.anyStrategy());
+                    offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone());
         }
     }
 

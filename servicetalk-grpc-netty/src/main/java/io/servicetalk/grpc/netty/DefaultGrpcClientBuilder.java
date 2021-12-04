@@ -154,7 +154,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // no influence since we do not block
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
     }
 }

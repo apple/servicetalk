@@ -64,6 +64,6 @@ final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFacto
 
     @Override
     public HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 }

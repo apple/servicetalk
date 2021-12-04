@@ -71,10 +71,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.RequestPayloadSubscription;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseData;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseMeta;
@@ -91,8 +91,8 @@ class ClientEffectiveStrategyTest {
 
     private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
             null, // unspecified
-            noOffloadsStrategy(),
-            anyStrategy(),
+            offloadNever(),
+            offloadNone(),
             defaultStrategy(),
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
@@ -100,27 +100,27 @@ class ClientEffectiveStrategyTest {
 
     private static final HttpExecutionStrategy[] FILTER_STRATEGIES = {
             null, // absent
-            noOffloadsStrategy(), // treated as "anyStrategy"
-            anyStrategy(),
-            defaultStrategy(), // treated as "anyStrategy"
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] LB_STRATEGIES = {
             null, // absent
-            noOffloadsStrategy(), // treated as "anyStrategy"
-            anyStrategy(),
-            defaultStrategy(), // treated as "anyStrategy"
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] CF_STRATEGIES = {
             null, // absent
-            noOffloadsStrategy(), // treated as "anyStrategy"
-            anyStrategy(),
-            defaultStrategy(), // treated as "anyStrategy"
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
@@ -251,11 +251,13 @@ class ClientEffectiveStrategyTest {
         HttpExecutionStrategy computed = null == builderStrategy ?
                 defaultStrategy() : builderStrategy;
         // null means no filter, noOffloadsStrategy() is illegal and replaced.
-        computed = null == filterStrategy || anyStrategy() == filterStrategy || noOffloadsStrategy() == filterStrategy ?
+        computed = null == filterStrategy || offloadNone() == filterStrategy || offloadNever() == filterStrategy ?
                 computed : computed.merge(filterStrategy);
-        computed = null == lbStrategy || anyStrategy() == lbStrategy || noOffloadsStrategy() == lbStrategy ?
+        computed = null == lbStrategy || offloadNone() == lbStrategy ||
+                defaultStrategy() == lbStrategy || offloadNever() == lbStrategy ?
                 computed : computed.merge(lbStrategy);
-        computed = null == cfStrategy || anyStrategy() == cfStrategy || noOffloadsStrategy() == cfStrategy ?
+        computed = null == cfStrategy || offloadNone() == cfStrategy ||
+                defaultStrategy() == cfStrategy || offloadNever() == cfStrategy ?
                 computed : computed.merge(cfStrategy);
 
         return computed;
@@ -321,7 +323,7 @@ class ClientEffectiveStrategyTest {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
 
         @Override
@@ -380,7 +382,7 @@ class ClientEffectiveStrategyTest {
 
         @Override
         public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.anyStrategy();
+            return ExecutionStrategy.offloadNone();
         }
     }
 

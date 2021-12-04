@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -73,7 +73,7 @@ class ServerGracefulConnectionClosureHandlingTest {
         serverContext = forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
             .executor(SERVER_CTX.executor())
-            .executionStrategy(noOffloadsStrategy())
+            .executionStrategy(offloadNever())
             .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                 @Override
                 public Completable accept(final ConnectionContext context) {

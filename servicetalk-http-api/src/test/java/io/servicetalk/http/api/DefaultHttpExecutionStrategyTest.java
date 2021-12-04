@@ -39,7 +39,7 @@ import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
@@ -154,7 +154,7 @@ class DefaultHttpExecutionStrategyTest {
                 new TestHttpServiceContext(INSTANCE, respFactory,
                         // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
-                        new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
+                        new ExecutionContextToHttpExecutionContext(contextRule, offloadNever()));
         Callable<?> runHandle = () -> {
                 return analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                         .flatMapPublisher(StreamingHttpResponse::payloadBody)
@@ -346,7 +346,7 @@ class DefaultHttpExecutionStrategyTest {
         }
 
         void verifyThread(final boolean offloadedPath, final String errMsg) {
-            if (strategy == noOffloadsStrategy() && testThread != currentThread()) {
+            if (strategy == offloadNever() && testThread != currentThread()) {
                 addError(errMsg);
             } else if (offloadedPath && testThread == currentThread()) {
                 addError(errMsg);

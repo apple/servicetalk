@@ -95,18 +95,18 @@ public final class TestStreamingHttpClient {
                         .map(rc -> new ReservedStreamingHttpConnection() {
                             @Override
                             public ReservedHttpConnection asConnection() {
-                                return toReservedConnection(this, HttpExecutionStrategies.anyStrategy());
+                                return toReservedConnection(this, HttpExecutionStrategies.offloadNone());
                             }
 
                             @Override
                             public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
                                 return toReservedBlockingStreamingConnection(this,
-                                        HttpExecutionStrategies.anyStrategy());
+                                        HttpExecutionStrategies.offloadNone());
                             }
 
                             @Override
                             public ReservedBlockingHttpConnection asBlockingConnection() {
-                                return toReservedBlockingConnection(this, HttpExecutionStrategies.anyStrategy());
+                                return toReservedBlockingConnection(this, HttpExecutionStrategies.offloadNone());
                             }
 
                             @Override
@@ -199,17 +199,17 @@ public final class TestStreamingHttpClient {
 
             @Override
             public HttpClient asClient() {
-                return toClient(this, HttpExecutionStrategies.anyStrategy());
+                return toClient(this, HttpExecutionStrategies.offloadNone());
             }
 
             @Override
             public BlockingStreamingHttpClient asBlockingStreamingClient() {
-                return toBlockingStreamingClient(this, HttpExecutionStrategies.anyStrategy());
+                return toBlockingStreamingClient(this, HttpExecutionStrategies.offloadNone());
             }
 
             @Override
             public BlockingHttpClient asBlockingClient() {
-                return toBlockingClient(this, HttpExecutionStrategies.anyStrategy());
+                return toBlockingClient(this, HttpExecutionStrategies.offloadNone());
             }
         };
     }

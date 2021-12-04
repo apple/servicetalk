@@ -135,7 +135,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
                             concurrencyController, executionContext.executionStrategy(),
                             connectStrategy instanceof HttpExecutionStrategy ?
-                                    (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.anyStrategy());
+                                    (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.offloadNone());
                 });
     }
 
