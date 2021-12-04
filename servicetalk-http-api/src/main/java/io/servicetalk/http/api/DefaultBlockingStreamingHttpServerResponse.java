@@ -164,4 +164,30 @@ final class DefaultBlockingStreamingHttpServerResponse extends DefaultHttpRespon
     private static void throwMetaAlreadySent() {
         throw new IllegalStateException("Response meta-data is already sent");
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        final DefaultBlockingStreamingHttpServerResponse that = (DefaultBlockingStreamingHttpServerResponse) o;
+        return metaSent == that.metaSent && sendMeta.equals(that.sendMeta) && payloadWriter.equals(that.payloadWriter)
+                && allocator.equals(that.allocator);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + metaSent;
+        result = 31 * result + sendMeta.hashCode();
+        result = 31 * result + payloadWriter.hashCode();
+        result = 31 * result + allocator.hashCode();
+        return result;
+    }
 }
