@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.BlockingGrpcClient;
 import io.servicetalk.grpc.api.GrpcClient;
@@ -35,10 +36,10 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.TimeoutFromRequest;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -46,7 +47,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.util.Objects.requireNonNull;
@@ -56,8 +56,8 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     /**
      * A function which determines the timeout for a given request.
      */
-    private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR =
-            toTimeoutFromRequest(DeadlineUtils::readTimeoutHeader, HttpExecutionStrategies.anyStrategy());
+    private static final BiFunction<HttpRequestMetaData, TimeSource, Duration> GRPC_TIMEOUT_REQHDR =
+            (request, timeSource) -> DeadlineUtils.readTimeoutHeader(request);
 
     @Nullable
     private Duration defaultTimeout;

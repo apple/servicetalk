@@ -273,9 +273,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 final HttpRequestMetaData metaData) {
             return defer(() -> {
                 try {
-                    return selectClient(metaData).reserveConnection(metaData).subscribeShareContext();
+                    return selectClient(metaData).reserveConnection(metaData).shareContextOnSubscribe();
                 } catch (Throwable t) {
-                    return Single.<FilterableReservedStreamingHttpConnection>failed(t).subscribeShareContext();
+                    return Single.<FilterableReservedStreamingHttpConnection>failed(t).shareContextOnSubscribe();
                 }
             });
         }
@@ -284,9 +284,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
                 try {
-                    return selectClient(request).request(request).subscribeShareContext();
+                    return selectClient(request).request(request).shareContextOnSubscribe();
                 } catch (Throwable t) {
-                    return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
+                    return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
                 }
             });
         }

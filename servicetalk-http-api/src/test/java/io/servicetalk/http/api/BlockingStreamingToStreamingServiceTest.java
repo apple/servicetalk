@@ -468,7 +468,7 @@ class BlockingStreamingToStreamingServiceTest {
         Publisher<Object> resp;
         if (strategy.isMetadataReceiveOffloaded()) {
             final StreamingHttpRequest r = request;
-            resp = executor.submit(() -> service.apply(r).subscribeShareContext())
+            resp = executor.submit(() -> service.apply(r).shareContextOnSubscribe())
                     .onErrorReturn(cause -> errorHandler.apply(cause, executor))
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());

@@ -73,7 +73,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
             request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return client.request(request).subscribeShareContext();
+            return client.request(request).shareContextOnSubscribe();
         });
     }
 
@@ -110,7 +110,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     return Single.defer(() -> {
                         request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
                                 FilterableClientToClient.this.strategy);
-                        return rc.request(request).subscribeShareContext();
+                        return rc.request(request).shareContextOnSubscribe();
                     });
                 }
 
@@ -153,7 +153,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                     return rc.newRequest(method, requestTarget);
                 }
-            }).subscribeShareContext();
+            }).shareContextOnSubscribe();
         });
     }
 

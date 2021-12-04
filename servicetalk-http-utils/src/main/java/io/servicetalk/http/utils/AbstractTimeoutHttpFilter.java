@@ -15,7 +15,9 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -26,6 +28,7 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -33,12 +36,13 @@ import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     /**
      * Establishes the timeout for a given request.
      */
-    private final TimeoutFromRequest timeoutForRequest;
+    private final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest;
 
     /**
      * If {@code true} then timeout is for full request/response transaction otherwise only the response metadata must
@@ -54,12 +58,29 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
     private final Executor timeoutExecutor;
 
     AbstractTimeoutHttpFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
+        requireNonNull(timeoutForRequest, "timeoutForRequest");
+        this.timeoutForRequest = (request, timeSource) -> timeoutForRequest.apply(request);
+        this.fullRequestResponse = fullRequestResponse;
+        this.timeoutExecutor = null;
+    }
+
+    AbstractTimeoutHttpFilter(final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+                              final boolean fullRequestResponse) {
         this.timeoutForRequest = requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.fullRequestResponse = fullRequestResponse;
         this.timeoutExecutor = null;
     }
 
     AbstractTimeoutHttpFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse,
+                              final Executor timeoutExecutor) {
+        requireNonNull(timeoutForRequest, "timeoutForRequest");
+        this.timeoutForRequest = (request, timeSource) -> timeoutForRequest.apply(request);
+        this.fullRequestResponse = fullRequestResponse;
+        this.timeoutExecutor = requireNonNull(timeoutExecutor, "timeoutExecutor");
+    }
+
+    AbstractTimeoutHttpFilter(final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+                              final boolean fullRequestResponse,
                               final Executor timeoutExecutor) {
         this.timeoutForRequest = requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.fullRequestResponse = fullRequestResponse;
@@ -68,7 +89,7 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
-        return timeoutForRequest.requiredOffloads();
+        return HttpExecutionStrategies.anyStrategy();
     }
 
     /**
@@ -88,32 +109,31 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
             @Nullable final Executor contextExecutor) {
 
         // timeoutExecutor → context executor → global default executor
-        final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
+        final Executor effectiveExecutor = null != contextExecutor ? contextExecutor : Executors.global();
+        final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : effectiveExecutor;
 
         return Single.defer(() -> {
-            final Duration timeout = timeoutForRequest.apply(request);
+            final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                final Single<StreamingHttpResponse> timeoutResponse = useForTimeout == null ?
-                        response.timeout(timeout) : response.timeout(timeout, useForTimeout);
+                final Single<StreamingHttpResponse> timeoutResponse = response.timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
-                    final long deadline = System.nanoTime() + timeout.toNanos();
+                    final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
-                        final Duration remaining = ofNanos(deadline - System.nanoTime());
-                        return (useForTimeout == null ?
-                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, useForTimeout))
+                        final Duration remaining = ofNanos(deadline - useForTimeout.currentTime(NANOSECONDS));
+                        return (body.timeoutTerminal(remaining, useForTimeout))
                                 .onErrorMap(TimeoutException.class, t ->
                                         new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
                                                 "ms", t))
-                                .subscribeShareContext();
+                                .shareContextOnSubscribe();
                     })));
                 } else {
                     response = timeoutResponse;
                 }
             }
 
-            return response.subscribeShareContext();
+            return response.shareContextOnSubscribe();
         });
     }
 
@@ -133,10 +153,11 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
     }
 
     /**
-     * {@link TimeoutFromRequest} implementation which returns the provided default duration as the timeout duration to
+     * {@link BiFunction}&lt;{@link HttpRequestMetaData}, {@link TimeSource}, {@link Duration}&gt;
+     * implementation which returns the provided default duration as the timeout duration to
      * be used for any request.
      */
-    static final class FixedDuration implements TimeoutFromRequest {
+    static final class FixedDuration implements BiFunction<HttpRequestMetaData, TimeSource, Duration> {
 
         private final Duration duration;
 
@@ -145,14 +166,8 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
         }
 
         @Override
-        public Duration apply(final HttpRequestMetaData request) {
+        public Duration apply(final HttpRequestMetaData request, final TimeSource timeSource) {
             return duration;
-        }
-
-        @Override
-        public HttpExecutionStrategy requiredOffloads() {
-            // No influence since we do not block.
-            return HttpExecutionStrategies.anyStrategy();
         }
     }
 }

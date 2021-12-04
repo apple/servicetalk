@@ -117,7 +117,7 @@ public final class ContentEncodingHttpRequesterFilter implements
 
                 return response.transformPayloadBody(pub -> decoder.streamingDecoder().deserialize(pub,
                         delegate.executionContext().bufferAllocator()));
-            }) : respSingle).subscribeShareContext();
+            }) : respSingle).shareContextOnSubscribe();
         });
     }
 }

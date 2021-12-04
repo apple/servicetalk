@@ -15,10 +15,12 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -28,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
 
 /**
  * A filter to enable timeouts for HTTP requests on the client-side.
@@ -93,7 +96,9 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
      * other sources. If no timeout is to be applied then the function should return {@code null}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
+     * @deprecated Use {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean)}.
      */
+    @Deprecated
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
         super(timeoutForRequest, fullRequestResponse);
     }
@@ -105,9 +110,39 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
      * other sources. If no timeout is to be applied then the function should return {@code null}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
+     */
+    public TimeoutHttpRequesterFilter(final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+                                      final boolean fullRequestResponse) {
+        super(timeoutForRequest, fullRequestResponse);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     * @deprecated Use {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean, Executor)}.
+     */
+    @Deprecated
+    public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
+                                      final boolean fullRequestResponse,
+                                      final Executor timeoutExecutor) {
+        super(timeoutForRequest, fullRequestResponse, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
+    public TimeoutHttpRequesterFilter(final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
                                       final boolean fullRequestResponse,
                                       final Executor timeoutExecutor) {
         super(timeoutForRequest, fullRequestResponse, timeoutExecutor);

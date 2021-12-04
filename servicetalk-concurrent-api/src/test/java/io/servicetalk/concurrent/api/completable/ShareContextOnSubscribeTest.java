@@ -31,14 +31,14 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class SubscribeShareContextTest {
+class ShareContextOnSubscribeTest {
 
     static final ContextMap.Key<String> KEY = newKey("share-context-key", String.class);
 
     @Test
     void contextIsShared() throws Exception {
         AsyncContext.put(KEY, "v1");
-        awaitTermination(completed().beforeOnComplete(() -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
+        awaitTermination(completed().beforeOnComplete(() -> AsyncContext.put(KEY, "v2")).shareContextOnSubscribe());
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -46,7 +46,7 @@ class SubscribeShareContextTest {
     void contextIsNotSharedIfNotLastOperator() throws Exception {
         // When we support this feature, then we can change this test
         AsyncContext.put(KEY, "v1");
-        awaitTermination(completed().beforeOnComplete(() -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
+        awaitTermination(completed().beforeOnComplete(() -> AsyncContext.put(KEY, "v2")).shareContextOnSubscribe()
                 .beforeOnComplete(() -> { }));
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }

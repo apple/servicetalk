@@ -31,7 +31,7 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class SubscribeShareContextTest {
+class ShareContextOnSubscribeTest {
 
     static final ContextMap.Key<String> KEY = newKey("share-context-key", String.class);
 
@@ -40,7 +40,7 @@ class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
+        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).shareContextOnSubscribe());
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -50,7 +50,7 @@ class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
+        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).shareContextOnSubscribe()
                 .beforeOnNext(__ -> { }));
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }

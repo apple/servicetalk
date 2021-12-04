@@ -674,7 +674,7 @@ class ProtocolCompatibilityTest {
                 // a timeout on the client.
                 return client.request(request).map(resp ->
                                 resp.transformMessageBody(pub -> pub.ignoreElements().concat(never())))
-                        .subscribeShareContext();
+                        .shareContextOnSubscribe();
             });
         }
 
