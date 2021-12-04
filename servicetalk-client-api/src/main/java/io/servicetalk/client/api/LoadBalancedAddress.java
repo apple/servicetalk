@@ -23,9 +23,12 @@ import io.servicetalk.concurrent.api.Single;
  * <p>
  * Note: {@link ScoreSupplier} contract provides this address' score, where 0.0 is the lowest score and 1.0 is the
  * highest. {@link LoadBalancer}s prefer addresses with a higher score.
+ * Note: Weight provides a way to influence the selection of the connection with external factors.
+ * With a range of 0.1 to 1.0 influencing the connection score for selectivity.
  * @param <C> type of {@link LoadBalancedConnection}.
  */
-public interface LoadBalancedAddress<C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {
+public interface LoadBalancedAddress<C extends LoadBalancedConnection>
+        extends ListenableAsyncCloseable, ScoreSupplier {
 
     /**
      * Creates and asynchronously returns a connection for this address.
@@ -33,4 +36,15 @@ public interface LoadBalancedAddress<C extends LoadBalancedConnection> extends L
      * @return {@link Single} that emits the created {@link LoadBalancedConnection}.
      */
     Single<C> newConnection();
+
+    /**
+     * Enables addresses scoring to be influenced by a weight factor.
+     * Sets the weight of a resource and returns the previous one.
+     *
+     * @param weight The new weight.
+     * @return the previous associated weight.
+     */
+    default float weight(float weight) {
+        return 1f;
+    }
 }
