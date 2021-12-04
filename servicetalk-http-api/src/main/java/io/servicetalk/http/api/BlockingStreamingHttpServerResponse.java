@@ -16,41 +16,16 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.context.api.ContextMap;
 
 import java.io.OutputStream;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * The equivalent of {@link HttpResponse} but provides an ability to write the payload to an {@link HttpPayloadWriter}.
  *
  * @see BlockingStreamingHttpService
  */
-public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpResponseMetaData {
-
-    private final HttpPayloadWriter<Buffer> payloadWriter;
-    private final BufferAllocator allocator;
-
-    /**
-     * Creates a new instance.
-     *
-     * @param status a status for the response
-     * @param version a default version for the response
-     * @param headers an {@link HttpHeaders} object for headers
-     * @param allocator a {@link BufferAllocator} to use for {@link #sendMetaData(HttpStreamingSerializer)}.
-     */
-    BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
-                                        final HttpProtocolVersion version,
-                                        final HttpHeaders headers,
-                                        final HttpPayloadWriter<Buffer> payloadWriter,
-                                        final BufferAllocator allocator) {
-        super(status, version, headers, null);
-        this.payloadWriter = requireNonNull(payloadWriter);
-        this.allocator = requireNonNull(allocator);
-    }
-
+public interface BlockingStreamingHttpServerResponse extends HttpResponseMetaData {
     /**
      * Sends the {@link HttpResponseMetaData} and returns an {@link HttpPayloadWriter} to continue writing the payload
      * body.
@@ -60,7 +35,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @return {@link HttpPayloadWriter} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
      */
-    public abstract HttpPayloadWriter<Buffer> sendMetaData();
+    HttpPayloadWriter<Buffer> sendMetaData();
 
     /**
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} of type {@link T}
@@ -74,11 +49,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @deprecated Use {@link #sendMetaData(HttpStreamingSerializer)}.
      */
     @Deprecated
-    public final <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {
-        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
-        sendMetaData();
-        return payloadWriter;
-    }
+    <T> HttpPayloadWriter<T> sendMetaData(HttpSerializer<T> serializer);
 
     /**
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} of type {@link T}
@@ -91,11 +62,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @return {@link HttpPayloadWriter} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
      */
-    public final <T> HttpPayloadWriter<T> sendMetaData(final HttpStreamingSerializer<T> serializer) {
-        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
-        sendMetaData();
-        return payloadWriter;
-    }
+    <T> HttpPayloadWriter<T> sendMetaData(HttpStreamingSerializer<T> serializer);
 
     /**
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link OutputStream} to continue writing a
@@ -106,77 +73,62 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @return {@link HttpOutputStream} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
      */
-    public final HttpOutputStream sendMetaDataOutputStream() {
-        return new HttpPayloadWriterToHttpOutputStream(sendMetaData(), allocator);
-    }
+    HttpOutputStream sendMetaDataOutputStream();
 
     @Override
-    public BlockingStreamingHttpServerResponse version(HttpProtocolVersion version) {
-        super.version(version);
+    BlockingStreamingHttpServerResponse version(HttpProtocolVersion version);
+
+    @Override
+    BlockingStreamingHttpServerResponse status(HttpResponseStatus status);
+
+    @Override
+    default BlockingStreamingHttpServerResponse addHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addHeader(name, value);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse status(HttpResponseStatus status) {
-        super.status(status);
+    default BlockingStreamingHttpServerResponse addHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.addHeaders(headers);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addHeader(final CharSequence name, final CharSequence value) {
-        super.addHeader(name, value);
+    default BlockingStreamingHttpServerResponse setHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.setHeader(name, value);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addHeaders(final HttpHeaders headers) {
-        super.addHeaders(headers);
+    default BlockingStreamingHttpServerResponse setHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.setHeaders(headers);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse setHeader(final CharSequence name, final CharSequence value) {
-        super.setHeader(name, value);
+    default BlockingStreamingHttpServerResponse addCookie(final HttpCookiePair cookie) {
+        HttpResponseMetaData.super.addCookie(cookie);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse setHeaders(final HttpHeaders headers) {
-        super.setHeaders(headers);
+    default BlockingStreamingHttpServerResponse addCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addCookie(name, value);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addCookie(final HttpCookiePair cookie) {
-        super.addCookie(cookie);
+    default BlockingStreamingHttpServerResponse addSetCookie(final HttpSetCookie cookie) {
+        HttpResponseMetaData.super.addSetCookie(cookie);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addCookie(final CharSequence name, final CharSequence value) {
-        super.addCookie(name, value);
+    default BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addSetCookie(name, value);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addSetCookie(final HttpSetCookie cookie) {
-        super.addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
-        super.addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public BlockingStreamingHttpServerResponse context(final ContextMap context) {
-        super.context(context);
-        return this;
-    }
-
-    final HttpPayloadWriter<Buffer> payloadWriter() {
-        return payloadWriter;
-    }
+    BlockingStreamingHttpServerResponse context(ContextMap context);
 }

@@ -22,11 +22,17 @@ import io.servicetalk.context.api.ContextMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
-final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreamingHttpServerResponse {
+import static java.util.Objects.requireNonNull;
+
+final class DefaultBlockingStreamingHttpServerResponse extends DefaultHttpResponseMetaData
+        implements BlockingStreamingHttpServerResponse {
+
     private static final AtomicIntegerFieldUpdater<DefaultBlockingStreamingHttpServerResponse> metaSentUpdater =
             AtomicIntegerFieldUpdater.newUpdater(DefaultBlockingStreamingHttpServerResponse.class, "metaSent");
     private volatile int metaSent;
     private final Consumer<DefaultHttpResponseMetaData> sendMeta;
+    private final HttpPayloadWriter<Buffer> payloadWriter;
+    private final BufferAllocator allocator;
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                                final HttpProtocolVersion version,
@@ -34,74 +40,87 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
                                                final HttpPayloadWriter<Buffer> payloadWriter,
                                                final BufferAllocator allocator,
                                                final Consumer<DefaultHttpResponseMetaData> sendMeta) {
-        super(status, version, headers, payloadWriter, allocator);
+        super(status, version, headers, null);
+        this.payloadWriter = requireNonNull(payloadWriter);
+        this.allocator = requireNonNull(allocator);
         this.sendMeta = sendMeta;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse version(final HttpProtocolVersion version) {
         checkSent();
-        return super.version(version);
+        super.version(version);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse status(final HttpResponseStatus status) {
         checkSent();
-        return super.status(status);
+        super.status(status);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addHeader(final CharSequence name, final CharSequence value) {
         checkSent();
-        return super.addHeader(name, value);
+        super.addHeader(name, value);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addHeaders(final HttpHeaders headers) {
         checkSent();
-        return super.addHeaders(headers);
+        super.addHeaders(headers);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse setHeader(final CharSequence name, final CharSequence value) {
         checkSent();
-        return super.setHeader(name, value);
+        super.setHeader(name, value);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse setHeaders(final HttpHeaders headers) {
         checkSent();
-        return super.setHeaders(headers);
+        super.setHeaders(headers);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addCookie(final HttpCookiePair cookie) {
         checkSent();
-        return super.addCookie(cookie);
+        super.addCookie(cookie);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addCookie(final CharSequence name, final CharSequence value) {
         checkSent();
-        return super.addCookie(name, value);
+        super.addCookie(name, value);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addSetCookie(final HttpSetCookie cookie) {
         checkSent();
-        return super.addSetCookie(cookie);
+        super.addSetCookie(cookie);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         checkSent();
-        return super.addSetCookie(name, value);
+        super.addSetCookie(name, value);
+        return this;
     }
 
     @Override
     public BlockingStreamingHttpServerResponse context(final ContextMap context) {
         checkSent();
-        return super.context(context);
+        super.context(context);
+        return this;
     }
 
     private void checkSent() {
@@ -116,7 +135,26 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
             throwMetaAlreadySent();
         }
         sendMeta.accept(this);
-        return payloadWriter();
+        return payloadWriter;
+    }
+
+    @Override
+    public <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {
+        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
+        sendMetaData();
+        return payloadWriter;
+    }
+
+    @Override
+    public <T> HttpPayloadWriter<T> sendMetaData(final HttpStreamingSerializer<T> serializer) {
+        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
+        sendMetaData();
+        return payloadWriter;
+    }
+
+    @Override
+    public HttpOutputStream sendMetaDataOutputStream() {
+        return new HttpPayloadWriterToHttpOutputStream(sendMetaData(), allocator);
     }
 
     boolean markMetaSent() {
