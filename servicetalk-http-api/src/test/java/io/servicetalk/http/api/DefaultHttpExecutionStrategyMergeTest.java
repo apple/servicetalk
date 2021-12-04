@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -92,8 +92,8 @@ class DefaultHttpExecutionStrategyMergeTest {
     @Test
     void mergeWithNoOffloads() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
-        HttpExecutionStrategy merged = strategy.merge(noOffloadsStrategy());
-        assertThat("Unexpected merge result.", merged, is(sameInstance(noOffloadsStrategy())));
+        HttpExecutionStrategy merged = strategy.merge(offloadNever());
+        assertThat("Unexpected merge result.", merged, is(sameInstance(offloadNever())));
     }
 
     @Test

@@ -56,7 +56,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
@@ -166,7 +166,7 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (disableOffloading) {
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         try (ServerContext serverCtx = serverBuilder.listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     throw DELIBERATE_EXCEPTION;
@@ -182,7 +182,7 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> disableOffloading(
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder, boolean disableOffloading) {
         if (disableOffloading) {
-            clientBuilder.executionStrategy(noOffloadsStrategy());
+            clientBuilder.executionStrategy(offloadNever());
         }
         return clientBuilder;
     }

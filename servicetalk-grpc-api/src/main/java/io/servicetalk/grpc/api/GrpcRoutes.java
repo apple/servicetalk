@@ -35,7 +35,7 @@ import java.util.TreeSet;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getAndValidateRouteExecutionStrategyAnnotationIfPresent;
 import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
@@ -48,7 +48,7 @@ import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
 public abstract class GrpcRoutes<Service extends GrpcService> {
 
     private static final GrpcExecutionStrategy NULL = new DefaultGrpcExecutionStrategy(
-            HttpExecutionStrategies.noOffloadsStrategy());
+            HttpExecutionStrategies.offloadNever());
 
     private final GrpcRouter.Builder routeBuilder;
     private final Set<String> errors;
@@ -188,7 +188,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             return saved;
         }
         return getAndValidateRouteExecutionStrategyAnnotationIfPresent(method, clazz, strategyFactory, errors,
-                noOffloadsStrategy());
+                offloadNever());
     }
 
     /**

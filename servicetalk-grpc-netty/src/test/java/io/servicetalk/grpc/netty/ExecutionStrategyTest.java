@@ -47,7 +47,7 @@ import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE;
@@ -123,7 +123,7 @@ class ExecutionStrategyTest {
         NO_OFFLOADS {
             @Override
             void configureBuilderExecutionStrategy(GrpcServerBuilder builder) {
-                builder.initializeHttp(b -> b.executionStrategy(noOffloadsStrategy()));
+                builder.initializeHttp(b -> b.executionStrategy(offloadNever()));
             }
         };
 
@@ -159,10 +159,10 @@ class ExecutionStrategyTest {
             @Override
             ServiceFactory getServiceFactory() {
                 return new ServiceFactory.Builder(STRATEGY_FACTORY)
-                        .test(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testBiDiStream(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testResponseStream(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testRequestStream(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .test(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testBiDiStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testResponseStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testRequestStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .build();
             }
         },
@@ -194,10 +194,10 @@ class ExecutionStrategyTest {
             @Override
             ServiceFactory getServiceFactory() {
                 return new ServiceFactory.Builder(STRATEGY_FACTORY)
-                        .testBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testBiDiStreamBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testResponseStreamBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testRequestStreamBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testBiDiStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testResponseStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testRequestStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .build();
             }
         };
@@ -303,7 +303,7 @@ class ExecutionStrategyTest {
         filterConfiguration.appendServiceFilter(serviceFactory);
         serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()))
+                .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.offloadNever()))
                 .buildBlocking(new ClientFactory());
     }
 

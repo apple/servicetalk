@@ -84,8 +84,25 @@ public final class HttpExecutionStrategies {
      * </pre>
      *
      * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
+     * @deprecated Replaced with the more descriptive {@link #offloadNever()}.
      */
+    @Deprecated
     public static HttpExecutionStrategy noOffloadsStrategy() {
+        return NO_OFFLOADS_NO_EXECUTOR;
+    }
+
+    /**
+     * A {@link HttpExecutionStrategy} that disables all offloads on the request-response path.
+     *
+     * <p>The default offloading executor will still be used inside {@link ExecutionContext} and for all places where
+     * it is referenced. To ensure that the default offloading executor is never used configure it with
+     * {@link Executors#immediate()} executor explicitly: <pre>
+     *     HttpExecutionStrategies.customStrategyBuilder().offloadNone().executor(immediate()).build()
+     * </pre>
+     *
+     * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
+     */
+    public static HttpExecutionStrategy offloadNever() {
         return NO_OFFLOADS_NO_EXECUTOR;
     }
 

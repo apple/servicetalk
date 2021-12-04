@@ -57,7 +57,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.RequestPayloadSubscription;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseData;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseMeta;
@@ -451,7 +451,7 @@ class ClientEffectiveStrategyTest {
 
         void initStateHolderUserStrategyNoOffloadsNoExecutor(boolean addFilter, boolean addLoadBalancer,
                                                              boolean addConnectionFilter) {
-            invokingThreadsRecorder = userStrategy(noOffloadsStrategy());
+            invokingThreadsRecorder = userStrategy(offloadNever());
             initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 

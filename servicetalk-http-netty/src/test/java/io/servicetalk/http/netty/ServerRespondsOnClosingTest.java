@@ -42,7 +42,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -73,7 +73,7 @@ class ServerRespondsOnClosingTest {
     ServerRespondsOnClosingTest() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
-                fromNettyEventLoop(channel.eventLoop()), immediate(), noOffloadsStrategy());
+                fromNettyEventLoop(channel.eventLoop()), immediate(), offloadNever());
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
         httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();

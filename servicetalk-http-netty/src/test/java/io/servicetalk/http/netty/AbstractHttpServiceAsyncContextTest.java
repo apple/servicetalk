@@ -49,7 +49,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
@@ -108,7 +108,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                             forResolvedAddress(serverHostAndPort(ctx))
                                     .protocols(h1().maxPipelinedRequests(numRequests).build());
                     try (StreamingHttpClient client = (!useImmediate ? clientBuilder :
-                            clientBuilder.executionStrategy(noOffloadsStrategy())).buildStreaming()) {
+                            clientBuilder.executionStrategy(offloadNever())).buildStreaming()) {
                         try (StreamingHttpConnection connection = client.reserveConnection(client.get("/"))
                                 .toFuture().get()) {
                             barrier.await();

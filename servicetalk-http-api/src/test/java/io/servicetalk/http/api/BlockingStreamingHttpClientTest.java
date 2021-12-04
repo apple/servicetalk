@@ -28,7 +28,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toClient;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static java.util.Objects.requireNonNull;
 
 public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
@@ -105,12 +105,12 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return request(noOffloadsStrategy(), request);
+            return request(offloadNever(), request);
         }
 
         @Override
         public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-            return reserveConnection(noOffloadsStrategy(), metaData);
+            return reserveConnection(offloadNever(), metaData);
         }
 
         @Override
