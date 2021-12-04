@@ -118,7 +118,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                         defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
                                 executionContext.bufferAllocator()),
                         executionContext, partitionMapFactory);
-        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy(),
+        return new FilterableClientToClient(partitionedClient,
                 buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
     }
 

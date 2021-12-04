@@ -324,7 +324,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
+                    currClientFilterFactory.create(lbClient) : lbClient,
                     ctx.builder.strategyComputation.buildForClient(executionStrategy));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();

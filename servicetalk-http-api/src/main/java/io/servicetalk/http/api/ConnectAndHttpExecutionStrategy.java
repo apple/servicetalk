@@ -145,4 +145,21 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
     public ConnectExecutionStrategy connectStrategy() {
         return connectStrategy;
     }
+
+    /**
+     * Converts the provided execution strategy to a {@link ConnectExecutionStrategy}. If the provided strategy is
+     * already {@link ConnectExecutionStrategy} it is returned unchanged. For other strategies, if the strategy
+     * {@link ExecutionStrategy#hasOffloads()} then {@link ConnectExecutionStrategy#offload()} is returned otherwise
+     * {@link ConnectExecutionStrategy#anyStrategy()} is returned.
+     *
+     * @param executionStrategy The {@link ExecutionStrategy} to convert
+     * @return converted {@link ConnectExecutionStrategy}.
+     */
+    public static ConnectAndHttpExecutionStrategy from(ExecutionStrategy executionStrategy) {
+        return executionStrategy instanceof ConnectAndHttpExecutionStrategy ?
+                (ConnectAndHttpExecutionStrategy) executionStrategy :
+                    new ConnectAndHttpExecutionStrategy(
+                            ConnectExecutionStrategy.anyStrategy(), HttpExecutionStrategies.defaultStrategy())
+                            .merge(executionStrategy);
+    }
 }
