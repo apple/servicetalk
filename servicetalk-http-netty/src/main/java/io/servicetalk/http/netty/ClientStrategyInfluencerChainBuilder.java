@@ -67,7 +67,7 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
-        if (defaultStrategy() == strategy || noOffloadsStrategy() == strategy) {
+        if (noOffloadsStrategy() == strategy) {
             LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
             strategy = anyStrategy();
         }
@@ -78,12 +78,12 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
-        if (defaultStrategy() == filterOffloads || noOffloadsStrategy() == filterOffloads) {
+        if (noOffloadsStrategy() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
                     filterOffloads, connectionFactoryFilter);
             filterOffloads = anyStrategy();
         }
-        if (defaultStrategy() != filterOffloads && filterOffloads.hasOffloads()) {
+        if (filterOffloads.hasOffloads()) {
             connFactoryChain = null != connFactoryChain ?
                     connFactoryChain.merge(filterOffloads) : ConnectAndHttpExecutionStrategy.from(filterOffloads);
         }
@@ -91,7 +91,7 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
-        if (defaultStrategy() == filterOffloads || noOffloadsStrategy() == filterOffloads) {
+        if (noOffloadsStrategy() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
                     filterOffloads, connectionFilter);
             filterOffloads = anyStrategy();

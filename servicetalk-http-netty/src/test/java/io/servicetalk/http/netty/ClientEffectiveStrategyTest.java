@@ -250,15 +250,12 @@ class ClientEffectiveStrategyTest {
         // null means assume default strategy which is, unsurprisingly, defaultStrategy()
         HttpExecutionStrategy computed = null == builderStrategy ?
                 defaultStrategy() : builderStrategy;
-        // null mean no filter
-        computed = null == filterStrategy || anyStrategy() == filterStrategy ||
-                defaultStrategy() == filterStrategy || noOffloadsStrategy() == filterStrategy ?
+        // null means no filter, noOffloadsStrategy() is illegal and replaced.
+        computed = null == filterStrategy || anyStrategy() == filterStrategy || noOffloadsStrategy() == filterStrategy ?
                 computed : computed.merge(filterStrategy);
-        computed = null == lbStrategy || anyStrategy() == lbStrategy ||
-                defaultStrategy() == lbStrategy || noOffloadsStrategy() == lbStrategy ?
+        computed = null == lbStrategy || anyStrategy() == lbStrategy || noOffloadsStrategy() == lbStrategy ?
                 computed : computed.merge(lbStrategy);
-        computed = null == cfStrategy || anyStrategy() == cfStrategy ||
-                defaultStrategy() == cfStrategy || noOffloadsStrategy() == cfStrategy ?
+        computed = null == cfStrategy || anyStrategy() == cfStrategy || noOffloadsStrategy() == cfStrategy ?
                 computed : computed.merge(cfStrategy);
 
         return computed;
