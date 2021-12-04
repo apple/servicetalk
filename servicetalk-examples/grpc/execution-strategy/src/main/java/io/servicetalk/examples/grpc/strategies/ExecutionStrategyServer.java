@@ -35,7 +35,7 @@ import io.grpc.examples.strategies.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 
 /**
  * Extends the async "Hello World" example to demonstrate support for alternative execution strategies and executors.
@@ -67,7 +67,7 @@ public final class ExecutionStrategyServer {
             // -> no offloading, route executed on IoExecutor
             System.out.printf("\n%d : no offloading server, async route\n", port);
             ServerContext asyncServer = GrpcServers.forPort(port++)
-                    .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
+                    .initializeHttp(init -> init.executionStrategy(offloadNever()))
                     .listenAndAwait((GreeterService)
                             (ctx, request) -> getReplySingle(request, "no offloading server, async route"));
             closeEverything.prepend(asyncServer);
@@ -76,7 +76,7 @@ public final class ExecutionStrategyServer {
             // -> no offloading, route executed on IoExecutor
             System.out.printf("\n%d : no offloading server, blocking route\n", port);
             ServerContext blockingServer = GrpcServers.forPort(port++)
-                    .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
+                    .initializeHttp(init -> init.executionStrategy(offloadNever()))
                     .listenAndAwait((Greeter.BlockingGreeterService)
                             (ctx, request) -> getReply(request, "no offloading server, blocking route"));
             closeEverything.prepend(blockingServer);
@@ -85,7 +85,7 @@ public final class ExecutionStrategyServer {
             // -> route offloaded to global executor
             System.out.printf("\n%d : no offloading server, default offloading for the route\n", port);
             ServerContext noOffloadsServerRouteOffloads = GrpcServers.forPort(port++)
-                    .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
+                    .initializeHttp(init -> init.executionStrategy(offloadNever()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder()
                             .sayHello(defaultStrategy(),
                                     (ctx, request) -> getReplySingle(request,
@@ -97,7 +97,7 @@ public final class ExecutionStrategyServer {
             // -> route offloaded to global executor
             System.out.printf("\n%d: no offloading server, custom offloading for the route\n", port);
             ServerContext noOffloadsServerRouteOffloadCustom = GrpcServers.forPort(port++)
-                    .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
+                    .initializeHttp(init -> init.executionStrategy(offloadNever()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(CUSTOM_STRATEGY,
                                     (ctx, request) -> getReplySingle(request,
                                             "no offloading server, custom offloading for the route"))
@@ -118,7 +118,7 @@ public final class ExecutionStrategyServer {
             // -> route offloaded to global executor
             System.out.printf("\n%d : default server, no offloading route\n", port);
             ServerContext noOffloadsRoute = GrpcServers.forPort(port++)
-                    .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(noOffloadsStrategy(),
+                    .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(offloadNever(),
                                     (ctx, request) -> getReplySingle(request, "default server, no offloading route"))
                             .build());
             closeEverything.prepend(noOffloadsRoute);
@@ -136,9 +136,9 @@ public final class ExecutionStrategyServer {
             // -> no offloading, route executed on IoExecutor
             System.out.printf("\n%d : no offloading server, no offloading route\n", port);
             ServerContext noOffloadsServerRoute = GrpcServers.forPort(port++)
-                    .initializeHttp(init -> init.executionStrategy(noOffloadsStrategy()))
+                    .initializeHttp(init -> init.executionStrategy(offloadNever()))
                     .listenAndAwait(new Greeter.ServiceFactory.Builder()
-                            .sayHello(noOffloadsStrategy(),
+                            .sayHello(offloadNever(),
                                     (ctx, request) ->
                                             getReplySingle(request, "no offloading server, no offloading route"))
                             .build());

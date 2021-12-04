@@ -89,7 +89,7 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     /**

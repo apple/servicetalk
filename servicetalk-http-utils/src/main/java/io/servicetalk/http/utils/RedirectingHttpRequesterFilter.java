@@ -138,6 +138,6 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 }

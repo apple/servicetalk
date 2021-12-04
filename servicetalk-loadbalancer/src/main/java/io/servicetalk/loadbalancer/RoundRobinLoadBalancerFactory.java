@@ -97,7 +97,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     @Override
     public ExecutionStrategy requiredOffloads() {
         // We do not block
-        return ExecutionStrategy.anyStrategy();
+        return ExecutionStrategy.offloadNone();
     }
 
     /**

@@ -106,7 +106,7 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                     };
                 });
             }
-        }, ExecutionStrategy.anyStrategy()));
+        }, ExecutionStrategy.offloadNone()));
         setUp(offloading ? CACHED : IMMEDIATE, offloading ? CACHED_SERVER : IMMEDIATE);
     }
 

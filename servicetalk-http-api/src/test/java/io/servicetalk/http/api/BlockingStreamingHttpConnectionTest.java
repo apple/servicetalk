@@ -28,7 +28,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toConnection;
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -117,17 +117,17 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
         @Override
         public HttpConnection asConnection() {
-            return toConnection(this, anyStrategy());
+            return toConnection(this, offloadNone());
         }
 
         @Override
         public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return toBlockingStreamingConnection(this, anyStrategy());
+            return toBlockingStreamingConnection(this, offloadNone());
         }
 
         @Override
         public BlockingHttpConnection asBlockingConnection() {
-            return toBlockingConnection(this, anyStrategy());
+            return toBlockingConnection(this, offloadNone());
         }
     }
 }

@@ -31,7 +31,7 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.AbstractResourceTest.assumeSafeToDisableOffloading;
@@ -59,7 +59,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
     void configureBuilders(final HttpServerBuilder serverBuilder,
                            final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         super.configureBuilders(serverBuilder, jerseyRouterBuilder);
-        serverBuilder.executionStrategy(noOffloadsStrategy());
+        serverBuilder.executionStrategy(offloadNever());
     }
 
     @Override
@@ -73,7 +73,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 .executionStrategy(defaultStrategy())
                 .thenRouteTo(route)
                 .when(__ -> true)
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .thenRouteTo(route)
                 .buildStreaming();
         return httpServerBuilder.listenStreamingAndAwait(router);
@@ -90,7 +90,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 .executionStrategy(defaultStrategy())
                 .thenRouteTo(route)
                 .when(__ -> true)
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .thenRouteTo(route)
                 .buildStreaming();
         return httpServerBuilder.listenStreamingAndAwait(router);
@@ -107,7 +107,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 .executionStrategy(defaultStrategy())
                 .thenRouteTo(route)
                 .when(__ -> true)
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .thenRouteTo(route)
                 .buildStreaming();
         return httpServerBuilder.listenStreamingAndAwait(router);
@@ -124,7 +124,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
                 .executionStrategy(defaultStrategy())
                 .thenRouteTo(route)
                 .when(__ -> true)
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .thenRouteTo(route)
                 .buildStreaming();
         return httpServerBuilder.listenStreamingAndAwait(router);

@@ -158,7 +158,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyI
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
         // no influence since we do not block and the observer is not expected to block either
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static final class ExchangeContext implements TerminalSignalConsumer {

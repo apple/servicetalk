@@ -56,9 +56,9 @@ class ConnectionFactoryOffloadingTest {
     @SuppressWarnings("unused")
     static Stream<Arguments> testCases() {
         return Stream.of(
-                Arguments.of(false, HttpExecutionStrategies.anyStrategy()),
+                Arguments.of(false, HttpExecutionStrategies.offloadNone()),
                 Arguments.of(false, HttpExecutionStrategies.offloadAll()),
-                Arguments.of(true, HttpExecutionStrategies.anyStrategy()),
+                Arguments.of(true, HttpExecutionStrategies.offloadNone()),
                 Arguments.of(true, HttpExecutionStrategies.offloadAll())
         );
     }
@@ -102,14 +102,14 @@ class ConnectionFactoryOffloadingTest {
                                 }
                             },
                             new ConnectAndHttpExecutionStrategy(offload ?
-                                    ConnectExecutionStrategy.offload() : ConnectExecutionStrategy.anyStrategy(),
+                                    ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone(),
                                     httpStrategy));
 
             try (HttpClient client = HttpClients.forResolvedAddress(serverAddress)
                     .appendConnectionFactoryFilter(factory)
                     .build()) {
                 assertThat(client.executionContext().executionStrategy().missing(httpStrategy),
-                        is(HttpExecutionStrategies.anyStrategy()));
+                        is(HttpExecutionStrategies.offloadNone()));
                 Single<HttpResponse> single = client.request(client.get("/sayHello"));
                 HttpResponse response = single.toFuture().get();
                 assertThat("unexpected status", response.status(), is(HttpResponseStatus.OK));

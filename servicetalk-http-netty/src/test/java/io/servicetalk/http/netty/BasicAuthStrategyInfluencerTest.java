@@ -55,7 +55,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -134,8 +134,8 @@ class BasicAuthStrategyInfluencerTest {
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
             verifier = new InfluencingVerifier(verifier,
-                    HttpExecutionStrategyInfluencer.newInfluencer(HttpExecutionStrategies.anyStrategy()));
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+                    HttpExecutionStrategyInfluencer.newInfluencer(HttpExecutionStrategies.offloadNone()));
+            serverBuilder.executionStrategy(offloadNever());
         }
         serverBuilder.appendServiceFilter(new BasicAuthHttpServiceFilter.Builder<>(verifier, "dummy")
                 .buildServer());
@@ -195,7 +195,7 @@ class BasicAuthStrategyInfluencerTest {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
     }
 

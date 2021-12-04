@@ -229,7 +229,7 @@ class GracefulConnectionClosureHandlingTest {
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
                         cf -> initiateClosureFromClient ? new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf,
-                        ExecutionStrategy.anyStrategy()))
+                        ExecutionStrategy.offloadNone()))
                 .buildStreaming();
         connection = client.reserveConnection(client.get("/")).toFuture().get();
         connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
