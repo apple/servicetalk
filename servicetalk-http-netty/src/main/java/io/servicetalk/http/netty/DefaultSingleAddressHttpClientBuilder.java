@@ -74,7 +74,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -245,7 +245,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
         // XXX This modifies the builder state. Suggestions for allowing execution strategy to override but not
         // affecting builder?
-        if (noOffloadsStrategy() == executionContext.executionStrategy() &&
+        if (offloadNever() == executionContext.executionStrategy() &&
                 !ctx.builder.config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
             ctx.builder.config.tcpConfig().asyncCloseOffload(false);
         }
@@ -333,7 +333,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
+                    currClientFilterFactory.create(lbClient) : lbClient,
                     ctx.builder.strategyComputation.buildForClient(executionStrategy));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();

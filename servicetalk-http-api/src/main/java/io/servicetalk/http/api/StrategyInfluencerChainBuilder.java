@@ -151,7 +151,7 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
         HttpExecutionStrategy strategy = influencers.stream()
                 .map(ExecutionStrategyInfluencer::requiredOffloads)
                 .map(HttpExecutionStrategy::from)
-                .reduce(HttpExecutionStrategies.anyStrategy(), HttpExecutionStrategy::merge);
+                .reduce(HttpExecutionStrategies.offloadNone(), HttpExecutionStrategy::merge);
         return HttpExecutionStrategyInfluencer.newInfluencer(strategy);
     }
 
@@ -166,6 +166,6 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
                 .map(ExecutionStrategyInfluencer::requiredOffloads)
                 .map(HttpExecutionStrategy::from)
                 .reduce(HttpExecutionStrategy::merge)
-                .orElse(HttpExecutionStrategies.anyStrategy());
+                .orElse(HttpExecutionStrategies.offloadNone());
     }
 }

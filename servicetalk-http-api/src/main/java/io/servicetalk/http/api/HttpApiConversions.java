@@ -42,7 +42,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ReservedHttpConnection toReservedConnection(ReservedStreamingHttpConnection original,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToReservedHttpConnection(original, influencer.requiredOffloads());
+        return toReservedConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -69,8 +69,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ReservedBlockingHttpConnection toReservedBlockingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(original,
-                                                                                   influencer.requiredOffloads());
+        return toReservedBlockingConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -98,7 +97,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ReservedBlockingStreamingHttpConnection toReservedBlockingStreamingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new ReservedStreamingHttpConnectionToBlockingStreaming(original, influencer.requiredOffloads());
+        return toReservedBlockingStreamingConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -126,7 +125,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static HttpConnection toConnection(StreamingHttpConnection original,
                                               HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToHttpConnection(original, influencer.requiredOffloads());
+        return toConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -152,7 +151,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static BlockingHttpConnection toBlockingConnection(StreamingHttpConnection original,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToBlockingHttpConnection(original, influencer.requiredOffloads());
+        return toBlockingConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -179,7 +178,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
             StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, influencer.requiredOffloads());
+        return toBlockingStreamingConnection(original, influencer.requiredOffloads());
     }
 
     /**
@@ -206,7 +205,7 @@ public final class HttpApiConversions {
      */
     @Deprecated
     public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToHttpClient(original, influencer.requiredOffloads());
+        return toClient(original, influencer.requiredOffloads());
     }
 
     /**
@@ -232,7 +231,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static BlockingHttpClient toBlockingClient(StreamingHttpClient original,
                                                       HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToBlockingHttpClient(original, influencer.requiredOffloads());
+        return toBlockingClient(original, influencer.requiredOffloads());
     }
 
     /**
@@ -258,7 +257,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static BlockingStreamingHttpClient toBlockingStreamingClient(StreamingHttpClient original,
                                                                         HttpExecutionStrategyInfluencer influencer) {
-        return new StreamingHttpClientToBlockingStreamingHttpClient(original, influencer.requiredOffloads());
+        return toBlockingStreamingClient(original, influencer.requiredOffloads());
     }
 
     /**
@@ -285,7 +284,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new ServiceToStreamingService(service, influencer.requiredOffloads());
+        return toStreamingHttpService(service, influencer.requiredOffloads());
     }
 
     /**
@@ -311,7 +310,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new BlockingStreamingToStreamingService(service, influencer.requiredOffloads());
+        return toStreamingHttpService(service, influencer.requiredOffloads());
     }
 
     /**
@@ -338,7 +337,7 @@ public final class HttpApiConversions {
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new BlockingToStreamingService(service, influencer.requiredOffloads());
+        return toStreamingHttpService(service, influencer.requiredOffloads());
     }
 
     /**

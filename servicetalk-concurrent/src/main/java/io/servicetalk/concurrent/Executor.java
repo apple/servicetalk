@@ -29,7 +29,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * submitted to the same {@link Executor} instance.
  * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link Executor}.
  */
-public interface Executor {
+public interface Executor extends TimeSource {
+
+    @Override
+    default long currentTime(TimeUnit unit) {
+        return unit.convert(System.nanoTime(), NANOSECONDS);
+    }
+
     /**
      * Executes the passed {@code task} as soon as possible.
      *

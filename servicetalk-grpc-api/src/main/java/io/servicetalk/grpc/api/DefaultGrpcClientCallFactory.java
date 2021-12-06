@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
@@ -378,7 +379,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
         Long deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
         @Nullable
-        Duration contextTimeout = null != deadline ? Duration.ofNanos(deadline - System.nanoTime()) : null;
+        Duration contextTimeout = null != deadline ?
+                Duration.ofNanos(deadline - executionContext().executor().currentTime(TimeUnit.NANOSECONDS)) : null;
 
         @Nullable
         Duration timeout = null != contextTimeout ?

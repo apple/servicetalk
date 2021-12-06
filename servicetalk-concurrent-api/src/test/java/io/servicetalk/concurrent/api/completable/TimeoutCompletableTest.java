@@ -27,9 +27,11 @@ import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,6 +39,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -133,6 +136,25 @@ class TimeoutCompletableTest {
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
+        assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
+    }
+
+    @Test
+    @Disabled("Requires the notion of globally mocked time source using a TestExecutor")
+    void defaultExecutorSubscribeTimeout() {
+        DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
+        // Assume the timeout call is not under the user's control, e.g. comes from a library of Completable providers
+        final Completable operationThatInternallyTimesOut = delayedCompletable.timeout(Duration.ofDays(1));
+
+        TestExecutor testExecutor = new TestExecutor();
+        // TODO(dariusz): Replace all executors created with the test instance
+        // Executors.setFactory(AllExecutorFactory.create(() -> testExecutor));
+
+        toSource(operationThatInternallyTimesOut).subscribe(listener);
+        testExecutor.advanceTimeBy(1, DAYS);
+
+        CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
+        assertNotNull(subscriber);
         assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
     }
 

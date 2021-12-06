@@ -268,7 +268,7 @@ final class NettyHttpServer {
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
-                    HttpExecutionStrategies.noOffloadsStrategy());
+                    HttpExecutionStrategies.offloadNever());
             this.service = service;
             // H2 uses child channels, doesn't support pipelining, and doesn't repeat the write operation on the same
             // channel. We therefore don't need the splitting flush in this case.

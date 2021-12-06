@@ -1536,7 +1536,8 @@ public abstract class Publisher<T> {
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -1555,7 +1556,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -1590,7 +1592,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration during which the Publisher must complete.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -1627,7 +1630,8 @@ public abstract class Publisher<T> {
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration during which the Publisher must complete.
      * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -2877,88 +2881,91 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * Creates a new {@link Publisher} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Publisher}. Only subsequent operations, if any, added in this execution chain
+     * will use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
-     * passed {@link Executor}.
+     * Note: unlike {@link #publishOn(io.servicetalk.concurrent.Executor, BooleanSupplier)}, current operator always
+     * enforces offloading to the passed {@link io.servicetalk.concurrent.Executor}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * @see #publishOn(Executor, BooleanSupplier)
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * @see #publishOn(io.servicetalk.concurrent.Executor, BooleanSupplier)
      */
-    public final Publisher<T> publishOn(Executor executor) {
+    public final Publisher<T> publishOn(io.servicetalk.concurrent.Executor executor) {
         return PublishAndSubscribeOnPublishers.publishOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * Creates a new {@link Publisher} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Publisher}. Only subsequent operations, if any, added in this execution chain
+     * will use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
-     * depending on the result of the {@link BooleanSupplier} hint.
+     * Note: unlike {@link #publishOn(io.servicetalk.concurrent.Executor)}, current operator may skip offloading to the
+     * passed {@link io.servicetalk.concurrent.Executor}, depending on the result of the {@link BooleanSupplier} hint.
      *
-     * @param executor {@link Executor} to use.
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
      * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
      * still occur even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all {@link Subscriber}
-     * methods.
-     * @see #publishOn(Executor)
+     * @return A new {@link Publisher} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * @see #publishOn(io.servicetalk.concurrent.Executor)
      */
-    public final Publisher<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Publisher<T> publishOn(io.servicetalk.concurrent.Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnPublishers.publishOn(this, shouldOffload, executor);
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Publisher} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke the
+     * following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Publisher}. Only subsequent operations, if any, added in this execution chain
+     * will use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
-     * passed {@link Executor}.
+     * Note: unlike {@link #subscribeOn(io.servicetalk.concurrent.Executor, BooleanSupplier)}, current operator always
+     * enforces offloading to the passed {@link io.servicetalk.concurrent.Executor}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @see #subscribeOn(Executor, BooleanSupplier)
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * methods of {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @see #subscribeOn(io.servicetalk.concurrent.Executor, BooleanSupplier)
      */
-    public final Publisher<T> subscribeOn(Executor executor) {
+    public final Publisher<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Publisher} that may use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Publisher} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke the
+     * following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
      *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Publisher}. Only subsequent operations, if any, added in this execution chain
+     * will use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
-     * depending on the result of the {@link BooleanSupplier} hint.
+     * Note: unlike {@link #subscribeOn(io.servicetalk.concurrent.Executor)}, current operator may skip offloading to
+     * the passed {@link io.servicetalk.concurrent.Executor}, depending on the result of the {@link BooleanSupplier}
+     * hint.
      *
-     * @param executor {@link Executor} to use.
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
      * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
      * still occur even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Publisher} that may use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @see #subscribeOn(Executor)
+     * @return A new {@link Publisher} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * methods of {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @see #subscribeOn(io.servicetalk.concurrent.Executor)
      */
-    public final Publisher<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Publisher<T> subscribeOn(io.servicetalk.concurrent.Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, shouldOffload, executor);
     }
 
@@ -2972,8 +2979,8 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
      * {@link ContextMap#copy() copy} when subscribed to.
      */
-    public final Publisher<T> subscribeShareContext() {
-        return new PublisherSubscribeShareContext<>(this);
+    public final Publisher<T> shareContextOnSubscribe() {
+        return new PublisherShareContextOnSubscribe<>(this);
     }
 
     /**

@@ -107,7 +107,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     /**

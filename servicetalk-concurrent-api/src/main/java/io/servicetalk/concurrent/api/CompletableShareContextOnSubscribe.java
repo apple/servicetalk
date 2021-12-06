@@ -17,10 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
 
-final class CompletableSubscribeShareContext extends AbstractNoHandleSubscribeCompletable {
+final class CompletableShareContextOnSubscribe extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
 
-    CompletableSubscribeShareContext(final Completable original) {
+    CompletableShareContextOnSubscribe(final Completable original) {
         this.original = original;
     }
 

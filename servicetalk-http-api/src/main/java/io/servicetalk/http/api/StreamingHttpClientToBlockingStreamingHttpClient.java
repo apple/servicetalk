@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -31,7 +32,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client,
                                                      final HttpExecutionStrategy strategy) {
-        this.strategy = DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY.merge(strategy);
+        this.strategy = defaultStrategy() == strategy ?
+                DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
@@ -98,7 +100,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
         ReservedStreamingHttpConnectionToBlockingStreaming(final ReservedStreamingHttpConnection connection,
                                                            final HttpExecutionStrategy strategy) {
-            this(connection, DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY.merge(strategy),
+            this(connection, defaultStrategy() == strategy ? DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy,
                     toBlockingStreaming(connection));
         }
 

@@ -15,15 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Publisher;
-
-import java.util.Collection;
-
-import static java.util.function.Function.identity;
 
 /**
  * A {@link LoadBalancerFactory} for HTTP clients.
@@ -32,20 +24,6 @@ import static java.util.function.Function.identity;
  */
 public interface HttpLoadBalancerFactory<ResolvedAddress>
         extends LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
-
-    @Deprecated
-    @Override
-    <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
-            Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> cf);
-
-    @Override
-    default <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
-            String targetResource,
-            Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> cf) {
-        return newLoadBalancer(eventPublisher.flatMapConcatIterable(identity()), cf);
-    }
 
     /**
      * Converts the passed {@link FilterableStreamingHttpConnection} to a

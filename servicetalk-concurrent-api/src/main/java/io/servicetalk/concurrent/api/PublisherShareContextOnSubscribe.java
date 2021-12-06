@@ -17,10 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
 
-final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSingle<T> {
-    private final Single<T> original;
+final class PublisherShareContextOnSubscribe<T> extends AbstractNoHandleSubscribePublisher<T> {
+    private final Publisher<T> original;
 
-    SingleSubscribeShareContext(Single<T> original) {
+    PublisherShareContextOnSubscribe(final Publisher<T> original) {
         this.original = original;
     }
 

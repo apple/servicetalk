@@ -279,17 +279,10 @@ class TimeoutPublisherTest {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
 
-        // The timeout operator doesn't expose a way to control the underlying time source and always uses
-        // System.nanoTime(). This was intentional to avoid expanding public API surface when the majority of the time
-        // System.nanoTime() is the correct choice. However that makes testing a bit more challenging here and we resort
-        // to sleep/approximations.
-        // 10 ms -> long enough for the first timeout runnable to first without timing out, so that the second time out
-        // runnable will fire and result in a timeout. This doesn't always work so we just fallback and drain the
-        // CountDownLatch if not.
-        // Sleep for at least enough time for the expiration time to fire before invoking
-        // the run() method.
-        // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
-        // test won't fail.
+        // In order to simulate concurrent execution, we introduce an Executor that does not respect the delay for the
+        // first timer schedule. Internally, we expect the TimeoutPublisher to reschedule the timer. For that we use
+        // TestExecutor, which will allow us to advance the time and trigger the actual timeout, which will simulate
+        // concurrent execution.
         toSource(publisher.timeout(10, MILLISECONDS, new Executor() {
             private final AtomicInteger timerCount = new AtomicInteger();
 
@@ -308,10 +301,8 @@ class TimeoutPublisherTest {
                     } else {
                         try {
                             try {
-                                // Sleep for at least enough time for the expiration time to fire before invoking
-                                // the run() method.
-                                Thread.sleep(100);
-                                task.run();
+                                testExecutor.schedule(task, delay, unit);
+                                testExecutor.advanceTimeBy(delay, unit);
                             } catch (Throwable cause) {
                                 causeRef.compareAndSet(null, cause);
                                 countDownToZero(latch);
@@ -324,6 +315,11 @@ class TimeoutPublisherTest {
                     }
                 }
                 return IGNORE_CANCEL;
+            }
+
+            @Override
+            public long currentTime(final TimeUnit unit) {
+                return testExecutor.currentTime(unit);
             }
 
             @Override
@@ -340,13 +336,6 @@ class TimeoutPublisherTest {
             public Cancellable execute(final Runnable task) throws RejectedExecutionException {
                 throw new UnsupportedOperationException();
             }
-        }).whenOnError(cause -> {
-            // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
-            // test won't fail.
-            if (!(cause instanceof TimeoutException)) {
-                causeRef.compareAndSet(null, cause);
-            }
-            countDownToZero(latch);
         })).subscribe(subscriber);
 
         latch.await();

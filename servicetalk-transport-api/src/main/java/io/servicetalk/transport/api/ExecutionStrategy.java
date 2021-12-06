@@ -46,7 +46,7 @@ public interface ExecutionStrategy {
      *
      * @return an {@link ExecutionStrategy} that requires no offloading.
      */
-    static ExecutionStrategy anyStrategy() {
+    static ExecutionStrategy offloadNone() {
         return SpecialExecutionStrategy.NO_OFFLOADS;
     }
 
@@ -68,6 +68,6 @@ public interface ExecutionStrategy {
     default ExecutionStrategy merge(ExecutionStrategy other) {
         return hasOffloads() ?
                 other.hasOffloads() ? ExecutionStrategy.offloadAll() : this :
-                other.hasOffloads() ? other : ExecutionStrategy.anyStrategy();
+                other.hasOffloads() ? other : ExecutionStrategy.offloadNone();
     }
 }

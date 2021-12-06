@@ -58,13 +58,13 @@ final class PublishAndSubscribeOnPublishers {
 
     static <T> Publisher<T> publishOn(final Publisher<T> original,
                                       final BooleanSupplier shouldOffload,
-                                      final Executor executor) {
+                                      final io.servicetalk.concurrent.Executor executor) {
         return immediate() == executor ? original : new PublishOn<>(original, shouldOffload, executor);
     }
 
     static <T> Publisher<T> subscribeOn(final Publisher<T> original,
                                         final BooleanSupplier shouldOffload,
-                                        final Executor executor) {
+                                        final io.servicetalk.concurrent.Executor executor) {
         return immediate() == executor ? original : new SubscribeOn<>(original, shouldOffload, executor);
     }
 
@@ -78,7 +78,8 @@ final class PublishAndSubscribeOnPublishers {
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         PublishOn(final Publisher<T> original,
-                  final BooleanSupplier shouldOffload, final Executor executor) {
+                  final BooleanSupplier shouldOffload,
+                  final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 
@@ -116,7 +117,8 @@ final class PublishAndSubscribeOnPublishers {
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         SubscribeOn(final Publisher<T> original,
-                    final BooleanSupplier shouldOffload, final Executor executor) {
+                    final BooleanSupplier shouldOffload,
+                    final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 

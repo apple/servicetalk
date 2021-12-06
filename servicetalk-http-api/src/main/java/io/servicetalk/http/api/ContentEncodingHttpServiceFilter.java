@@ -96,7 +96,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
                         BufferDecoder decoder = matchAndRemoveEncoding(decompressors.decoders(),
                                 BufferDecoder::encodingName, contentEncodingItr, request.headers());
                         if (decoder == null) {
-                            return succeeded(responseFactory.unsupportedMediaType()).subscribeShareContext();
+                            return succeeded(responseFactory.unsupportedMediaType()).shareContextOnSubscribe();
                         }
 
                         requestDecompressed = request.transformPayloadBody(pub ->
@@ -121,7 +121,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
                         addContentEncoding(response.headers(), encoder.encodingName());
                         return response.transformPayloadBody(bufPub ->
                                 encoder.streamingEncoder().serialize(bufPub, ctx.executionContext().bufferAllocator()));
-                    }).subscribeShareContext();
+                    }).shareContextOnSubscribe();
                 });
             }
         };
@@ -130,7 +130,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static boolean isPassThrough(final HttpRequestMethod method, final StreamingHttpResponse response) {

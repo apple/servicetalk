@@ -100,7 +100,7 @@ class ResponseCancelTest {
                 })
                 .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
                         original -> new CountingConnectionFactory(original, connectionCount),
-                        HttpExecutionStrategies.anyStrategy()))
+                        HttpExecutionStrategies.offloadNone()))
                 .build();
     }
 

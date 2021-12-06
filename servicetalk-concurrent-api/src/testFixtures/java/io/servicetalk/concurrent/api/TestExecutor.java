@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -139,15 +140,10 @@ public class TestExecutor implements Executor {
      * @return the internal clock time in milliseconds.
      */
     public long currentMillis() {
-        return currentTime(NANOSECONDS);
+        return currentTime(MILLISECONDS);
     }
 
-    /**
-     * Returns the internal clock time in the specified {@code unit}.
-     *
-     * @param unit the time unit to calculate
-     * @return the internal clock time in the specified {@code unit}.
-     */
+    @Override
     public long currentTime(final TimeUnit unit) {
         return unit.convert(currentNanos, NANOSECONDS);
     }

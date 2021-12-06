@@ -54,7 +54,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.anyStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
@@ -229,7 +229,7 @@ class BlockingStreamingToStreamingServiceTest {
                 closedCalled.set(true);
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, anyStrategy()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
         asyncService.closeAsync().toFuture().get();
         assertThat(closedCalled.get(), is(true));
     }
@@ -250,7 +250,7 @@ class BlockingStreamingToStreamingServiceTest {
                 onErrorLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, anyStrategy()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
@@ -297,7 +297,7 @@ class BlockingStreamingToStreamingServiceTest {
                 serviceTerminationLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, anyStrategy()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
@@ -368,7 +368,7 @@ class BlockingStreamingToStreamingServiceTest {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, anyStrategy()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
@@ -403,7 +403,7 @@ class BlockingStreamingToStreamingServiceTest {
             response.sendMetaData();
             throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, anyStrategy()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
@@ -445,7 +445,7 @@ class BlockingStreamingToStreamingServiceTest {
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
                                        StreamingHttpRequest request) throws Exception {
-        ServiceAdapterHolder holder = toStreamingHttpService(syncService, anyStrategy());
+        ServiceAdapterHolder holder = toStreamingHttpService(syncService, offloadNone());
 
         Collection<Object> responseCollection =
                 invokeService(holder.serviceInvocationStrategy(), executorExtension.executor(), request,
@@ -468,7 +468,7 @@ class BlockingStreamingToStreamingServiceTest {
         Publisher<Object> resp;
         if (strategy.isMetadataReceiveOffloaded()) {
             final StreamingHttpRequest r = request;
-            resp = executor.submit(() -> service.apply(r).subscribeShareContext())
+            resp = executor.submit(() -> service.apply(r).shareContextOnSubscribe())
                     .onErrorReturn(cause -> errorHandler.apply(cause, executor))
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());

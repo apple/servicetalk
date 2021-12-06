@@ -65,7 +65,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -163,7 +163,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                               final StreamingHttpServiceFilterFactory factory) {
-        checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
+        checkNonOffloading("Non-offloading predicate", offloadNever(), predicate);
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
@@ -345,14 +345,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         // XXX This modifies the builder state.
-        if (noOffloadsStrategy() == executionContext.executionStrategy() &&
+        if (offloadNever() == executionContext.executionStrategy() &&
                 !config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
            config.tcpConfig().asyncCloseOffload(false);
         }
 
         return doBind(executionContext, connectionAcceptor, filteredService)
-                .afterOnSuccess(serverContext ->
-                        LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy));
+                .afterOnSuccess(serverContext -> LOGGER.debug("Server for address {} uses strategy {}",
+                        serverContext.listenAddress(), strategy));
     }
 
     private Single<ServerContext> doBind(final HttpExecutionContext executionContext,
@@ -449,7 +449,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
         @Override
         public HttpExecutionStrategy requiredOffloads() {
-            return HttpExecutionStrategies.anyStrategy();    // no influence since we do not block
+            return HttpExecutionStrategies.offloadNone();    // no influence since we do not block
         }
     }
 
@@ -486,7 +486,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // no influence since we do not block
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
     }
 }

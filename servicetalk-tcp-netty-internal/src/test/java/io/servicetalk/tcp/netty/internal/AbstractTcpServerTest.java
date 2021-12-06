@@ -50,7 +50,7 @@ public abstract class AbstractTcpServerTest {
             ExecutionContextExtension.cached("client-io", "client-executor");
 
     private InfluencerConnectionAcceptor connectionAcceptor =
-            InfluencerConnectionAcceptor.withStrategy(ACCEPT_ALL, ConnectExecutionStrategy.anyStrategy());
+            InfluencerConnectionAcceptor.withStrategy(ACCEPT_ALL, ConnectExecutionStrategy.offloadNone());
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
         conn -> conn.write(conn.read());
     private boolean sslEnabled;

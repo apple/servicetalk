@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -80,7 +80,7 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
 
@@ -96,7 +96,7 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
                     .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0),
                             invocation.getArgument(1)));
             return factory;
-        }, HttpExecutionStrategies.anyStrategy());
+        }, HttpExecutionStrategies.offloadNone());
     }
 
     @SuppressWarnings("unchecked")
@@ -118,7 +118,7 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
         StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .serviceDiscoverer(disco)
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
     }

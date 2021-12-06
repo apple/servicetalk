@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -58,14 +58,14 @@ class HttpExecutionStrategiesTest {
     @Test
     void diffRightNoOffload() {
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
-        HttpExecutionStrategy strat2 = noOffloadsStrategy();
+        HttpExecutionStrategy strat2 = offloadNever();
         HttpExecutionStrategy result = difference(strat1, strat2);
         assertThat("Unexpected diff.", result, is(nullValue()));
     }
 
     @Test
     void diffLeftNoOffload() {
-        HttpExecutionStrategy strat1 = noOffloadsStrategy();
+        HttpExecutionStrategy strat1 = offloadNever();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy result = difference(strat1, strat2);
         assertThat("Unexpected diff.", result, is(sameInstance(strat2)));
@@ -104,14 +104,14 @@ class HttpExecutionStrategiesTest {
     @Test
     void missingRightNoOffload() {
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
-        HttpExecutionStrategy strat2 = noOffloadsStrategy();
+        HttpExecutionStrategy strat2 = offloadNever();
         HttpExecutionStrategy result = strat1.missing(strat2);
-        assertThat("Unexpected diff.", result, is(sameInstance(HttpExecutionStrategies.anyStrategy())));
+        assertThat("Unexpected diff.", result, is(sameInstance(HttpExecutionStrategies.offloadNone())));
     }
 
     @Test
     void missingLeftNoOffload() {
-        HttpExecutionStrategy strat1 = noOffloadsStrategy();
+        HttpExecutionStrategy strat1 = offloadNever();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy result = strat1.missing(strat2);
         assertThat("Unexpected diff.", result, is(sameInstance(strat2)));
