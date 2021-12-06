@@ -258,7 +258,8 @@ public final class HttpExecutionStrategies {
         OFFLOAD_RECEIVE_META,
         OFFLOAD_RECEIVE_DATA,
         OFFLOAD_SEND,
-        OFFLOAD_EVENT;
+        OFFLOAD_EVENT,
+        OFFLOAD_CLOSE;
 
         byte mask() {
             return (byte) (1 << ordinal());

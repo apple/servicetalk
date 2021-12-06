@@ -31,7 +31,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
 
     @Override
     default boolean hasOffloads() {
-        return isRequestResponseOffloaded();
+        return ExecutionStrategy.super.hasOffloads() || isEventOffloaded() || isRequestResponseOffloaded();
     }
 
     /**

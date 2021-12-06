@@ -29,16 +29,16 @@ public interface ExecutionStrategy {
      *
      * @return {@code true} if the instance has offloading for any operation.
      */
-    boolean hasOffloads();
+    default boolean hasOffloads() {
+        return isCloseOffloaded();
+    }
 
     /**
      * Returns {@code true} if the instance has offloading for any operation.
      *
      * @return {@code true} if the instance has offloading for any operation.
      */
-    default boolean isCloseOffloaded() {
-        return true;
-    }
+    boolean isCloseOffloaded();
 
     /**
      * Returns an {@link ExecutionStrategy} that requires no offloading and is compatible with all other offloading

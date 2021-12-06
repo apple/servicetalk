@@ -22,10 +22,29 @@ enum DefaultConnectExecutionStrategy implements ConnectExecutionStrategy {
     /**
      * Does not require connect offloads
      */
-    CONNECT_NOT_OFFLOADED {
+    CONNECT_NO_OFFLOADS {
         @Override
         public boolean isConnectOffloaded() {
             return false;
+        }
+
+        @Override
+        public boolean isCloseOffloaded() {
+            return false;
+        }
+    },
+    /**
+     * Offload all connect invocations
+     */
+    CLOSE_OFFLOADED {
+        @Override
+        public boolean isConnectOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isCloseOffloaded() {
+            return true;
         }
     },
     /**
@@ -34,6 +53,25 @@ enum DefaultConnectExecutionStrategy implements ConnectExecutionStrategy {
     CONNECT_OFFLOADED {
         @Override
         public boolean isConnectOffloaded() {
+            return true;
+        }
+
+        @Override
+        public boolean isCloseOffloaded() {
+            return false;
+        }
+    },
+    /**
+     * Offload all connect invocations
+     */
+    CONNECT_CLOSE_OFFLOADED {
+        @Override
+        public boolean isConnectOffloaded() {
+            return true;
+        }
+
+        @Override
+        public boolean isCloseOffloaded() {
             return true;
         }
     }
