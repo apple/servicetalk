@@ -36,7 +36,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -85,7 +85,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> succeeded(reqRespFactory.ok()));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
-        BlockingStreamingHttpResponse syncResponse = syncRequester.request(noOffloadsStrategy(),
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(offloadNever(),
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());
@@ -96,7 +96,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(from(allocator.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
-        BlockingStreamingHttpResponse syncResponse = syncRequester.request(noOffloadsStrategy(),
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(offloadNever(),
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());
@@ -114,7 +114,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(
                         from(allocator.fromAscii(expectedPayload)))));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
-        BlockingStreamingHttpResponse syncResponse = syncRequester.request(noOffloadsStrategy(),
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(offloadNever(),
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());
@@ -140,7 +140,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(publisher)));
         TestSubscription subscription = new TestSubscription();
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
-        BlockingStreamingHttpResponse syncResponse = syncRequester.request(noOffloadsStrategy(),
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(offloadNever(),
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());

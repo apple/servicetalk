@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identity;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.grpc.api.GrpcStatusCode.OK;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -138,7 +138,7 @@ final class GrpcClientValidatesContentTypeTest {
                 serverBuilder.listenAndAwait(toHttpService(streamingService));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(builder -> builder.executionStrategy(noOffloadsStrategy()))
+                .initializeHttp(builder -> builder.executionStrategy(offloadNever()))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 

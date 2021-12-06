@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE;
@@ -162,36 +162,36 @@ class GrpcRouterConfigurationTest {
         final TesterService asyncService = DEFAULT_STRATEGY_ASYNC_SERVICE;
         testCanNotOverrideAlreadyRegisteredPath(TestRpc.PATH, builder -> builder
                 .test(asyncService)
-                .test(noOffloadsStrategy(), asyncService));
+                .test(offloadNever(), asyncService));
 
         testCanNotOverrideAlreadyRegisteredPath(TestBiDiStreamRpc.PATH, builder -> builder
                 .testBiDiStream(asyncService)
-                .testBiDiStream(noOffloadsStrategy(), asyncService));
+                .testBiDiStream(offloadNever(), asyncService));
 
         testCanNotOverrideAlreadyRegisteredPath(TestResponseStreamRpc.PATH, builder -> builder
                 .testResponseStream(asyncService)
-                .testResponseStream(noOffloadsStrategy(), asyncService));
+                .testResponseStream(offloadNever(), asyncService));
 
         testCanNotOverrideAlreadyRegisteredPath(TestRequestStreamRpc.PATH, builder -> builder
                 .testRequestStream(asyncService)
-                .testRequestStream(noOffloadsStrategy(), asyncService));
+                .testRequestStream(offloadNever(), asyncService));
 
         final BlockingTesterService blockingService = DEFAULT_STRATEGY_BLOCKING_SERVICE;
         testCanNotOverrideAlreadyRegisteredPath(BlockingTestRpc.PATH, builder -> builder
                 .testBlocking(blockingService)
-                .testBlocking(noOffloadsStrategy(), blockingService));
+                .testBlocking(offloadNever(), blockingService));
 
         testCanNotOverrideAlreadyRegisteredPath(BlockingTestBiDiStreamRpc.PATH, builder -> builder
                 .testBiDiStreamBlocking(blockingService)
-                .testBiDiStreamBlocking(noOffloadsStrategy(), blockingService));
+                .testBiDiStreamBlocking(offloadNever(), blockingService));
 
         testCanNotOverrideAlreadyRegisteredPath(BlockingTestResponseStreamRpc.PATH, builder -> builder
                 .testResponseStreamBlocking(blockingService)
-                .testResponseStreamBlocking(noOffloadsStrategy(), blockingService));
+                .testResponseStreamBlocking(offloadNever(), blockingService));
 
         testCanNotOverrideAlreadyRegisteredPath(BlockingTestRequestStreamRpc.PATH, builder -> builder
                 .testRequestStreamBlocking(blockingService)
-                .testRequestStreamBlocking(noOffloadsStrategy(), blockingService));
+                .testRequestStreamBlocking(offloadNever(), blockingService));
     }
 
     @Test

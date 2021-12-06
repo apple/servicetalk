@@ -54,7 +54,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -133,7 +133,7 @@ class BasicAuthStrategyInfluencerTest {
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
             verifier = new InfluencingVerifier(verifier, strategy -> strategy);
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         serverBuilder.appendServiceFilter(new BasicAuthHttpServiceFilter.Builder<>(verifier, "dummy")
                 .buildServer());

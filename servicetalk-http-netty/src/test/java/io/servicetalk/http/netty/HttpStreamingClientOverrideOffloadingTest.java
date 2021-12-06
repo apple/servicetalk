@@ -36,7 +36,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -74,9 +74,9 @@ class HttpStreamingClientOverrideOffloadingTest {
 
     enum Params {
 
-        OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), noOffloadsStrategy(), null),
+        OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), offloadNever(), null),
         DEFAULT_NO_OFFLOAD(HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null,
-                noOffloadsStrategy()),
+                offloadNever()),
         BOTH_OFFLOADS(HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null, null);
 
         final Predicate<Thread> isInvalidThread;

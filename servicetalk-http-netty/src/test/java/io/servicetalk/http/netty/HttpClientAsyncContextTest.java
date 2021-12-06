@@ -88,7 +88,7 @@ abstract class HttpClientAsyncContextTest {
                 .appendClientFilter(c -> new TestStreamingHttpClientFilter(c, errorQueue))
                 .appendClientFilter(c -> new TestStreamingHttpClientFilter(c, errorQueue));
         if (useImmediate) {
-            clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+            clientBuilder.executionStrategy(HttpExecutionStrategies.offloadNever());
         }
         return clientBuilder;
     }

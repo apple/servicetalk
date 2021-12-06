@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -60,7 +60,7 @@ class HttpExecutionStrategiesTest {
     void diffRightNoOffload() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
-        HttpExecutionStrategy strat2 = noOffloadsStrategy();
+        HttpExecutionStrategy strat2 = offloadNever();
         HttpExecutionStrategy result = difference(fallback, strat1, strat2);
         assertThat("Unexpected diff.", result, is(nullValue()));
     }
@@ -68,7 +68,7 @@ class HttpExecutionStrategiesTest {
     @Test
     void diffLeftNoOffload() {
         Executor fallback = mock(Executor.class);
-        HttpExecutionStrategy strat1 = noOffloadsStrategy();
+        HttpExecutionStrategy strat1 = offloadNever();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy result = difference(fallback, strat1, strat2);
         assertThat("Unexpected diff.", result, is(sameInstance(strat2)));

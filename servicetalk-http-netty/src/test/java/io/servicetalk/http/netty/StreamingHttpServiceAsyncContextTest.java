@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.lang.Thread.currentThread;
 
@@ -81,7 +81,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                      boolean useImmediate) throws Exception {
         if (useImmediate) {
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService());
     }
@@ -109,7 +109,7 @@ abstract class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceA
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                     boolean useImmediate, boolean asyncService) throws Exception {
         if (useImmediate) {
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         return serverBuilder.listenStreamingAndAwait(service(useImmediate, asyncService));
     }

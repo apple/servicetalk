@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 
 public enum HttpTestExecutionStrategy {
-    NO_OFFLOAD(HttpExecutionStrategies::noOffloadsStrategy),
+    NO_OFFLOAD(HttpExecutionStrategies::offloadNever),
     CACHED(() -> HttpExecutionStrategies.defaultStrategy(newCachedThreadExecutor(
             new DefaultThreadFactory("http-test-executor", true, NORM_PRIORITY))));
 

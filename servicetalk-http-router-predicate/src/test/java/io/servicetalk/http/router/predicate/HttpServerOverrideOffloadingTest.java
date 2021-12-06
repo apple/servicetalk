@@ -44,7 +44,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -73,9 +73,9 @@ class HttpServerOverrideOffloadingTest {
         service2 = new OffloadingTesterService(HttpServerOverrideOffloadingTest::isInServerEventLoop);
         server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .listenStreamingAndAwait(new HttpPredicateRouterBuilder()
-                        .whenPathStartsWith("/service1").executionStrategy(noOffloadsStrategy())
+                        .whenPathStartsWith("/service1").executionStrategy(offloadNever())
                         .thenRouteTo(service1)
                         .whenPathStartsWith("/service2").executionStrategy(defaultStrategy(executor))
                         .thenRouteTo(service2).buildStreaming());

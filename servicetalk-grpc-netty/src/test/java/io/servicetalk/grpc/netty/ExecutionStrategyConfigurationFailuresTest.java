@@ -30,7 +30,7 @@ import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.getUsingDefaultStrategyFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -109,7 +109,7 @@ class ExecutionStrategyConfigurationFailuresTest {
     private static final TesterService MISCONFIGURED_SERVICE = new MisconfiguredService();
     private static final BlockingTesterService MISCONFIGURED_BLOCKING_SERVICE = new MisconfiguredBlockingService();
     private static final RouteExecutionStrategyFactory<GrpcExecutionStrategy> STRATEGY_FACTORY =
-            id -> "test".equals(id) ? noOffloadsStrategy() : getUsingDefaultStrategyFactory(id);
+            id -> "test".equals(id) ? offloadNever() : getUsingDefaultStrategyFactory(id);
 
     @Test
     void usingServiceFactoryAsyncService() {
