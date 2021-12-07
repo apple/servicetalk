@@ -40,7 +40,7 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public boolean isRequestResponseOffloaded() {
-        return HttpExecutionStrategy.super.isRequestResponseOffloaded();
+        return delegate.isRequestResponseOffloaded();
     }
 
     @Override

@@ -34,9 +34,12 @@ public interface ExecutionStrategy {
     }
 
     /**
-     * Returns {@code true} if the instance has offloading for any operation.
+     * Returns {@code true} if signals on the {@link io.servicetalk.concurrent.api.Completable} returned by asynchronous
+     * close operations, usually {@link io.servicetalk.concurrent.api.ListenableAsyncCloseable}, are offloaded,
+     * otherwise false if the signals may not be offloaded.
      *
-     * @return {@code true} if the instance has offloading for any operation.
+     * @return {@code true} if signals on the {@link io.servicetalk.concurrent.api.Completable} returned by asynchronous
+     * close operations are offloaded, otherwise falseif the signals may not be offloaded.
      */
     boolean isCloseOffloaded();
 

@@ -20,7 +20,7 @@ package io.servicetalk.transport.api;
  */
 enum DefaultConnectExecutionStrategy implements ConnectExecutionStrategy {
     /**
-     * Does not require connect offloads
+     * Does not require either connect or close offloads
      */
     CONNECT_NO_OFFLOADS {
         @Override
@@ -34,7 +34,7 @@ enum DefaultConnectExecutionStrategy implements ConnectExecutionStrategy {
         }
     },
     /**
-     * Offload all connect invocations
+     * Offload all close invocations
      */
     CLOSE_OFFLOADED {
         @Override
@@ -62,7 +62,7 @@ enum DefaultConnectExecutionStrategy implements ConnectExecutionStrategy {
         }
     },
     /**
-     * Offload all connect invocations
+     * Offload all connect and close invocations
      */
     CONNECT_CLOSE_OFFLOADED {
         @Override
