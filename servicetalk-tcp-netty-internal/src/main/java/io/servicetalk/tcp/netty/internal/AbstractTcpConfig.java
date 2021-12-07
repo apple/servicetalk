@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
@@ -43,11 +42,6 @@ import static java.util.Objects.requireNonNull;
  * @param <SslConfigType> type of {@link SslConfig}.
  */
 abstract class AbstractTcpConfig<SslConfigType> {
-
-    /**
-     * If true then the default behavior will be to offload the async close {@link Completable}
-     */
-    private static final boolean DEFAULT_ASYNC_CLOSE_OFFLOAD = true;
 
     @Nullable
     @SuppressWarnings("rawtypes")

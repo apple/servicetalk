@@ -91,8 +91,8 @@ import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
-                                            FlushStrategy flushStrategy,
-                                            @Nullable Long idleTimeoutMs, final KeepAliveManager keepAliveManager) {
+                                            FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+                                            final KeepAliveManager keepAliveManager) {
         super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
     }
 

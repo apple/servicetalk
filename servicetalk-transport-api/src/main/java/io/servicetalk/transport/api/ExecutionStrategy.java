@@ -21,7 +21,6 @@ package io.servicetalk.transport.api;
  * <p>Implementations should not override the default {@link Object#equals(Object)} and {@link Object#hashCode()} method
  * implementations. Default instance equality and hash-code behavior should be consistent across all instances.
  */
-@FunctionalInterface
 public interface ExecutionStrategy {
 
     /**

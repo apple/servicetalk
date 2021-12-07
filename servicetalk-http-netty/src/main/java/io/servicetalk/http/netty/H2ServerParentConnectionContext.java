@@ -127,8 +127,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     KeepAliveManager keepAliveManager = new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy());
                     final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
-                            httpExecutionContext, parentFlushStrategy,
-                            config.tcpConfig().idleTimeoutMs(), listenAddress, keepAliveManager);
+                            httpExecutionContext, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
+                            listenAddress, keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.

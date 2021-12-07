@@ -246,9 +246,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
-        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
-
+        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }

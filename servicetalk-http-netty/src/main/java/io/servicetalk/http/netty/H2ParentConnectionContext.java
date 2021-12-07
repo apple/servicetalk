@@ -74,8 +74,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private SSLSession sslSession;
 
     H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
-                              final FlushStrategy flushStrategy,
-                              @Nullable final Long idleTimeoutMs,
+                              final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
         this.executionContext = new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
