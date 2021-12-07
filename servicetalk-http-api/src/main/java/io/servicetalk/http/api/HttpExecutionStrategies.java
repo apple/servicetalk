@@ -157,6 +157,9 @@ public final class HttpExecutionStrategies {
         if (right.isEventOffloaded() && !left.isEventOffloaded()) {
             effectiveOffloads |= OFFLOAD_EVENT.mask();
         }
+        if (right.isCloseOffloaded() && !left.isCloseOffloaded()) {
+            effectiveOffloads |= OFFLOAD_CLOSE.mask();
+        }
 
         if (0 == effectiveOffloads) {
             // No extra offloads required
