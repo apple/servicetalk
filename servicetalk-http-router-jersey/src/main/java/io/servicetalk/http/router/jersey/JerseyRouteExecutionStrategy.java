@@ -41,6 +41,11 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean isCloseOffloaded() {
+        return delegate.isCloseOffloaded();
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return delegate.isMetadataReceiveOffloaded();
     }

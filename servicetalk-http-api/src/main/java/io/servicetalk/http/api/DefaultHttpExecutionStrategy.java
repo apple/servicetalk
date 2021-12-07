@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import java.util.EnumSet;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
@@ -39,7 +40,7 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     OFFLOAD_SEND_STRATEGY(EnumSet.of(OFFLOAD_SEND)),
     OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_SEND)),
     OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND)),
-    OFFLOAD_ALL_REQRESP_STRATEGY(EnumSet.allOf(HttpExecutionStrategies.HttpOffload.class)),
+    OFFLOAD_ALL_REQRESP_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND)),
 
     OFFLOAD_EVENT_STRATEGY(EnumSet.of(OFFLOAD_EVENT)),
     OFFLOAD_RECEIVE_META_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_EVENT)),
@@ -48,7 +49,33 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     OFFLOAD_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_SEND, OFFLOAD_EVENT)),
     OFFLOAD_RECEIVE_META_AND_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_SEND, OFFLOAD_EVENT)),
     OFFLOAD_RECEIVE_DATA_AND_SEND_EVENT_STRATEGY(EnumSet.of(OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND, OFFLOAD_EVENT)),
+    OFFLOADD_ALL_REQRESP_EVENT_STRATEGY(
+            EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND, OFFLOAD_EVENT)),
+
+    OFFLOAD_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE)),
+    OFFLOAD_RECEIVE_META_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META)),
+    OFFLOAD_RECEIVE_DATA_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_DATA)),
+    OFFLOAD_RECEIVE_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA)),
+    OFFLOAD_SEND_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_SEND)),
+    OFFLOAD_RECEIVE_META_AND_SEND_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META, OFFLOAD_SEND)),
+    OFFLOAD_RECEIVE_DATA_AND_SEND_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND)),
+    OFFLOAD_ALL_REQRESP_CLOSE_STRATEGY(
+            EnumSet.of(OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND, OFFLOAD_CLOSE)),
+
+    OFFLOAD_EVENT_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_META_EVENT_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_DATA_EVENT_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_DATA, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_EVENT_CLOSE_STRATEGY(
+            EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META, OFFLOAD_RECEIVE_DATA, OFFLOAD_EVENT)),
+    OFFLOAD_SEND_EVENT_CLOSE_STRATEGY(EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_SEND, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_META_AND_SEND_EVENT_CLOSE_STRATEGY(
+            EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_META, OFFLOAD_SEND, OFFLOAD_EVENT)),
+    OFFLOAD_RECEIVE_DATA_AND_SEND_EVENT_CLOSE_STRATEGY(
+            EnumSet.of(OFFLOAD_CLOSE, OFFLOAD_RECEIVE_DATA, OFFLOAD_SEND, OFFLOAD_EVENT)),
     OFFLOAD_ALL_STRATEGY(EnumSet.allOf(HttpExecutionStrategies.HttpOffload.class));
+
+    private static final byte REQUEST_RESPONSE_MASK =
+            (byte) (OFFLOAD_RECEIVE_META.mask() | OFFLOAD_RECEIVE_DATA.mask() | OFFLOAD_SEND.mask());
 
     private static final DefaultHttpExecutionStrategy[] VALUES = values();
 
@@ -72,6 +99,11 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean isRequestResponseOffloaded() {
+        return (offloads & REQUEST_RESPONSE_MASK) != 0;
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return offloaded(OFFLOAD_RECEIVE_META);
     }
@@ -89,6 +121,11 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public boolean isEventOffloaded() {
         return offloaded(OFFLOAD_EVENT);
+    }
+
+    @Override
+    public boolean isCloseOffloaded() {
+        return offloaded(OFFLOAD_CLOSE);
     }
 
     @Override
@@ -113,7 +150,8 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     private static byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
         return strategy instanceof DefaultHttpExecutionStrategy ?
                 ((DefaultHttpExecutionStrategy) strategy).offloads :
-        (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA.mask() : 0) |
+        (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_CLOSE.mask() : 0) |
+                (strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA.mask() : 0) |
                 (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META.mask() : 0) |
                 (strategy.isSendOffloaded() ? OFFLOAD_SEND.mask() : 0) |
                 (strategy.isEventOffloaded() ? OFFLOAD_EVENT.mask() : 0));

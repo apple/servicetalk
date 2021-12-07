@@ -28,6 +28,11 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     }
 
     @Override
+    public boolean hasOffloads() {
+        return delegate.hasOffloads();
+    }
+
+    @Override
     public boolean isRequestResponseOffloaded() {
         return delegate.isRequestResponseOffloaded();
     }
@@ -50,6 +55,11 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     @Override
     public boolean isEventOffloaded() {
         return delegate.isEventOffloaded();
+    }
+
+    @Override
+    public boolean isCloseOffloaded() {
+        return delegate.isCloseOffloaded();
     }
 
     @Override
