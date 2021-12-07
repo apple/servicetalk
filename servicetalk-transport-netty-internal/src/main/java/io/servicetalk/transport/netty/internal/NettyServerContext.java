@@ -67,15 +67,14 @@ public final class NettyServerContext implements ServerContext {
      * @param channelSetCloseable {@link ChannelSet} to wrap.
      * @param closeBefore {@link Completable} which needs to closed first before {@code listenChannel} will be closed.
      * @param executionContext {@link ExecutionContext} used by this server.
-     * @param offloadAsyncClose If true then signals for close {@link Completable} will be offloaded
      * @return A new {@link NettyServerContext} instance.
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
-                                     @Nullable AsyncCloseable closeBefore, ExecutionContext<?> executionContext,
-                                     boolean offloadAsyncClose) {
+                                     @Nullable AsyncCloseable closeBefore, ExecutionContext<?> executionContext) {
         final NettyChannelListenableAsyncCloseable channelCloseable =
                 new NettyChannelListenableAsyncCloseable(listenChannel,
-                        offloadAsyncClose ? executionContext.executor() : immediate());
+                        executionContext.executionStrategy().isCloseOffloaded() ?
+                                executionContext.executor() : immediate());
         final CompositeCloseable closeAsync = closeBefore == null ?
                 newCompositeCloseable().appendAll(channelCloseable, channelSetCloseable) :
                 newCompositeCloseable().appendAll(closeBefore, channelCloseable, channelSetCloseable);

@@ -55,6 +55,8 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.handler.ssl.SslContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -74,7 +76,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -97,6 +98,9 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingleAddressHttpClientBuilder.class);
+
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
     @Nullable
@@ -243,13 +247,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
-        // XXX This modifies the builder state. Suggestions for allowing execution strategy to override but not
-        // affecting builder?
-        if (offloadNever() == executionContext.executionStrategy() &&
-                !ctx.builder.config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
-            ctx.builder.config.tcpConfig().asyncCloseOffload(false);
-        }
-
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
 
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
@@ -332,9 +329,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             }
+
+            HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
+
+            LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
+                    targetAddress(ctx), executionStrategy, computedStrategy);
+
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient,
-                    ctx.builder.strategyComputation.buildForClient(executionStrategy));
+                    currClientFilterFactory.create(lbClient) : lbClient, computedStrategy);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -453,12 +455,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> asyncCloseOffload(boolean offload) {
-        config.tcpConfig().asyncCloseOffload(offload);
         return this;
     }
 

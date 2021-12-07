@@ -164,11 +164,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private DefaultNettyConnection(
             Channel channel, ExecutionContext<?> executionContext,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, final boolean offloadAsyncClose,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
-        super(channel, offloadAsyncClose ? executionContext.executor() : immediate());
+        super(channel,
+                executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, closeHandler);
         this.readPublisher = registerReadObserver(nettyChannelPublisher.onErrorMap(this::enrichError));
         this.executionContext = executionContext;
@@ -218,7 +219,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param executionContext Used to derive the {@link #executionContext()}.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
-     * @param offloadAsyncClose if true then async close {@link Completable} signals will be offlaoded.
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
@@ -231,7 +231,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, ExecutionContext<?> executionContext,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, final boolean offloadAsyncClose,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
@@ -240,7 +240,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, childExecutionContext,
-                closeHandler, flushStrategy, offloadAsyncClose,
+                closeHandler, flushStrategy,
                 idleTimeoutMs, protocol, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, enrichProtocolError);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
@@ -260,7 +260,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param ioExecutor The {@link IoExecutor} to use for the {@link DefaultNettyConnection}.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
-     * @param offloadAsyncClose if true then signanls for async close {@link Completable} should be offloaded.
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
@@ -272,7 +271,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, final boolean offloadAsyncClose,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient) {
@@ -288,7 +287,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     DefaultExecutionContext<?> executionContext = new DefaultExecutionContext<>(allocator,
                             fromNettyEventLoop(channel.eventLoop(), supportsIoThread), executor, executionStrategy);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel,
-                            executionContext, closeHandler, flushStrategy, offloadAsyncClose,
+                            executionContext, closeHandler, flushStrategy,
                             idleTimeoutMs, protocol, null, null,
                             NoopDataObserver.INSTANCE, isClient, identity());
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);

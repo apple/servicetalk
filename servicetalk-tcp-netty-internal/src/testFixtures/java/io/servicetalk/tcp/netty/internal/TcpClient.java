@@ -94,8 +94,7 @@ final class TcpClient {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 (channel, connectionObserver) -> initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
-                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.isAsyncCloseOffloaded(),
-                        config.idleTimeoutMs(),
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                         new TcpClientChannelInitializer(config, connectionObserver).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
                         executionContext.executionStrategy(), TCP, connectionObserver, true),

@@ -26,6 +26,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -73,6 +75,8 @@ import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 
 class HttpOffloadingTest {
+    private static final HttpExecutionStrategy ALL_BUT_CLOSE_OFFLOAD = HttpExecutionStrategies.customStrategyBuilder()
+            .offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent().build();
 
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
@@ -101,15 +105,13 @@ class HttpOffloadingTest {
         serverContext = forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())
             .executor(SERVER_CTX.executor())
-            .executionStrategy(defaultStrategy())
-            .asyncCloseOffload(offloadClose)
+            .executionStrategy(offloadClose ? defaultStrategy() : ALL_BUT_CLOSE_OFFLOAD)
             .listenStreamingAndAwait(service);
 
         client = forSingleAddress(serverHostAndPort(serverContext))
             .ioExecutor(CLIENT_CTX.ioExecutor())
             .executor(CLIENT_CTX.executor())
-            .executionStrategy(defaultStrategy())
-            .asyncCloseOffload(offloadClose)
+            .executionStrategy(offloadClose ? defaultStrategy() : ALL_BUT_CLOSE_OFFLOAD)
             .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
     }

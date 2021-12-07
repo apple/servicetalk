@@ -66,7 +66,7 @@ final class StreamingConnectionFactory {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), executionContext.ioExecutor(), closeHandler,
-                tcpConfig.flushStrategy(), tcpConfig.isAsyncCloseOffloaded(), tcpConfig.idleTimeoutMs(),
+                tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
                 executionContext.executionStrategy(), HTTP_1_1, connectionObserver, true), HTTP_1_1, channel);

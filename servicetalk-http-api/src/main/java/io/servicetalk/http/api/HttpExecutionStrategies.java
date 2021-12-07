@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
@@ -212,12 +213,21 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Enables offloading for asynchronous close.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadClose() {
+            return offload(OFFLOAD_CLOSE);
+        }
+
+        /**
          * Enable all offloads.
          *
          * @return {@code this}.
          */
         public Builder offloadAll() {
-            return offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent();
+            return offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent().offloadClose();
         }
 
         /**

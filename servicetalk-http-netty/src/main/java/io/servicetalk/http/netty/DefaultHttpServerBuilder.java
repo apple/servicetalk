@@ -239,12 +239,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder asyncCloseOffload(final boolean offload) {
-        config.tcpConfig().asyncCloseOffload(offload);
-        return this;
-    }
-
-    @Override
     public HttpServerBuilder executor(final Executor executor) {
         executionContextBuilder.executor(executor);
         return this;
@@ -342,12 +336,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 executionContext = buildExecutionContext(strategy);
             }
             filteredService = buildService(nonOffloadingFilters, rawService);
-        }
-
-        // XXX This modifies the builder state.
-        if (offloadNever() == executionContext.executionStrategy() &&
-                !config.tcpConfig().isAsyncCloseOffloadedConfigured()) {
-           config.tcpConfig().asyncCloseOffload(false);
         }
 
         return doBind(executionContext, connectionAcceptor, filteredService)

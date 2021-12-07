@@ -68,14 +68,13 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final Processor onClosing = newCompletableProcessor();
     private final KeepAliveManager keepAliveManager;
-    private final boolean asyncCloseOffload;
     @Nullable
     final Long idleTimeoutMs;
     @Nullable
     private SSLSession sslSession;
 
     H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
-                              final FlushStrategy flushStrategy, final boolean asyncCloseOffload,
+                              final FlushStrategy flushStrategy,
                               @Nullable final Long idleTimeoutMs,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
@@ -83,7 +82,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
-        this.asyncCloseOffload = asyncCloseOffload;
         this.idleTimeoutMs = idleTimeoutMs;
         this.keepAliveManager = keepAliveManager;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
@@ -98,15 +96,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public FlushStrategy defaultFlushStrategy() {
         return flushStrategyHolder.currentStrategy();
-    }
-
-    /**
-     * Returns true if the async close {@link Completable} signals are offloaded.
-     *
-     * @return true if the async close {@link Completable} signals are offloaded.
-     */
-    boolean isAsyncCloseOffloaded() {
-        return asyncCloseOffload;
     }
 
     @Override

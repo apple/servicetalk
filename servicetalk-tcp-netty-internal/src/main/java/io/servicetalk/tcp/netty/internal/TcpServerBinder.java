@@ -96,7 +96,7 @@ public final class TcpServerBinder {
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(
-                config.isAsyncCloseOffloaded() ? executionContext.executor() : immediate());
+                executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -159,7 +159,7 @@ public final class TcpServerBinder {
                     Throwable cause = f.cause();
                     if (cause == null) {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet,
-                                connectionAcceptor, executionContext, config.isAsyncCloseOffloaded()));
+                                connectionAcceptor, executionContext));
                     } else {
                         close(channel, f.cause());
                         subscriber.onError(f.cause());

@@ -153,14 +153,6 @@ public interface HttpServerBuilder {
     HttpServerBuilder allowDropRequestTrailers(boolean allowDrop);
 
     /**
-     * Configures whether the signals for the close {@link io.servicetalk.concurrent.api.Completable} are offloaded.
-     *
-     * @param offload If true then close {@link io.servicetalk.concurrent.api.Completable} will be offloaded.
-     * @return {@code this}
-     */
-    HttpServerBuilder asyncCloseOffload(boolean offload);
-
-    /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

@@ -420,8 +420,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                             SEC, null,
                             (channel, observer) -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), SEC.ioExecutor(),
-                                    forPipelinedRequestResponse(false, channel.config()), defaultFlushStrategy(),
-                                    true, null,
+                                    forPipelinedRequestResponse(false, channel.config()), defaultFlushStrategy(), null,
                                     new TcpServerChannelInitializer(sConfig, observer).andThen(
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
@@ -439,7 +438,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
                                         CEC.executor(), CEC.ioExecutor(),
                                         closeHandler, defaultFlushStrategy(),
-                                        true, null, new TcpClientChannelInitializer(cConfig.tcpConfig(),
+                                        null, new TcpClientChannelInitializer(cConfig.tcpConfig(),
                                                 connectionObserver)
                                                 .andThen(new HttpClientChannelInitializer(
                                                         getByteBufAllocator(CEC.bufferAllocator()),

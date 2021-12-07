@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
@@ -61,12 +60,6 @@ abstract class AbstractTcpConfig<SslConfigType> {
     @Nullable
     private SslConfigType sslConfig;
 
-    /**
-     * If true then close {@link io.servicetalk.concurrent.api.Completable} signals are offloaded.
-     */
-    @Nullable
-    private Boolean asyncCloseOffload;
-
     protected AbstractTcpConfig() {
     }
 
@@ -76,7 +69,6 @@ abstract class AbstractTcpConfig<SslConfigType> {
         flushStrategy = from.flushStrategy;
         wireLoggerConfig = from.wireLoggerConfig;
         sslConfig = from.sslConfig;
-        asyncCloseOffload = from.asyncCloseOffload;
     }
 
     @Nullable
@@ -102,24 +94,6 @@ abstract class AbstractTcpConfig<SslConfigType> {
     @Nullable
     public final SslConfigType sslConfig() {
         return sslConfig;
-    }
-
-    /**
-     * Returns true if completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
-     *
-     * @return true if completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
-     */
-    public final boolean isAsyncCloseOffloaded() {
-        return null == asyncCloseOffload ? DEFAULT_ASYNC_CLOSE_OFFLOAD : asyncCloseOffload.booleanValue();
-    }
-
-    /**
-     * Returns true {@link #asyncCloseOffload(boolean)} has been explicitly configured.
-     *
-     * @return true {@link #asyncCloseOffload(boolean)} has been explicitly configured.
-     */
-    public final boolean isAsyncCloseOffloadedConfigured() {
-        return asyncCloseOffload != null;
     }
 
     /**
@@ -175,14 +149,5 @@ abstract class AbstractTcpConfig<SslConfigType> {
      */
     public final void sslConfig(final SslConfigType sslConfig) {
         this.sslConfig = requireNonNull(sslConfig);
-    }
-
-    /**
-     * Configures whether the signals for the close {@link io.servicetalk.concurrent.api.Completable} are offloaded.
-     *
-     * @param offload if true then completion of the {@link AsyncCloseable#closeAsync()} will be offloaded.
-     */
-    public final void asyncCloseOffload(boolean offload) {
-        asyncCloseOffload = offload;
     }
 }
