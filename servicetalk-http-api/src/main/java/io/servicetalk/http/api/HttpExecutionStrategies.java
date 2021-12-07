@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
@@ -156,6 +157,9 @@ public final class HttpExecutionStrategies {
         if (right.isEventOffloaded() && !left.isEventOffloaded()) {
             effectiveOffloads |= OFFLOAD_EVENT.mask();
         }
+        if (right.isCloseOffloaded() && !left.isCloseOffloaded()) {
+            effectiveOffloads |= OFFLOAD_CLOSE.mask();
+        }
 
         if (0 == effectiveOffloads) {
             // No extra offloads required
@@ -212,12 +216,21 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Enables offloading for asynchronous close.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadClose() {
+            return offload(OFFLOAD_CLOSE);
+        }
+
+        /**
          * Enable all offloads.
          *
          * @return {@code this}.
          */
         public Builder offloadAll() {
-            return offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent();
+            return offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent().offloadClose();
         }
 
         /**
@@ -258,7 +271,8 @@ public final class HttpExecutionStrategies {
         OFFLOAD_RECEIVE_META,
         OFFLOAD_RECEIVE_DATA,
         OFFLOAD_SEND,
-        OFFLOAD_EVENT;
+        OFFLOAD_EVENT,
+        OFFLOAD_CLOSE;
 
         byte mask() {
             return (byte) (1 << ordinal());

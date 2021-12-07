@@ -53,6 +53,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
             return false;
         }
 
+        @Override
+        public boolean isCloseOffloaded() {
+            return false;
+        }
+
         /**
          * Always returns itself, the {@link #OFFLOAD_NEVER_STRATEGY} strategy.
          *
@@ -91,6 +96,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
 
         @Override
         public boolean isEventOffloaded() {
+            return true;
+        }
+
+        @Override
+        public boolean isCloseOffloaded() {
             return true;
         }
 

@@ -44,6 +44,9 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +77,8 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
         implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
@@ -111,8 +116,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
-            return new FilterableClientToClient(urlClient,
-                    buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
+            HttpExecutionStrategy computedStrategy =
+                    buildContext.builder.computeChainStrategy(executionContext.executionStrategy());
+
+            LOGGER.debug("Client created with base strategy {} → computed strategy {}",
+                    executionContext.executionStrategy(), computedStrategy);
+
+            return new FilterableClientToClient(urlClient, computedStrategy);
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;

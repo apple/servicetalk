@@ -16,13 +16,11 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 /**
  * A {@link StreamingHttpClient} that supports filtering.
  */
-public interface FilterableStreamingHttpClient extends
-            StreamingHttpRequester, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+public interface FilterableStreamingHttpClient extends StreamingHttpRequester {
     /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
@@ -32,10 +30,4 @@ public interface FilterableStreamingHttpClient extends
      * @return a {@link Single} that provides a {@link FilterableReservedStreamingHttpConnection} upon completion.
      */
     Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
-
-    @Override
-    default HttpExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to override
-        return HttpExecutionStrategies.offloadAll();
-    }
 }

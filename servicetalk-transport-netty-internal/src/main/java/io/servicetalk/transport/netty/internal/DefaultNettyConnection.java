@@ -72,6 +72,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -167,7 +168,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
-        super(channel, executionContext.executor());
+        super(channel,
+                executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, closeHandler);
         this.readPublisher = registerReadObserver(nettyChannelPublisher.onErrorMap(this::enrichError));
         this.executionContext = executionContext;

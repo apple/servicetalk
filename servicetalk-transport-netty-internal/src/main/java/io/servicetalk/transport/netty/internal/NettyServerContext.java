@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 
 /**
  * {@link ServerContext} implementation using a netty {@link Channel}.
@@ -71,7 +72,9 @@ public final class NettyServerContext implements ServerContext {
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
                                      @Nullable AsyncCloseable closeBefore, ExecutionContext<?> executionContext) {
         final NettyChannelListenableAsyncCloseable channelCloseable =
-                new NettyChannelListenableAsyncCloseable(listenChannel, executionContext.executor());
+                new NettyChannelListenableAsyncCloseable(listenChannel,
+                        executionContext.executionStrategy().isCloseOffloaded() ?
+                                executionContext.executor() : immediate());
         final CompositeCloseable closeAsync = closeBefore == null ?
                 newCompositeCloseable().appendAll(channelCloseable, channelSetCloseable) :
                 newCompositeCloseable().appendAll(closeBefore, channelCloseable, channelSetCloseable);
