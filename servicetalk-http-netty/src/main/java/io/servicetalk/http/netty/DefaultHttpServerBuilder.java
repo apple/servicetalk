@@ -315,7 +315,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                         connectionAcceptorFactory.requiredOffloads());
 
         final StreamingHttpService filteredService;
-        HttpExecutionContext executionContext;
+        final HttpExecutionContext executionContext;
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);

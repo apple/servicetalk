@@ -131,6 +131,16 @@ public final class GrpcExecutionStrategies {
         }
 
         /**
+         * Enables offloading of close.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadClose() {
+            httpBuilder.offloadClose();
+            return this;
+        }
+
+        /**
          * Enable all offloads.
          *
          * @return {@code this}.

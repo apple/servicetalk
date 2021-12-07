@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
@@ -72,7 +73,8 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     /**
      * New instance.
      *
-     * @param offloadingExecutor {@link Executor} to use for offloading close signals.
+     * @param offloadingExecutor {@link Executor} to use for offloading close signals or {@link Executors#immediate()}
+     * if close will not be offloaded.
      */
     public ChannelSet(Executor offloadingExecutor) {
         onClose = fromSource(onCloseProcessor).publishOn(offloadingExecutor);

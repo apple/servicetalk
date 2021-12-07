@@ -27,7 +27,7 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
      */
     @Override
     default boolean hasOffloads() {
-        return isConnectOffloaded();
+        return ExecutionStrategy.super.hasOffloads() || isConnectOffloaded();
     }
 
     /**
@@ -58,7 +58,7 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
      * @return an {@link ConnectExecutionStrategy} that requires no offloading.
      */
     static ConnectExecutionStrategy offloadNone() {
-        return DefaultConnectExecutionStrategy.CONNECT_NOT_OFFLOADED;
+        return DefaultConnectExecutionStrategy.CONNECT_NO_OFFLOADS;
     }
 
     /**

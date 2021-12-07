@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <ES> type of the execution strategy used.
  */
-public final class DefaultExecutionContext<ES extends ExecutionStrategy> implements ExecutionContext<ES> {
+public class DefaultExecutionContext<ES extends ExecutionStrategy> implements ExecutionContext<ES> {
 
     private final BufferAllocator bufferAllocator;
     private final IoExecutor ioExecutor;

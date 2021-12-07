@@ -16,15 +16,15 @@
 package io.servicetalk.transport.api;
 
 /**
- * package private constants for special Execution
+ * package private constants for special Execution Strategies
  */
 enum SpecialExecutionStrategy implements ExecutionStrategy {
     /**
-     * Does not require offloads
+     * Does not require any offloads
      */
     NO_OFFLOADS {
         @Override
-        public boolean hasOffloads() {
+        public boolean isCloseOffloaded() {
             return false;
         }
     },
@@ -33,7 +33,7 @@ enum SpecialExecutionStrategy implements ExecutionStrategy {
      */
     OFFLOAD_ALL {
         @Override
-        public boolean hasOffloads() {
+        public boolean isCloseOffloaded() {
             return true;
         }
     }

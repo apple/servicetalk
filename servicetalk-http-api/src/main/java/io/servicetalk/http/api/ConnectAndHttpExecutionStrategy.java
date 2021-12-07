@@ -69,6 +69,11 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
     }
 
     @Override
+    public boolean isCloseOffloaded() {
+        return httpStrategy.isCloseOffloaded() || connectStrategy.isCloseOffloaded();
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return httpStrategy.isMetadataReceiveOffloaded();
     }
