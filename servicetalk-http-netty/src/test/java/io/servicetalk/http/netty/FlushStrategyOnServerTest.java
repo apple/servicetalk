@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerContext;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -120,7 +121,8 @@ class FlushStrategyOnServerTest {
                                     .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
                             true, connectionObserver),
                     connection -> connection.process(true))
-                    .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+                    .map(delegate -> new NettyHttpServerContext(delegate, service, httpExecutionContext))
+                    .toFuture().get();
         } catch (Exception e) {
             fail(e);
         }

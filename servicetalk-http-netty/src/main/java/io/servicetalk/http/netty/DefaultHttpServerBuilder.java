@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -43,7 +44,6 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
@@ -263,22 +263,22 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public Single<ServerContext> listen(final HttpService service) {
+    public Single<HttpServerContext> listen(final HttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
-    public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+    public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
         return listenForService(service, strategy);
     }
 
     @Override
-    public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+    public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
-    public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+    public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
@@ -287,12 +287,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return executionContextBuilder.build();
     }
 
-    private Single<ServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
+    private Single<HttpServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
         return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
      * <p>/p>
@@ -309,7 +309,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
+    private Single<HttpServerContext> listenForService(final StreamingHttpService rawService,
+                                                       final HttpExecutionStrategy strategy) {
         InfluencerConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 InfluencerConnectionAcceptor.withStrategy(connectionAcceptorFactory.create(ACCEPT_ALL),
                         connectionAcceptorFactory.requiredOffloads());
@@ -343,9 +344,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                         serverContext.listenAddress(), strategy));
     }
 
-    private Single<ServerContext> doBind(final HttpExecutionContext executionContext,
-                                         @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
-                                         final StreamingHttpService service) {
+    private Single<HttpServerContext> doBind(final HttpExecutionContext executionContext,
+                                             @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                             final StreamingHttpService service) {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 

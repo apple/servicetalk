@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcBindableService;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
+import io.servicetalk.grpc.api.GrpcServerContext;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -32,6 +33,7 @@ import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -40,7 +42,6 @@ import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
@@ -113,7 +114,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     @Override
-    public Single<ServerContext> listen(GrpcBindableService<?>... services) {
+    public Single<GrpcServerContext> listen(GrpcBindableService<?>... services) {
         GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                 .map(GrpcBindableService::bindService)
                 .toArray(GrpcServiceFactory<?>[]::new);
@@ -121,17 +122,17 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     @Override
-    public Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
+    public Single<GrpcServerContext> listen(GrpcServiceFactory<?>... serviceFactories) {
         return doListen(GrpcServiceFactory.merge(serviceFactories));
     }
 
     @Override
-    public ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
+    public GrpcServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception {
         return awaitResult(listen(serviceFactories).toFuture());
     }
 
     @Override
-    public ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
+    public GrpcServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception {
         GrpcServiceFactory<?>[] factories = Arrays.stream(services)
                 .map(GrpcBindableService::bindService)
                 .toArray(GrpcServiceFactory<?>[]::new);
@@ -139,15 +140,15 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link GrpcServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param serviceFactory {@link GrpcServiceFactory} to create a <a href="https://www.grpc.io">gRPC</a> service.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @return A {@link GrpcServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      */
-    private Single<ServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
+    private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
     }
@@ -199,22 +200,22 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     @Override
-    public Single<ServerContext> bind(final HttpService service) {
+    public Single<HttpServerContext> bind(final HttpService service) {
         return interceptorBuilder.listen(service);
     }
 
     @Override
-    public Single<ServerContext> bindStreaming(final StreamingHttpService service) {
+    public Single<HttpServerContext> bindStreaming(final StreamingHttpService service) {
         return interceptorBuilder.listenStreaming(service);
     }
 
     @Override
-    public Single<ServerContext> bindBlocking(final BlockingHttpService service) {
+    public Single<HttpServerContext> bindBlocking(final BlockingHttpService service) {
         return interceptorBuilder.listenBlocking(service);
     }
 
     @Override
-    public Single<ServerContext> bindBlockingStreaming(final BlockingStreamingHttpService service) {
+    public Single<HttpServerContext> bindBlockingStreaming(final BlockingStreamingHttpService service) {
         return interceptorBuilder.listenBlockingStreaming(service);
     }
 
@@ -353,22 +354,22 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         }
 
         @Override
-        public Single<ServerContext> listen(final HttpService service) {
+        public Single<HttpServerContext> listen(final HttpService service) {
             return delegate.listen(service);
         }
 
         @Override
-        public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+        public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
             return delegate.listenStreaming(service);
         }
 
         @Override
-        public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+        public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
             return delegate.listenBlocking(service);
         }
 
         @Override
-        public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+        public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
             return delegate.listenBlockingStreaming(service);
         }
     }

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
@@ -68,7 +69,7 @@ final class InvokingThreadsRecorder<T> implements AutoCloseable {
         return new InvokingThreadsRecorder<>(strategy);
     }
 
-    void init(BiFunction<IoExecutor, HttpServerBuilder, Single<ServerContext>> serverStarter,
+    void init(BiFunction<IoExecutor, HttpServerBuilder, Single<HttpServerContext>> serverStarter,
               BiConsumer<IoExecutor, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientUpdater) {
         try {
             HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
