@@ -42,7 +42,7 @@ class H2ToStH1UtilsTest {
     private static final int ARRAY_SIZE_HINT = 16;
     private static final HttpHeadersFactory H1_FACTORY = new DefaultHttpHeadersFactory(true, true,
             ARRAY_SIZE_HINT, 0);
-    private static final HttpHeadersFactory H2_FACTORY = new H2HeadersFactory(true, true, ARRAY_SIZE_HINT, 0);
+    private static final HttpHeadersFactory H2_FACTORY = new H2HeadersFactory(true, true, false, ARRAY_SIZE_HINT, 0);
 
     private static int bucketIndex(int hashCode) {
         return hashCode & (ARRAY_SIZE_HINT - 1);
