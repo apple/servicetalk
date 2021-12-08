@@ -87,8 +87,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Nullable
     private RedirectConfig redirectConfig;
     @Nullable
-    private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
-    @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
     DefaultMultiAddressUrlHttpClientBuilder(
@@ -102,8 +100,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         try {
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
-            final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    unresolvedAddressToHostFunction, singleAddressInitializer);
+            final ClientFactory clientFactory = new ClientFactory(buildContext.builder, singleAddressInitializer);
 
             HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
@@ -218,16 +215,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
-        private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
-        @Nullable
         private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
-                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
             this.builderTemplate = builderTemplate;
-            this.hostHeaderTransformer = hostHeaderTransformer;
             this.singleAddressInitializer = singleAddressInitializer;
         }
 
@@ -236,10 +229,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext =
                     builderTemplate.copyBuildCtx(urlKey.hostAndPort);
-
-            if (hostHeaderTransformer != null) {
-                buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
-            }
 
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
                 buildContext.builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
