@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -31,7 +32,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        this.strategy = DEFAULT_CONNECTION_STRATEGY.merge(strategy);
+        this.strategy = defaultStrategy() == strategy ?
+                DEFAULT_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
@@ -47,8 +49,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         return Single.defer(() -> {
             request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return client.request(request.toStreamingRequest())
-                    .flatMap(response -> response.toResponse().subscribeShareContext())
-                    .subscribeShareContext();
+                    .flatMap(response -> response.toResponse().shareContextOnSubscribe())
+                    .shareContextOnSubscribe();
         });
     }
 
@@ -59,7 +61,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
             return client.reserveConnection(metaData)
                     .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, this.strategy,
                             reqRespFactory))
-                    .subscribeShareContext();
+                    .shareContextOnSubscribe();
         });
     }
 
@@ -117,7 +119,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(final ReservedStreamingHttpConnection connection,
                                                                 final HttpExecutionStrategy strategy) {
-            this(connection, DEFAULT_CONNECTION_STRATEGY.merge(strategy), toAggregated(connection));
+            this(connection, defaultStrategy() == strategy ? DEFAULT_CONNECTION_STRATEGY : strategy,
+                    toAggregated(connection));
         }
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(final ReservedStreamingHttpConnection connection,
@@ -164,7 +167,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
             return connection.request(request.toStreamingRequest())
-                    .flatMap(response -> response.toResponse().subscribeShareContext());
+                    .flatMap(response -> response.toResponse().shareContextOnSubscribe());
         }
 
         @Override

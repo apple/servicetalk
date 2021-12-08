@@ -29,11 +29,11 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
     final HttpExecutionStrategy httpStrategy;
 
     public ConnectAndHttpExecutionStrategy(ConnectExecutionStrategy connectStrategy) {
-        this(connectStrategy, HttpExecutionStrategies.anyStrategy());
+        this(connectStrategy, HttpExecutionStrategies.offloadNone());
     }
 
     public ConnectAndHttpExecutionStrategy(HttpExecutionStrategy httpStrategy) {
-        this(ConnectExecutionStrategy.anyStrategy(), httpStrategy);
+        this(ConnectExecutionStrategy.offloadNone(), httpStrategy);
     }
 
     public ConnectAndHttpExecutionStrategy(ConnectExecutionStrategy connect, HttpExecutionStrategy http) {
@@ -66,6 +66,11 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
     @Override
     public boolean hasOffloads() {
         return connectStrategy.hasOffloads() || httpStrategy.hasOffloads();
+    }
+
+    @Override
+    public boolean isCloseOffloaded() {
+        return httpStrategy.isCloseOffloaded() || connectStrategy.isCloseOffloaded();
     }
 
     @Override
@@ -104,7 +109,7 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
         } else {
             return other.hasOffloads() ?
                     new ConnectAndHttpExecutionStrategy(
-                            ConnectExecutionStrategy.offload(),
+                            ConnectExecutionStrategy.offloadAll(),
                             HttpExecutionStrategies.offloadAll())
                     : this;
         }
@@ -144,5 +149,22 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
      */
     public ConnectExecutionStrategy connectStrategy() {
         return connectStrategy;
+    }
+
+    /**
+     * Converts the provided execution strategy to a {@link ConnectExecutionStrategy}. If the provided strategy is
+     * already {@link ConnectExecutionStrategy} it is returned unchanged. For other strategies, if the strategy
+     * {@link ExecutionStrategy#hasOffloads()} then {@link ConnectExecutionStrategy#offloadAll()} is returned otherwise
+     * {@link ConnectExecutionStrategy#offloadNone()} is returned.
+     *
+     * @param executionStrategy The {@link ExecutionStrategy} to convert
+     * @return converted {@link ConnectExecutionStrategy}.
+     */
+    public static ConnectAndHttpExecutionStrategy from(ExecutionStrategy executionStrategy) {
+        return executionStrategy instanceof ConnectAndHttpExecutionStrategy ?
+                (ConnectAndHttpExecutionStrategy) executionStrategy :
+                    new ConnectAndHttpExecutionStrategy(
+                            ConnectExecutionStrategy.offloadNone(), HttpExecutionStrategies.defaultStrategy())
+                            .merge(executionStrategy);
     }
 }

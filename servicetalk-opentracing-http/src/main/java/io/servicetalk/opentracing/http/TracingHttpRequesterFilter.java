@@ -107,7 +107,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate, request).subscribeShareContext());
+                return Single.defer(() -> trackRequest(delegate, request).shareContextOnSubscribe());
             }
        };
     }
@@ -118,7 +118,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
 
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate(), request).subscribeShareContext());
+                return Single.defer(() -> trackRequest(delegate(), request).shareContextOnSubscribe());
             }
        };
     }
@@ -126,7 +126,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,

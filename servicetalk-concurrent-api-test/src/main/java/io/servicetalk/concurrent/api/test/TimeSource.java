@@ -30,7 +30,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  *
  * <pre>
  * TimeSource timeSource = timeSource();
- * long startTime = timeSource.get();
+ * long startTime = timeSource.currentTime();
  * doWork();
  * boolean expired = timeSource.isExpired(startTime, 100, NANOSECONDS);
  * &#47;&#47; If expired is true then at least 100 nanoseconds have passed since startTime

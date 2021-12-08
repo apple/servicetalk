@@ -17,11 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_EVENT_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingHttpConnection {
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_CONNECTION_STRATEGY = OFFLOAD_NONE_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_CONNECTION_STRATEGY = OFFLOAD_EVENT_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final HttpConnectionContext context;
@@ -30,7 +31,7 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
 
     StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection,
                                                     final HttpExecutionStrategy strategy) {
-        this.strategy = DEFAULT_BLOCKING_CONNECTION_STRATEGY.merge(strategy);
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_BLOCKING_CONNECTION_STRATEGY : strategy;
         this.connection = connection;
         final HttpConnectionContext originalCtx = connection.connectionContext();
         executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {

@@ -34,6 +34,21 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean hasOffloads() {
+        return delegate.hasOffloads();
+    }
+
+    @Override
+    public boolean isRequestResponseOffloaded() {
+        return delegate.isRequestResponseOffloaded();
+    }
+
+    @Override
+    public boolean isCloseOffloaded() {
+        return delegate.isCloseOffloaded();
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return delegate.isMetadataReceiveOffloaded();
     }

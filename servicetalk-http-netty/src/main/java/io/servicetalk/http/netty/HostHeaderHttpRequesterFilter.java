@@ -76,7 +76,7 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -86,7 +86,7 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
                 request.setHeader(HOST, fallbackHost);
             }
-            return delegate.request(request).subscribeShareContext();
+            return delegate.request(request).shareContextOnSubscribe();
         });
     }
 }

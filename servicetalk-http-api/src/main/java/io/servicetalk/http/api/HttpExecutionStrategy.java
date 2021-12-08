@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionStrategy;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
@@ -31,7 +32,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
 
     @Override
     default boolean hasOffloads() {
-        return isRequestResponseOffloaded();
+        return ExecutionStrategy.super.hasOffloads() || isEventOffloaded() || isRequestResponseOffloaded();
     }
 
     /**
@@ -107,6 +108,9 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
         if (other.isEventOffloaded() && !this.isEventOffloaded()) {
             effectiveOffloads |= OFFLOAD_EVENT.mask();
         }
+        if (other.isCloseOffloaded() && !this.isCloseOffloaded()) {
+            effectiveOffloads |= OFFLOAD_CLOSE.mask();
+        }
 
         return DefaultHttpExecutionStrategy.fromMask(effectiveOffloads);
     }
@@ -122,6 +126,6 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
                 ((HttpExecutionStrategy) strategy) :
                 strategy.hasOffloads() ?
                         HttpExecutionStrategyInfluencer.defaultStreamingInfluencer().requiredOffloads() :
-                        HttpExecutionStrategies.anyStrategy();
+                        HttpExecutionStrategies.offloadNone();
     }
 }

@@ -44,6 +44,11 @@ final class ContextPreservingStExecutor implements Executor {
     }
 
     @Override
+    public long currentTime(TimeUnit unit) {
+        return delegate.currentTime(unit);
+    }
+
+    @Override
     public Completable onClose() {
         return delegate.onClose();
     }

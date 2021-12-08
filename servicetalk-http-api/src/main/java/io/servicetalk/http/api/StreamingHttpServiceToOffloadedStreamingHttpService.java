@@ -72,7 +72,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
             if (additionalOffloads.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
                 final StreamingHttpRequest r = request;
                 resp = useExecutor.submit(
-                                () -> delegate.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                                () -> delegate.handle(wrappedCtx, r, responseFactory).shareContextOnSubscribe())
                         // exec.submit() returns a Single<Single<response>>, so flatten nested Single.
                         .flatMap(identity());
             } else {

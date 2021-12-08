@@ -24,7 +24,6 @@ import io.servicetalk.context.api.ContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
@@ -57,21 +56,21 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
 
     private final Single<T> original;
     private final BooleanSupplier shouldOffload;
-    private final Executor executor;
+    private final io.servicetalk.concurrent.Executor executor;
 
     TaskBasedAsyncSingleOperator(final Single<T> original,
                                  final BooleanSupplier shouldOffload,
-                                 final Executor executor) {
+                                 final io.servicetalk.concurrent.Executor executor) {
         this.original = original;
-        this.shouldOffload = Objects.requireNonNull(shouldOffload, "shouldOffload");
-        this.executor = Objects.requireNonNull(executor, "executor");
+        this.shouldOffload = requireNonNull(shouldOffload, "shouldOffload");
+        this.executor = requireNonNull(executor, "executor");
     }
 
     final BooleanSupplier shouldOffload() {
         return shouldOffload;
     }
 
-    final Executor executor() {
+    final io.servicetalk.concurrent.Executor executor() {
         return executor;
     }
 
@@ -87,7 +86,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
         private final Subscriber<T> target;
 
         SingleSubscriberOffloadedTerminals(final Subscriber<T> target,
-                                           final BooleanSupplier shouldOffload, final Executor executor) {
+                                           final BooleanSupplier shouldOffload,
+                                           final io.servicetalk.concurrent.Executor executor) {
             super(shouldOffload, executor);
             this.target = requireNonNull(target);
         }
@@ -141,10 +141,11 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
     static final class SingleSubscriberOffloadedCancellable<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         private final BooleanSupplier shouldOffload;
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
 
         SingleSubscriberOffloadedCancellable(final Subscriber<? super T> subscriber,
-                                             final BooleanSupplier shouldOffload, final Executor executor) {
+                                             final BooleanSupplier shouldOffload,
+                                             final io.servicetalk.concurrent.Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.shouldOffload = shouldOffload;
             this.executor = executor;

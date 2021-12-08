@@ -96,7 +96,7 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         SUBSCRIBE_ON_CONDITIONAL_SECOND(1, "request",
                 (p, e) -> Publisher.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return p.subscribeOn(e, () -> countdown.decrementAndGet() < 0).subscribeShareContext();
+                    return p.subscribeOn(e, () -> countdown.decrementAndGet() < 0).shareContextOnSubscribe();
                 }), TerminalOperation.COMPLETE,
                 EnumSet.of(ORIGINAL_SUBSCRIBE, OFFLOADED_SUBSCRIBE,
                         ORIGINAL_ON_SUBSCRIBE, OFFLOADED_ON_SUBSCRIBE,
@@ -141,7 +141,7 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         PUBLISH_ON_CONDITIONAL_SECOND(2, "onNext, onComplete",
                 (p, e) -> Publisher.defer(() -> {
                     AtomicInteger countdown = new AtomicInteger(1);
-                    return p.publishOn(e, () -> countdown.decrementAndGet() < 0).subscribeShareContext();
+                    return p.publishOn(e, () -> countdown.decrementAndGet() < 0).shareContextOnSubscribe();
                 }), TerminalOperation.COMPLETE,
                 EnumSet.of(ORIGINAL_SUBSCRIBE, OFFLOADED_SUBSCRIBE,
                         ORIGINAL_ON_SUBSCRIBE, OFFLOADED_ON_SUBSCRIBE,

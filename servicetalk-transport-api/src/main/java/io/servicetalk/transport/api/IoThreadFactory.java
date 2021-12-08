@@ -45,6 +45,7 @@ public interface IoThreadFactory<T extends Thread & IoThread> extends ThreadFact
         /**
          * Returns {@code true} if the specified thread is an {@link IoThread} otherwise {code false}.
          *
+         * @param thread the thread to be examined.
          * @return {@code true} if the specified thread is an {@link IoThread} otherwise {code false}.
          */
         static boolean isIoThread(Thread thread) {

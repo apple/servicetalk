@@ -60,7 +60,7 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
                                                   final StreamingHttpRequest request) {
         return Single.defer(() -> {
            request.requestTarget(request.requestTarget(), charset);
-           return delegate.request(request).subscribeShareContext();
+           return delegate.request(request).shareContextOnSubscribe();
         });
     }
 
@@ -88,6 +88,6 @@ public final class RequestTargetEncoderHttpRequesterFilter implements
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 }

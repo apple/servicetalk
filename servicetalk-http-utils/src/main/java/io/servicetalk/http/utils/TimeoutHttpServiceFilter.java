@@ -15,8 +15,10 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -26,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
 
 /**
  * A filter to enable timeouts for HTTP requests on the server-side.
@@ -46,7 +49,7 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * @param duration the timeout {@link Duration}
      */
     public TimeoutHttpServiceFilter(Duration duration) {
-        this(new FixedDuration(duration), false);
+        super(new FixedDuration(duration), false);
     }
 
     /**
@@ -56,7 +59,7 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpServiceFilter(Duration duration, Executor timeoutExecutor) {
-        this(new FixedDuration(duration), false, timeoutExecutor);
+        super(new FixedDuration(duration), false, timeoutExecutor);
     }
 
     /**
@@ -67,7 +70,7 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * the response metadata must arrive before the timeout
      */
     public TimeoutHttpServiceFilter(Duration duration, boolean fullRequestResponse) {
-        this(new FixedDuration(duration), fullRequestResponse);
+        super(new FixedDuration(duration), fullRequestResponse);
     }
 
     /**
@@ -79,7 +82,7 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpServiceFilter(Duration duration, boolean fullRequestResponse, Executor timeoutExecutor) {
-        this(new FixedDuration(duration), fullRequestResponse, timeoutExecutor);
+        super(new FixedDuration(duration), fullRequestResponse, timeoutExecutor);
     }
 
     /**
@@ -89,7 +92,9 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * other sources. If no timeout is to be applied then the function should return {@code null}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
+     * @deprecated Use {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean)}.
      */
+    @Deprecated
     public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest, boolean fullRequestResponse) {
         super(timeoutForRequest, fullRequestResponse);
     }
@@ -101,9 +106,39 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
      * other sources. If no timeout is to be applied then the function should return {@code null}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
+     */
+    public TimeoutHttpServiceFilter(BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
+                                    boolean fullRequestResponse) {
+        super(timeoutForRequest, fullRequestResponse);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     * @deprecated Use {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean, Executor)}.
+     */
+    @Deprecated
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
+                                    boolean fullRequestResponse,
+                                    Executor timeoutExecutor) {
+        super(timeoutForRequest, fullRequestResponse, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
+    public TimeoutHttpServiceFilter(BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
                                     boolean fullRequestResponse,
                                     Executor timeoutExecutor) {
         super(timeoutForRequest, fullRequestResponse, timeoutExecutor);

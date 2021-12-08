@@ -17,21 +17,16 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
@@ -210,10 +205,8 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 0));
     }
 
-    @ParameterizedTest(name = "down-status-expired={0}")
-    @ValueSource(booleans = {true, false})
-    void handleDiscoveryEventsForExpiredHostBecomingAvailable(boolean downStatusExpired) throws Exception {
-        ServiceDiscovererEvent.Status downStatus = downStatusExpired ? EXPIRED : UNAVAILABLE;
+    @Test
+    void handleDiscoveryEventsForExpiredHostBecomingAvailable() throws Exception {
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -222,7 +215,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         lb.selectConnection(any()).toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
         assertThat(lb.selectConnection(any()).toFuture().get(), is(notNullValue()));
 
@@ -239,10 +232,8 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 2));
     }
 
-    @ParameterizedTest(name = "down-status-expired={0}")
-    @ValueSource(booleans = {true, false})
-    void handleDiscoveryEventsForConnectedHosts(boolean downStatusExpired) throws Exception {
-        ServiceDiscovererEvent.Status downStatus = downStatusExpired ? EXPIRED : UNAVAILABLE;
+    @Test
+    void handleDiscoveryEventsForConnectedHosts() throws Exception {
         assertThat(lb.usedAddresses(), is(empty()));
 
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
@@ -252,7 +243,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         // For an added host, connection needs to be initiated, otherwise the host is free to be deleted
         lb.selectConnection(connectionFilter).toFuture().get();
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
@@ -260,7 +251,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
-        sendServiceDiscoveryEvents(downEvent("address-3", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
         // Marking the first host as not expired should not create duplicates
@@ -272,7 +263,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
         // The second host has a connection open, so it stays as "expired".
-        sendServiceDiscoveryEvents(downEvent("address-2", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 
         // Closing an expired host's connection should remove the host from the list
@@ -284,31 +275,29 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         assertAddresses(lb.usedAddresses(), "address-1");
     }
 
-    @ParameterizedTest(name = "down-status-expired={0}")
-    @ValueSource(booleans = {true, false})
-    void handleDiscoveryEventsForNotConnectedHosts(boolean downStatusExpired) {
-        ServiceDiscovererEvent.Status downStatus = downStatusExpired ? EXPIRED : UNAVAILABLE;
+    @Test
+    void handleDiscoveryEventsForNotConnectedHosts() {
         assertThat(lb.usedAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
-        sendServiceDiscoveryEvents(downEvent("address-3", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-3"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
-        sendServiceDiscoveryEvents(downEvent("address-1", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
-        sendServiceDiscoveryEvents(downEvent("address-2", downStatus));
+        sendServiceDiscoveryEvents(downEvent("address-2"));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state

@@ -13,28 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.api;
+package io.servicetalk.concurrent;
+
+import java.util.concurrent.TimeUnit;
 
 /**
- * package private constants for special Execution Strategies
+ * A source of time that can be represented as a {@code long}.
  */
-enum SpecialExecutionStrategy implements ExecutionStrategy {
+@FunctionalInterface
+public interface TimeSource {
+
     /**
-     * Does not require any offloads
+     * Returns the internal clock time in the specified {@code unit}.
+     * @param unit the time unit to calculate
+     * @return the internal clock time in the specified {@code unit}.
      */
-    NO_OFFLOADS {
-        @Override
-        public boolean isCloseOffloaded() {
-            return false;
-        }
-    },
-    /**
-     * Offload all invocations
-     */
-    OFFLOAD_ALL {
-        @Override
-        public boolean isCloseOffloaded() {
-            return true;
-        }
-    }
+    long currentTime(TimeUnit unit);
 }

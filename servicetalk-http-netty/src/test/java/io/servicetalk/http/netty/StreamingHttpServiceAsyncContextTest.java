@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static java.lang.Thread.currentThread;
 
@@ -80,7 +80,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                      boolean useImmediate) throws Exception {
         if (useImmediate) {
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService());
     }
@@ -108,7 +108,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                     boolean useImmediate, boolean asyncService) throws Exception {
         if (useImmediate) {
-            serverBuilder.executionStrategy(noOffloadsStrategy());
+            serverBuilder.executionStrategy(offloadNever());
         }
         return serverBuilder.listenStreamingAndAwait(service(useImmediate, asyncService));
     }
@@ -119,7 +119,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? defer(() -> doHandle(request, responseFactory).subscribeShareContext()) :
+                return asyncService ? defer(() -> doHandle(request, responseFactory).shareContextOnSubscribe()) :
                         doHandle(request, responseFactory);
             }
 

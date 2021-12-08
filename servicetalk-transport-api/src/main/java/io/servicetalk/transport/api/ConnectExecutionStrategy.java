@@ -27,7 +27,7 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
      */
     @Override
     default boolean hasOffloads() {
-        return isConnectOffloaded();
+        return ExecutionStrategy.super.hasOffloads() || isConnectOffloaded();
     }
 
     /**
@@ -48,8 +48,8 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
     default ConnectExecutionStrategy merge(ExecutionStrategy other) {
         ConnectExecutionStrategy asCES = from(other);
         return hasOffloads() ?
-                asCES.hasOffloads() ? ConnectExecutionStrategy.offload() : this :
-                asCES.hasOffloads() ? asCES : ConnectExecutionStrategy.anyStrategy();
+                asCES.hasOffloads() ? ConnectExecutionStrategy.offloadAll() : this :
+                asCES.hasOffloads() ? asCES : ConnectExecutionStrategy.offloadNone();
     }
 
     /**
@@ -57,8 +57,8 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
      *
      * @return an {@link ConnectExecutionStrategy} that requires no offloading.
      */
-    static ConnectExecutionStrategy anyStrategy() {
-        return DefaultConnectExecutionStrategy.CONNECT_NOT_OFFLOADED;
+    static ConnectExecutionStrategy offloadNone() {
+        return DefaultConnectExecutionStrategy.CONNECT_NO_OFFLOADS;
     }
 
     /**
@@ -66,15 +66,15 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
      *
      * @return an {@link ConnectExecutionStrategy} that requires offloading.
      */
-    static ConnectExecutionStrategy offload() {
+    static ConnectExecutionStrategy offloadAll() {
         return DefaultConnectExecutionStrategy.CONNECT_OFFLOADED;
     }
 
     /**
      * Converts the provided execution strategy to a {@link ConnectExecutionStrategy}. If the provided strategy is
      * already {@link ConnectExecutionStrategy} it is returned unchanged. For other strategies, if the strategy
-     * {@link ExecutionStrategy#hasOffloads()} then {@link ConnectExecutionStrategy#offload()} is returned otherwise
-     * {@link ConnectExecutionStrategy#anyStrategy()} is returned.
+     * {@link ExecutionStrategy#hasOffloads()} then {@link ConnectExecutionStrategy#offloadAll()} is returned otherwise
+     * {@link ConnectExecutionStrategy#offloadNone()} is returned.
      *
      * @param executionStrategy The {@link ExecutionStrategy} to convert
      * @return converted {@link ConnectExecutionStrategy}.
@@ -83,7 +83,7 @@ public interface ConnectExecutionStrategy extends ExecutionStrategy {
         return executionStrategy instanceof ConnectExecutionStrategy ?
                 (ConnectExecutionStrategy) executionStrategy :
                     executionStrategy.hasOffloads() ?
-                        ConnectExecutionStrategy.offload() :
-                        ConnectExecutionStrategy.anyStrategy();
+                        ConnectExecutionStrategy.offloadAll() :
+                        ConnectExecutionStrategy.offloadNone();
     }
 }

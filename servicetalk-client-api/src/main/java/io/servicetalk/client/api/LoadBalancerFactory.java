@@ -20,8 +20,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.util.Collection;
-
-import static java.util.function.Function.identity;
+import java.util.Collections;
 
 /**
  * A factory for creating {@link LoadBalancer} instances.
@@ -35,6 +34,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
 
     /**
      * Create a new {@link LoadBalancer}.
+     *
      * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
      * connect to physical hosts. Typically generated from a
      * {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}.
@@ -47,16 +47,16 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * please use that method instead.
      */
     @Deprecated
-    <T extends C> LoadBalancer<T> newLoadBalancer(
+    default <T extends C> LoadBalancer<T> newLoadBalancer(
             Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> connectionFactory);
+            ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return newLoadBalancer("UNKNOWN",
+                eventPublisher.map(Collections::singletonList), connectionFactory);
+    }
 
     /**
      * Create a new {@link LoadBalancer}.
-     * <p>
-     * Note this method has a default implementation to not break the {@link FunctionalInterface} contract, however
-     * in a future release the other deprecated {@link #newLoadBalancer(Publisher, ConnectionFactory) method}
-     * will be removed and this method will become the functional interface.
+     *
      * @param targetResource A {@link String} representation of the target resource for which the created instance
      * will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
      * via the {@code eventPublisher} which may not correspond directly to a single unresolved address, but potentially
@@ -70,12 +70,10 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * @param <T> Type of connections created by the passed {@link ConnectionFactory}.
      * @return a new {@link LoadBalancer}.
      */
-    default <T extends C> LoadBalancer<T> newLoadBalancer(
+    <T extends C> LoadBalancer<T> newLoadBalancer(
             String targetResource,
             Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return newLoadBalancer(eventPublisher.flatMapConcatIterable(identity()), connectionFactory);
-    }
+            ConnectionFactory<ResolvedAddress, T> connectionFactory);
 
     @Override
     default ExecutionStrategy requiredOffloads() {

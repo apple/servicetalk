@@ -30,6 +30,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -230,7 +231,7 @@ abstract class AbstractNettyHttpServerTest {
         return HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
     }
 
-    Single<ServerContext> listen(HttpServerBuilder builder) {
+    Single<HttpServerContext> listen(HttpServerBuilder builder) {
         return builder.listenStreaming(service);
     }
 

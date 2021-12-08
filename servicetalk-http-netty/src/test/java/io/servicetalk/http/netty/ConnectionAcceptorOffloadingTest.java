@@ -50,7 +50,7 @@ class ConnectionAcceptorOffloadingTest {
                             offloaded.set(!isIoThread);
                             return original.accept(context);
                         },
-                offload ? ConnectExecutionStrategy.offload() : ConnectExecutionStrategy.anyStrategy());
+                offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone());
 
         try (ServerContext server = HttpServers.forPort(0)
                 .appendConnectionAcceptorFilter(factory)

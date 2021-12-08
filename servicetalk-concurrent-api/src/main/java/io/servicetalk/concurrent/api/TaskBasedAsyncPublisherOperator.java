@@ -23,7 +23,6 @@ import io.servicetalk.context.api.ContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -62,21 +61,21 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
     private final Publisher<T> original;
     private final BooleanSupplier shouldOffload;
-    private final Executor executor;
+    private final io.servicetalk.concurrent.Executor executor;
 
     TaskBasedAsyncPublisherOperator(final Publisher<T> original,
                                     final BooleanSupplier shouldOffload,
-                                    final Executor executor) {
+                                    final io.servicetalk.concurrent.Executor executor) {
         this.original = original;
-        this.shouldOffload = Objects.requireNonNull(shouldOffload, "shouldOffload");
-        this.executor = Objects.requireNonNull(executor, "executor");
+        this.shouldOffload = requireNonNull(shouldOffload, "shouldOffload");
+        this.executor = requireNonNull(executor, "executor");
     }
 
     final BooleanSupplier shouldOffload() {
         return shouldOffload;
     }
 
-    final Executor executor() {
+    final io.servicetalk.concurrent.Executor executor() {
         return executor;
     }
 
@@ -105,7 +104,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
         private final Subscriber<? super T> target;
         private final BooleanSupplier shouldOffload;
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final Queue<Object> signals;
         // Set in onSubscribe before we enqueue the task which provides memory visibility inside the task.
         // Since any further action happens after onSubscribe, we always guarantee visibility of this field inside
@@ -115,12 +114,14 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
         private boolean hasOffloaded;
 
         OffloadedSubscriber(final Subscriber<? super T> target,
-                            final BooleanSupplier shouldOffload, final Executor executor) {
+                            final BooleanSupplier shouldOffload,
+                            final io.servicetalk.concurrent.Executor executor) {
             this(target, shouldOffload, executor, 2);
         }
 
         OffloadedSubscriber(final Subscriber<? super T> target,
-                            final BooleanSupplier shouldOffload, final Executor executor,
+                            final BooleanSupplier shouldOffload,
+                            final io.servicetalk.concurrent.Executor executor,
                             final int publisherSignalQueueInitialCapacity) {
             this.target = target;
             this.shouldOffload = shouldOffload;
@@ -301,9 +302,11 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
     static final class OffloadedSubscriptionSubscriber<T> implements Subscriber<T> {
         private final Subscriber<T> subscriber;
         private final BooleanSupplier shouldOffload;
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
 
-        OffloadedSubscriptionSubscriber(Subscriber<T> subscriber, BooleanSupplier shouldOffload, Executor executor) {
+        OffloadedSubscriptionSubscriber(final Subscriber<T> subscriber,
+                                        final BooleanSupplier shouldOffload,
+                                        final io.servicetalk.concurrent.Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.shouldOffload = shouldOffload;
             this.executor = executor;
@@ -346,14 +349,16 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
         private static final AtomicLongFieldUpdater<OffloadedSubscription> requestedUpdater =
                 AtomicLongFieldUpdater.newUpdater(OffloadedSubscription.class, "requested");
 
-        private final Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final BooleanSupplier shouldOffload;
         private final Subscription target;
         private volatile int state = STATE_IDLE;
         private volatile long requested;
         private boolean hasOffloaded;
 
-        OffloadedSubscription(Executor executor, BooleanSupplier shouldOffload, Subscription target) {
+        OffloadedSubscription(final io.servicetalk.concurrent.Executor executor,
+                              final BooleanSupplier shouldOffload,
+                              final Subscription target) {
             this.executor = executor;
             this.shouldOffload = shouldOffload;
             this.target = requireNonNull(target);

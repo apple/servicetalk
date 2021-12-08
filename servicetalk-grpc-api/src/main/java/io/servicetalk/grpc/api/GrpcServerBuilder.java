@@ -18,7 +18,6 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.transport.api.ServerContext;
 
 import java.time.Duration;
 
@@ -81,7 +80,7 @@ public interface GrpcServerBuilder {
     GrpcServerBuilder lifecycleObserver(GrpcLifecycleObserver lifecycleObserver);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link GrpcServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
@@ -89,10 +88,10 @@ public interface GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listen(GrpcBindableService<?>... services);
+    Single<GrpcServerContext> listen(GrpcBindableService<?>... services);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link GrpcServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
@@ -100,29 +99,29 @@ public interface GrpcServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listen(GrpcServiceFactory<?>... serviceFactories);
+    Single<GrpcServerContext> listen(GrpcServiceFactory<?>... serviceFactories);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link GrpcServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param serviceFactories {@link GrpcServiceFactory}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @return A {@link GrpcServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    ServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception;
+    GrpcServerContext listenAndAwait(GrpcServiceFactory<?>... serviceFactories) throws Exception;
 
      /**
-      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+      * Starts this server and returns the {@link GrpcServerContext} after the server has been successfully started.
       * <p>
       * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
       *
       * @param services {@link GrpcBindableService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
-      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+      * @return A {@link GrpcServerContext} by blocking the calling thread until the server is successfully started or
       * throws an {@link Exception} if the server could not be started.
       * @throws Exception if the server could not be started.
       */
-     ServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception;
+     GrpcServerContext listenAndAwait(GrpcBindableService<?>... services) throws Exception;
 }

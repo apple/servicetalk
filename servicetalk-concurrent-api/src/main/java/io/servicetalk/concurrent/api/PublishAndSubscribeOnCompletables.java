@@ -61,12 +61,14 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishOn(final Completable original,
-                                 final BooleanSupplier shouldOffload, final Executor executor) {
+                                 final BooleanSupplier shouldOffload,
+                                 final io.servicetalk.concurrent.Executor executor) {
         return executor == immediate() ? original : new PublishOn(original, shouldOffload, executor);
     }
 
     static Completable subscribeOn(final Completable original,
-                                   final BooleanSupplier shouldOffload, final Executor executor) {
+                                   final BooleanSupplier shouldOffload,
+                                   final io.servicetalk.concurrent.Executor executor) {
         return executor == immediate() ? original : new SubscribeOn(original, shouldOffload, executor);
     }
 
@@ -80,7 +82,8 @@ final class PublishAndSubscribeOnCompletables {
     private static final class PublishOn extends TaskBasedAsyncCompletableOperator {
 
         PublishOn(final Completable original,
-                  final BooleanSupplier shouldOffload, final Executor executor) {
+                  final BooleanSupplier shouldOffload,
+                  final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 
@@ -115,7 +118,8 @@ final class PublishAndSubscribeOnCompletables {
     private static final class SubscribeOn extends TaskBasedAsyncCompletableOperator {
 
         SubscribeOn(final Completable original,
-                    final BooleanSupplier shouldOffload, final Executor executor) {
+                    final BooleanSupplier shouldOffload,
+                    final io.servicetalk.concurrent.Executor executor) {
             super(original, shouldOffload, executor);
         }
 

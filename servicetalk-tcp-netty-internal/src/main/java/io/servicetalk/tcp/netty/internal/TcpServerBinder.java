@@ -95,7 +95,8 @@ public final class TcpServerBinder {
         ServerBootstrap bs = new ServerBootstrap();
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
-        ChannelSet channelSet = new ChannelSet(executionContext.executor());
+        ChannelSet channelSet = new ChannelSet(
+                executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {

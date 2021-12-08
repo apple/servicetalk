@@ -21,7 +21,6 @@ package io.servicetalk.transport.api;
  * <p>Implementations should not override the default {@link Object#equals(Object)} and {@link Object#hashCode()} method
  * implementations. Default instance equality and hash-code behavior should be consistent across all instances.
  */
-@FunctionalInterface
 public interface ExecutionStrategy {
 
     /**
@@ -29,7 +28,19 @@ public interface ExecutionStrategy {
      *
      * @return {@code true} if the instance has offloading for any operation.
      */
-    boolean hasOffloads();
+    default boolean hasOffloads() {
+        return isCloseOffloaded();
+    }
+
+    /**
+     * Returns {@code true} if signals on the {@link io.servicetalk.concurrent.api.Completable} returned by asynchronous
+     * close operations, usually {@link io.servicetalk.concurrent.api.ListenableAsyncCloseable}, are offloaded,
+     * otherwise false if the signals may not be offloaded.
+     *
+     * @return {@code true} if signals on the {@link io.servicetalk.concurrent.api.Completable} returned by asynchronous
+     * close operations are offloaded, otherwise falseif the signals may not be offloaded.
+     */
+    boolean isCloseOffloaded();
 
     /**
      * Returns an {@link ExecutionStrategy} that requires no offloading and is compatible with all other offloading
@@ -37,7 +48,7 @@ public interface ExecutionStrategy {
      *
      * @return an {@link ExecutionStrategy} that requires no offloading.
      */
-    static ExecutionStrategy anyStrategy() {
+    static ExecutionStrategy offloadNone() {
         return SpecialExecutionStrategy.NO_OFFLOADS;
     }
 
@@ -59,6 +70,6 @@ public interface ExecutionStrategy {
     default ExecutionStrategy merge(ExecutionStrategy other) {
         return hasOffloads() ?
                 other.hasOffloads() ? ExecutionStrategy.offloadAll() : this :
-                other.hasOffloads() ? other : ExecutionStrategy.anyStrategy();
+                other.hasOffloads() ? other : ExecutionStrategy.offloadNone();
     }
 }
