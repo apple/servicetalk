@@ -84,9 +84,6 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
 
     /**
      * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
-     * <p>
-     * Note: For backward compatibility with 0.41.x versions redirects are enabled by default. Starting from version
-     * 0.42, users have to opt-in for redirects using this method. If you rely on redirects, always use this method.
      *
      * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
      * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
