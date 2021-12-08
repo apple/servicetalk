@@ -48,21 +48,6 @@ public final class GrpcExecutionStrategies {
     }
 
     /**
-     * A special {@link GrpcExecutionStrategy} that disables all offloads on the request-response and transport event
-     * paths. This strategy is intended to be used only for client and server builders; it should not be returned by
-     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return a custom strategy instead.
-     * When merged with another execution strategy the result is always this strategy.
-     *
-     * @return {@link GrpcExecutionStrategy} that disables all request-response path offloads.
-     * @see #offloadNever()
-     * @deprecated Replaced with more descriptive {@link #offloadNever()}.
-     */
-    @Deprecated
-    public static GrpcExecutionStrategy noOffloadsStrategy() {
-        return NEVER_OFFLOAD_STRATEGY;
-    }
-
-    /**
      * A special {@link HttpExecutionStrategy} that disables all offloads on the request-response and transport event
      * paths. This strategy is intended to be used only for client and server builders; it should not be returned by
      * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return a custom strategy instead.

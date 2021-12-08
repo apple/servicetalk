@@ -19,7 +19,7 @@ package io.servicetalk.http.api;
  * A factory for {@link StreamingHttpServiceFilter}.
  */
 @FunctionalInterface
-public interface StreamingHttpServiceFilterFactory extends DefaultHttpExecutionStrategyInfluencer {
+public interface StreamingHttpServiceFilterFactory extends HttpExecutionStrategyInfluencer {
 
     /**
      * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.

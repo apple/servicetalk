@@ -123,9 +123,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      */
     static HttpExecutionStrategy from(ExecutionStrategy strategy) {
         return (strategy instanceof HttpExecutionStrategy) ?
-                ((HttpExecutionStrategy) strategy) :
-                strategy.hasOffloads() ?
-                        HttpExecutionStrategyInfluencer.defaultStreamingInfluencer().requiredOffloads() :
-                        HttpExecutionStrategies.offloadNone();
+                (HttpExecutionStrategy) strategy :
+                strategy.hasOffloads() ? HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
     }
 }

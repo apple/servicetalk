@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.oio.api.PayloadWriter;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
 
@@ -25,8 +24,7 @@ import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEI
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 @FunctionalInterface
-public interface BlockingStreamingHttpService extends
-            ExecutionStrategyInfluencer<HttpExecutionStrategy>, GracefulAutoCloseable {
+public interface BlockingStreamingHttpService extends HttpExecutionStrategyInfluencer, GracefulAutoCloseable {
     /**
      * Handles a single HTTP request.
      *

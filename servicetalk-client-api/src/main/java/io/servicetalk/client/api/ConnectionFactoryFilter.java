@@ -87,7 +87,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
     @Override
     default ExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override if offloading is required.
-        return ConnectExecutionStrategy.offloadNone();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**

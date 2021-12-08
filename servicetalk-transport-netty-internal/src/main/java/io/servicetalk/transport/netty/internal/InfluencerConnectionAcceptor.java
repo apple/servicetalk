@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -38,11 +37,6 @@ public interface InfluencerConnectionAcceptor extends ConnectionAcceptor,
      * ACCEPT all connections.
      */
     InfluencerConnectionAcceptor ACCEPT_ALL = withStrategy((context) -> completed(), offloadNone());
-
-    @Override
-    default Completable closeAsync() {
-        return completed();
-    }
 
     @Override
     default ConnectExecutionStrategy requiredOffloads() {
