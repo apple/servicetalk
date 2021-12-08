@@ -30,7 +30,7 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      *
      * @param strategy {@link HttpExecutionStrategy} to influence.
      * @return {@link HttpExecutionStrategy} that suits this {@link HttpExecutionStrategyInfluencer}
-     * @deprecated Implement {@link ExecutionStrategyInfluencer} interface and {@link #requiredOffloads()} instead.
+     * @deprecated Implement {@link #requiredOffloads()} instead.
      */
     @Deprecated
     default HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
@@ -46,6 +46,7 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      */
     @Override
     default HttpExecutionStrategy requiredOffloads() {
+        // safe default--implementations are expected to override
         return HttpExecutionStrategies.offloadAll();
     }
 
@@ -53,24 +54,10 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      * Returns an {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.
      *
      * @return An {@link HttpExecutionStrategyInfluencer} to be used for the default streaming programming model.
+     * @deprecated This method is not useful anymore and will be removed in future releases.
      */
+    @Deprecated
     static HttpExecutionStrategyInfluencer defaultStreamingInfluencer() {
         return DEFAULT_STREAMING_STRATEGY_INFLUENCER;
-    }
-
-    /**
-     * Creates an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
-     *
-     * @param requiredStrategy The required strategy of the influencer to be created.
-     * @return an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
-     */
-    static HttpExecutionStrategyInfluencer newInfluencer(HttpExecutionStrategy requiredStrategy) {
-        return new HttpExecutionStrategyInfluencer() {
-
-            @Override
-            public HttpExecutionStrategy requiredOffloads() {
-                return requiredStrategy;
-            }
-        };
     }
 }

@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -56,6 +54,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -133,8 +132,7 @@ class BasicAuthStrategyInfluencerTest {
         when(credentialsVerifier.closeAsyncGracefully()).thenReturn(completed());
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
-            verifier = new InfluencingVerifier(verifier,
-                    HttpExecutionStrategyInfluencer.newInfluencer(HttpExecutionStrategies.offloadNone()));
+            verifier = new InfluencingVerifier(verifier, offloadNone());
             serverBuilder.executionStrategy(offloadNever());
         }
         serverBuilder.appendServiceFilter(new BasicAuthHttpServiceFilter.Builder<>(verifier, "dummy")
@@ -195,20 +193,19 @@ class BasicAuthStrategyInfluencerTest {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.offloadNone();
+            return offloadNone();
         }
     }
 
-    private static final class InfluencingVerifier
-            implements CredentialsVerifier<String>, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+    private static final class InfluencingVerifier implements CredentialsVerifier<String> {
 
         private final CredentialsVerifier<String> delegate;
-        private final HttpExecutionStrategyInfluencer influencer;
+        private final HttpExecutionStrategy requiredOffloads;
 
         InfluencingVerifier(final CredentialsVerifier<String> delegate,
-                            final HttpExecutionStrategyInfluencer influencer) {
+                            final HttpExecutionStrategy requiredOffloads) {
             this.delegate = delegate;
-            this.influencer = influencer;
+            this.requiredOffloads = requiredOffloads;
         }
 
         @Override
@@ -218,7 +215,7 @@ class BasicAuthStrategyInfluencerTest {
 
         @Override
         public HttpExecutionStrategy requiredOffloads() {
-            return influencer.requiredOffloads();
+            return requiredOffloads;
         }
 
         @Override

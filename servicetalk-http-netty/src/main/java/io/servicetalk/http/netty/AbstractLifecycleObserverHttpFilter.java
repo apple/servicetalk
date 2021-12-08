@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
@@ -36,7 +37,6 @@ import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpExchangeObser
 import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpRequestObserver;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);
     @SuppressWarnings("unchecked")
