@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.netty.util.internal.PlatformDependent.normalizedArch;
+import static java.lang.Boolean.getBoolean;
 
 /**
  * Utility to check availability of Netty <a href="https://netty.io/wiki/native-transports.html">native transports</a>.
@@ -39,6 +40,8 @@ import static io.netty.util.internal.PlatformDependent.normalizedArch;
 final class NativeTransportUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeTransportUtils.class);
+    private static final String NETTY_NO_NATIVE_NAME = "io.netty.transport.noNative";
+    private static final boolean NETTY_NO_NATIVE = getBoolean(NETTY_NO_NATIVE_NAME);
 
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
@@ -60,9 +63,19 @@ final class NativeTransportUtils {
     }
 
     private static void logUnavailability(final String transport, final String os, final Throwable cause) {
+        if (NETTY_NO_NATIVE) {
+            LOGGER.info("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
+                    "may impact responsiveness, reliability, and performance of the application. For more information" +
+                    ", see https://netty.io/wiki/native-transports.html", transport, NETTY_NO_NATIVE_NAME);
+            return;
+        }
         LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
-                        "performance of the application. See https://netty.io/wiki/native-transports.html",
-                transport, os, normalizedArch(), cause);
+                        "responsiveness, reliability, and performance of the application. In future releases " +
+                        "ServiceTalk will fail to start without transport-native library unless \"-D{}=true\" system " +
+                        "property is explicitly set. For more information, see " +
+                        "https://netty.io/wiki/native-transports.html",
+                transport, os, normalizedArch(), NETTY_NO_NATIVE_NAME, cause);
+        // FIXME: 0.42 - throw an exception and adjust the message
     }
 
     /**
