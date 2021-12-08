@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.net.InetSocketAddress.createUnresolved;
 
@@ -80,14 +80,14 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
     public LoadBalancer<LoadBalancedConnection> mixed() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
         return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
-                .newLoadBalancer(fromIterable(mixedEvents), ConnFactory.INSTANCE);
+                .newLoadBalancer("benchmark", from(mixedEvents), ConnFactory.INSTANCE);
     }
 
     @Benchmark
     public LoadBalancer<LoadBalancedConnection> available() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
         return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
-                        .newLoadBalancer(fromIterable(availableEvents), ConnFactory.INSTANCE);
+                        .newLoadBalancer("benchmark", from(availableEvents), ConnFactory.INSTANCE);
     }
 
     private static final class ConnFactory implements ConnectionFactory<InetSocketAddress, LoadBalancedConnection> {
